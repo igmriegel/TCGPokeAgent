@@ -97,6 +97,26 @@ comments, documentation, commit messages, and configuration files must be
 written in English. This ensures consistency across tools (opencode, Claude
 Code, Codex, Antigravity) and readers worldwide.
 
+## Package Management
+
+The project uses `uv` (Astral) for package and environment management. All
+dependency resolution is pinned in `uv.lock` (committed to version control).
+
+```bash
+# Create venv and install all dependencies
+uv sync
+
+# Add a dependency
+uv add <package>
+
+# Run a command in the venv
+uv run <command>
+```
+
+`uv.lock` must be kept in sync with `pyproject.toml`. After editing
+dependencies in `pyproject.toml`, run `uv lock` to update the lockfile.
+CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
+
 ## Coding Conventions
 
 ### Style

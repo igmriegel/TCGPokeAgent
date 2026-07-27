@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "pokemon_tcg_engine"
@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Pokemon TCG AI Battle agent for Kaggle"
 requires-python = ">=3.11"
 dependencies = [
-    "kaggle-environments==1.14.10",
+    "kaggle-environments>=1.32.2",
     "PyYAML>=6.0",
     "structlog>=24.0",
 ]
@@ -22,6 +22,16 @@ dev = [
     "pre-commit>=4.0",
 ]
 notebooks = [
+    "marimo>=0.12",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=4.0",
     "marimo>=0.12",
 ]
 

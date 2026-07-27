@@ -1,12 +1,13 @@
 FROM python:3.12-slim AS base
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
 
 COPY kaggle.json.example /root/.kaggle/kaggle.json.example
-COPY pyproject.toml .
 COPY src/ src/
 COPY configs/ configs/
 COPY main.py .
@@ -17,25 +18,23 @@ USER app
 ENV AGENT_MODE=baseline
 ENV LOG_LEVEL=INFO
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["uv", "run", "main.py"]
 
 FROM base AS agent
-# Same as base — explicit alias for clarity
 
 FROM base AS dev
 
 USER root
 COPY .pre-commit-config.yaml .
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt "pytest>=8.0" "ruff>=0.5" "mypy>=1.10" "pre-commit>=4.0"
+RUN uv sync --frozen
 COPY tests/ tests/
 USER app
 
 FROM base AS marimo
 
 USER root
-RUN pip install --no-cache-dir "marimo>=0.12"
+RUN uv sync --frozen --group notebooks
 USER app
 
 EXPOSE 2718
-ENTRYPOINT ["marimo", "run", "notebooks/", "--host", "0.0.0.0", "--port", "2718"]
+ENTRYPOINT ["uv", "run", "marimo", "run", "notebooks/", "--host", "0.0.0.0", "--port", "2718"]

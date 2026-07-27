@@ -1,4 +1,3 @@
-from .action import Selection
 from .candidate import Candidate
 from .exceptions import (
     BeliefInconsistentError,
@@ -21,6 +20,7 @@ from .interfaces import (
 )
 from .parsed_decision import ParsedDecision
 from .parser import DefaultParser
+from .selection import Selection
 from .selection_generator import DefaultSelectionGenerator
 from .state import GameState, PlayerState, PokemonState
 from .types import (

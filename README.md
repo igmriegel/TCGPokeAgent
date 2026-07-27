@@ -1,99 +1,99 @@
-# Pokémon TCG Engine para Kaggle
+# Pokémon TCG Engine for Kaggle
 
-Plano executável, em português, para construir, medir e submeter um agente ao **PTCG AI Battle Challenge**. Identificadores da API e do código permanecem em inglês.
+Executable plan, in English, to build, measure, and submit an agent to the **PTCG AI Battle Challenge**. API and code identifiers remain in English.
 
-## Objetivo
+## Objective
 
-O projeto evolui em três trilhas inseparáveis:
+The project evolves along three inseparable tracks:
 
-1. **MVP submetível:** deck fixo, integração real com `cabt`, heurísticas explícitas, busca curta e fallback determinístico.
-2. **Melhoria contínua:** promoção por métricas para rankers supervisionados, self-play, RL e busca sob informação imperfeita.
-3. **Strategy:** hipótese, ablação, resultado e evidência rastreável desde a primeira versão.
+1. **Submittable MVP:** fixed deck, real integration with `cabt`, explicit heuristics, short search and deterministic fallback.
+2. **Continuous improvement:** promotion by metrics to supervised rankers, self-play, RL and search under imperfect information.
+3. **Strategy:** hypothesis, ablation, result and traceable evidence from the first version.
 
-Esta revisão define a implementação; os módulos Python e os YAML existentes ainda não implementam esses contratos.
+This revision defines the implementation; the existing Python modules and YAML files do not yet implement these contracts.
 
-## Contrato externo
+## External contract
 
-- Compatibilidade inicial: `kaggle-environments==1.14.10`.
-- Entrada: `Observation(current, logs, select, search_begin_input)`.
-- Saída em jogo: `list[int]` com índices das opções legais.
-- Saída inicial: conteúdo do deck quando `select is None`.
-- Submissão: `.tar.gz` com `main.py` e `deck.csv` na raiz, imports válidos a partir de `/kaggle_simulations/agent/` e tamanho máximo de 197,7 MiB.
-- Orçamento publicado: `actTimeout=0` e `remainingOverageTime=600`.
+- Initial compatibility: `kaggle-environments==1.14.10`.
+- Input: `Observation(current, logs, select, search_begin_input)`.
+- In-game output: `list[int]` with indices of legal options.
+- Initial output: deck content when `select is None`.
+- Submission: `.tar.gz` with `main.py` and `deck.csv` at root, valid imports from `/kaggle_simulations/agent/` and maximum size of 197.7 MiB.
+- Published budget: `actTimeout=0` and `remainingOverageTime=600`.
 
-Fontes verificadas em **2026-07-27**: [competição Simulation](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle/overview/description), [API do `cabt`](https://matsuoinstitute.github.io/cabt/api.html) e [especificação do ambiente](https://raw.githubusercontent.com/Kaggle/kaggle-environments/master/kaggle_environments/envs/cabt/cabt.json).
+Sources verified on **2026-07-27**: [competition Simulation](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle/overview/description), [`cabt` API](https://matsuoinstitute.github.io/cabt/api.html) and [environment specification](https://raw.githubusercontent.com/Kaggle/kaggle-environments/master/kaggle_environments/envs/cabt/cabt.json).
 
-## Ordem de implementação
+## Implementation order
 
-1. Preparar SDK, deck oficial e wrapper mínimo.
-2. Preservar `Observation` bruta e normalizar estado/opções.
-3. Gerar toda `Selection` válida, inclusive vazia ou múltipla.
-4. Implementar fallback por `SelectContext`.
-5. Implementar `HeuristicScorer`.
-6. Construir runner, métricas e smoke test de 20 partidas.
-7. Adicionar `BeliefBuilder`, `StateEvaluator` e `ShortSearch`.
-8. Executar gate completo de pelo menos 200 partidas.
-9. Empacotar, extrair em diretório temporário e repetir a validação somente com o pacote.
+1. Prepare SDK, official deck and minimal wrapper.
+2. Preserve raw `Observation` and normalize state/options.
+3. Generate all valid `Selection`, including empty or multiple.
+4. Implement fallback by `SelectContext`.
+5. Implement `HeuristicScorer`.
+6. Build runner, metrics and smoke test of 20 matches.
+7. Add `BeliefBuilder`, `StateEvaluator` and `ShortSearch`.
+8. Run full gate of at least 200 matches.
+9. Package, extract into temporary directory and repeat validation using only the package.
 
-Comece pelo [índice canônico](docs/20_master_index.md) e siga a [ordem vertical do MVP](docs/11_implementation_order.md).
+Start at the [canonical index](docs/20_master_index.md) and follow the [MVP vertical order](docs/11_implementation_order.md).
 
-## Estrutura
+## Structure
 
-- `docs/`: contratos, gates, roadmap e registro Strategy.
-- `src/`: namespaces reservados para implementação.
-- `configs/`: perfis existentes; o contrato futuro está em `docs/22_config_spec.md`.
-- `scripts/`: comandos que serão implementados conforme `docs/23_scripts_spec.md`.
-- `data/raw/kaggle/`: destino autorizado para downloads oficiais, separado por competição.
-- `notebooks/`: exploração; nunca fonte única de uma decisão.
+- `docs/`: contracts, gates, roadmap and Strategy record.
+- `src/`: reserved namespaces for implementation.
+- `configs/`: existing profiles; the future contract is in `docs/22_config_spec.md`.
+- `scripts/`: commands to be implemented as per `docs/23_scripts_spec.md`.
+- `data/raw/kaggle/`: authorized destination for official downloads, separated by competition.
+- `notebooks/`: exploration; never the sole source of a decision.
 
 ## Docker
 
-O projeto é dockerizado para portabilidade e execução remota (cloud, servidores
-dedicados). Usa multi-stage build para manter a imagem enxuta.
+The project is dockerized for portability and remote execution (cloud, dedicated
+servers). Uses multi-stage build to keep the image lean.
 
-### Serviços
+### Services
 
-| Serviço | Comando | Porta | Uso |
-|---------|---------|-------|-----|
-| `agent` | `python main.py` | — | Agente stdin/stdout (submissão Kaggle) |
-| `marimo` | `marimo run notebooks/` | 2718 | Notebooks interativos para exploração |
-| `experiment` | `run_experiment()` | — | Avaliação completa (lote de partidas) |
-| `download` | `src.data.downloader` | — | Download lazy dos datasets |
-| `dev` | bash (stdin aberto) | — | Desenvolvimento com código montado ao vivo |
+| Service | Command | Port | Usage |
+|---------|---------|------|-------|
+| `agent` | `python main.py` | — | Agent stdin/stdout (Kaggle submission) |
+| `marimo` | `marimo run notebooks/` | 2718 | Interactive notebooks for exploration |
+| `experiment` | `run_experiment()` | — | Full evaluation (batch of matches) |
+| `download` | `src.data.downloader` | — | Lazy download of datasets |
+| `dev` | bash (open stdin) | — | Development with live-mounted code |
 
-### Comandos
+### Commands
 
 ```bash
-# Build todas as imagens
+# Build all images
 docker compose build
 
-# Download dos datasets (lazy)
+# Download datasets (lazy)
 docker compose run download
 
-# Abrir Marimo no navegador
+# Open Marimo in browser
 docker compose up marimo
 
-# Rodar experimento
+# Run experiment
 AGENT_MODE=heuristic docker compose run experiment
 
-# Rodar testes
+# Run tests
 docker compose run --rm dev pytest tests/ -v
 
-# Shell interativo para desenvolvimento
+# Interactive shell for development
 docker compose run --rm dev bash
 
-# Executar agente (stdin)
+# Run agent (stdin)
 echo '{"select": {"type": "MAIN", ...}}' | docker compose run --rm agent
 ```
 
-### Execução remota
+### Remote execution
 
 ```bash
-# Copiar projeto para máquina remota
-rsync -avz --exclude='.venv' --exclude='data/raw' ./ user@servidor:~/pokemon-engine/
+# Copy project to remote machine
+rsync -avz --exclude='.venv' --exclude='data/raw' ./ user@server:~/pokemon-engine/
 
-# Acessar e rodar
-ssh user@servidor
+# Access and run
+ssh user@server
 cd ~/pokemon-engine
 docker compose build
 docker compose run download
@@ -102,105 +102,102 @@ AGENT_MODE=heuristic docker compose run experiment
 
 ### Volumes
 
-- `kaggle_data` (nomeado) — persistência dos datasets entre execuções
-- `./kaggle.json:/root/.kaggle/kaggle.json:ro` — credenciais da API
-- `./notebooks:/app/notebooks` — notebooks editáveis ao vivo
-- `./reports:/app/reports` — relatórios de experimentos acessíveis do host
+- `kaggle_data` (named) — dataset persistence between executions
+- `./kaggle.json:/root/.kaggle/kaggle.json:ro` — API credentials
+- `./notebooks:/app/notebooks` — live-editable notebooks
+- `./reports:/app/reports` — experiment reports accessible from host
 
-## Ferramentas de qualidade
+## Quality tools
 
-O projeto usa `ruff` para formatação e lint, `mypy` para checagem de tipos e
-`pre-commit` para garantir que tudo seja executado antes de cada commit.
+The project uses `ruff` for formatting and lint, `mypy` for type checking and
+`pre-commit` to ensure everything runs before each commit.
 
-### Configuração inicial
+### Initial setup
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install pre-commit ruff mypy
+uv sync
 pre-commit install
 ```
 
-### Execução manual
+### Manual execution
 
 ```bash
-# Formatar todo o código
+# Format all code
 ruff format .
 
-# Lint (verificar e corrigir automaticamente)
+# Lint (check and auto-fix)
 ruff check --fix .
 
-# Checagem de tipos (apenas src/)
+# Type checking (src/ only)
 mypy --config-file=pyproject.toml src/
 
-# Rodar todos os hooks do pre-commit sem commit
+# Run all pre-commit hooks without committing
 pre-commit run --all-files
 
-# Rodar um hook específico
+# Run a specific hook
 pre-commit run ruff-format --all-files
 
-# Rodar testes
+# Run tests
 pytest tests/ -v
 ```
 
-### Pré-commit (automático)
+### Pre-commit (automatic)
 
-Com `pre-commit install` executado, a cada `git commit` os hooks rodam
-automaticamente:
+With `pre-commit install` executed, on each `git commit` the hooks run
+automatically:
 
-1. `ruff-format` — formata o código (equivalente ao Black).
-2. `ruff` — lint com auto-fix (regras E, F, I, N, W).
-3. `mypy` — checagem de tipos no diretório `src/`.
+1. `ruff-format` — formats code (equivalent to Black).
+2. `ruff` — lint with auto-fix (rules E, F, I, N, W).
+3. `mypy` — type checking in the `src/` directory.
 
-Se algum hook falhar, o commit é bloqueado. Corrija os apontamentos e tente
-novamente.
+If any hook fails, the commit is blocked. Fix the issues and try
+again.
 
-## Dados
+## Data
 
-Os datasets oficiais das competições Kaggle ficam em `data/raw/kaggle/`:
+The official Kaggle competition datasets are stored in `data/raw/kaggle/`:
 
 ```
 data/raw/kaggle/
-├── manifest.json            # Metadados, SHA-256 e proveniência
+├── manifest.json            # Metadata, SHA-256 and provenance
 ├── simulation/              # pokemon-tcg-ai-battle
 │   ├── Card_ID List_EN.pdf  (137 MB)
 │   ├── Card_ID List_JP.pdf  (182 MB)
-│   ├── EN_Card_Data.csv     (359 KB, 2022 registros)
-│   └── JP_Card_Data.csv     (442 KB, 2022 registros)
+│   ├── EN_Card_Data.csv     (359 KB, 2022 records)
+│   └── JP_Card_Data.csv     (442 KB, 2022 records)
 ├── strategy/                # pokemon-tcg-ai-battle-challenge-strategy
-│   └── (mesmos 4 arquivos, byte-idênticos)
-└── samples/                 # Amostras sanitizadas dos CSVs
+│   └── (same 4 files, byte-identical)
+└── samples/                 # Sanitized CSV samples
 ```
 
-O diretório `data/raw/` está no `.gitignore` — os dados não são versionados.
+The `data/raw/` directory is in `.gitignore` — data is not versioned.
 
-### Setup da API Kaggle
+### Kaggle API setup
 
 ```bash
 cp kaggle.json.example ~/.kaggle/kaggle.json
-# Editar ~/.kaggle/kaggle.json com username e key de
+# Edit ~/.kaggle/kaggle.json with username and key from
 # https://www.kaggle.com/settings -> API -> Create New Token
 chmod 600 ~/.kaggle/kaggle.json
 ```
 
-### Download dos dados
+### Data download
 
 ```bash
-# Verificar se os dados existem (exit 0 = OK)
+# Check if data exists (exit 0 = OK)
 python -m src.data.downloader --check
 
-# Baixar dados (lazy — só baixa o que estiver faltando)
+# Download data (lazy — only downloads what is missing)
 python -m src.data.downloader
 
-# Apenas uma competição
+# Only one competition
 python -m src.data.downloader --competition simulation
 
-# Usando o script wrapper
+# Using the wrapper script
 scripts/download_data.sh
 scripts/download_data.sh --check
 ```
 
-## Estado dos dados Kaggle
+## Kaggle data status
 
-Os quatro datasets oficiais de cada competição foram baixados em 2026-07-27 para `data/raw/kaggle/`. Tamanho, SHA-256, formato, esquema dos CSVs e amostras sanitizadas estão registrados no [`manifest.json`](data/raw/kaggle/manifest.json) e no [catálogo de dados](docs/21_persistence_contracts.md).
+The four official datasets for each competition were downloaded on 2026-07-27 to `data/raw/kaggle/`. Size, SHA-256, format, CSV schema and sanitized samples are recorded in the [`manifest.json`](data/raw/kaggle/manifest.json) and in the [data catalog](docs/21_persistence_contracts.md).
