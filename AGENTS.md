@@ -114,6 +114,17 @@ docs/                            # 26 markdown files: architecture, contracts, s
 - Private methods: `_leading_underscore`
 - Constants: UPPER_SNAKE_CASE
 
+### Commits
+- **Atomic commits:** each commit must represent a single logical change
+  (feature, fix, refactor, docs, chore). Never mix concerns in one commit.
+- **Message format:** `type: short description` — e.g. `feat: add ...`,
+  `fix: correct ...`, `docs: document ...`, `chore: ...`, `refactor: ...`.
+  The body explains what and why, not how.
+- **Pre-commit:** all hooks must pass before committing. Use
+  `pre-commit run --all-files` to verify.
+- **Granularity:** a feature may span multiple atomic commits, each
+  independently reviewable and revertable.
+
 ### Error handling
 - Custom exceptions inherit from `EngineError`
 - Every exception has a `category: ErrorCategory`
