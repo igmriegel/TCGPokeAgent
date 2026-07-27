@@ -3,11 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from src.core import ExecutionStatus
 
-
-class PreflightError(Exception):
-    ...
+class PreflightError(Exception): ...
 
 
 def check_sdk_version(expected: str = "1.14.10") -> None:

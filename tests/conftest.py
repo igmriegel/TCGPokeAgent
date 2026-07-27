@@ -137,8 +137,16 @@ def min_count_zero_observation() -> dict[str, Any]:
             "turnActionCount": 1,
             "yourIndex": 0,
             "firstPlayer": 0,
-            "you": {"active": {"cardId": "b1", "hp": 60, "maxHp": 60}, "bench": [], "deckCount": 55},
-            "opponent": {"active": {"cardId": "b2", "hp": 50, "maxHp": 50}, "bench": [], "deckCount": 56},
+            "you": {
+                "active": {"cardId": "b1", "hp": 60, "maxHp": 60},
+                "bench": [],
+                "deckCount": 55,
+            },
+            "opponent": {
+                "active": {"cardId": "b2", "hp": 50, "maxHp": 50},
+                "bench": [],
+                "deckCount": 56,
+            },
         },
         "select": {
             "type": "YES_NO",

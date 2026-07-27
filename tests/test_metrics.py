@@ -1,5 +1,5 @@
 from src.eval.metrics import _wilson, aggregate
-from src.eval.runner import MatchRecord, ExecutionStatus
+from src.eval.runner import ExecutionStatus, MatchRecord
 
 
 def test_wilson_extremes():

@@ -6,7 +6,7 @@ from typing import Any
 from .candidate import Candidate
 from .selection import Selection
 from .state import GameState
-from .types import SelectType, SelectContext
+from .types import SelectContext, SelectType
 
 
 @dataclass(slots=True)

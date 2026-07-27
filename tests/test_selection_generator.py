@@ -1,11 +1,13 @@
-from src.core import Candidate, DefaultSelectionGenerator, OptionType, Selection
+from src.core import Candidate, DefaultSelectionGenerator, OptionType
 
 
 def _make_candidate(index: int, opt_type: str, card_id: str = "") -> Candidate:
     return Candidate(
         option_index=index,
         option={"type": opt_type, "cardId": card_id or f"c{index}"},
-        option_type=OptionType(opt_type) if opt_type in OptionType._value2member_map_ else OptionType.CARD,
+        option_type=OptionType(opt_type)
+        if opt_type in OptionType._value2member_map_
+        else OptionType.CARD,
     )
 
 
@@ -29,7 +31,11 @@ def test_empty_selection_allowed():
 
 def test_multi_selection():
     gen = DefaultSelectionGenerator()
-    candidates = [_make_candidate(0, "ENERGY"), _make_candidate(1, "ENERGY"), _make_candidate(2, "ENERGY")]
+    candidates = [
+        _make_candidate(0, "ENERGY"),
+        _make_candidate(1, "ENERGY"),
+        _make_candidate(2, "ENERGY"),
+    ]
     selections = gen.generate(candidates, min_count=1, max_count=2)
 
     assert len(selections) == 6

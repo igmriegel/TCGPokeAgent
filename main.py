@@ -8,7 +8,7 @@ from typing import Any
 
 from src.agents.baseline import BaselineAgent
 from src.agents.heuristic import HeuristicAgent
-from src.core import AgentMode, AgentPolicy
+from src.core import AgentPolicy
 from src.logging_setup import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -70,6 +70,7 @@ def main() -> None:
 
 def _read_observation() -> dict[str, Any]:
     import json
+
     raw = sys.stdin.read()
     if raw:
         return dict(json.loads(raw))
@@ -78,6 +79,7 @@ def _read_observation() -> dict[str, Any]:
 
 def _write_result(result: list[int]) -> None:
     import json
+
     json.dump(result, sys.stdout, indent=None)
     sys.stdout.flush()
 

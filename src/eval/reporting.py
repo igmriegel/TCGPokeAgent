@@ -45,10 +45,12 @@ def write_markdown(report: dict[str, Any], path: str | Path) -> None:
         f"- Partidas: {report['total_matches']}",
         f"- W/D/L: {m.get('wins', 0)}/{m.get('draws', 0)}/{m.get('losses', 0)}",
         f"- Win rate: {m.get('win_rate', 0):.2%}",
-        f"- Wilson 95% CI: [{m.get('wilson_ci', [0, 0])[0]:.2%}, {m.get('wilson_ci', [0, 0])[1]:.2%}]",
+        f"- Wilson 95% CI: [{m.get('wilson_ci', [0, 0])[0]:.2%}, "
+        f"{m.get('wilson_ci', [0, 0])[1]:.2%}]",
         f"- Erros: {m.get('errors', 0)}",
         f"- Duração média: {m.get('avg_duration_ms', 0):.1f} ms",
-        f"- p50/p95/p99: {m.get('p50_duration_ms', 0):.1f} / {m.get('p95_duration_ms', 0):.1f} / {m.get('p99_duration_ms', 0):.1f} ms",
+        f"- p50/p95/p99: {m.get('p50_duration_ms', 0):.1f} / "
+        f"{m.get('p95_duration_ms', 0):.1f} / {m.get('p99_duration_ms', 0):.1f} ms",
         "",
     ]
     with open(path, "w") as f:

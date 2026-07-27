@@ -21,7 +21,7 @@ class SearchAPIError(EngineError):
     category = ErrorCategory.RUNTIME
 
 
-class SearchBudgetExceeded(EngineError):
+class SearchBudgetExceededError(EngineError):
     category = ErrorCategory.TIMEOUT
 
 
@@ -29,5 +29,5 @@ class InvalidOutputError(EngineError):
     category = ErrorCategory.POLICY
 
 
-class LegalityViolation(EngineError):
+class LegalityViolationError(EngineError):
     category = ErrorCategory.LEGALITY

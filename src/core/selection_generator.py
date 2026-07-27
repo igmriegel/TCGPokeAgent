@@ -5,7 +5,6 @@ from itertools import combinations
 from .candidate import Candidate
 from .interfaces import SelectionGenerator as SelectionGeneratorInterface
 from .selection import Selection
-from .types import OptionType
 
 
 class DefaultSelectionGenerator(SelectionGeneratorInterface):
@@ -56,9 +55,7 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
         results.sort(key=lambda s: s.indices)
         return results
 
-    def _meets_energy_constraint(
-        self, combo: tuple[Candidate, ...], required: int
-    ) -> bool:
+    def _meets_energy_constraint(self, combo: tuple[Candidate, ...], required: int) -> bool:
         if required <= 0:
             return True
         total = 0
@@ -67,9 +64,7 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
             total += count
         return total >= required
 
-    def _meets_damage_constraint(
-        self, combo: tuple[Candidate, ...], required: int
-    ) -> bool:
+    def _meets_damage_constraint(self, combo: tuple[Candidate, ...], required: int) -> bool:
         if required <= 0:
             return True
         total = 0

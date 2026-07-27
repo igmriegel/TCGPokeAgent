@@ -6,7 +6,7 @@ from .candidate import Candidate
 from .interfaces import ObservationParser as ObservationParserInterface
 from .parsed_decision import ParsedDecision
 from .state import GameState, PlayerState, PokemonState
-from .types import OptionType, SelectContext, SelectType, TurnPhase
+from .types import OptionType, SelectContext, SelectType
 
 
 class DefaultParser(ObservationParserInterface):
@@ -52,7 +52,7 @@ class DefaultParser(ObservationParserInterface):
         return {}
 
     def _dataclass_to_dict(self, obj: Any) -> dict[str, Any]:
-        result = {}
+        result: dict[str, Any] = {}
         for field_name in obj.__dataclass_fields__:
             val = getattr(obj, field_name)
             if hasattr(val, "__dataclass_fields__"):
@@ -75,7 +75,11 @@ class DefaultParser(ObservationParserInterface):
             if not pdata and player_key == "you":
                 pdata = current.get("players", [{}])[0] if current.get("players") else {}
             elif not pdata and player_key == "opponent":
-                pdata = current.get("players", [{}, {}])[1] if len(current.get("players", [])) > 1 else {}
+                pdata = (
+                    current.get("players", [{}, {}])[1]
+                    if len(current.get("players", [])) > 1
+                    else {}
+                )
 
             active_data = pdata.get("active") or {}
             active = PokemonState(
@@ -95,38 +99,42 @@ class DefaultParser(ObservationParserInterface):
             )
 
             bench_data = pdata.get("bench") or []
-            bench = []
+            bench: list[PokemonState | None] = []
             for b in bench_data:
                 if b is None:
                     bench.append(None)
                 else:
-                    bench.append(PokemonState(
-                        card_id=b.get("cardId") or "",
-                        hp=int(b.get("hp", 0) or 0),
-                        max_hp=int(b.get("maxHp", 0) or 0),
-                        energies=b.get("energies") or [],
-                        energy_card_ids=b.get("energyCards") or [],
-                        tool_ids=b.get("tools") or [],
-                        pre_evolutions=b.get("preEvolutions") or [],
-                        appear_this_turn=bool(b.get("appearThisTurn", False)),
-                        poisoned=bool(b.get("poisoned", False)),
-                        burned=bool(b.get("burned", False)),
-                        asleep=bool(b.get("asleep", False)),
-                        paralyzed=bool(b.get("paralyzed", False)),
-                        confused=bool(b.get("confused", False)),
-                    ))
+                    bench.append(
+                        PokemonState(
+                            card_id=b.get("cardId") or "",
+                            hp=int(b.get("hp", 0) or 0),
+                            max_hp=int(b.get("maxHp", 0) or 0),
+                            energies=b.get("energies") or [],
+                            energy_card_ids=b.get("energyCards") or [],
+                            tool_ids=b.get("tools") or [],
+                            pre_evolutions=b.get("preEvolutions") or [],
+                            appear_this_turn=bool(b.get("appearThisTurn", False)),
+                            poisoned=bool(b.get("poisoned", False)),
+                            burned=bool(b.get("burned", False)),
+                            asleep=bool(b.get("asleep", False)),
+                            paralyzed=bool(b.get("paralyzed", False)),
+                            confused=bool(b.get("confused", False)),
+                        )
+                    )
 
             hand = pdata.get("hand")
-            players.append(PlayerState(
-                active=active,
-                bench=bench,
-                bench_max=int(pdata.get("benchMax", 8) or 8),
-                deck_count=int(pdata.get("deckCount", 0) or 0),
-                discard=pdata.get("discard") or [],
-                prize=pdata.get("prize") or [],
-                hand_count=int(pdata.get("handCount", 0) or 0),
-                hand=hand if hand is not None else None,
-            ))
+            players.append(
+                PlayerState(
+                    active=active,
+                    bench=bench,
+                    bench_max=int(pdata.get("benchMax", 8) or 8),
+                    deck_count=int(pdata.get("deckCount", 0) or 0),
+                    discard=pdata.get("discard") or [],
+                    prize=pdata.get("prize") or [],
+                    hand_count=int(pdata.get("handCount", 0) or 0),
+                    hand=hand if hand is not None else None,
+                )
+            )
 
         return GameState(
             turn=int(current.get("turn", 0) or 0),
@@ -155,16 +163,20 @@ class DefaultParser(ObservationParserInterface):
             opt_type = self._parse_option_type(opt.get("type"))
             card_id = opt.get("cardId") or opt.get("serial")
             card = {"id": card_id} if card_id else None
-            candidates.append(Candidate(
-                option_index=i,
-                option=opt,
-                option_type=opt_type,
-                card=card,
-            ))
+            candidates.append(
+                Candidate(
+                    option_index=i,
+                    option=opt,
+                    option_type=opt_type,
+                    card=card,
+                )
+            )
 
         return candidates
 
-    def _parse_select_info(self, raw: dict[str, Any]) -> tuple[SelectType | None, SelectContext | None]:
+    def _parse_select_info(
+        self, raw: dict[str, Any]
+    ) -> tuple[SelectType | None, SelectContext | None]:
         select = raw.get("select")
         if not isinstance(select, dict):
             return None, None

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any
 
 from src.core import ExecutionStatus
 
@@ -45,7 +44,7 @@ class MatchRunner:
             env.run([self._agent_for_mode(agent_mode), "random"])
             result = env.state[0].get("result") if env.state else None
             status = ExecutionStatus.OK
-        except Exception as e:
+        except Exception:
             result = None
             status = ExecutionStatus.ERROR
 

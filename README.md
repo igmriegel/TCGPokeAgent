@@ -46,6 +46,55 @@ Comece pelo [índice canônico](docs/20_master_index.md) e siga a [ordem vertica
 - `data/raw/kaggle/`: destino autorizado para downloads oficiais, separado por competição.
 - `notebooks/`: exploração; nunca fonte única de uma decisão.
 
+## Ferramentas de qualidade
+
+O projeto usa `ruff` para formatação e lint, `mypy` para checagem de tipos e
+`pre-commit` para garantir que tudo seja executado antes de cada commit.
+
+### Configuração inicial
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install pre-commit ruff mypy
+pre-commit install
+```
+
+### Execução manual
+
+```bash
+# Formatar todo o código
+ruff format .
+
+# Lint (verificar e corrigir automaticamente)
+ruff check --fix .
+
+# Checagem de tipos (apenas src/)
+mypy --config-file=pyproject.toml src/
+
+# Rodar todos os hooks do pre-commit sem commit
+pre-commit run --all-files
+
+# Rodar um hook específico
+pre-commit run ruff-format --all-files
+
+# Rodar testes
+pytest tests/ -v
+```
+
+### Pré-commit (automático)
+
+Com `pre-commit install` executado, a cada `git commit` os hooks rodam
+automaticamente:
+
+1. `ruff-format` — formata o código (equivalente ao Black).
+2. `ruff` — lint com auto-fix (regras E, F, I, N, W).
+3. `mypy` — checagem de tipos no diretório `src/`.
+
+Se algum hook falhar, o commit é bloqueado. Corrija os apontamentos e tente
+novamente.
+
 ## Estado dos dados Kaggle
 
 Os quatro datasets oficiais de cada competição foram baixados em 2026-07-27 para `data/raw/kaggle/`. Tamanho, SHA-256, formato, esquema dos CSVs e amostras sanitizadas estão registrados no [`manifest.json`](data/raw/kaggle/manifest.json) e no [catálogo de dados](docs/21_persistence_contracts.md).

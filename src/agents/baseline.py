@@ -6,7 +6,6 @@ from src.core import (
     AgentPolicy,
     DefaultParser,
     DefaultSelectionGenerator,
-    OptionType,
     ParsedDecision,
     SelectContext,
     Selection,
