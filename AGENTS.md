@@ -44,6 +44,7 @@ renumber.
 ## File Map
 
 ```
+kaggle.json.example              # Template for Kaggle API credentials
 main.py                          # Entry point: stdin → stdout JSON agent
 src/
 ├── core/                        # Domain layer
@@ -69,6 +70,8 @@ src/
 │   ├── comparison.py            # PairedComparison
 │   ├── reporting.py             # JSON + Markdown serialization
 │   └── validation.py            # Preflight: SDK, deck, agent output
+├── data/                        # Data download
+│   └── downloader.py            # Lazy download + SHA-256 verification vs manifest
 ├── config/                      # Config loader
 │   └── loader.py                # ConfigLoader (include resolution, Config dataclass)
 ├── experiments/                 # Experiment orchestration
@@ -180,6 +183,15 @@ Current status: F0-F1 core implemented, F2-F4 stubs ready.
 2. Add weight constant to `WEIGHTS` dict
 3. Update `reasons` list for traceability
 4. Test with specific board states
+
+### Download data
+```bash
+# Check integrity
+python -m src.data.downloader --check
+
+# Download missing datasets
+python -m src.data.downloader
+```
 
 ### Run evaluation
 ```bash

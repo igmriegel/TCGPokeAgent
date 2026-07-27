@@ -95,6 +95,51 @@ automaticamente:
 Se algum hook falhar, o commit é bloqueado. Corrija os apontamentos e tente
 novamente.
 
+## Dados
+
+Os datasets oficiais das competições Kaggle ficam em `data/raw/kaggle/`:
+
+```
+data/raw/kaggle/
+├── manifest.json            # Metadados, SHA-256 e proveniência
+├── simulation/              # pokemon-tcg-ai-battle
+│   ├── Card_ID List_EN.pdf  (137 MB)
+│   ├── Card_ID List_JP.pdf  (182 MB)
+│   ├── EN_Card_Data.csv     (359 KB, 2022 registros)
+│   └── JP_Card_Data.csv     (442 KB, 2022 registros)
+├── strategy/                # pokemon-tcg-ai-battle-challenge-strategy
+│   └── (mesmos 4 arquivos, byte-idênticos)
+└── samples/                 # Amostras sanitizadas dos CSVs
+```
+
+O diretório `data/raw/` está no `.gitignore` — os dados não são versionados.
+
+### Setup da API Kaggle
+
+```bash
+cp kaggle.json.example ~/.kaggle/kaggle.json
+# Editar ~/.kaggle/kaggle.json com username e key de
+# https://www.kaggle.com/settings -> API -> Create New Token
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+### Download dos dados
+
+```bash
+# Verificar se os dados existem (exit 0 = OK)
+python -m src.data.downloader --check
+
+# Baixar dados (lazy — só baixa o que estiver faltando)
+python -m src.data.downloader
+
+# Apenas uma competição
+python -m src.data.downloader --competition simulation
+
+# Usando o script wrapper
+scripts/download_data.sh
+scripts/download_data.sh --check
+```
+
 ## Estado dos dados Kaggle
 
 Os quatro datasets oficiais de cada competição foram baixados em 2026-07-27 para `data/raw/kaggle/`. Tamanho, SHA-256, formato, esquema dos CSVs e amostras sanitizadas estão registrados no [`manifest.json`](data/raw/kaggle/manifest.json) e no [catálogo de dados](docs/21_persistence_contracts.md).
