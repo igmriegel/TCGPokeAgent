@@ -46,6 +46,67 @@ Comece pelo [índice canônico](docs/20_master_index.md) e siga a [ordem vertica
 - `data/raw/kaggle/`: destino autorizado para downloads oficiais, separado por competição.
 - `notebooks/`: exploração; nunca fonte única de uma decisão.
 
+## Docker
+
+O projeto é dockerizado para portabilidade e execução remota (cloud, servidores
+dedicados). Usa multi-stage build para manter a imagem enxuta.
+
+### Serviços
+
+| Serviço | Comando | Porta | Uso |
+|---------|---------|-------|-----|
+| `agent` | `python main.py` | — | Agente stdin/stdout (submissão Kaggle) |
+| `marimo` | `marimo run notebooks/` | 2718 | Notebooks interativos para exploração |
+| `experiment` | `run_experiment()` | — | Avaliação completa (lote de partidas) |
+| `download` | `src.data.downloader` | — | Download lazy dos datasets |
+| `dev` | bash (stdin aberto) | — | Desenvolvimento com código montado ao vivo |
+
+### Comandos
+
+```bash
+# Build todas as imagens
+docker compose build
+
+# Download dos datasets (lazy)
+docker compose run download
+
+# Abrir Marimo no navegador
+docker compose up marimo
+
+# Rodar experimento
+AGENT_MODE=heuristic docker compose run experiment
+
+# Rodar testes
+docker compose run --rm dev pytest tests/ -v
+
+# Shell interativo para desenvolvimento
+docker compose run --rm dev bash
+
+# Executar agente (stdin)
+echo '{"select": {"type": "MAIN", ...}}' | docker compose run --rm agent
+```
+
+### Execução remota
+
+```bash
+# Copiar projeto para máquina remota
+rsync -avz --exclude='.venv' --exclude='data/raw' ./ user@servidor:~/pokemon-engine/
+
+# Acessar e rodar
+ssh user@servidor
+cd ~/pokemon-engine
+docker compose build
+docker compose run download
+AGENT_MODE=heuristic docker compose run experiment
+```
+
+### Volumes
+
+- `kaggle_data` (nomeado) — persistência dos datasets entre execuções
+- `./kaggle.json:/root/.kaggle/kaggle.json:ro` — credenciais da API
+- `./notebooks:/app/notebooks` — notebooks editáveis ao vivo
+- `./reports:/app/reports` — relatórios de experimentos acessíveis do host
+
 ## Ferramentas de qualidade
 
 O projeto usa `ruff` para formatação e lint, `mypy` para checagem de tipos e

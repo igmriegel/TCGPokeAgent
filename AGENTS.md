@@ -44,6 +44,9 @@ renumber.
 ## File Map
 
 ```
+Dockerfile                       # Multi-stage build (agent / dev / marimo)
+docker-compose.yml               # Services: agent, marimo, experiment, download, dev
+.dockerignore
 kaggle.json.example              # Template for Kaggle API credentials
 main.py                          # Entry point: stdin → stdout JSON agent
 src/
@@ -183,6 +186,31 @@ Current status: F0-F1 core implemented, F2-F4 stubs ready.
 2. Add weight constant to `WEIGHTS` dict
 3. Update `reasons` list for traceability
 4. Test with specific board states
+
+### Docker
+
+```bash
+# Build
+docker compose build
+
+# Download datasets
+docker compose run download
+
+# Run agent (stdin)
+echo '{"select":...}' | docker compose run --rm agent
+
+# Marimo notebooks
+docker compose up marimo
+
+# Full experiment
+AGENT_MODE=heuristic docker compose run experiment
+
+# Shell dev
+docker compose run --rm dev bash
+
+# Tests
+docker compose run --rm dev pytest tests/ -v
+```
 
 ### Download data
 ```bash
