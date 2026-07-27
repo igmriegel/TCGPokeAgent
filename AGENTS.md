@@ -212,7 +212,10 @@ Environment variable `AGENT_MODE`:
 | F4 | Belief + ShortSearch | Search doesn't reduce wins, ≤100ms |
 | F5 | Frozen package, final matrix | All handoff spec items |
 
-Current status: F0-F1 core implemented, F2-F4 stubs ready.
+Current status: contract scaffolding and basic unit tests exist; executable
+completion is tracked by the detailed MVP sprints in
+`docs/25_implementation_sprints.md`. Do not mark F0-F5 complete without their
+documented gates and evidence.
 
 ---
 

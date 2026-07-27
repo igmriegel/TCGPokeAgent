@@ -35,7 +35,9 @@ Sources verified on **2026-07-27**: [competition Simulation](https://www.kaggle.
 8. Run full gate of at least 200 matches.
 9. Package, extract into temporary directory and repeat validation using only the package.
 
-Start at the [canonical index](docs/20_master_index.md) and follow the [MVP vertical order](docs/11_implementation_order.md).
+Start at the [canonical index](docs/20_master_index.md), follow the [detailed
+MVP sprint backlog](docs/25_implementation_sprints.md), and use the [MVP
+vertical order](docs/11_implementation_order.md) as the dependency gate.
 
 ## Structure
 

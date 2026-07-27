@@ -1,5 +1,8 @@
 # MVP vertical implementation order
 
+For task-level execution, use [`25_implementation_sprints.md`](25_implementation_sprints.md).
+This document remains the authoritative dependency and gate order.
+
 Each slice ends in an executable test; not all abstractions are built before the first match.
 
 ## F0 — environment and minimal package
