@@ -214,7 +214,7 @@ Environment variable `AGENT_MODE`:
 
 Current status: contract scaffolding and basic unit tests exist; executable
 completion is tracked by the detailed MVP sprints in
-`docs/25_implementation_sprints.md`. Do not mark F0-F5 complete without their
+`docs/02_sprints/mvp_implementation_sprints.md`. Do not mark F0-F5 complete without their
 documented gates and evidence.
 
 ---

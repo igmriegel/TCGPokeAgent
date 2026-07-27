@@ -1,6 +1,6 @@
 # MVP implementation sprints
 
-This document turns the vertical slices in [`11_implementation_order.md`](11_implementation_order.md)
+This document turns the vertical slices in [`11_implementation_order.md`](../11_implementation_order.md)
 into an executable backlog. It is the operational plan for completing the
 submittable MVP. Every sprint has one owner-level outcome, explicit target
 files, tests, commands, and a gate. A sprint is complete only when its gate is
@@ -462,7 +462,7 @@ seeds with search off and on.
 - Run final matrix on both sides against all required opponents.
 - Compute package and artifact hashes and link the final report from
   `strategy_notes.md`.
-- Update [`19_final_harness_checklist.md`](19_final_harness_checklist.md) only
+- Update [`19_final_harness_checklist.md`](../19_final_harness_checklist.md) only
   from evidence, never by assumption.
 
 ### Target files
@@ -495,4 +495,3 @@ imports unavailable.
 The MVP is complete only when S0–S9 are `DONE`. A passing unit test suite alone
 does not satisfy the project: the SDK, both sides, operational failure gate,
 full report, and extracted package are mandatory evidence.
-

@@ -37,8 +37,8 @@ agent starting work in a fresh checkout.
 
 Before editing:
 
-- [ ] Read [`AGENTS.md`](../AGENTS.md).
-- [ ] Read the relevant contract in [`20_master_index.md`](20_master_index.md).
+- [ ] Read [`AGENTS.md`](../../AGENTS.md).
+- [ ] Read the relevant contract in [`20_master_index.md`](../20_master_index.md).
 - [ ] Check `git status --short` and preserve unrelated user changes.
 - [ ] Identify the current sprint and its dependency gate.
 
@@ -55,7 +55,7 @@ Before closing:
 - [ ] Run the sprint's exact verification commands.
 - [ ] Run `uv run --frozen pre-commit run --all-files` when source changes.
 - [ ] Record evidence and update the sprint status.
-- [ ] Update [`19_final_harness_checklist.md`](19_final_harness_checklist.md)
+- [ ] Update [`19_final_harness_checklist.md`](../19_final_harness_checklist.md)
   only when the corresponding evidence exists.
 - [ ] Use an atomic commit with the required `type: description` format.
 
@@ -66,4 +66,3 @@ unit tests, and data integrity checks. The operational sprint statuses remain
 `PLANNED` until their implementation gates are executed. In particular, a
 passing scaffold test suite is not evidence for real `cabt` match execution,
 heuristic quality, search correctness, or submission readiness.
-

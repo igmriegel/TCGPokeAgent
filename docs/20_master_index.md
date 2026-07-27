@@ -6,8 +6,8 @@
 2. [`06_harness_spec.md`](06_harness_spec.md) — actual environment contract.
 3. [`07_core_contracts.md`](07_core_contracts.md) — single vocabulary.
 4. [`11_implementation_order.md`](11_implementation_order.md) — vertical slices.
-5. [`25_implementation_sprints.md`](25_implementation_sprints.md) — detailed MVP sprints S0–S9.
-6. [`27_sprint_traceability.md`](27_sprint_traceability.md) — objective-to-code checklist.
+5. [`02_sprints/mvp_implementation_sprints.md`](02_sprints/mvp_implementation_sprints.md) — detailed MVP sprints S0–S9.
+6. [`03_tasks/sprint_traceability.md`](03_tasks/sprint_traceability.md) — objective-to-code checklist.
 7. [`12_core_implementation.md`](12_core_implementation.md) — parser, selection and belief.
 8. [`15_agent_implementation.md`](15_agent_implementation.md) — heuristic and search.
 9. [`13_eval_implementation.md`](13_eval_implementation.md) — runner and metrics.
@@ -20,7 +20,7 @@
 - [`02_experiment_protocol.md`](02_experiment_protocol.md) — comparison and promotion.
 - [`03_metrics.md`](03_metrics.md) — metric definitions.
 - [`04_sprint_plan.md`](04_sprint_plan.md) — M0 to M8.
-- [`26_research_sprints.md`](26_research_sprints.md) — detailed post-MVP research sprints R1–R8.
+- [`02_sprints/post_mvp_research_sprints.md`](02_sprints/post_mvp_research_sprints.md) — detailed post-MVP research sprints R1–R8.
 - [`05_writeup_outline.md`](05_writeup_outline.md) — Strategy structure.
 - [`strategy_notes.md`](strategy_notes.md) — evidence log.
 
@@ -39,6 +39,7 @@
 - [`21_persistence_contracts.md`](21_persistence_contracts.md) — data and provenance.
 - [`22_config_spec.md`](22_config_spec.md) — configuration.
 - [`23_scripts_spec.md`](23_scripts_spec.md) — commands.
+- [`../notebooks/README.md`](../notebooks/README.md) — lightweight Marimo EDA notebooks.
 
 ## Authority
 

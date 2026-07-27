@@ -1,10 +1,11 @@
 # Roadmap from MVP to research
 
 This is the strategic roadmap. The executable MVP backlog is in
-[`25_implementation_sprints.md`](25_implementation_sprints.md), the post-MVP
-research backlog is in [`26_research_sprints.md`](26_research_sprints.md), and
-the cross-reference from objectives to code/tests is in
-[`27_sprint_traceability.md`](27_sprint_traceability.md).
+[`02_sprints/mvp_implementation_sprints.md`](02_sprints/mvp_implementation_sprints.md),
+the post-MVP research backlog is in
+[`02_sprints/post_mvp_research_sprints.md`](02_sprints/post_mvp_research_sprints.md),
+and the cross-reference from objectives to code/tests is in
+[`03_tasks/sprint_traceability.md`](03_tasks/sprint_traceability.md).
 
 | Milestone | Delivery | Gate |
 |---|---|---|

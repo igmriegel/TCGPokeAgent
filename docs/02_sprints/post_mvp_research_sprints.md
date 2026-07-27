@@ -1,8 +1,8 @@
 # Post-MVP research sprints
 
 These sprints implement the M1–M8 roadmap in
-[`04_sprint_plan.md`](04_sprint_plan.md). They start only after the MVP gate in
-[`25_implementation_sprints.md`](25_implementation_sprints.md) is complete.
+[`04_sprint_plan.md`](../04_sprint_plan.md). They start only after the MVP gate in
+[`mvp_implementation_sprints.md`](mvp_implementation_sprints.md) is complete.
 Each sprint preserves the stable candidate, uses the same versioned evaluation
 protocol, and can be rolled back independently. No research sprint may change
 the submission policy without a paired comparison and a new release manifest.
@@ -192,4 +192,3 @@ The research roadmap is complete only when every promoted milestone has a
 manifest, data/model hashes, paired comparison, holdout result, Strategy entry,
 and reproducible rollback artifact. Rejected milestones remain documented and
 must not be presented as implemented.
-
