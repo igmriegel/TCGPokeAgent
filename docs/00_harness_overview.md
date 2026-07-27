@@ -1,38 +1,38 @@
-# Visão do produto
+# Product overview
 
-## Resultado esperado
+## Expected result
 
-Entregar um agente reproduzível que:
+Deliver a reproducible agent that:
 
-- sempre devolva uma `Selection` legal no formato `list[int]`;
-- jogue com um deck fixo de 60 cartas validado pelo SDK;
-- use heurística explícita como caminho seguro;
-- aplique busca curta apenas quando houver benefício e orçamento;
-- produza evidência suficiente para promoção técnica e para o writeup Strategy.
+- always returns a legal `Selection` in `list[int]` format;
+- plays with a fixed 60-card deck validated by the SDK;
+- uses explicit heuristics as a safe path;
+- applies short search only when beneficial and within budget;
+- produces sufficient evidence for technical promotion and for the Strategy writeup.
 
-## Escopo do MVP
+## MVP scope
 
-O MVP usa `kaggle-environments==1.14.10`, o deck do agente oficial `cabt.first_agent`, uma política heurística e busca de até 100 ms em decisões `MAIN`. Suporte multi-deck, otimização do deck, treinamento e modelos aprendidos ficam depois do primeiro pacote válido.
+The MVP uses `kaggle-environments==1.14.10`, the official agent deck `cabt.first_agent`, a heuristic policy and search up to 100 ms on `MAIN` decisions. Multi-deck support, deck optimization, training and learned models are left for after the first valid package.
 
-## Definição de submetível
+## Definition of submittable
 
-Um candidato é submetível quando:
+A candidate is submittable when:
 
-- passa 20 partidas de smoke e pelo menos 200 do gate completo;
-- joga nos dois lados contra `random`, `first`, heurística sem busca e self-play;
-- registra zero `INVALID`, `ERROR` e `TIMEOUT`;
-- cumpre formato, tamanho e imports do pacote;
-- mantém fallback determinístico para cada `SelectContext`;
-- é revalidado após extração do `.tar.gz`.
+- it passes 20 smoke matches and at least 200 of the full gate;
+- it plays on both sides against `random`, `first`, heuristics without search and self-play;
+- it registers zero `INVALID`, `ERROR` and `TIMEOUT`;
+- it meets package format, size and imports;
+- it maintains deterministic fallback for each `SelectContext`;
+- it is re-validated after extracting the `.tar.gz`.
 
-## Não objetivos desta revisão
+## Non-objectives of this revision
 
-Esta etapa não implementa módulos Python, não altera YAML executável e não treina modelos. A única exceção posterior autorizada pelo usuário é o armazenamento dos datasets oficiais em `data/raw/kaggle/`, atualmente bloqueado até o aceite das regras das competições.
+This phase does not implement Python modules, does not alter executable YAML and does not train models. The only later exception authorized by the user is the storage of official datasets in `data/raw/kaggle/`, currently blocked until acceptance of the competition rules.
 
-## Fontes de verdade
+## Sources of truth
 
-1. API oficial do `cabt` para tipos e Search API.
-2. `cabt.json` para orçamento e forma da ação.
-3. página da competição para SDK e pacote.
-4. estes documentos para arquitetura, gates e operação.
-5. código implementado, quando existir, acompanhado de teste que demonstre conformidade.
+1. Official `cabt` API for types and Search API.
+2. `cabt.json` for budget and action shape.
+3. Competition page for SDK and package.
+4. These documents for architecture, gates and operation.
+5. Implemented code, when it exists, accompanied by a test demonstrating compliance.

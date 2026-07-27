@@ -1,64 +1,64 @@
-# Ordem vertical de implementação do MVP
+# MVP vertical implementation order
 
-Cada fatia termina em teste executável; não se constroem todas as abstrações antes da primeira partida.
+Each slice ends in an executable test; not all abstractions are built before the first match.
 
-## F0 — ambiente e pacote mínimo
+## F0 — environment and minimal package
 
-1. Criar ambiente isolado e instalar `kaggle-environments==1.14.10`.
-2. Localizar `cabt.first_agent`, copiar seu deck de 60 cartas e validá-lo pelo SDK.
-3. Criar `main.py` fino e `deck.csv`.
-4. Rodar `first` versus `random` nos dois lados.
-5. Empacotar, extrair e repetir o teste a partir do conteúdo extraído.
+1. Create isolated environment and install `kaggle-environments==1.14.10`.
+2. Locate `cabt.first_agent`, copy its 60-card deck, and validate it with the SDK.
+3. Create thin `main.py` and `deck.csv`.
+4. Run `first` versus `random` on both sides.
+5. Package, extract, and repeat the test from the extracted content.
 
-Gate: pacote estruturalmente válido, imports portáveis e zero falhas.
+Gate: structurally valid package, portable imports, and zero failures.
 
-## F1 — parser, candidatos e fallback
+## F1 — parser, candidates, and fallback
 
-1. Modelar enums oficiais e `Selection`.
-2. Preservar `Observation` bruta.
-3. Mapear `State` para `GameState` factual.
-4. Converter `Option` em `Candidate` sem renumerar.
-5. Gerar seleções de cardinalidade zero, simples e múltipla.
-6. Implementar fallback total por contexto.
-7. Executar smoke de 20 partidas.
+1. Model official enums and `Selection`.
+2. Preserve raw `Observation`.
+3. Map `State` to factual `GameState`.
+4. Convert `Option` to `Candidate` without renumbering.
+5. Generate selections of zero, simple, and multiple cardinality.
+6. Implement total fallback by context.
+7. Run smoke of 20 matches.
 
-Gate: todas as decisões legais; zero `INVALID`, `ERROR` e `TIMEOUT`.
+Gate: all legal decisions; zero `INVALID`, `ERROR`, and `TIMEOUT`.
 
-## F2 — heurística mensurável
+## F2 — measurable heuristic
 
-1. Implementar catálogo de cartas/ataques do SDK.
-2. Criar features de estado e seleção.
-3. Implementar regras positivas, penalidades e razões.
-4. Instrumentar duração e decisão.
-5. Comparar contra `random`, `first` e ablações.
+1. Implement card/attack catalog from SDK.
+2. Create state and selection features.
+3. Implement positive rules, penalties, and reasons.
+4. Instrument duration and decision.
+5. Compare against `random`, `first`, and ablations.
 
-Gate: melhora reproduzível, sem regressão operacional.
+Gate: reproducible improvement, no operational regression.
 
-## F3 — harness experimental
+## F3 — experimental harness
 
-1. Persistir manifesto, partidas e decisões.
-2. Agregar W/D/L, Wilson, lados e duração.
-3. Produzir comparação pareada.
-4. Executar full de pelo menos 200 partidas.
+1. Persist manifest, matches, and decisions.
+2. Aggregate W/D/L, Wilson, sides, and duration.
+3. Produce paired comparison.
+4. Run full of at least 200 matches.
 
-Gate: relatório completo reproduzível pela configuração e seeds.
+Gate: complete report reproducible by configuration and seeds.
 
-## F4 — crença e busca curta
+## F4 — belief and short search
 
-1. Construir `BeliefBuilder` determinístico.
-2. Validar cardinalidade das zonas ocultas.
-3. Implementar `StateEvaluator`.
-4. Integrar Search API com liberação de estados e `search_end` em `finally`.
-5. Medir cobertura, falhas e ganho sobre heurística pura.
+1. Build deterministic `BeliefBuilder`.
+2. Validate hidden zone cardinality.
+3. Implement `StateEvaluator`.
+4. Integrate Search API with state release and `search_end` in `finally`.
+5. Measure coverage, failures, and gain over pure heuristic.
 
-Gate: busca não reduz vitória, não viola 100 ms e não produz falha operacional.
+Gate: search does not reduce wins, does not violate 100 ms, and produces no operational failure.
 
-## F5 — candidato submetível
+## F5 — submittable candidate
 
-1. Congelar deck, código, configuração e versões.
-2. Rodar matriz final nos dois lados.
-3. Gerar `.tar.gz` abaixo de 197,7 MiB.
-4. Extrair em diretório limpo e executar somente o conteúdo do pacote.
-5. Registrar hashes e evidências Strategy.
+1. Freeze deck, code, configuration, and versions.
+2. Run final matrix on both sides.
+3. Generate `.tar.gz` below 197.7 MiB.
+4. Extract in clean directory and run only the package content.
+5. Record hashes and Strategy evidence.
 
-Gate: todos os itens de [`24_handoff_spec.md`](24_handoff_spec.md).
+Gate: all items in [`24_handoff_spec.md`](24_handoff_spec.md).

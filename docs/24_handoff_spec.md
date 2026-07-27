@@ -1,52 +1,52 @@
-# Handoff de implementação
+# Implementation handoff
 
-## Decisões fechadas
+## Closed decisions
 
-- SDK inicial `kaggle-environments==1.14.10`;
-- deck único do `cabt.first_agent`;
-- entrada `Observation`, saída `list[int]`;
-- unidade de decisão `Selection`;
-- `GameState` factual separado de `BeliefState`;
-- fallback determinístico total;
-- heurística antes de busca/modelos;
-- busca top 3, profundidade 4, 100 ms, corte em 30 s;
-- smoke 20 e full >= 200, ambos os lados;
+- SDK initial `kaggle-environments==1.14.10`;
+- single deck from `cabt.first_agent`;
+- input `Observation`, output `list[int]`;
+- decision unit `Selection`;
+- `GameState` factual separated from `BeliefState`;
+- total deterministic fallback;
+- heuristic before search/models;
+- search top 3, depth 4, 100 ms, cutoff at 30 s;
+- smoke 20 and full >= 200, both sides;
 - zero `INVALID`, `ERROR`, `TIMEOUT`;
-- pacote revalidado após extração.
+- package revalidated after extraction.
 
-Nenhum desses pontos requer nova decisão arquitetural para iniciar o MVP.
+None of these points require a new architectural decision to start the MVP.
 
-## Primeira entrega do engenheiro
+## First engineer delivery
 
-Entregar F0 e F1 de [`11_implementation_order.md`](11_implementation_order.md), incluindo:
+Deliver F0 and F1 from [`11_implementation_order.md`](11_implementation_order.md), including:
 
-- ambiente reproduzível;
-- deck validado;
-- wrapper e pacote mínimo;
-- tipos `Selection`, `GameState` e candidatos;
-- parser com fixtures;
-- fallback de todos os contextos observados;
-- smoke de 20 partidas e relatório.
+- reproducible environment;
+- validated deck;
+- wrapper and minimum package;
+- `Selection`, `GameState` and candidate types;
+- parser with fixtures;
+- fallback for all observed contexts;
+- smoke of 20 matches and report.
 
-## Evidência exigida no PR
+## Required evidence in PR
 
-- testes e comando executado;
-- versão do SDK;
-- hash do deck;
-- resultados por lado;
-- contagens de falha;
-- exemplo de seleção múltipla;
-- pacote extraído e testado;
-- atualização de `strategy_notes.md` quando houver afirmação experimental.
+- tests and command executed;
+- SDK version;
+- deck hash;
+- results per side;
+- failure counts;
+- multiple selection example;
+- extracted and tested package;
+- `strategy_notes.md` update when there is an experimental claim.
 
-## Dados disponíveis
+## Available data
 
-Os oito datasets das duas trilhas estão em `data/raw/kaggle/`, com SHA-256, schema e proveniência no manifesto. Não há bloqueio de autenticação pendente para iniciar o inventário ou a implementação.
+The eight datasets from both tracks are in `data/raw/kaggle/`, with SHA-256, schema and provenance in the manifest. There is no pending authentication block to start the inventory or implementation.
 
-## Regra de mudança
+## Change rule
 
-Mudança de comportamento atualiza código, teste, config, manifesto do experimento, relatório e Strategy. Mudança de contrato externo exige fonte oficial e data. Uma versão só substitui a estável após gate completo e rollback preservado.
+A behavior change updates code, test, config, experiment manifest, report and Strategy. An external contract change requires official source and date. A version only replaces the stable one after complete gate and preserved rollback.
 
-## Aceite
+## Acceptance
 
-O handoff está completo quando a primeira entrega passa todos os itens “MVP integrado” de [`19_final_harness_checklist.md`](19_final_harness_checklist.md). A submissão só está completa quando também passa o bloco “Submissão aprovada”.
+The handoff is complete when the first delivery passes all "MVP integrated" items from [`19_final_harness_checklist.md`](19_final_harness_checklist.md). The submission is only complete when it also passes the "Submission approved" block.

@@ -1,6 +1,6 @@
-# Contrato de comandos operacionais
+# Operational commands contract
 
-Estes comandos são alvos de implementação; não são declarados disponíveis hoje.
+These commands are implementation targets; they are not declared available today.
 
 ```bash
 python -m scripts.preflight --config configs/default.yaml
@@ -14,18 +14,18 @@ python -m scripts.export_strategy --run RUN
 python -m scripts.inventory_kaggle_data
 ```
 
-## Regras comuns
+## Common rules
 
-- `--help` e exit codes estáveis;
-- config e overrides impressos antes da mutação;
-- output path impresso no final;
-- stdout para resumo, stderr para diagnóstico;
-- `0` sucesso, `2` input/config inválido, `3` gate reprovado, `4` falha de runtime;
-- scripts chamam `src/`, não duplicam regra de jogo.
+- `--help` and stable exit codes;
+- config and overrides printed before mutation;
+- output path printed at the end;
+- stdout for summary, stderr for diagnostics;
+- `0` success, `2` invalid input/config, `3` gate failed, `4` runtime failure;
+- scripts call `src/`, do not duplicate game logic.
 
-## Inventário Kaggle
+## Kaggle inventory
 
-Após aceitar as regras:
+After accepting the rules:
 
 ```bash
 kaggle competitions download pokemon-tcg-ai-battle -p data/raw/kaggle/simulation
@@ -33,12 +33,12 @@ kaggle competitions download pokemon-tcg-ai-battle-challenge-strategy -p data/ra
 python -m scripts.inventory_kaggle_data
 ```
 
-O inventário falha se algum arquivo não tiver fonte, competição, versão/data, tamanho, SHA-256, formato, licença/status, utilidade e risco de leakage.
+The inventory fails if any file lacks source, competition, version/date, size, SHA-256, format, license/status, utility and leakage risk.
 
-## Pacote
+## Package
 
-`package_submission` cria uma staging directory explícita, copia apenas allowlist, verifica raiz e tamanho e gera o tar. `validate_package` rejeita path traversal e executa smoke sem imports do checkout.
+`package_submission` creates an explicit staging directory, copies only the allowlist, checks root and size and generates the tar. `validate_package` rejects path traversal and runs smoke without checkout imports.
 
-## Idempotência
+## Idempotence
 
-Preflight e inventário podem ser repetidos. Runs e freezes nunca sobrescrevem IDs existentes. Package pode ser reproduzido com os mesmos inputs e registra seu hash, mesmo que metadados do tar impeçam byte-identidade sem normalização.
+Preflight and inventory can be repeated. Runs and freezes never overwrite existing IDs. Package can be reproduced with the same inputs and records its hash, even if tar metadata prevents byte-identity without normalization.

@@ -1,43 +1,43 @@
-# Contratos de experimento
+# Experiment contracts
 
 ## `ExperimentSpec`
 
-Um experimento é totalmente descrito antes de rodar:
+An experiment is fully described before running:
 
 ```yaml
 experiment_id: EXP-YYYYMMDD-NNN
-hypothesis: texto falsificável
-candidate: versão imutável
-baseline: versão imutável
-deck_version: versão imutável
+hypothesis: falsifiable text
+candidate: immutable version
+baseline: immutable version
+deck_version: immutable version
 sdk_version: "1.14.10"
 matchups: []
 seeds: []
 games: 200
 metrics: []
-acceptance: expressão explícita
+acceptance: explicit expression
 ```
 
-O arquivo não contém lógica de jogo. A configuração efetiva resulta das camadas documentadas em [`22_config_spec.md`](22_config_spec.md) e é salva integralmente no manifesto.
+The file contains no game logic. The effective configuration results from the layers documented in [`22_config_spec.md`](22_config_spec.md) and is saved in its entirety in the manifest.
 
 ## `ExperimentRun`
 
-Estados: `PLANNED`, `RUNNING`, `COMPLETED`, `FAILED`, `REJECTED`. Um run cria diretório próprio e nunca sobrescreve outro.
+States: `PLANNED`, `RUNNING`, `COMPLETED`, `FAILED`, `REJECTED`. A run creates its own directory and never overwrites another.
 
-Saídas obrigatórias:
+Required outputs:
 
 - `manifest.json`;
 - `matches.jsonl`;
 - `decisions.jsonl`;
-- `metrics.json` e `metrics.csv`;
+- `metrics.json` and `metrics.csv`;
 - `summary.md`;
-- referências aos replays e erros;
-- decisão final e vínculo com `strategy_notes.md`.
+- references to replays and errors;
+- final decision and link to `strategy_notes.md`.
 
 ## Sweeps
 
-Um grid expande combinações em ordem determinística, atribui um `run_id` por combinação e aplica o mesmo conjunto de seeds. Seleção posterior no mesmo conjunto de avaliação é declarada; o candidato escolhido passa por um holdout separado.
+A grid expands combinations in deterministic order, assigns a `run_id` per combination, and applies the same set of seeds. Subsequent selection on the same evaluation set is declared; the chosen candidate passes through a separate holdout.
 
-## Promoção e rollback
+## Promotion and rollback
 
-`promote` atualiza a referência estável somente após todos os gates. A referência anterior e seus artefatos permanecem disponíveis. Configurações sem relatório, runs parciais e comparações com seeds diferentes não podem promover.
+`promote` updates the stable reference only after all gates. The previous reference and its artifacts remain available. Configurations without a report, partial runs, and comparisons with different seeds cannot promote.

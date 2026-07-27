@@ -1,51 +1,51 @@
-# Implementação de experimentos
+# Experiment implementation
 
-## Caminho de um run
+## Path of a run
 
-1. Carregar defaults, perfil de agente e perfil de avaliação.
-2. Aplicar overrides explícitos.
-3. Resolver e validar o `ExperimentSpec`.
-4. Persistir `manifest.json` antes da primeira partida.
-5. Executar a matriz planejada.
-6. Calcular métricas e comparação.
-7. Avaliar a expressão de aceite.
-8. Persistir decisão e bloco para `strategy_notes.md`.
+1. Load defaults, agent profile, and evaluation profile.
+2. Apply explicit overrides.
+3. Resolve and validate the `ExperimentSpec`.
+4. Persist `manifest.json` before the first match.
+5. Execute the planned matrix.
+6. Calculate metrics and comparison.
+7. Evaluate the acceptance expression.
+8. Persist decision and block for `strategy_notes.md`.
 
-## Identidade
+## Identity
 
-`experiment_id` identifica a hipótese; `run_id` identifica uma execução. Repetição usa novo `run_id`, mesmo `experiment_id`, e referencia o run anterior. Nomes não dependem apenas de timestamp.
+`experiment_id` identifies the hypothesis; `run_id` identifies an execution. Repetition uses a new `run_id`, same `experiment_id`, and references the previous run. Names do not depend only on timestamp.
 
-## Versões
+## Versions
 
-O manifesto registra:
+The manifest records:
 
-- commit ou marcador do source;
-- hash do deck;
-- hash da configuração efetiva;
-- versão do SDK e Python;
-- hash do modelo;
-- esquema de features;
-- seeds e pool de oponentes.
+- commit or source marker;
+- deck hash;
+- effective configuration hash;
+- SDK and Python versions;
+- model hash;
+- feature schema;
+- seeds and opponent pool.
 
-`null` é permitido apenas para componente inexistente, nunca para componente não medido.
+`null` is allowed only for a nonexistent component, never for an unmeasured component.
 
 ## Ablation
 
-Cada regra heurística possui flag. Uma ablação muda uma família por vez e mantém o restante congelado. Para modelos, comparar: heurística, modelo sem feature group, modelo completo e, quando aplicável, busca ligada/desligada.
+Each heuristic rule has a flag. An ablation changes one family at a time and keeps the rest frozen. For models, compare: heuristic, model without feature group, full model, and, when applicable, search on/off.
 
-## Holdout temporal
+## Temporal holdout
 
-Traces são particionados pela data/ordem de geração. O grid usa treino/validação; uma única avaliação final em holdout escolhe promoção. Regenerar o holdout requer nova versão de dataset.
+Traces are partitioned by date/generation order. The grid uses training/validation; a single final evaluation on holdout chooses promotion. Regenerating the holdout requires a new dataset version.
 
-## Registro
+## Registry
 
-O registry é append-only e aponta para artefatos, não duplica métricas. Runs incompletos permanecem como `FAILED` com erro; não são apagados nem contabilizados como jogos válidos.
+The registry is append-only and points to artifacts, does not duplicate metrics. Incomplete runs remain as `FAILED` with error; they are not deleted nor counted as valid games.
 
-## Testes
+## Tests
 
-- mesma spec expande mesma matriz;
-- override aparece no manifesto;
-- grids não colidem;
-- comparação rejeita decks/seeds incompatíveis;
-- decisão de gate é reproduzível dos relatórios;
-- entrada Strategy contém caminhos existentes.
+- same spec expands the same matrix;
+- override appears in the manifest;
+- grids do not collide;
+- comparison rejects incompatible decks/seeds;
+- gate decision is reproducible from reports;
+- Strategy entry contains existing paths.

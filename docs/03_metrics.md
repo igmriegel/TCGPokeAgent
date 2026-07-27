@@ -1,41 +1,41 @@
-# Catálogo de métricas
+# Metrics catalog
 
-## Resultado
+## Outcome
 
-Para cada matchup e agregado:
+For each matchup and aggregate:
 
 - `wins`, `draws`, `losses`;
 - `win_rate`, `draw_rate`, `loss_rate`;
-- intervalo de Wilson de 95% para `win_rate`;
-- partidas como jogador 0 e jogador 1;
-- turnos por partida e motivo de término.
+- 95% Wilson interval for `win_rate`;
+- matches as player 0 and player 1;
+- turns per match and termination reason.
 
-O denominador de `win_rate` inclui todas as partidas válidas; empates não são removidos. Falhas operacionais são reportadas separadamente e impedem promoção.
+The denominator of `win_rate` includes all valid matches; draws are not removed. Operational failures are reported separately and prevent promotion.
 
-## Operação
+## Operation
 
-- duração de decisão p50, p95 e máxima;
-- duração de partida p50, p95 e máxima;
-- contagens `INVALID`, `ERROR` e `TIMEOUT`;
-- memória/tamanho do pacote no gate final.
+- decision duration p50, p95 and maximum;
+- match duration p50, p95 and maximum;
+- `INVALID`, `ERROR` and `TIMEOUT` counts;
+- memory/package size at the final gate.
 
-## Busca
+## Search
 
-- decisões elegíveis;
-- decisões realmente pesquisadas;
-- `search_coverage = pesquisadas / elegíveis`;
-- falhas por `belief_inconsistent`, `api_error`, `budget_exhausted` e `unexpected`;
-- duração p50/p95/máxima;
-- alteração da escolha top-1;
-- delta pareado de vitória contra heurística pura.
+- eligible decisions;
+- actually searched decisions;
+- `search_coverage = searched / eligible`;
+- failures by `belief_inconsistent`, `api_error`, `budget_exhausted` and `unexpected`;
+- p50/p95/maximum duration;
+- top-1 choice change;
+- paired win delta against pure heuristics.
 
-## Estabilidade
+## Stability
 
-- taxa por lado, seed e matchup;
-- diferença jogador 0 versus jogador 1;
-- dispersão entre lotes;
-- pior matchup do pool congelado.
+- rate by side, seed and matchup;
+- player 0 versus player 1 difference;
+- dispersion between batches;
+- worst matchup in the frozen pool.
 
 ## Gate
 
-O relatório é inválido se omitir denominadores, lados, versão do deck, SDK, seeds ou falhas. Média de duração não substitui p95 e máximo.
+The report is invalid if it omits denominators, sides, deck version, SDK, seeds or failures. Average duration does not replace p95 and maximum.

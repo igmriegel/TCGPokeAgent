@@ -1,18 +1,18 @@
-# Perfis de execução
+# Execution profiles
 
-Os YAML atuais são placeholders e não são alterados nesta revisão. A implementação deve migrá-los ao schema canônico de [`22_config_spec.md`](22_config_spec.md).
+The current YAML files are placeholders and are not changed in this revision. The implementation must migrate them to the canonical schema of [`22_config_spec.md`](22_config_spec.md).
 
-## Perfis
+## Profiles
 
-| Perfil | Jogos | Busca | Trace | Uso |
-|---|---:|---|---|---|
-| `smoke` | 20 | conforme candidato | reduzido | integração e falha rápida |
-| `full` | >= 200 | conforme candidato | completo | decisão experimental |
-| `heuristic` | definido pelo eval | não | configurável | baseline estável |
-| `search` | definido pelo eval | sim, 100 ms | métricas de busca | ablação |
-| `submission` | smoke isolado | conforme freeze | mínimo | pacote final |
+| Profile | Games | Search | Trace | Usage |
+|---:|---|---|---|
+| `smoke` | 20 | per candidate | reduced | integration and fast failure |
+| `full` | >= 200 | per candidate | full | experimental decision |
+| `heuristic` | defined by eval | no | configurable | stable baseline |
+| `search` | defined by eval | yes, 100 ms | search metrics | ablation |
+| `submission` | isolated smoke | per freeze | minimal | final package |
 
-## Orçamento da busca
+## Search budget
 
 - `max_decision_ms: 100`;
 - `disable_below_overage_s: 30`;
@@ -20,12 +20,12 @@ Os YAML atuais são placeholders e não são alterados nesta revisão. A impleme
 - `max_depth: 4`;
 - `manual_coin: false`.
 
-Esses valores são invariantes do MVP. Alteração exige experimento e nova versão.
+These values are MVP invariants. Changes require an experiment and a new version.
 
-## Precedência
+## Precedence
 
-`default` < perfil de agente < perfil de avaliação < override CLI. O manifesto armazena valor final e origem de cada override.
+`default` < agent profile < evaluation profile < CLI override. The manifest stores the final value and origin of each override.
 
 ## Seeds
 
-Perfis não usam seed implícita. Smoke e full carregam listas fixas versionadas; trocá-las cria nova revisão do protocolo.
+Profiles do not use implicit seeds. Smoke and full load fixed versioned lists; changing them creates a new protocol revision.

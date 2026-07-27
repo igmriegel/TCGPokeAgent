@@ -1,6 +1,6 @@
-# Persistência e outputs
+# Persistence and outputs
 
-## Layout de run
+## Run layout
 
 ```text
 runs/<experiment_id>/<run_id>/
@@ -14,34 +14,34 @@ runs/<experiment_id>/<run_id>/
   errors/
 ```
 
-`runs/` é saída gerada, fora do pacote de submissão.
+`runs/` is generated output, outside the submission package.
 
-## Contratos
+## Contracts
 
-- `manifest.json`: entrada resolvida, versões, hashes, seeds e matriz.
-- `matches.jsonl`: um `MatchRecord` por linha.
-- `decisions.jsonl`: um `DecisionRecord` por linha.
-- `metrics.json`: valores completos para máquinas.
-- `metrics.csv`: tabela achatada para análise.
-- `summary.md`: interpretação e decisão, sem recomputar métricas.
-- `replays/`: payload suficiente para reprodução/auditoria.
-- `errors/`: stack trace e contexto sanitizado.
+- `manifest.json`: resolved input, versions, hashes, seeds and matrix.
+- `matches.jsonl`: one `MatchRecord` per line.
+- `decisions.jsonl`: one `DecisionRecord` per line.
+- `metrics.json`: full values for machines.
+- `metrics.csv`: flattened table for analysis.
+- `summary.md`: interpretation and decision, without recomputing metrics.
+- `replays/`: sufficient payload for replay/audit.
+- `errors/`: stack trace and sanitized context.
 
-## Imutabilidade
+## Immutability
 
-Arquivos de um run concluído não são sobrescritos. Correção cria novo `run_id` e referencia o anterior. Artefato promovido recebe SHA-256 e cópia do manifesto.
+Files from a completed run are not overwritten. A fix creates a new `run_id` and references the previous one. A promoted artifact receives a SHA-256 and a copy of the manifest.
 
-## Retenção
+## Retention
 
-- logs brutos: conservar para candidatos e falhas; runs exploratórios podem seguir política documentada;
-- relatórios: conservar todos;
-- datasets derivados: versionar esquema, fontes e transformação;
-- modelos/pacotes: conservar versões promovidas e referência anterior.
+- raw logs: keep for candidates and failures; exploratory runs may follow documented policy;
+- reports: keep all;
+- derived datasets: version schema, sources and transformation;
+- models/packages: keep promoted versions and previous reference.
 
-## Privacidade e segurança
+## Privacy and security
 
-Não persistir token Kaggle, variáveis secretas ou caminhos de credenciais. Amostras do catálogo removem identificadores pessoais; dados oficiais de cartas não contêm dados pessoais esperados, mas ainda passam por inspeção de colunas.
+Do not persist Kaggle token, secret variables or credential paths. Catalog samples remove personal identifiers; official card data does not contain expected personal data, but still goes through column inspection.
 
-## Atomicidade
+## Atomicity
 
-Escrever saídas temporárias e renomear somente após validação. Manifesto começa como `RUNNING`; conclusão muda para `COMPLETED` após todos os arquivos obrigatórios existirem.
+Write temporary outputs and rename only after validation. Manifest starts as `RUNNING`; completion changes to `COMPLETED` after all required files exist.

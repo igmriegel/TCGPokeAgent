@@ -1,45 +1,45 @@
-# Critérios objetivos de prontidão
+# Objective readiness criteria
 
-## Documentação pronta
+## Documentation ready
 
-- [x] contrato usa `Observation` e `list[int]`;
-- [x] `Selection` cobre zero, uma e múltiplas opções;
-- [x] `SelectType`, `SelectContext` e `OptionType` têm papel definido;
-- [x] `GameState` contém fatos e `BeliefState` contém hipóteses;
-- [x] interfaces de parser, scorer, crença, busca e avaliação são independentes;
-- [x] gates de smoke, full, busca e pacote são mensuráveis;
-- [x] roadmap e trilha Strategy têm critérios de promoção;
-- [x] fontes externas têm data de verificação;
-- [x] downloads Kaggle têm hash, formato, schema local e amostras sanitizadas.
+- [x] contract uses `Observation` and `list[int]`;
+- [x] `Selection` covers zero, one and multiple options;
+- [x] `SelectType`, `SelectContext` and `OptionType` have a defined role;
+- [x] `GameState` contains facts and `BeliefState` contains hypotheses;
+- [x] parser, scorer, belief, search and evaluation interfaces are independent;
+- [x] smoke, full, search and package gates are measurable;
+- [x] roadmap and Strategy track have promotion criteria;
+- [x] external sources have verification date;
+- [x] Kaggle downloads have hash, format, local schema and sanitized samples.
 
-## MVP integrado
+## MVP integrated
 
-- [ ] SDK 1.14.10 instalado em ambiente isolado;
-- [ ] deck oficial de 60 cartas validado;
-- [ ] wrapper inicial e ramo de jogo passam;
-- [ ] fallback cobre todos os contextos observados;
-- [ ] smoke 20/20 sem falhas;
-- [ ] relatório full com >= 200 partidas;
-- [ ] ambos os lados e quatro oponentes;
-- [ ] métricas e Wilson completos.
+- [ ] SDK 1.14.10 installed in isolated environment;
+- [ ] official 60-card deck validated;
+- [ ] initial wrapper and game branch pass;
+- [ ] fallback covers all observed contexts;
+- [ ] smoke 20/20 with no failures;
+- [ ] full report with >= 200 matches;
+- [ ] both sides and four opponents;
+- [ ] complete metrics and Wilson.
 
-## Busca aprovada
+## Search approved
 
-- [ ] somente `MAIN`, mais de um candidato e overage >= 30 s;
-- [ ] top 3, profundidade <= 4, <= 100 ms;
-- [ ] determinização consistente;
-- [ ] estados liberados e `search_end` garantido;
-- [ ] falhas caem para heurística;
-- [ ] vitória não cai contra heurística pura.
+- [ ] only `MAIN`, more than one candidate and overage >= 30 s;
+- [ ] top 3, depth <= 4, <= 100 ms;
+- [ ] consistent determinization;
+- [ ] released states and guaranteed `search_end`;
+- [ ] failures fall back to heuristic;
+- [ ] win rate does not drop against pure heuristic.
 
-## Submissão aprovada
+## Submission approved
 
-- [ ] `main.py` e `deck.csv` na raiz;
-- [ ] imports funcionam em `/kaggle_simulations/agent/`;
-- [ ] tamanho < 197,7 MiB;
-- [ ] tar sem path traversal;
-- [ ] smoke passa usando somente conteúdo extraído;
-- [ ] hashes e manifesto congelados;
-- [ ] evidência Strategy vinculada.
+- [ ] `main.py` and `deck.csv` in root;
+- [ ] imports work in `/kaggle_simulations/agent/`;
+- [ ] size < 197.7 MiB;
+- [ ] tar without path traversal;
+- [ ] smoke passes using only extracted content;
+- [ ] hashes and manifest frozen;
+- [ ] linked Strategy evidence.
 
-Prontidão exige todos os itens do bloco correspondente; porcentagem parcial não substitui gate.
+Readiness requires all items from the corresponding block; partial percentage does not replace a gate.

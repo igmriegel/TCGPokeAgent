@@ -1,58 +1,58 @@
-# Implementação do core
+# Core implementation
 
-## Arquivos-alvo
+## Target files
 
-| Arquivo | Responsabilidade |
+| File | Responsibility |
 |---|---|
-| `src/core/types.py` | aliases, enums de resultado/falha e reexport dos enums `cabt` |
-| `src/core/action.py` | `Candidate`, `Selection` e validação |
-| `src/core/state.py` | `GameState`, visões de jogador/Pokémon e `BeliefState` |
-| `src/core/parser.py` | observação → decisão normalizada |
-| `src/core/interfaces.py` | protocolos pequenos e independentes |
-| `src/core/catalog.py` | cache de `all_card_data()` e `all_attack()` |
+| `src/core/types.py` | aliases, result/failure enums, and re-exports of `cabt` enums |
+| `src/core/action.py` | `Candidate`, `Selection`, and validation |
+| `src/core/state.py` | `GameState`, player/Pokémon views, and `BeliefState` |
+| `src/core/parser.py` | observation → normalized decision |
+| `src/core/interfaces.py` | small independent protocols |
+| `src/core/catalog.py` | cache of `all_card_data()` and `all_attack()` |
 
-O nome legado `action.py` pode permanecer por compatibilidade de layout, mas não define uma ação singular; seu tipo público é `Selection`.
+The legacy name `action.py` may remain for layout compatibility, but it does not define a singular action; its public type is `Selection`.
 
 ## Parser
 
-### Entrada
+### Input
 
-Aceitar a dataclass `Observation` ou payload convertível por `to_observation_class`. Guardar a entrada convertida sem mutação.
+Accept the `Observation` dataclass or payload convertible by `to_observation_class`. Store the converted input without mutation.
 
-### Estado factual
+### Factual state
 
-Copiar campos oficiais de `State` e `PlayerState`. Manter `None` para cartas ocultas. Derivar apenas valores matemáticos, como dano atual `maxHp - hp`; não inferir identidade de cartas.
+Copy official fields from `State` and `PlayerState`. Keep `None` for hidden cards. Derive only mathematical values, such as current damage `maxHp - hp`; do not infer card identity.
 
-### Candidatos
+### Candidates
 
-Enumerar `select.option` com `enumerate`. Resolver metadados por `cardId`, `attackId`, área/índice e cartas visíveis. Campo ausente gera `None`, não valor inventado.
+Enumerate `select.option` with `enumerate`. Resolve metadata by `cardId`, `attackId`, area/index, and visible cards. Missing field generates `None`, not an invented value.
 
-## Geração de `Selection`
+## Selection generation
 
-1. Produzir combinações de tamanhos `minCount..maxCount`.
-2. Para energia, somar `Option.count` e satisfazer `remainEnergyCost`.
-3. Para dano, respeitar `remainDamageCounter` e granularidade oferecida.
-4. Aplicar restrições específicas documentadas pelo contexto.
-5. Validar novamente antes de devolver.
-6. Ordenar por tupla de índices.
+1. Produce combinations of sizes `minCount..maxCount`.
+2. For energy, sum `Option.count` and satisfy `remainEnergyCost`.
+3. For damage, respect `remainDamageCounter` and the offered granularity.
+4. Apply specific constraints documented by the context.
+5. Validate again before returning.
+6. Sort by index tuple.
 
-Não podar por qualidade nessa camada.
+Do not prune by quality at this layer.
 
 ## `BeliefBuilder`
 
-Subtrair do deck conhecido as cartas públicas e eventos inequívocos dos logs. Preencher zonas ocultas em ordem estável a partir do multiconjunto restante. Para o adversário, usar deck de referência versionado e remover cartas públicas. Validar que cada lista entregue a `search_begin` tenha exatamente o comprimento exigido.
+Subtract public cards and unambiguous events from logs from the known deck. Fill hidden zones in stable order from the remaining multiset. For the opponent, use the versioned reference deck and remove public cards. Validate that each list delivered to `search_begin` has exactly the required length.
 
-Se uma subtração resultar negativa, faltar Basic no setup adversário ou uma cardinalidade não fechar, marcar `consistent=False` e não pesquisar.
+If a subtraction results in a negative value, a Basic is missing in opponent setup, or a cardinality does not close, mark `consistent=False` and do not search.
 
-## Testes obrigatórios
+## Required tests
 
-- golden tests de observações reais;
-- preservação de índices;
+- golden tests of real observations;
+- index preservation;
 - `minCount=0`;
-- seleção múltipla;
-- custo de energia com `count`;
-- distribuição de dano;
-- oponente com `hand=None`;
-- cartas `None` em prêmio/ativo;
-- crença consistente e inconsistente;
-- serialização de snapshots sem transformar crença em fato.
+- multiple selection;
+- energy cost with `count`;
+- damage distribution;
+- opponent with `hand=None`;
+- `None` cards in prize/active;
+- consistent and inconsistent belief;
+- snapshot serialization without transforming belief into fact.

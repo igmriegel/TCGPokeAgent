@@ -1,28 +1,28 @@
-# Estrutura do writeup Strategy
+# Strategy writeup structure
 
-## Seções
+## Sections
 
-1. Problema, informação imperfeita e restrições do runtime.
-2. Dados oficiais, externos e gerados; licença, versão e leakage.
-3. Deck fixo do MVP e justificativa.
-4. Representação factual, `BeliefState` e `Selection`.
-5. Heurística, fallback e busca curta.
-6. Protocolo pareado, métricas e intervalos.
-7. Ablações e evolução M1–M8.
-8. Falhas, limites, custo e reprodutibilidade.
-9. Conclusão sustentada pelas evidências.
+1. Problem, imperfect information and runtime constraints.
+2. Official, external and generated data; license, version and leakage.
+3. Fixed MVP deck and justification.
+4. Factual representation, `BeliefState` and `Selection`.
+5. Heuristic, fallback and short search.
+6. Paired protocol, metrics and intervals.
+7. Ablations and M1–M8 evolution.
+8. Failures, limits, cost and reproducibility.
+9. Conclusion supported by evidence.
 
-## Evidência mínima
+## Minimum evidence
 
-- tabela W/D/L por matchup e lado;
-- intervalo de Wilson e tamanho da amostra;
-- p50/p95/máxima de decisão;
-- ablação de cada grupo de regras;
-- cobertura e falhas da busca;
-- traces curtos de decisões representativas;
-- hashes de deck, configuração, modelo e pacote;
-- vínculo de cada afirmação ao `experiment_id`.
+- W/D/L table by matchup and side;
+- Wilson interval and sample size;
+- p50/p95/maximum decision time;
+- ablation of each rule group;
+- search coverage and failures;
+- short traces of representative decisions;
+- hashes of deck, configuration, model and package;
+- link of each claim to `experiment_id`.
 
-## Regra editorial
+## Editorial rule
 
-Uma conclusão entra no writeup apenas se estiver registrada em [`strategy_notes.md`](strategy_notes.md) com artefato verificável. Correlação é descrita como correlação; inferência causal exige ablação controlada.
+A conclusion enters the writeup only if it is recorded in [`strategy_notes.md`](strategy_notes.md) with a verifiable artifact. Correlation is described as correlation; causal inference requires controlled ablation.

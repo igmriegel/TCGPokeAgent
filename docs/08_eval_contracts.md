@@ -1,56 +1,56 @@
-# Contratos de avaliação
+# Evaluation contracts
 
 ## Runner
 
-O runner recebe versões imutáveis de dois agentes, decks, seed e perfil. Ele executa o SDK sem conhecer scoring, registra cada chamada e devolve um `MatchRecord`.
+The runner receives immutable versions of two agents, decks, seed, and profile. It executes the SDK without knowing scoring, records every call, and returns a `MatchRecord`.
 
-Campos mínimos de `MatchRecord`:
+Minimum fields of `MatchRecord`:
 
-- `run_id`, `match_id`, seed e lado;
-- versões de agente, deck e SDK;
-- início, fim e duração;
-- resultado, motivo e turnos;
-- status final de ambos os agentes;
-- lista de `DecisionRecord`;
-- caminhos de replay e erro.
+- `run_id`, `match_id`, seed, and side;
+- agent, deck, and SDK versions;
+- start, end, and duration;
+- result, reason, and turns;
+- final status of both agents;
+- list of `DecisionRecord`;
+- replay and error paths.
 
-`DecisionRecord` registra turno, contexto, cardinalidade, índices escolhidos, scores/razões, duração, saldo de overage e dados de busca.
+`DecisionRecord` records turn, context, cardinality, chosen indices, scores/reasons, duration, overage balance, and search data.
 
-## Matriz do gate
+## Gate matrix
 
-O candidato roda como jogador 0 e 1 contra:
+The candidate runs as player 0 and 1 against:
 
-- agente SDK `random`;
-- agente SDK `first`;
-- heurística sem busca;
-- a si próprio.
+- SDK agent `random`;
+- SDK agent `first`;
+- heuristic without search;
+- itself.
 
-Smoke soma 20 partidas; full soma pelo menos 200. A distribuição exata por matchup/lado aparece no manifesto antes da execução.
+Smoke totals 20 matches; full totals at least 200. The exact distribution per matchup/side appears in the manifest before execution.
 
-## Validação
+## Validation
 
-Antes de contabilizar uma decisão:
+Before counting a decision:
 
-- saída é `list[int]`;
-- cardinalidade respeita `SelectData`;
-- índices pertencem à lista de opções;
-- restrições agregadas foram atendidas;
-- duração e saldo de overage foram registrados.
+- output is `list[int]`;
+- cardinality respects `SelectData`;
+- indices belong to the option list;
+- aggregate constraints were satisfied;
+- duration and overage balance were recorded.
 
-Qualquer `INVALID`, `ERROR` ou `TIMEOUT` reprova o candidato, mesmo que a taxa de vitória seja alta.
+Any `INVALID`, `ERROR`, or `TIMEOUT` fails the candidate, even if the win rate is high.
 
-## Estatística
+## Statistics
 
-Calcular métricas conforme [`03_metrics.md`](03_metrics.md). Wilson usa 95%, com número de vitórias como sucessos e total de partidas válidas como `n`. Comparações pareadas mantêm resultados por seed e lado, não apenas agregados.
+Calculate metrics per [`03_metrics.md`](03_metrics.md). Wilson uses 95%, with number of wins as successes and total valid matches as `n`. Paired comparisons keep results by seed and side, not just aggregates.
 
-## Gate da busca
+## Search gate
 
-Compare a mesma heurística com busca desligada e ligada:
+Compare the same heuristic with search off and on:
 
-- mesma matriz, decks e seeds;
+- same matrix, decks, and seeds;
 - `win_rate_search >= win_rate_heuristic`;
-- zero falhas operacionais;
-- busca máxima até 100 ms;
-- relatório de cobertura e cada fallback.
+- zero operational failures;
+- max search up to 100 ms;
+- coverage report and each fallback.
 
-Se a diferença estiver dentro do ruído, a versão sem busca permanece estável por ser mais barata.
+If the difference is within noise, the version without search remains stable because it is cheaper.

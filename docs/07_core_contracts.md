@@ -1,10 +1,10 @@
-# Contratos do core
+# Core contracts
 
-## Vocabulário único
+## Unique vocabulary
 
 ### `Selection`
 
-Decisão completa enviada ao simulador:
+Complete decision sent to the simulator:
 
 ```text
 Selection.indices: tuple[int, ...]
@@ -14,19 +14,19 @@ Selection.score: float | None
 Selection.reasons: tuple[str, ...]
 ```
 
-`indices` preserva ordem e posições originais. Uma `Selection` é válida quando:
+`indices` preserves original order and positions. A `Selection` is valid when:
 
 - `minCount <= len(indices) <= maxCount`;
-- não repete índice, salvo se a API documentar repetição para o contexto;
-- todos os índices existem;
-- soma exigida por `remainEnergyCost` ou `remainDamageCounter` é satisfeita sem exceder regra do contexto;
-- combinações incompatíveis são rejeitadas antes do scoring.
+- no duplicate index, unless the API documents repetition for the context;
+- all indices exist;
+- sum required by `remainEnergyCost` or `remainDamageCounter` is satisfied without exceeding the context rule;
+- incompatible combinations are rejected before scoring.
 
-Se `minCount == 0`, `()` é candidata legal. O agente nunca representa a decisão como `Action` singular.
+If `minCount == 0`, `()` is a legal candidate. The agent never represents the decision as a single `Action`.
 
 ### `Candidate`
 
-Visão tipada de uma `Option`:
+Typed view of an `Option`:
 
 ```text
 Candidate.option_index: int
@@ -36,33 +36,33 @@ Candidate.card: CardView | None
 Candidate.features: Mapping[str, float | int | bool]
 ```
 
-Criar um candidato por opção, na mesma ordem, sem filtrar antes de guardar `option_index`.
+Create one candidate per option, in the same order, without filtering before storing `option_index`.
 
 ### `GameState`
 
-Visão factual derivada de `State`:
+Factual view derived from `State`:
 
 - `turn`, `turnActionCount`, `yourIndex`, `firstPlayer`, `result`;
 - `supporterPlayed`, `stadiumPlayed`, `energyAttached`, `retreated`;
-- `stadium` e `looking`;
-- dois jogadores com `active`, `bench`, `benchMax`, `deckCount`, `discard`, `prize`, `handCount`, `hand`;
-- condições `poisoned`, `burned`, `asleep`, `paralyzed`, `confused`;
-- para cada Pokémon visível: HP, HP máximo, energias, cartas de energia, tools, pré-evoluções e `appearThisTurn`.
+- `stadium` and `looking`;
+- two players with `active`, `bench`, `benchMax`, `deckCount`, `discard`, `prize`, `handCount`, `hand`;
+- conditions `poisoned`, `burned`, `asleep`, `paralyzed`, `confused`;
+- for each visible Pokémon: HP, max HP, energies, energy cards, tools, pre-evolutions and `appearThisTurn`.
 
-`hand=None` do oponente e cartas `None` viradas para baixo permanecem desconhecidas. O parser não preenche esses campos.
+`hand=None` from opponent and face-down `None` cards remain unknown. The parser does not fill these fields.
 
 ### `BeliefState`
 
-Hipótese separada, nunca serializada como fato:
+Separate hypothesis, never serialized as fact:
 
-- multiconjunto provável do deck próprio restante;
-- multiconjunto do deck adversário de referência restante;
-- hipóteses ordenadas para mão e prêmios;
-- hipótese do ativo adversário virado para baixo;
-- eventos dos logs já incorporados;
-- `consistent: bool` e lista de violações.
+- probable multiset of remaining own deck;
+- multiset of remaining reference opponent deck;
+- ordered hypotheses for hand and prizes;
+- hypothesis for the face-down opponent active;
+- log events already incorporated;
+- `consistent: bool` and list of violations.
 
-Uma crença inconsistente impede busca, mas não impede heurística.
+An inconsistent belief blocks search, but does not block heuristics.
 
 ## Interfaces
 
@@ -76,8 +76,8 @@ StateEvaluator.evaluate(state: GameState, belief: BeliefState) -> float
 ShortSearch.choose(observation, belief, ranked, budget) -> SearchOutcome
 ```
 
-`ParsedDecision` mantém `raw_observation`, `state`, `select`, `candidates` e `selections`.
+`ParsedDecision` holds `raw_observation`, `state`, `select`, `candidates` and `selections`.
 
-## Falhas
+## Failures
 
-Falhas core têm categorias estáveis: `PARSE_ERROR`, `NO_VALID_SELECTION`, `BELIEF_INCONSISTENT`, `SEARCH_API_ERROR`, `SEARCH_BUDGET`, `INVALID_OUTPUT`. Toda exceção chega ao wrapper como evento estruturado; o fallback legal permanece disponível.
+Core failures have stable categories: `PARSE_ERROR`, `NO_VALID_SELECTION`, `BELIEF_INCONSISTENT`, `SEARCH_API_ERROR`, `SEARCH_BUDGET`, `INVALID_OUTPUT`. Every exception reaches the wrapper as a structured event; the legal fallback remains available.

@@ -1,51 +1,51 @@
-# Implementação do runner e avaliação
+# Runner and evaluation implementation
 
-## Camadas
+## Layers
 
-1. `validation.py`: preflight de SDK, deck, agente e pacote.
-2. `runner.py`: execução de uma partida e de um lote.
-3. `metrics.py`: agregação sem I/O.
-4. `comparison.py`: comparação pareada e gates.
-5. `reporting.py`: serialização dos objetos calculados.
+1. `validation.py`: preflight of SDK, deck, agent, and package.
+2. `runner.py`: execution of a match and a batch.
+3. `metrics.py`: aggregation without I/O.
+4. `comparison.py`: paired comparison and gates.
+5. `reporting.py`: serialization of computed objects.
 
 ## Preflight
 
-- confirmar versão exata do SDK;
-- validar 60 cartas e regras de deck aceitas pelo engine;
-- instanciar `cabt` com os agentes oficiais;
-- chamar o candidato em fixtures de seleção vazia, simples e múltipla;
-- rejeitar saída que não seja `list[int]`;
-- confirmar diretórios graváveis de run.
+- confirm exact SDK version;
+- validate 60 cards and deck rules accepted by the engine;
+- instantiate `cabt` with official agents;
+- call the candidate on empty, simple, and multiple selection fixtures;
+- reject output that is not `list[int]`;
+- confirm writable run directories.
 
-## Execução
+## Execution
 
-Cada partida recebe seed explícita e deadline interno. O runner captura observação, seleção, duração monotônica, saldo de overage, razões do scorer e status retornado pelo ambiente. Uma falha encerra a partida, mas o lote continua para produzir diagnóstico completo.
+Each match receives an explicit seed and internal deadline. The runner captures observation, selection, monotonic duration, overage balance, scorer reasons, and the status returned by the environment. A failure ends the match, but the batch continues to produce a complete diagnosis.
 
-Ordem dos jogos é predefinida no manifesto. Quando paralelismo for introduzido, o resultado continua ordenado por `match_id`.
+Game order is predefined in the manifest. When parallelism is introduced, results remain ordered by `match_id`.
 
-## Métricas
+## Metrics
 
-Mantenha registros brutos e agregados separados. Calcule percentis a partir das durações brutas, Wilson por matchup e lado, além de contagens de falha. Não arredonde valores no JSON; arredonde apenas a apresentação Markdown/CSV.
+Keep raw and aggregated records separate. Calculate percentiles from raw durations, Wilson by matchup and side, and failure counts. Do not round values in JSON; round only for Markdown/CSV presentation.
 
-## Smoke e full
+## Smoke and full
 
-Smoke: 20 partidas balanceadas, destinado a integração. Full: mínimo 200, com matriz declarada antes do run. Ambos executam os dois lados. Full só começa após smoke verde.
+Smoke: 20 balanced matches, intended for integration. Full: minimum 200, with matrix declared before the run. Both execute both sides. Full only starts after smoke is green.
 
-## Validação do pacote
+## Package validation
 
-1. listar conteúdo do tar e rejeitar caminhos absolutos ou `..`;
-2. extrair em diretório temporário;
-3. confirmar `main.py` e `deck.csv` na raiz;
-4. medir tamanho;
-5. executar smoke com cwd e imports restritos ao conteúdo extraído;
-6. calcular SHA-256 do pacote aprovado.
+1. list tar contents and reject absolute paths or `..`;
+2. extract into temporary directory;
+3. confirm `main.py` and `deck.csv` at the root;
+4. measure size;
+5. run smoke with cwd and imports restricted to the extracted content;
+6. compute SHA-256 of the approved package.
 
-## Testes
+## Tests
 
-- runner reproduz resultado com mesma seed;
-- falha de uma partida não apaga anteriores;
-- Wilson em casos 0%, 50% e 100%;
-- percentis para lote pequeno;
-- separação por lado;
-- gate falha com uma ocorrência operacional;
-- pacote aninhado ou com import externo é rejeitado.
+- runner reproduces result with the same seed;
+- failure of one match does not erase previous ones;
+- Wilson at 0%, 50%, and 100%;
+- percentiles for small batch;
+- separation by side;
+- gate fails with one operational occurrence;
+- nested package or one with external import is rejected.

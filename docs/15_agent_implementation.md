@@ -1,26 +1,26 @@
-# Implementação da heurística e busca curta
+# Heuristic and short search implementation
 
-## Despacho por contexto
+## Dispatch by context
 
-| Grupo | Contextos | Regra inicial |
+| Group | Contexts | Initial rule |
 |---|---|---|
-| setup | `SETUP_ACTIVE_POKEMON`, `SETUP_BENCH_POKEMON` | ativo com melhor sobrevivência/ataque cedo; banco útil sem ocupar slots críticos |
-| início | `IS_FIRST`, `MULLIGAN` | regra fixa versionada e dependente do deck |
-| mobilidade | `SWITCH`, `TO_ACTIVE`, `TO_BENCH`, `TO_FIELD` | preservar atacante e promover melhor estado pós-ação |
-| recursos | `TO_HAND`, `TO_DECK`, `TO_DECK_BOTTOM`, `TO_PRIZE`, `NOT_MOVE`, `DISCARD` | valor marginal e raridade da peça |
-| alvos | `DAMAGE*`, `HEAL`, `REMOVE_DAMAGE_COUNTER*`, `EFFECT_TARGET` | KO/prêmio, ameaça e eficiência |
-| evolução | `EVOLVES_FROM`, `EVOLVES_TO`, `DEVOLVE`, `EVOLVE` | ganho imediato, sobrevivência e ataque habilitado |
-| anexos | `ATTACH_*`, `DETACH_FROM`, `DISCARD_*`, `SWITCH_*` | habilitar ataque com menor desperdício |
-| skills/ataques | `SKILL_ORDER`, `ATTACK`, `DISABLE_ATTACK` | valor esperado e sequência |
-| contagem | `DRAW_COUNT`, `DAMAGE_COUNTER_COUNT`, `REMOVE_DAMAGE_COUNTER_COUNT` | máximo útil sem overpay |
-| booleanos | `ACTIVATE`, `FIRST_EFFECT`, `MORE_DEVOLVE`, `COIN_HEAD` | benefício líquido; fallback explícito |
-| condição | `AFFECT_SPECIAL_CONDITION`, `RECOVER_SPECIAL_CONDITION` | impacto no alvo e no próximo turno |
+| setup | `SETUP_ACTIVE_POKEMON`, `SETUP_BENCH_POKEMON` | active with best survival/early attack; bench useful without occupying critical slots |
+| start | `IS_FIRST`, `MULLIGAN` | fixed versioned rule dependent on deck |
+| mobility | `SWITCH`, `TO_ACTIVE`, `TO_BENCH`, `TO_FIELD` | preserve attacker and promote best post-action state |
+| resources | `TO_HAND`, `TO_DECK`, `TO_DECK_BOTTOM`, `TO_PRIZE`, `NOT_MOVE`, `DISCARD` | marginal value and piece rarity |
+| targets | `DAMAGE*`, `HEAL`, `REMOVE_DAMAGE_COUNTER*`, `EFFECT_TARGET` | KO/prize, threat, and efficiency |
+| evolution | `EVOLVES_FROM`, `EVOLVES_TO`, `DEVOLVE`, `EVOLVE` | immediate gain, survival, and enabled attack |
+| attachments | `ATTACH_*`, `DETACH_FROM`, `DISCARD_*`, `SWITCH_*` | enable attack with least waste |
+| skills/attacks | `SKILL_ORDER`, `ATTACK`, `DISABLE_ATTACK` | expected value and sequence |
+| count | `DRAW_COUNT`, `DAMAGE_COUNTER_COUNT`, `REMOVE_DAMAGE_COUNTER_COUNT` | useful maximum without overpay |
+| booleans | `ACTIVATE`, `FIRST_EFFECT`, `MORE_DEVOLVE`, `COIN_HEAD` | net benefit; explicit fallback |
+| condition | `AFFECT_SPECIAL_CONDITION`, `RECOVER_SPECIAL_CONDITION` | impact on target and next turn |
 
-Contextos futuros desconhecidos usam fallback de cardinalidade/índice e emitem `unknown_context`.
+Unknown future contexts use cardinality/index fallback and emit `unknown_context`.
 
-## Score heurístico
+## Heuristic score
 
-Use soma configurável, com componentes normalizados e razões:
+Use configurable sum, with normalized components and reasons:
 
 ```text
 score =
@@ -39,46 +39,46 @@ score =
   - premature_end
 ```
 
-`win_now` domina qualquer combinação não vencedora. Depois, pesos não substituem regras de legalidade. Ataque eficiente considera dano efetivo, KO, prêmios, fraqueza/resistência observada, custo e exposição no contra-ataque.
+`win_now` dominates any non-winning combination. Beyond that, weights do not replace legality rules. Efficient attack considers effective damage, KO, prizes, observed weakness/resistance, cost, and counter-attack exposure.
 
-## Busca curta
+## Short search
 
-### Determinização
+### Determinization
 
-- deck próprio: lista fixa menos cartas conhecidas;
-- prêmios próprios: preenchimento estável do restante;
-- adversário: deck de referência versionado menos cartas públicas;
-- mão, prêmios e ativo oculto: preenchimento determinístico com cardinalidade exata;
+- own deck: fixed list minus known cards;
+- own prizes: stable fill from remainder;
+- opponent: versioned reference deck minus public cards;
+- hand, prizes, and hidden active: deterministic fill with exact cardinality;
 - `manual_coin=False`.
 
-### Algoritmo
+### Algorithm
 
-1. Iniciar relógio monotônico.
-2. Verificar gates e construir crença.
-3. Chamar `search_begin` com a `Observation` recebida exatamente como veio.
-4. Para cada uma das top 3 seleções heurísticas, chamar `search_step`.
-5. Continuar por no máximo 4 seleções no ramo, usando heurística para respostas intermediárias.
-6. Parar em fim de turno, terminal ou budget.
-7. Avaliar folha com `StateEvaluator`.
-8. Liberar todo `searchId` intermediário com `search_release`.
-9. Executar `search_end()` em `finally`.
-10. Escolher maior valor; empate por índice.
+1. Start monotonic clock.
+2. Check gates and build belief.
+3. Call `search_begin` with the `Observation` exactly as received.
+4. For each of the top 3 heuristic selections, call `search_step`.
+5. Continue for at most 4 selections in the branch, using heuristic for intermediate responses.
+6. Stop at end of turn, terminal, or budget.
+7. Evaluate leaf with `StateEvaluator`.
+8. Release every intermediate `searchId` with `search_release`.
+9. Execute `search_end()` in `finally`.
+10. Choose highest value; tie by index.
 
 ### Fallback
 
-`BeliefState` inconsistente, retorno de erro, exceção, estado nulo ou tempo esgotado devolve top-1 heurístico. A falha é contabilizada sem propagar para o runtime.
+Inconsistent `BeliefState`, error return, exception, null state, or timeout returns heuristic top-1. The failure is counted without propagating to the runtime.
 
 ## `StateEvaluator`
 
-Primeira versão combina diferença de prêmios restantes, ameaça de KO, HP útil, atacantes preparados, energia útil, qualidade do banco, tamanho/qualidade conhecida da mão e risco de deck-out. Features ocultas vêm somente da crença e são identificadas no trace.
+First version combines difference in remaining prizes, KO threat, useful HP, prepared attackers, useful energy, bench quality, known hand size/quality, and deck-out risk. Hidden features come only from belief and are identified in the trace.
 
-## Testes
+## Tests
 
-- empate determinístico;
-- vitória imediata supera demais opções;
-- `END` prematuro recebe penalidade;
-- busca nunca abre fora de `MAIN`;
-- top 3 e profundidade 4;
-- `search_release` e `search_end` mesmo em exceção;
-- corte em 100 ms e abaixo de 30 s;
-- falha de busca preserva exatamente a escolha heurística.
+- deterministic tie;
+- immediate win surpasses all other options;
+- premature `END` receives penalty;
+- search never opens outside `MAIN`;
+- top 3 and depth 4;
+- `search_release` and `search_end` even on exception;
+- cutoff at 100 ms and below 30 s;
+- search failure preserves exactly the heuristic choice.

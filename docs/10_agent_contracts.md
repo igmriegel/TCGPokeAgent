@@ -1,62 +1,62 @@
-# Contratos dos agentes
+# Agent contracts
 
 ## `AgentPolicy`
 
-Todos os agentes expõem apenas:
+All agents expose only:
 
 ```python
 select(observation: Observation) -> list[int]
 ```
 
-O resultado é validado antes de sair do wrapper. Configuração, estado histórico e logs são dependências internas; não mudam o contrato.
+The result is validated before leaving the wrapper. Configuration, historical state, and logs are internal dependencies; they do not change the contract.
 
 ## `FallbackPolicy`
 
-Política determinística e total:
+Deterministic and total policy:
 
-1. gera todas as `Selection` válidas;
-2. despacha pela dupla `SelectContext`/`SelectType`;
-3. usa regra especializada quando existir;
-4. caso contrário escolhe por segurança e índice lexicográfico;
-5. devolve `[]` somente quando `minCount == 0` e a regra considerar não selecionar seguro; se uma escolha for obrigatória, devolve a combinação válida de menores índices.
+1. generates all valid `Selection`;
+2. dispatches by the `SelectContext`/`SelectType` pair;
+3. uses a specialized rule when one exists;
+4. otherwise chooses by safety and lexicographic index;
+5. returns `[]` only when `minCount == 0` and the rule considers not selecting safe; if a choice is mandatory, returns the valid combination of smallest indices.
 
-O fallback cobre setup, primeiro jogador, mulligan, ativo/banco, alvos, descarte, energia, ataques, contagens, condições especiais e `YES_NO`.
+The fallback covers setup, first player, mulligan, active/bench, targets, discard, energy, attacks, counts, special conditions, and `YES_NO`.
 
 ## `HeuristicPolicy`
 
-Ordena seleções por soma explicável:
+Sorts selections by explicable sum:
 
-1. vitória imediata;
-2. ataque eficiente;
-3. evolução útil;
-4. energia que habilita ataque;
-5. desenvolvimento do banco;
-6. compra e busca;
-7. preservação de recursos;
-8. encerramento do turno.
+1. immediate win;
+2. efficient attack;
+3. useful evolution;
+4. energy that enables an attack;
+5. bench development;
+6. draw and search;
+7. resource preservation;
+8. end of turn.
 
-Penaliza energia desperdiçada, descarte de peça-chave, evolução sem benefício, banco bloqueado e encerramento prematuro. Cada componente emite uma razão auditável. Empate: `Selection.indices`.
+Penalizes wasted energy, key piece discard, evolution without benefit, blocked bench, and premature end. Each component emits an auditable reason. Tie: `Selection.indices`.
 
 ## `SearchPolicy`
 
-Decora a heurística; não a substitui. Só abre quando:
+Decorates the heuristic; does not replace it. Only opens when:
 
 - `SelectType.MAIN`;
-- mais de uma seleção válida;
-- pelo menos dois candidatos relevantes;
+- more than one valid selection;
+- at least two relevant candidates;
 - `remainingOverageTime >= 30`;
-- crença consistente e `search_begin_input` disponível.
+- consistent belief and `search_begin_input` available.
 
-Reavalia no máximo top 3, profundidade de até 4 seleções e 100 ms totais. Qualquer erro devolve imediatamente o top-1 heurístico.
+Re-evaluates at most top 3, depth of up to 4 selections, and 100 ms total. Any error immediately returns heuristic top-1.
 
 ## `main.py`
 
-Wrapper fino:
+Thin wrapper:
 
-- ramo inicial retorna o deck;
-- demais ramos delegam a uma instância persistente da política;
-- resolve imports no diretório da submissão;
-- nunca contém heurísticas duplicadas;
-- em exceção, registra erro e retorna fallback já validado.
+- initial branch returns the deck;
+- remaining branches delegate to a persistent policy instance;
+- resolves imports in the submission directory;
+- never contains duplicate heuristics;
+- on exception, logs error and returns already validated fallback.
 
-O pacote pode desligar busca por configuração sem mudar política ou wrapper.
+The package can disable search by configuration without changing the policy or wrapper.

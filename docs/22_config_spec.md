@@ -1,6 +1,6 @@
-# Contrato de configuração
+# Configuration contract
 
-## Schema canônico
+## Canonical schema
 
 ```yaml
 project:
@@ -35,31 +35,31 @@ outputs:
   replays: true
 ```
 
-## Validação
+## Validation
 
-- campos desconhecidos: erro;
-- campo obrigatório ausente: erro;
-- `games < 20` no smoke ou `< 200` no full: erro;
-- `both_sides != true`: erro nos gates;
-- busca com limites diferentes do MVP: exige `experiment_id`;
-- `manual_coin != false`: proibido no runtime competitivo;
-- deck/oponente sem versão/hash no freeze: erro.
+- unknown fields: error;
+- missing required field: error;
+- `games < 20` in smoke or `< 200` in full: error;
+- `both_sides != true`: error at gates;
+- search with limits different from MVP: requires `experiment_id`;
+- `manual_coin != false`: forbidden in competitive runtime;
+- deck/opponent without version/hash at freeze: error.
 
-## Camadas
+## Layers
 
 1. `default.yaml`;
-2. perfil do agente;
-3. perfil de avaliação;
-4. overrides CLI.
+2. agent profile;
+3. evaluation profile;
+4. CLI overrides.
 
-Merge de mappings é profundo; listas são substituídas integralmente. Nenhum valor vem de estado global oculto. O manifesto grava configuração resolvida e lista de overrides.
+Merge of mappings is deep; lists are fully replaced. No value comes from hidden global state. The manifest records resolved configuration and list of overrides.
 
-## Migração dos arquivos atuais
+## Migration of current files
 
-- `agent_baseline.yaml`: renomear conceitualmente para fallback/first apenas na implementação.
-- `agent_heuristic.yaml`: pesos e flags M1.
-- `agent_hybrid.yaml`: reservar para modelos M2+; busca curta não torna o agente “híbrido”.
-- `eval_small.yaml`: exatamente 20 partidas.
-- `eval_full.yaml`: pelo menos 200.
+- `agent_baseline.yaml`: conceptually rename to fallback/first only in implementation.
+- `agent_heuristic.yaml`: M1 weights and flags.
+- `agent_hybrid.yaml`: reserve for M2+ models; short search does not make the agent "hybrid".
+- `eval_small.yaml`: exactly 20 matches.
+- `eval_full.yaml`: at least 200.
 
-Os YAML existentes permanecem inalterados nesta revisão documental e não devem ser tratados como executáveis até passarem pelo schema.
+The existing YAML files remain unchanged in this documentation revision and should not be treated as executable until they pass the schema.

@@ -1,8 +1,8 @@
-# Registro de evidências Strategy
+# Strategy evidence log
 
-Este arquivo é append-only para decisões aceitas. Rascunhos podem ser editados; registros com `status: accepted` só recebem correções explícitas.
+This file is append-only for accepted decisions. Drafts may be edited; records with `status: accepted` only receive explicit corrections.
 
-## Estados
+## States
 
 `planned` → `running` → `accepted` | `rejected` | `inconclusive`
 
@@ -47,20 +47,20 @@ evidence:
 writeup_claim: null
 ```
 
-## Registro inicial
+## Initial record
 
 ```yaml
 experiment_id: DOC-20260727-001
 status: accepted
-hypothesis: "Contratos alinhados à API oficial reduzem decisões arquiteturais pendentes."
+hypothesis: "Contracts aligned with the official API reduce pending architectural decisions."
 agent_version: null
 baseline_version: null
 deck_version: null
 sdk_version: "1.14.10"
 finished_at: "2026-07-27"
-decision: "Adotar Selection list[int], GameState factual e BeliefState separado."
+decision: "Adopt Selection list[int], factual GameState and separate BeliefState."
 limitations:
-  - "Nenhuma política foi implementada ou avaliada nesta revisão."
+  - "No policy was implemented or evaluated in this revision."
 evidence:
   manifest: "docs/20_master_index.md"
   report: "docs/07_core_contracts.md"

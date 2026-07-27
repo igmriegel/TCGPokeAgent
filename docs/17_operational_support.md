@@ -1,41 +1,41 @@
-# Operação diária
+# Daily operation
 
-## Ciclo
+## Cycle
 
-1. `preflight`: versões, deck, dados e imports.
-2. `smoke`: 20 partidas nos dois lados.
-3. `full`: pelo menos 200 partidas.
-4. `compare`: candidato versus referência/ablação.
-5. `freeze`: código, deck, configuração e hashes.
+1. `preflight`: versions, deck, data and imports.
+2. `smoke`: 20 matches on both sides.
+3. `full`: at least 200 matches.
+4. `compare`: candidate versus reference/ablation.
+5. `freeze`: code, deck, configuration and hashes.
 6. `package`: `.tar.gz`.
-7. `validate-package`: extração e smoke isolado.
-8. `strategy-export`: bloco de evidência.
+7. `validate-package`: extraction and isolated smoke.
+8. `strategy-export`: evidence block.
 
-Comandos-alvo estão em [`23_scripts_spec.md`](23_scripts_spec.md).
+Target commands are in [`23_scripts_spec.md`](23_scripts_spec.md).
 
-## Perfis de runtime
+## Runtime profiles
 
-- `heuristic-only`: caminho estável e fallback de toda versão.
-- `search-enabled`: mesma heurística com busca sujeita a gates.
-- `trace`: logging detalhado, somente local.
-- `submission`: logging limitado, paths relativos e dependências empacotadas.
+- `heuristic-only`: stable path and fallback for every version.
+- `search-enabled`: same heuristic with search subject to gates.
+- `trace`: detailed logging, local only.
+- `submission`: limited logging, relative paths and packaged dependencies.
 
-## Diagnóstico
+## Diagnostics
 
-Ordem de inspeção:
+Inspection order:
 
-1. status do ambiente e erro;
-2. observação/select original;
-3. seleções válidas geradas;
-4. escolha/fallback e razões;
-5. duração e overage;
-6. crença e ciclo da Search API;
-7. versão/hash de todos os componentes.
+1. environment status and error;
+2. original observation/select;
+3. generated valid selections;
+4. choice/fallback and reasons;
+5. duration and overage;
+6. belief and Search API cycle;
+7. version/hash of all components.
 
-## Incidentes
+## Incidents
 
-- um `INVALID`, `ERROR` ou `TIMEOUT`: bloquear promoção;
-- falha de busca: manter partida via heurística e abrir ocorrência;
-- schema desconhecido: fallback legal, guardar fixture sanitizada e adicionar teste;
-- regressão de SDK: congelar 1.14.10 e abrir experimento de compatibilidade;
-- pacote falha isolado: não submeter, mesmo que o código local passe.
+- one `INVALID`, `ERROR` or `TIMEOUT`: block promotion;
+- search failure: keep match via heuristic and open issue;
+- unknown schema: legal fallback, save sanitized fixture and add test;
+- SDK regression: freeze 1.14.10 and open compatibility experiment;
+- package fails in isolation: do not submit, even if local code passes.

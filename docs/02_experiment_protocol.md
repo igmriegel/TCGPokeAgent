@@ -1,39 +1,39 @@
-# Protocolo experimental
+# Experimental protocol
 
-## Unidade de mudança
+## Unit of change
 
-Toda alteração começa com uma hipótese falsificável e termina com `promote`, `iterate` ou `reject`. O registro inclui versão do agente, versão do deck, hash do modelo quando houver, configuração efetiva, seeds, oponentes e artefatos.
+Every alteration starts with a falsifiable hypothesis and ends with `promote`, `iterate` or `reject`. The record includes agent version, deck version, model hash when applicable, effective configuration, seeds, opponents and artifacts.
 
-## Comparação pareada
+## Paired comparison
 
-- Congele o pool de oponentes.
-- Use as mesmas seeds para candidato e referência.
-- Rode ambos como jogador 0 e jogador 1.
-- Mantenha o deck constante, salvo experimento explicitamente identificado como deck.
-- Compare primeiro com a melhor versão estável; compare também com a ablação direta.
-- Não misture resultados de SDKs ou esquemas de features diferentes.
+- Freeze the opponent pool.
+- Use the same seeds for candidate and reference.
+- Run both as player 0 and player 1.
+- Keep the deck constant, except for an explicitly identified deck experiment.
+- Compare first with the best stable version; also compare with direct ablation.
+- Do not mix results from different SDKs or feature schemas.
 
-## Estágios
+## Stages
 
 ### Smoke
 
-Execute 20 partidas distribuídas nos dois lados. O único gate é operacional: zero `INVALID`, `ERROR` e `TIMEOUT`, relatórios completos e decisões dentro do orçamento.
+Run 20 matches distributed across both sides. The only gate is operational: zero `INVALID`, `ERROR` and `TIMEOUT`, complete reports and decisions within budget.
 
 ### Full
 
-Execute pelo menos 200 partidas, balanceadas por lado e matchup. Reporte W/D/L, Wilson, duração e falhas. Amostras maiores são obrigatórias quando o intervalo não sustenta a decisão.
+Run at least 200 matches, balanced by side and matchup. Report W/D/L, Wilson, duration and failures. Larger samples are mandatory when the interval does not support the decision.
 
 ### Candidate
 
-Repita o full contra `random`, `first`, versão estável e ablação relevante. Congele o pacote e execute a validação pós-extração.
+Repeat the full against `random`, `first`, stable version and relevant ablation. Freeze the package and run post-extraction validation.
 
-## Regras de promoção
+## Promotion rules
 
-- Heurística: promove somente com ganho reproduzível no matchup alvo e nenhuma regressão operacional.
-- Busca: promove somente se não reduzir a taxa de vitória contra heurística pura e respeitar latência/falhas.
-- Modelo: promove somente após holdout temporal, partidas pareadas e ablação.
-- Resultado inconclusivo gera mais partidas ou hipótese revisada; nunca promoção por inspeção visual.
+- Heuristic: promotes only with reproducible gain in the target matchup and no operational regression.
+- Search: promotes only if it does not reduce win rate against pure heuristics and respects latency/failures.
+- Model: promotes only after temporal holdout, paired matches and ablation.
+- Inconclusive result generates more matches or a revised hypothesis; never promotion by visual inspection.
 
 ## Leakage
 
-Separe treino, validação e teste por tempo de geração do trace. Replays da mesma partida e estados derivados não cruzam partições. Logs de ladder não entram no treino antes de receber versão, origem e regra de uso.
+Separate training, validation and testing by trace generation time. Replays of the same match and derived states do not cross partitions. Ladder logs do not enter training before receiving version, origin and usage rule.
