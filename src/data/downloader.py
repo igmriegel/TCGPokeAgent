@@ -3,11 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 KAGGLE_DATA_DIR = Path("data/raw/kaggle")
 MANIFEST_PATH = KAGGLE_DATA_DIR / "manifest.json"
@@ -32,7 +31,7 @@ def _load_manifest() -> dict[str, Any]:
     if not MANIFEST_PATH.exists():
         print("manifest.json not found — run from project root", file=sys.stderr)
         sys.exit(1)
-    return json.loads(MANIFEST_PATH.read_text())
+    return cast(dict[str, Any], json.loads(MANIFEST_PATH.read_text()))
 
 
 def check_data(output_dir: str | Path = KAGGLE_DATA_DIR) -> dict[str, bool]:
@@ -158,9 +157,7 @@ def download_data(
 
 
 def _run_cli() -> None:
-    parser = argparse.ArgumentParser(
-        description="Download Kaggle datasets for Pokemon TCG Engine"
-    )
+    parser = argparse.ArgumentParser(description="Download Kaggle datasets for Pokemon TCG Engine")
     parser.add_argument(
         "--output",
         default=KAGGLE_DATA_DIR,
