@@ -19,6 +19,10 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.5",
     "mypy>=1.10",
+    "pre-commit>=4.0",
+]
+notebooks = [
+    "marimo>=0.12",
 ]
 
 [tool.pytest.ini_options]
