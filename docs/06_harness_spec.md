@@ -2,6 +2,20 @@
 
 Verified on 2026-07-27 against the [`cabt` API](https://matsuoinstitute.github.io/cabt/api.html), the [`cabt.json`](https://raw.githubusercontent.com/Kaggle/kaggle-environments/master/kaggle_environments/envs/cabt/cabt.json) and the [competition](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle/overview/description).
 
+## Reproducible environment
+
+The harness standardizes local development and containers on Python 3.12.
+`.python-version` selects the local interpreter, while `uv sync` creates and
+synchronizes the ignored `.venv` automatically. `pyproject.toml` declares
+dependencies and `uv.lock` is the only resolved dependency source; no
+parallel dependency manifest is maintained.
+
+Local acceptance commands use `uv run --frozen ...` and do not require
+activation. `source .venv/bin/activate` remains optional for an interactive
+shell. Docker stages use the same frozen lock: `agent` installs runtime
+dependencies, `dev` adds the `dev` group, and `marimo` adds the `notebooks`
+group.
+
 ## Agent input
 
 `Observation` contains:
@@ -60,11 +74,14 @@ The environment publishes `actTimeout=0`, `runTimeout=2000`, `remainingOverageTi
 
 ## Package
 
-- pin `kaggle-environments==1.14.10` during the MVP;
+- pin `kaggle-environments==1.32.2` during the MVP and verify the installed
+  distribution version during preflight;
 - validate the 60-card deck from `cabt.first_agent` on the installed SDK;
 - keep `main.py` and `deck.csv` at the root of the `.tar.gz`;
 - make imports from `/kaggle_simulations/agent/`;
 - keep the file under 197.7 MiB;
 - extract into a temporary directory and test using only the extracted content.
 
-Differences against the latest SDK version are inventoried after the MVP 1.14.10 is green; the dependency is not updated silently.
+SDK upgrades require an explicit compatibility experiment, a regenerated
+lockfile, and a harness contract update; the dependency is never updated
+silently.

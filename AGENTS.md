@@ -101,6 +101,8 @@ Code, Codex, Antigravity) and readers worldwide.
 
 The project uses `uv` (Astral) for package and environment management. All
 dependency resolution is pinned in `uv.lock` (committed to version control).
+Python 3.12 is selected by `.python-version`, and `.venv` is a disposable local
+artifact that must not be committed.
 
 ```bash
 # Create venv and install all dependencies
@@ -110,17 +112,21 @@ uv sync
 uv add <package>
 
 # Run a command in the venv
-uv run <command>
+uv run --frozen <command>
+
+# Optional interactive activation
+source .venv/bin/activate
 ```
 
 `uv.lock` must be kept in sync with `pyproject.toml`. After editing
 dependencies in `pyproject.toml`, run `uv lock` to update the lockfile.
 CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
+`pyproject.toml` and `uv.lock` are the only dependency sources.
 
 ## Coding Conventions
 
 ### Style
-- Python 3.11+ with `from __future__ import annotations`
+- Python 3.12 with `from __future__ import annotations`
 - Use `@dataclass(slots=True)` for data objects, `@dataclass(frozen=True, slots=True)` for immutable
 - Return types on every public function
 - No comments unless explaining a non-obvious invariant
@@ -171,7 +177,7 @@ CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
 
 Run:
 ```bash
-pytest tests/ -v
+uv run --frozen pytest tests/ -v
 ```
 
 ---
@@ -253,10 +259,10 @@ docker compose run --rm dev pytest tests/ -v
 ### Download data
 ```bash
 # Check integrity
-python -m src.data.downloader --check
+uv run --frozen python -m src.data.downloader --check
 
 # Download missing datasets
-python -m src.data.downloader
+uv run --frozen python -m src.data.downloader
 ```
 
 ### Run evaluation
@@ -265,7 +271,7 @@ python -m src.data.downloader
 AGENT_MODE=heuristic scripts/run_smoke.sh
 
 # Full (200 matches)
-python -c "from src.experiments.orchestrator import run_experiment; from src.config.loader import load_config; run_experiment('full', load_config('eval_full'))"
+uv run --frozen python -c "from src.experiments.orchestrator import run_experiment; from src.config.loader import load_config; run_experiment('full', load_config('eval_full'))"
 
 # Build submission package
 scripts/build_package.sh submission.tar.gz
@@ -275,7 +281,7 @@ scripts/build_package.sh submission.tar.gz
 
 ## Key Design Decisions (locked)
 
-- SDK pinned to `kaggle-environments==1.14.10` during MVP
+- SDK pinned to `kaggle-environments==1.32.2` during MVP
 - Single deck from `cabt.first_agent`
 - Decision unit is `Selection` (not single `Action`)
 - `GameState` factual, `BeliefState` hypothetical — never mixed

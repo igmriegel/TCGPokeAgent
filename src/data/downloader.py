@@ -82,7 +82,7 @@ def _download_competition(
     try:
         import kagglehub
     except ImportError:
-        print("kagglehub not installed. Run: pip install kagglehub>=0.3", file=sys.stderr)
+        print("kagglehub not installed. Run: uv sync", file=sys.stderr)
         return False
 
     print(f"  Downloading {comp_name} ...")

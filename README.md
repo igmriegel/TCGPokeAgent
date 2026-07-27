@@ -14,7 +14,7 @@ This revision defines the implementation; the existing Python modules and YAML f
 
 ## External contract
 
-- Initial compatibility: `kaggle-environments==1.14.10`.
+- Initial compatibility: `kaggle-environments==1.32.2`.
 - Input: `Observation(current, logs, select, search_begin_input)`.
 - In-game output: `list[int]` with indices of legal options.
 - Initial output: deck content when `select is None`.
@@ -114,31 +114,40 @@ The project uses `ruff` for formatting and lint, `mypy` for type checking and
 
 ### Initial setup
 
+Python 3.12 is selected by `.python-version`. `uv sync` creates `.venv`
+automatically and synchronizes the default development group from `uv.lock`.
+
 ```bash
 uv sync
-pre-commit install
+uv run --frozen pre-commit install
+
+# Optional: activate the environment for an interactive shell
+source .venv/bin/activate
 ```
+
+Activation is not required. Use `uv run --frozen ...` so commands always use
+the locked environment without modifying `uv.lock`.
 
 ### Manual execution
 
 ```bash
 # Format all code
-ruff format .
+uv run --frozen ruff format .
 
 # Lint (check and auto-fix)
-ruff check --fix .
+uv run --frozen ruff check --fix .
 
 # Type checking (src/ only)
-mypy --config-file=pyproject.toml src/
+uv run --frozen mypy --config-file=pyproject.toml src/
 
 # Run all pre-commit hooks without committing
-pre-commit run --all-files
+uv run --frozen pre-commit run --all-files
 
 # Run a specific hook
-pre-commit run ruff-format --all-files
+uv run --frozen pre-commit run ruff-format --all-files
 
 # Run tests
-pytest tests/ -v
+uv run --frozen pytest tests/ -v
 ```
 
 ### Pre-commit (automatic)
@@ -185,13 +194,13 @@ chmod 600 ~/.kaggle/kaggle.json
 
 ```bash
 # Check if data exists (exit 0 = OK)
-python -m src.data.downloader --check
+uv run --frozen python -m src.data.downloader --check
 
 # Download data (lazy — only downloads what is missing)
-python -m src.data.downloader
+uv run --frozen python -m src.data.downloader
 
 # Only one competition
-python -m src.data.downloader --competition simulation
+uv run --frozen python -m src.data.downloader --competition simulation
 
 # Using the wrapper script
 scripts/download_data.sh

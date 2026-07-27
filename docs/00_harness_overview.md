@@ -12,7 +12,12 @@ Deliver a reproducible agent that:
 
 ## MVP scope
 
-The MVP uses `kaggle-environments==1.14.10`, the official agent deck `cabt.first_agent`, a heuristic policy and search up to 100 ms on `MAIN` decisions. Multi-deck support, deck optimization, training and learned models are left for after the first valid package.
+The MVP uses Python 3.12 and `kaggle-environments==1.32.2`, the official agent
+deck `cabt.first_agent`, a heuristic policy and search up to 100 ms on `MAIN`
+decisions. `pyproject.toml` and `uv.lock` are the only dependency sources, and
+all acceptance commands run through `uv`. Multi-deck support, deck
+optimization, training and learned models are left for after the first valid
+package.
 
 ## Definition of submittable
 

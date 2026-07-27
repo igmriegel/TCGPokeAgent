@@ -6,6 +6,7 @@ def test_load_default():
     config = loader.load("default.yaml")
 
     assert config.project == "Pokemon_TCG_engine_Kaggle"
+    assert config.sdk_version == "1.32.2"
     assert config.seed == 42
     assert config.agent == "baseline"
 

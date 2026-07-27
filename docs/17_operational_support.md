@@ -37,5 +37,5 @@ Inspection order:
 - one `INVALID`, `ERROR` or `TIMEOUT`: block promotion;
 - search failure: keep match via heuristic and open issue;
 - unknown schema: legal fallback, save sanitized fixture and add test;
-- SDK regression: freeze 1.14.10 and open compatibility experiment;
+- SDK regression: keep 1.32.2 frozen and open a compatibility experiment;
 - package fails in isolation: do not submit, even if local code passes.

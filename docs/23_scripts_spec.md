@@ -1,17 +1,18 @@
 # Operational commands contract
 
-These commands are implementation targets; they are not declared available today.
+These commands are implementation targets; they are not declared available
+today. Every Python entry point runs through the frozen `uv` environment.
 
 ```bash
-python -m scripts.preflight --config configs/default.yaml
-python -m scripts.run_eval --profile smoke --agent heuristic
-python -m scripts.run_eval --profile full --agent search
-python -m scripts.compare_runs --candidate RUN --baseline RUN
-python -m scripts.freeze_candidate --run RUN
-python -m scripts.package_submission --artifact ARTIFACT
-python -m scripts.validate_package --archive submission.tar.gz
-python -m scripts.export_strategy --run RUN
-python -m scripts.inventory_kaggle_data
+uv run --frozen python -m scripts.preflight --config configs/default.yaml
+uv run --frozen python -m scripts.run_eval --profile smoke --agent heuristic
+uv run --frozen python -m scripts.run_eval --profile full --agent search
+uv run --frozen python -m scripts.compare_runs --candidate RUN --baseline RUN
+uv run --frozen python -m scripts.freeze_candidate --run RUN
+uv run --frozen python -m scripts.package_submission --artifact ARTIFACT
+uv run --frozen python -m scripts.validate_package --archive submission.tar.gz
+uv run --frozen python -m scripts.export_strategy --run RUN
+uv run --frozen python -m scripts.inventory_kaggle_data
 ```
 
 ## Common rules
@@ -30,7 +31,7 @@ After accepting the rules:
 ```bash
 kaggle competitions download pokemon-tcg-ai-battle -p data/raw/kaggle/simulation
 kaggle competitions download pokemon-tcg-ai-battle-challenge-strategy -p data/raw/kaggle/strategy
-python -m scripts.inventory_kaggle_data
+uv run --frozen python -m scripts.inventory_kaggle_data
 ```
 
 The inventory fails if any file lacks source, competition, version/date, size, SHA-256, format, license/status, utility and leakage risk.

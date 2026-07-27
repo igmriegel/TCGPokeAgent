@@ -1,17 +1,32 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
 
-class PreflightError(Exception): ...
+class PreflightError(Exception):
+    """Report an evaluation preflight failure."""
 
 
-def check_sdk_version(expected: str = "1.14.10") -> None:
+def check_sdk_version(expected: str = "1.32.2") -> None:
+    """Validate that the installed SDK matches the pinned harness version.
+
+    Args:
+        expected: Exact ``kaggle-environments`` version required by the harness.
+
+    Raises:
+        PreflightError: If the distribution is absent or has a different version.
+    """
     try:
-        import kaggle_environments  # noqa: F401
-    except ImportError:
-        raise PreflightError("kaggle-environments not installed")
+        installed = version("kaggle-environments")
+    except PackageNotFoundError as error:
+        raise PreflightError("kaggle-environments not installed") from error
+
+    if installed != expected:
+        raise PreflightError(
+            f"kaggle-environments version {installed} installed, expected {expected}"
+        )
 
 
 def check_deck(deck_path: str | Path) -> list[Any]:

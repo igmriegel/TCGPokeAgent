@@ -10,6 +10,7 @@ import yaml
 @dataclass(slots=True)
 class Config:
     project: str = ""
+    sdk_version: str = "1.32.2"
     seed: int = 42
     agent: str = "baseline"
     runs: int = 200
@@ -51,6 +52,7 @@ class ConfigLoader:
         extra = {k: v for k, v in raw.items() if k not in Config.__dataclass_fields__}
         return Config(
             project=str(raw.get("project", "")),
+            sdk_version=str(raw.get("sdk_version", "1.32.2")),
             seed=int(raw.get("seed", 42)),
             agent=str(raw.get("agent", "baseline")),
             runs=int(raw.get("runs", 200)),

@@ -5,7 +5,7 @@
 ```yaml
 project:
   name: pokemon_tcg_engine_kaggle
-  sdk_version: "1.14.10"
+  sdk_version: "1.32.2"
   seed: 0
 agent:
   kind: heuristic

@@ -2,7 +2,9 @@
 
 ## Closed decisions
 
-- SDK initial `kaggle-environments==1.14.10`;
+- Python 3.12 selected by `.python-version` and reproduced in Docker;
+- dependencies resolved exclusively by `pyproject.toml` and `uv.lock`;
+- SDK initial `kaggle-environments==1.32.2`;
 - single deck from `cabt.first_agent`;
 - input `Observation`, output `list[int]`;
 - decision unit `Selection`;

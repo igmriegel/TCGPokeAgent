@@ -4,7 +4,8 @@ Each slice ends in an executable test; not all abstractions are built before the
 
 ## F0 — environment and minimal package
 
-1. Create isolated environment and install `kaggle-environments==1.14.10`.
+1. Run `uv sync` to create the Python 3.12 environment with
+   `kaggle-environments==1.32.2` from the frozen lockfile.
 2. Locate `cabt.first_agent`, copy its 60-card deck, and validate it with the SDK.
 3. Create thin `main.py` and `deck.csv`.
 4. Run `first` versus `random` on both sides.

@@ -10,7 +10,7 @@ hypothesis: falsifiable text
 candidate: immutable version
 baseline: immutable version
 deck_version: immutable version
-sdk_version: "1.14.10"
+sdk_version: "1.32.2"
 matchups: []
 seeds: []
 games: 200

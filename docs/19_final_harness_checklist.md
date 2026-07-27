@@ -14,7 +14,9 @@
 
 ## MVP integrated
 
-- [ ] SDK 1.14.10 installed in isolated environment;
+- [ ] Python 3.12 environment created by `uv sync --frozen`;
+- [ ] SDK 1.32.2 and `kagglehub` installed from `uv.lock`;
+- [ ] preflight confirms the exact SDK distribution version;
 - [ ] official 60-card deck validated;
 - [ ] initial wrapper and game branch pass;
 - [ ] fallback covers all observed contexts;

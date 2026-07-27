@@ -1,2 +1,3 @@
 project: Pokemon_TCG_engine_Kaggle
+sdk_version: "1.32.2"
 seed: 42

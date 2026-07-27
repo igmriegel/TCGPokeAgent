@@ -2,7 +2,7 @@
 
 | Milestone | Delivery | Gate |
 |---|---|---|
-| M0 | SDK 1.14.10, official deck, wrapper, parser and fallback | smoke of 20; zero failures |
+| M0 | SDK 1.32.2, official deck, wrapper, parser and fallback | smoke of 20; zero failures |
 | M1 | configurable heuristics and per-rule ablations | reproducible gain without new failures |
 | M2 | linear NumPy ranker | beats heuristics on temporal holdout and paired matches |
 | M3 | LightGBM LambdaRank | local gain, SHAP/ablation and compatible package |

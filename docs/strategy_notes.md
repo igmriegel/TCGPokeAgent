@@ -17,7 +17,7 @@ baseline_version: null
 deck_version: null
 deck_sha256: null
 model_sha256: null
-sdk_version: "1.14.10"
+sdk_version: "1.32.2"
 config:
   files: []
   overrides: {}
@@ -56,7 +56,7 @@ hypothesis: "Contracts aligned with the official API reduce pending architectura
 agent_version: null
 baseline_version: null
 deck_version: null
-sdk_version: "1.14.10"
+sdk_version: "1.32.2"
 finished_at: "2026-07-27"
 decision: "Adopt Selection list[int], factual GameState and separate BeliefState."
 limitations:
