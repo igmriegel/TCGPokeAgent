@@ -1,4 +1,0 @@
-kaggle-environments==1.14.10
-kagglehub>=0.3
-PyYAML>=6.0
-structlog>=24.0
