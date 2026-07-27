@@ -11,7 +11,7 @@ echo "=== Full evaluation: ${AGENT_MODE} (${CONFIG}) ==="
 export AGENT_MODE
 export LOG_LEVEL=INFO
 
-python -c "
+uv run --frozen python -c "
 from src.experiments.orchestrator import run_experiment
 from src.config.loader import load_config
 

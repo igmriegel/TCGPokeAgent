@@ -3,11 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-CMD="python3 -m src.data.downloader"
-
 if [ "${1:-}" = "--check" ]; then
     echo "=== Checking data integrity ==="
-    exec $CMD --check
+    exec uv run --frozen python -m src.data.downloader --check
 fi
 
 echo "=== Downloading Kaggle datasets ==="
@@ -20,4 +18,4 @@ if [ "${1:-}" = "--competition" ] && [ -n "${2:-}" ]; then
     shift 2
 fi
 
-exec $CMD --competition "$COMPETITION"
+exec uv run --frozen python -m src.data.downloader --competition "$COMPETITION"

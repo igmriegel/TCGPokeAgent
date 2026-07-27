@@ -11,6 +11,6 @@ echo "=== Smoke test: ${AGENT_MODE} (seed ${SEED}) ==="
 export AGENT_MODE
 export LOG_LEVEL=INFO
 
-python -m pytest tests/ -v --tb=short 2>&1
+uv run --frozen pytest tests/ -v --tb=short 2>&1
 
 echo "=== Smoke complete ==="
