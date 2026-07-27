@@ -102,7 +102,7 @@ AGENT_MODE=heuristic docker compose run experiment
 
 ### Volumes
 
-- `kaggle_data` (named) — dataset persistence between executions
+- `./data:/app/data` — dataset and manifest persistence between executions
 - `./kaggle.json:/root/.kaggle/kaggle.json:ro` — API credentials
 - `./notebooks:/app/notebooks` — live-editable notebooks
 - `./reports:/app/reports` — experiment reports accessible from host

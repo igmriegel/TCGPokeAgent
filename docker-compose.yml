@@ -11,7 +11,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
-      - kaggle_data:/app/data
+      - ./data:/app/data
 
   marimo:
     build:
@@ -26,7 +26,7 @@ services:
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
       - ./notebooks:/app/notebooks
-      - kaggle_data:/app/data
+      - ./data:/app/data
       - ./reports:/app/reports
     restart: unless-stopped
 
@@ -48,7 +48,7 @@ services:
         run_experiment(name='docker_${AGENT_MODE:-baseline}', config=config, output_dir='reports')
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
-      - kaggle_data:/app/data
+      - ./data:/app/data
       - ./reports:/app/reports
 
   download:
@@ -66,7 +66,7 @@ services:
       - ${COMPETITION:-all}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
-      - kaggle_data:/app/data
+      - ./data:/app/data
 
   dev:
     build:
@@ -85,7 +85,4 @@ services:
       - ./notebooks:/app/notebooks
       - ./scripts:/app/scripts
       - ./reports:/app/reports
-      - kaggle_data:/app/data
-
-volumes:
-  kaggle_data:
+      - ./data:/app/data
