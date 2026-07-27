@@ -17,7 +17,7 @@ COPY main.py .
 
 RUN useradd -m -u 1000 app \
     && mkdir -p /home/app/.kaggle /app/data /app/notebooks /app/reports \
-    && chown -R app:app /app /home/app/.kaggle
+    && chown -R app:app /home/app/.kaggle /app/data /app/notebooks /app/reports
 COPY --chown=app:app kaggle.json.example /home/app/.kaggle/kaggle.json.example
 
 USER app
