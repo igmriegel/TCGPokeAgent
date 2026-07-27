@@ -1,0 +1,85 @@
+services:
+
+  agent:
+    build:
+      context: .
+      target: agent
+    image: pokemon-tcg-engine:latest
+    stdin_open: true
+    environment:
+      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./kaggle.json:/root/.kaggle/kaggle.json:ro
+      - kaggle_data:/app/data
+
+  marimo:
+    build:
+      context: .
+      target: marimo
+    image: pokemon-tcg-engine:marimo
+    ports:
+      - "${MARIMO_PORT:-2718}:2718"
+    environment:
+      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./kaggle.json:/root/.kaggle/kaggle.json:ro
+      - ./notebooks:/app/notebooks
+      - kaggle_data:/app/data
+      - ./reports:/app/reports
+    restart: unless-stopped
+
+  experiment:
+    build:
+      context: .
+      target: agent
+    image: pokemon-tcg-engine:latest
+    environment:
+      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    command: >
+      python -c "
+      from src.experiments.orchestrator import run_experiment;
+      from src.config.loader import load_config;
+      config = load_config('${EVAL_CONFIG:-eval_full}');
+      run_experiment(name='docker_${AGENT_MODE:-baseline}', config=config, output_dir='reports');
+      "
+    volumes:
+      - ./kaggle.json:/root/.kaggle/kaggle.json:ro
+      - kaggle_data:/app/data
+      - ./reports:/app/reports
+
+  download:
+    build:
+      context: .
+      target: agent
+    image: pokemon-tcg-engine:latest
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    command: python -m src.data.downloader --competition ${COMPETITION:-all}
+    volumes:
+      - ./kaggle.json:/root/.kaggle/kaggle.json:ro
+      - kaggle_data:/app/data
+
+  dev:
+    build:
+      context: .
+      target: dev
+    image: pokemon-tcg-engine:dev
+    stdin_open: true
+    environment:
+      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./kaggle.json:/root/.kaggle/kaggle.json:ro
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./configs:/app/configs
+      - ./notebooks:/app/notebooks
+      - ./scripts:/app/scripts
+      - ./reports:/app/reports
+      - kaggle_data:/app/data
+
+volumes:
+  kaggle_data:
