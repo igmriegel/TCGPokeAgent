@@ -1,5 +1,5 @@
-# Artefatos
+# Artifacts
 
-Modelos, candidatos congelados e `.tar.gz` de submissão, cada um com SHA-256, config efetiva, deck, SDK e run de origem.
+Models, frozen candidates, and submission `.tar.gz` files, each with SHA-256, effective config, deck, SDK, and source run.
 
-Um pacote só entra aqui após validação isolada descrita em [`docs/13_eval_implementation.md`](../../docs/13_eval_implementation.md).
+A package only enters here after isolated validation described in [`docs/13_eval_implementation.md`](../../docs/13_eval_implementation.md).

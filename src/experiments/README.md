@@ -1,5 +1,5 @@
-# Experimentos
+# Experiments
 
-Implementar specs reproduzíveis, runs imutáveis, registry, grids, ablações e promoção/rollback.
+Implement reproducible specs, immutable runs, registry, grids, ablations, and promotion/rollback.
 
-Contrato: [`docs/09_experiment_contracts.md`](../../docs/09_experiment_contracts.md).
+Contract: [`docs/09_experiment_contracts.md`](../../docs/09_experiment_contracts.md).

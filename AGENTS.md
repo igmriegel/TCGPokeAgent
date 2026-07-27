@@ -26,13 +26,13 @@ Observation
   │     raw, state, select_type/context, candidates
   │
   ├─ SelectionGenerator.generate(candidates, min/max, energy, damage) → list[Selection]
-  │     combinações legais de opções
+  │     legal combinations of options
   │
   ├─ HeuristicScorer.score(state, selection) → (float, reasons)
-  │     (opcional) ShortSearch.choose(observation, belief, ranked, budget)
+  │     (optional) ShortSearch.choose(observation, belief, ranked, budget)
   │
   └─ AgentPolicy.select(observation) → list[int]
-        retorna índices da melhor Selection
+        returns indices of the best Selection
 ```
 
 **Separation:** `GameState` = facts only. `BeliefState` = hypotheses. Never
@@ -89,6 +89,13 @@ docs/                            # 26 markdown files: architecture, contracts, s
 ```
 
 ---
+
+## Language
+
+The project language is **English**. All code, identifiers, docstrings,
+comments, documentation, commit messages, and configuration files must be
+written in English. This ensures consistency across tools (opencode, Claude
+Code, Codex, Antigravity) and readers worldwide.
 
 ## Coding Conventions
 

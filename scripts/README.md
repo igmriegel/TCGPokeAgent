@@ -1,5 +1,5 @@
-# Scripts operacionais
+# Operational scripts
 
-Implementar wrappers finos para preflight, smoke/full, comparação, freeze, package, validação isolada, Strategy e inventário Kaggle.
+Implement thin wrappers for preflight, smoke/full, comparison, freeze, package, isolated validation, Strategy, and Kaggle inventory.
 
-Comandos e exit codes: [`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).
+Commands and exit codes: [`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).

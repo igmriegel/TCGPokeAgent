@@ -1,5 +1,5 @@
-# Avaliação
+# Evaluation
 
-Implementar preflight, runner, métricas, comparação pareada e reporting. Smoke usa 20 partidas; full usa pelo menos 200; ambos cobrem os dois lados e exigem zero falhas.
+Implement preflight, runner, metrics, paired comparison, and reporting. Smoke uses 20 matches; full uses at least 200; both cover both sides and require zero failures.
 
-Contrato: [`docs/08_eval_contracts.md`](../../docs/08_eval_contracts.md).
+Contract: [`docs/08_eval_contracts.md`](../../docs/08_eval_contracts.md).

@@ -1,5 +1,5 @@
 # Logs
 
-Traces brutos por partida e decisão. Cada registro inclui run/match, seed, lado, versão, contexto, seleção, duração, fallback e busca.
+Raw traces per match and decision. Each record includes run/match, seed, side, version, context, selection, duration, fallback, and search.
 
-Layout canônico: [`docs/16_persistence_and_outputs.md`](../../docs/16_persistence_and_outputs.md).
+Canonical layout: [`docs/16_persistence_and_outputs.md`](../../docs/16_persistence_and_outputs.md).

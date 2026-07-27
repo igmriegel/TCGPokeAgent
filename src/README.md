@@ -1,14 +1,14 @@
-# Layout de implementação
+# Implementation layout
 
-Namespaces reservados, na ordem vertical do MVP:
+Reserved namespaces, in MVP vertical order:
 
-- `core/`: `Selection`, estado factual, crença, parser e interfaces.
-- `agents/`: fallback, heurística, busca curta e wrapper.
-- `eval/`: runner, validação, métricas, comparação e reporting.
-- `experiments/`: specs, execução, grids e registry.
-- `logs/`: traces brutos.
-- `reports/`: resumos calculados.
-- `data/`: datasets derivados; dados oficiais brutos ficam em `data/raw/`.
-- `artifacts/`: modelos e pacotes congelados.
+- `core/`: `Selection`, factual state, belief, parser, and interfaces.
+- `agents/`: fallback, heuristic, short search, and wrapper.
+- `eval/`: runner, validation, metrics, comparison, and reporting.
+- `experiments/`: specs, execution, grids, and registry.
+- `logs/`: raw traces.
+- `reports/`: computed summaries.
+- `data/`: derived datasets; official raw data lives in `data/raw/`.
+- `artifacts/`: models and frozen packages.
 
-Os módulos atuais são placeholders. Implemente conforme [`docs/11_implementation_order.md`](../docs/11_implementation_order.md), sem tratar o código existente como contrato.
+Current modules are placeholders. Implement per [`docs/11_implementation_order.md`](../docs/11_implementation_order.md), without treating existing code as contract.

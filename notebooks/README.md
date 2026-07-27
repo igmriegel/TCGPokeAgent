@@ -1,5 +1,5 @@
 # Notebooks
 
-Espaço para análise exploratória de erros, matchups, seeds, features e ablações. Notebooks não executam o pipeline de produção nem são fonte única de uma decisão.
+Space for exploratory analysis of errors, matchups, seeds, features, and ablations. Notebooks do not execute the production pipeline nor are they the single source of a decision.
 
-Resultados estáveis migram para um relatório e para [`docs/strategy_notes.md`](../docs/strategy_notes.md).
+Stable results migrate to a report and to [`docs/strategy_notes.md`](../docs/strategy_notes.md).

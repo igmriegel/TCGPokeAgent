@@ -1,5 +1,5 @@
-# Dados derivados
+# Derived data
 
-Este namespace recebe features, tabelas de matchup e snapshots de treino derivados de traces versionados. Dados oficiais brutos ficam em `data/raw/kaggle/`, catalogados em [`docs/21_persistence_contracts.md`](../../docs/21_persistence_contracts.md).
+This namespace holds features, matchup tables, and training snapshots derived from versioned traces. Official raw data lives in `data/raw/kaggle/`, cataloged in [`docs/21_persistence_contracts.md`](../../docs/21_persistence_contracts.md).
 
-Todo dataset derivado registra schema, transformação, fontes, partição temporal e risco de leakage.
+Every derived dataset records schema, transformation, sources, temporal partition, and leakage risk.

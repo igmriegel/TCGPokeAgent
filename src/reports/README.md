@@ -1,5 +1,5 @@
-# Relatórios
+# Reports
 
-Resumos JSON, CSV e Markdown derivados dos registros brutos. Reporting serializa métricas já calculadas e nunca altera runs concluídos.
+JSON, CSV, and Markdown summaries derived from raw execution records. Reporting serializes already-computed metrics and never alters completed runs.
 
-Definições: [`docs/03_metrics.md`](../../docs/03_metrics.md).
+Definitions: [`docs/03_metrics.md`](../../docs/03_metrics.md).
