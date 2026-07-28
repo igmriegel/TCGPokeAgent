@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import csv
+import json
 import os
 import sys
 from pathlib import Path
@@ -9,6 +9,10 @@ from typing import Any
 from src.agents.baseline import BaselineAgent
 from src.agents.heuristic import HeuristicAgent
 from src.core import AgentPolicy
+from src.eval.validation import (
+    check_deck,
+    check_legal_selection,
+)
 from src.logging_setup import get_logger, setup_logging
 
 logger = get_logger(__name__)
@@ -21,20 +25,8 @@ def _load_deck() -> list[int]:
     deck_path = Path(__file__).parent / "src" / "artifacts" / "deck.csv"
     if not deck_path.exists():
         deck_path = Path(__file__).parent / "deck.csv"
-
-    if deck_path.exists():
-        with open(deck_path) as f:
-            reader = csv.reader(f)
-            cards = []
-            for row in reader:
-                if row:
-                    try:
-                        cards.append(int(row[0]))
-                    except ValueError:
-                        cards.append(hash(row[0]))
-        return cards
-
-    return list(range(1, 61))
+    rows = check_deck(deck_path)
+    return [int(row[0]) for row in rows]
 
 
 def _build_agent() -> AgentPolicy:
@@ -54,9 +46,35 @@ def agent_policy(observation: dict[str, Any]) -> list[int]:
 
     select = observation.get("select")
     if select is None:
-        return _deck
+        return list(_deck)
 
-    return _agent.select(observation)
+    try:
+        result = _agent.select(observation)
+        check_legal_selection(observation, result)
+        return result
+    except Exception:
+        return _fallback_selection(observation)
+
+
+def _fallback_selection(observation: dict[str, Any]) -> list[int]:
+    """Return the first deterministic selection satisfying SDK cardinality."""
+    select = observation.get("select")
+    if not isinstance(select, dict):
+        return []
+    options = select.get("option")
+    if not isinstance(options, list):
+        return []
+    try:
+        min_count = max(0, int(select.get("minCount", 0) or 0))
+    except (TypeError, ValueError):
+        return []
+    count = min(min_count, len(options))
+    fallback = list(range(count))
+    try:
+        check_legal_selection(observation, fallback)
+    except Exception:
+        return []
+    return fallback
 
 
 def main() -> None:
@@ -69,17 +87,18 @@ def main() -> None:
 
 
 def _read_observation() -> dict[str, Any]:
-    import json
-
     raw = sys.stdin.read()
     if raw:
-        return dict(json.loads(raw))
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
     return {}
 
 
 def _write_result(result: list[int]) -> None:
-    import json
-
     json.dump(result, sys.stdout, indent=None)
     sys.stdout.flush()
 

@@ -118,6 +118,11 @@ def check_deck(deck_path: str | Path) -> list[list[str]]:
         raise PreflightError(f"deck has {len(cards)} cards, expected 60")
     if any(len(row) != 1 or not row[0].strip() for row in cards):
         raise PreflightError("deck must contain one non-empty card identifier per row")
+    try:
+        if any(int(row[0]) <= 0 for row in cards):
+            raise PreflightError("deck card identifiers must be positive integers")
+    except ValueError as error:
+        raise PreflightError("deck card identifiers must be integers") from error
 
     return cards
 
@@ -134,7 +139,7 @@ def check_agent_output(output: Any) -> None:
     if not isinstance(output, list):
         raise PreflightError(f"agent output is {type(output).__name__}, expected list[int]")
     for item in output:
-        if not isinstance(item, int):
+        if isinstance(item, bool) or not isinstance(item, int):
             raise PreflightError(f"agent output contains {type(item).__name__}, expected int")
 
 
@@ -181,3 +186,37 @@ def check_observation(observation: Any) -> None:
     options = select.get("option")
     if not isinstance(options, list) or any(not isinstance(option, Mapping) for option in options):
         raise PreflightError("observation select.option must be a list of mappings")
+
+
+def check_legal_selection(observation: Any, output: Any) -> None:
+    """Validate selection indices against the active SDK decision.
+
+    Args:
+        observation: Raw SDK observation containing the current selection.
+        output: Candidate option indices returned by the agent.
+
+    Raises:
+        PreflightError: If the output violates the decision bounds.
+    """
+    check_agent_output(output)
+    if not isinstance(observation, Mapping):
+        raise PreflightError("observation must be a mapping")
+    select = observation.get("select")
+    if select is None:
+        return
+    if not isinstance(select, Mapping):
+        raise PreflightError("observation field 'select' must be a mapping or null")
+    options = select.get("option")
+    if not isinstance(options, list):
+        raise PreflightError("observation select.option must be a list")
+    if len(output) != len(set(output)):
+        raise PreflightError("agent output contains duplicate option indices")
+    if any(index < 0 or index >= len(options) for index in output):
+        raise PreflightError("agent output contains an out-of-range option index")
+
+    min_count = int(select.get("minCount", 0) or 0)
+    max_count = int(select.get("maxCount", 0) or 0)
+    if not min_count <= len(output) <= max_count:
+        raise PreflightError(
+            f"agent output has {len(output)} indices, expected between {min_count} and {max_count}"
+        )
