@@ -1,4 +1,13 @@
-from src.core import Candidate, DefaultSelectionGenerator, OptionType
+import pytest
+
+from src.core import (
+    Candidate,
+    DefaultSelectionGenerator,
+    LegalityViolationError,
+    OptionType,
+    Selection,
+    SelectionValidator,
+)
 
 
 def _make_candidate(index: int, opt_type: str, card_id: str = "") -> Candidate:
@@ -48,6 +57,35 @@ def test_no_candidates():
     gen = DefaultSelectionGenerator()
     selections = gen.generate([], min_count=1, max_count=1)
     assert selections == []
+
+
+def test_empty_selection_is_generated_without_candidates_when_optional():
+    gen = DefaultSelectionGenerator()
+    selections = gen.generate([], min_count=0, max_count=1)
+    assert [selection.indices for selection in selections] == [()]
+
+
+def test_invalid_bounds_have_no_legal_selections():
+    gen = DefaultSelectionGenerator()
+    assert gen.generate([], min_count=-1, max_count=1) == []
+    assert gen.generate([], min_count=2, max_count=1) == []
+
+
+def test_energy_requirement_uses_option_count():
+    gen = DefaultSelectionGenerator()
+    candidates = [_make_candidate(0, "ENERGY"), _make_candidate(1, "ENERGY")]
+    candidates[0] = Candidate(0, {"count": 2}, OptionType.ENERGY)
+    selections = gen.generate(candidates, 1, 1, remain_energy_cost=2)
+    assert [selection.indices for selection in selections] == [(0,)]
+
+
+def test_validator_rejects_duplicate_and_unknown_indices():
+    validator = SelectionValidator()
+    candidates = [_make_candidate(3, "YES")]
+    with pytest.raises(LegalityViolationError):
+        validator.validate(Selection((3, 3), (OptionType.YES, OptionType.YES)), candidates, 2, 2)
+    with pytest.raises(LegalityViolationError):
+        validator.validate(Selection((0,), (OptionType.YES,)), candidates, 1, 1)
 
 
 def test_no_duplicate_indices():
