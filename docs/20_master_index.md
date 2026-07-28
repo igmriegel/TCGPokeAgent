@@ -13,6 +13,7 @@
 9. [`13_eval_implementation.md`](13_eval_implementation.md) — runner and metrics.
 10. [`14_experiment_implementation.md`](14_experiment_implementation.md) — experiments.
 11. [`24_handoff_spec.md`](24_handoff_spec.md) — handoff and gates.
+12. [`25_rfl_experiments.md`](25_rfl_experiments.md) — RFL experiment runbook.
 
 ## Product and research
 

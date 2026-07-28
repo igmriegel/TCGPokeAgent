@@ -173,6 +173,21 @@ automatically:
 If any hook fails, the commit is blocked. Fix the issues and try
 again.
 
+## RFL experiments
+
+The post-MVP RFL workflow is opt-in and documented in the [RFL experiment
+runbook](docs/25_rfl_experiments.md). The shortest complete local sequence is:
+
+```bash
+scripts/run_smoke.sh rfl
+scripts/run_full.sh rfl configs/eval_full.yaml
+scripts/build_package.sh runs/rfl/latest/submission.tar.gz
+```
+
+The full run uses 200 seeds on both player sides. Do not promote a profile from
+the smoke or small evaluation; use the holdout gates and extracted-package
+validation described in the runbook.
+
 ## Data
 
 The official Kaggle competition datasets are stored in `data/raw/kaggle/`:
