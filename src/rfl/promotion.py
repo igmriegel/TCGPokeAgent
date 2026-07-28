@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tarfile
 import tempfile
@@ -174,6 +175,7 @@ def validate_extracted_package(archive: str | Path) -> bool:
                 ["python", "main.py"],
                 cwd=root,
                 input='{"select": null}',
+                env={**os.environ, "AGENT_MODE": "rfl"},
                 text=True,
                 capture_output=True,
                 timeout=30,
