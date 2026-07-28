@@ -1,7 +1,7 @@
 from .comparison import PairedComparison, compare
 from .metrics import AggregateMetrics, aggregate
 from .reporting import serialize_report, write_json, write_markdown
-from .runner import MatchRecord, MatchRunner, RunReport
+from .runner import DecisionRecord, MatchRecord, MatchRunner, RunReport
 from .validation import (
     PreflightError,
     check_agent_output,
@@ -16,6 +16,7 @@ from .validation import (
 
 __all__ = [
     "AggregateMetrics",
+    "DecisionRecord",
     "MatchRecord",
     "MatchRunner",
     "PairedComparison",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, 
         "total_matches": report.total_matches,
         "started_at": report.started_at,
         "finished_at": report.finished_at,
+        "matches": [asdict(match) for match in report.matches],
         "metrics": {
             "total": metrics.total,
             "wins": metrics.wins,
