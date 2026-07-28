@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from copy import deepcopy
+from dataclasses import fields, is_dataclass
 from typing import Any
 
 from .candidate import Candidate
+from .catalog import CardCatalog
+from .exceptions import ParseError
 from .interfaces import ObservationParser as ObservationParserInterface
 from .parsed_decision import ParsedDecision
 from .state import GameState, PlayerState, PokemonState
@@ -10,137 +15,102 @@ from .types import OptionType, SelectContext, SelectType
 
 
 class DefaultParser(ObservationParserInterface):
-    def parse(self, observation: Any) -> ParsedDecision:
-        raw = self._normalize(observation)
-        state = self._build_state(raw)
-        candidates = self._build_candidates(raw)
-        select_type, select_context = self._parse_select_info(raw)
+    """Normalize SDK observations into factual state and candidates."""
 
-        select_data = raw.get("select")
-        if isinstance(select_data, dict):
-            min_count = int(select_data.get("minCount", 0) or 0)
-            max_count = int(select_data.get("maxCount", 0) or 0)
-            remain_energy_cost = int(select_data.get("remainEnergyCost", 0) or 0)
-            remain_damage_counter = int(select_data.get("remainDamageCounter", 0) or 0)
-        else:
-            min_count = max_count = remain_energy_cost = remain_damage_counter = 0
+    def __init__(self, catalog: CardCatalog | None = None) -> None:
+        self._catalog = catalog
+
+    def parse(self, observation: Any) -> ParsedDecision:
+        """Parse a dictionary or dataclass observation without mutating it."""
+        normalized = self._normalize(observation)
+        logs = normalized.get("logs", [])
+        if logs is None:
+            logs = []
+        if not isinstance(logs, list):
+            raise ParseError("observation logs must be a list")
+
+        current = normalized.get("current")
+        if current is not None and not isinstance(current, Mapping):
+            raise ParseError("observation current must be a mapping or null")
+        select = normalized.get("select")
+        if select is not None and not isinstance(select, Mapping):
+            raise ParseError("observation select must be a mapping or null")
+
+        state = self._build_state(normalized)
+        candidates = self._build_candidates(normalized)
+        select_type, select_context = self._parse_select_info(normalized)
+        min_count, max_count, energy_cost, damage_counter = self._selection_fields(select)
 
         return ParsedDecision(
-            raw_observation=raw,
+            raw_observation=observation,
             state=state,
             select_type=select_type,
             select_context=select_context,
             min_count=min_count,
             max_count=max_count,
-            remain_energy_cost=remain_energy_cost,
-            remain_damage_counter=remain_damage_counter,
+            remain_energy_cost=energy_cost,
+            remain_damage_counter=damage_counter,
             candidates=candidates,
+            logs=deepcopy(logs),
+            search_begin_input=deepcopy(normalized.get("search_begin_input")),
+            normalized_observation=normalized,
         )
 
     def _normalize(self, observation: Any) -> dict[str, Any]:
-        if hasattr(observation, "__dataclass_fields__"):
-            raw = {}
-            for field_name in observation.__dataclass_fields__:
-                raw[field_name] = getattr(observation, field_name)
-            if "current" in raw and hasattr(raw["current"], "__dataclass_fields__"):
-                raw["current"] = self._dataclass_to_dict(raw["current"])
-            if "select" in raw and hasattr(raw["select"], "__dataclass_fields__"):
-                raw["select"] = self._dataclass_to_dict(raw["select"])
-            return raw
-        if isinstance(observation, dict):
-            return dict(observation)
-        return {}
+        if isinstance(observation, Mapping):
+            return deepcopy(dict(observation))
+        if is_dataclass(observation) and not isinstance(observation, type):
+            return self._convert_dataclass(observation)
+        raise ParseError("observation must be a mapping or dataclass")
 
-    def _dataclass_to_dict(self, obj: Any) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for field_name in obj.__dataclass_fields__:
-            val = getattr(obj, field_name)
-            if hasattr(val, "__dataclass_fields__"):
-                result[field_name] = self._dataclass_to_dict(val)
-            elif isinstance(val, list):
-                result[field_name] = [
-                    self._dataclass_to_dict(v) if hasattr(v, "__dataclass_fields__") else v
-                    for v in val
-                ]
-            else:
-                result[field_name] = val
-        return result
+    def _convert_dataclass(self, value: Any) -> dict[str, Any]:
+        return {
+            field.name: self._convert_value(getattr(value, field.name)) for field in fields(value)
+        }
+
+    def _convert_value(self, value: Any) -> Any:
+        if is_dataclass(value) and not isinstance(value, type):
+            return self._convert_dataclass(value)
+        if isinstance(value, Mapping):
+            return {key: self._convert_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._convert_value(item) for item in value]
+        return deepcopy(value)
+
+    def _selection_fields(self, select: Mapping[str, Any] | None) -> tuple[int, int, int, int]:
+        if select is None:
+            return 0, 0, 0, 0
+        return (
+            self._int_field(select, "minCount"),
+            self._int_field(select, "maxCount"),
+            self._int_field(select, "remainEnergyCost"),
+            self._int_field(select, "remainDamageCounter"),
+        )
+
+    def _int_field(self, data: Mapping[str, Any], name: str) -> int:
+        try:
+            return int(data.get(name, 0) or 0)
+        except (TypeError, ValueError) as error:
+            raise ParseError(f"observation field {name!r} must be an integer") from error
 
     def _build_state(self, raw: dict[str, Any]) -> GameState:
-        current: dict[str, Any] = raw.get("current") or {}
+        current = raw.get("current") or {}
+        if not isinstance(current, Mapping):
+            raise ParseError("observation current must be a mapping or null")
 
-        players = []
-        for player_key in ("you", "opponent"):
-            pdata = current.get(player_key, {})
-            if not pdata and player_key == "you":
-                pdata = current.get("players", [{}])[0] if current.get("players") else {}
-            elif not pdata and player_key == "opponent":
-                pdata = (
-                    current.get("players", [{}, {}])[1]
-                    if len(current.get("players", [])) > 1
-                    else {}
-                )
-
-            active_data = pdata.get("active") or {}
-            active = PokemonState(
-                card_id=active_data.get("cardId") or "",
-                hp=int(active_data.get("hp", 0) or 0),
-                max_hp=int(active_data.get("maxHp", 0) or 0),
-                energies=active_data.get("energies") or [],
-                energy_card_ids=active_data.get("energyCards") or [],
-                tool_ids=active_data.get("tools") or [],
-                pre_evolutions=active_data.get("preEvolutions") or [],
-                appear_this_turn=bool(active_data.get("appearThisTurn", False)),
-                poisoned=bool(active_data.get("poisoned", False)),
-                burned=bool(active_data.get("burned", False)),
-                asleep=bool(active_data.get("asleep", False)),
-                paralyzed=bool(active_data.get("paralyzed", False)),
-                confused=bool(active_data.get("confused", False)),
-            )
-
-            bench_data = pdata.get("bench") or []
-            bench: list[PokemonState | None] = []
-            for b in bench_data:
-                if b is None:
-                    bench.append(None)
-                else:
-                    bench.append(
-                        PokemonState(
-                            card_id=b.get("cardId") or "",
-                            hp=int(b.get("hp", 0) or 0),
-                            max_hp=int(b.get("maxHp", 0) or 0),
-                            energies=b.get("energies") or [],
-                            energy_card_ids=b.get("energyCards") or [],
-                            tool_ids=b.get("tools") or [],
-                            pre_evolutions=b.get("preEvolutions") or [],
-                            appear_this_turn=bool(b.get("appearThisTurn", False)),
-                            poisoned=bool(b.get("poisoned", False)),
-                            burned=bool(b.get("burned", False)),
-                            asleep=bool(b.get("asleep", False)),
-                            paralyzed=bool(b.get("paralyzed", False)),
-                            confused=bool(b.get("confused", False)),
-                        )
-                    )
-
-            hand = pdata.get("hand")
-            players.append(
-                PlayerState(
-                    active=active,
-                    bench=bench,
-                    bench_max=int(pdata.get("benchMax", 8) or 8),
-                    deck_count=int(pdata.get("deckCount", 0) or 0),
-                    discard=pdata.get("discard") or [],
-                    prize=pdata.get("prize") or [],
-                    hand_count=int(pdata.get("handCount", 0) or 0),
-                    hand=hand if hand is not None else None,
-                )
-            )
+        players_data = current.get("players")
+        players: list[PlayerState] = []
+        for player_key, index in (("you", 0), ("opponent", 1)):
+            pdata = current.get(player_key)
+            if pdata is None and isinstance(players_data, list) and len(players_data) > index:
+                pdata = players_data[index]
+            players.append(self._build_player(pdata or {}))
 
         return GameState(
-            turn=int(current.get("turn", 0) or 0),
-            turn_action_count=int(current.get("turnActionCount", 0) or 0),
-            your_index=int(current.get("yourIndex", 0) or 0),
-            first_player=int(current.get("firstPlayer", 0) or 0),
+            turn=self._int_field(current, "turn"),
+            turn_action_count=self._int_field(current, "turnActionCount"),
+            your_index=self._int_field(current, "yourIndex"),
+            first_player=self._int_field(current, "firstPlayer"),
             result=current.get("result"),
             supporter_played=bool(current.get("supporterPlayed", False)),
             stadium_played=bool(current.get("stadiumPlayed", False)),
@@ -149,52 +119,100 @@ class DefaultParser(ObservationParserInterface):
             stadium=current.get("stadium"),
             looking=current.get("looking"),
             players=players,
-            raw=current,
+            raw=deepcopy(dict(current)),
+        )
+
+    def _build_player(self, data: Any) -> PlayerState:
+        if not isinstance(data, Mapping):
+            raise ParseError("player state must be a mapping")
+        bench_data = data.get("bench") or []
+        if not isinstance(bench_data, list):
+            raise ParseError("player bench must be a list")
+        hand = data.get("hand")
+        if hand is not None and not isinstance(hand, list):
+            raise ParseError("player hand must be a list or null")
+        return PlayerState(
+            active=self._build_pokemon(data.get("active")),
+            bench=[self._build_pokemon(item) for item in bench_data],
+            bench_max=self._int_field(data, "benchMax") or 8,
+            deck_count=self._int_field(data, "deckCount"),
+            discard=deepcopy(data.get("discard") or []),
+            prize=deepcopy(data.get("prize") or []),
+            hand_count=self._int_field(data, "handCount"),
+            hand=deepcopy(hand),
+        )
+
+    def _build_pokemon(self, data: Any) -> PokemonState | None:
+        if data is None:
+            return None
+        if not isinstance(data, Mapping):
+            raise ParseError("pokemon state must be a mapping or null")
+        return PokemonState(
+            card_id=data.get("cardId"),
+            hp=self._int_field(data, "hp"),
+            max_hp=self._int_field(data, "maxHp"),
+            energies=deepcopy(data.get("energies") or []),
+            energy_card_ids=deepcopy(data.get("energyCards") or []),
+            tool_ids=deepcopy(data.get("tools") or []),
+            pre_evolutions=deepcopy(data.get("preEvolutions") or []),
+            appear_this_turn=bool(data.get("appearThisTurn", False)),
+            poisoned=bool(data.get("poisoned", False)),
+            burned=bool(data.get("burned", False)),
+            asleep=bool(data.get("asleep", False)),
+            paralyzed=bool(data.get("paralyzed", False)),
+            confused=bool(data.get("confused", False)),
         )
 
     def _build_candidates(self, raw: dict[str, Any]) -> list[Candidate]:
         select = raw.get("select")
-        if not isinstance(select, dict):
+        if not isinstance(select, Mapping):
             return []
-        options: list[dict[str, Any]] = select.get("option") or []
+        options = select.get("option") or []
+        if not isinstance(options, list):
+            raise ParseError("select option must be a list")
         candidates: list[Candidate] = []
-
-        for i, opt in enumerate(options):
-            opt_type = self._parse_option_type(opt.get("type"))
-            card_id = opt.get("cardId") or opt.get("serial")
-            card = {"id": card_id} if card_id else None
+        for index, option in enumerate(options):
+            if not isinstance(option, Mapping):
+                raise ParseError("select options must be mappings")
+            option_dict = dict(option)
+            card_id = option_dict.get("cardId") or option_dict.get("serial")
+            attack_id = option_dict.get("attackId")
+            card = self._catalog.get_card(str(card_id)) if self._catalog and card_id else None
+            attack = (
+                self._catalog.get_attack(str(attack_id)) if self._catalog and attack_id else None
+            )
             candidates.append(
                 Candidate(
-                    option_index=i,
-                    option=opt,
-                    option_type=opt_type,
+                    option_index=index,
+                    option=option_dict,
+                    option_type=self._parse_option_type(option_dict.get("type")),
                     card=card,
+                    attack=attack,
+                    features={
+                        "has_card_metadata": card is not None,
+                        "has_attack_metadata": attack is not None,
+                    },
                 )
             )
-
         return candidates
 
     def _parse_select_info(
         self, raw: dict[str, Any]
     ) -> tuple[SelectType | None, SelectContext | None]:
         select = raw.get("select")
-        if not isinstance(select, dict):
+        if not isinstance(select, Mapping):
             return None, None
-        st = select.get("type")
-        sc = select.get("context")
-        select_type = None
-        select_context = None
-        if isinstance(st, str):
-            try:
-                select_type = SelectType(st)
-            except ValueError:
-                pass
-        if isinstance(sc, str):
-            try:
-                select_context = SelectContext(sc)
-            except ValueError:
-                pass
+        select_type = self._enum_value(SelectType, select.get("type"))
+        select_context = self._enum_value(SelectContext, select.get("context"))
         return select_type, select_context
+
+    def _enum_value(self, enum_type: Any, value: Any) -> Any:
+        if not isinstance(value, str):
+            return None
+        try:
+            return enum_type(value.upper())
+        except ValueError:
+            return None
 
     def _parse_option_type(self, value: Any) -> OptionType:
         if isinstance(value, OptionType):

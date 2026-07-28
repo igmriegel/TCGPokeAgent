@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass(slots=True)
 class PokemonState:
-    card_id: str
+    card_id: str | None
     hp: int
     max_hp: int
     energies: list[dict[str, Any]] = field(default_factory=list)

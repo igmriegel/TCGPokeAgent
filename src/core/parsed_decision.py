@@ -11,7 +11,7 @@ from .types import SelectContext, SelectType
 
 @dataclass(slots=True)
 class ParsedDecision:
-    raw_observation: dict[str, Any]
+    raw_observation: Any
     state: GameState
     select_type: SelectType | None = None
     select_context: SelectContext | None = None
@@ -21,3 +21,6 @@ class ParsedDecision:
     remain_damage_counter: int = 0
     candidates: list[Candidate] = field(default_factory=list)
     selections: list[Selection] = field(default_factory=list)
+    logs: list[Any] = field(default_factory=list)
+    search_begin_input: Any = None
+    normalized_observation: dict[str, Any] = field(default_factory=dict)

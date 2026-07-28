@@ -12,4 +12,5 @@ class Candidate:
     option: dict[str, Any]
     option_type: OptionType
     card: dict[str, Any] | None = None
+    attack: dict[str, Any] | None = None
     features: Mapping[str, float | int | bool] = field(default_factory=dict)
