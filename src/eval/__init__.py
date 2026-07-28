@@ -5,7 +5,10 @@ from .runner import MatchRecord, MatchRunner, RunReport
 from .validation import (
     PreflightError,
     check_agent_output,
+    check_cabt_import,
     check_deck,
+    check_observation,
+    check_package_layout,
     check_sdk_version,
     check_writable,
 )
@@ -19,7 +22,10 @@ __all__ = [
     "RunReport",
     "aggregate",
     "check_agent_output",
+    "check_cabt_import",
     "check_deck",
+    "check_observation",
+    "check_package_layout",
     "check_sdk_version",
     "check_writable",
     "compare",
