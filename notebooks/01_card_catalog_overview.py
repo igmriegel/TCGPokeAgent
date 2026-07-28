@@ -1,7 +1,6 @@
 import marimo
 
 __generated_with = "0.23.15"
-
 app = marimo.App()
 
 
@@ -29,14 +28,12 @@ def _(pathlib, pd):
 
 @app.cell
 def _(cards, data_path, mo):
-    mo.md(
-        f"""
-        # Card catalog overview
+    mo.md(f"""
+    # Card catalog overview
 
-        Source: `{data_path}`
-        Rows: **{len(cards):,}** · Columns: **{len(cards.columns)}**
-        """
-    )
+    Source: `{data_path}`
+    Rows: **{len(cards):,}** · Columns: **{len(cards.columns)}**
+    """)
     return
 
 
@@ -51,18 +48,18 @@ def _(cards, mo, pd):
         }
     )
     mo.vstack([mo.md("## Schema and missing values"), summary])
-    return summary,
+    return
 
 
 @app.cell
 def _(cards, mo):
     category_counts = cards["Stage (Pokémon)/Type (Energy and Trainer)"].value_counts()
     mo.vstack([mo.md("## Card categories"), category_counts.to_frame("cards")])
-    return category_counts,
+    return
 
 
 @app.cell
-def _(cards, pd, plt):
+def _(cards, plt):
     expansion_counts = cards["Expansion"].value_counts().head(20).sort_values()
     expansion_fig, expansion_ax = plt.subplots(figsize=(8, 6))
     expansion_counts.plot.barh(ax=expansion_ax, color="#4c78a8")
@@ -71,7 +68,7 @@ def _(cards, pd, plt):
     expansion_ax.set_ylabel("Expansion")
     expansion_fig.tight_layout()
     expansion_fig
-    return expansion_ax, expansion_fig
+    return
 
 
 @app.cell
@@ -84,7 +81,7 @@ def _(cards, pd, plt):
     hp_ax.set_ylabel("Rows")
     hp_fig.tight_layout()
     hp_fig
-    return hp_ax, hp_fig, hp
+    return
 
 
 if __name__ == "__main__":
