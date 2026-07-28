@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import fields, is_dataclass
-from typing import Any
+from typing import Any, cast
 
 from .candidate import Candidate
 from .catalog import CardCatalog
@@ -16,6 +16,80 @@ from .types import OptionType, SelectContext, SelectType
 
 class DefaultParser(ObservationParserInterface):
     """Normalize SDK observations into factual state and candidates."""
+
+    _SDK_SELECT_TYPES = {
+        0: SelectType.MAIN,
+        1: SelectType.CARD,
+        2: SelectType.ATTACHED_CARD,
+        3: SelectType.CARD_OR_ATTACHED_CARD,
+        4: SelectType.ENERGY,
+        5: SelectType.SKILL,
+        6: SelectType.ATTACK,
+        7: SelectType.EVOLVE,
+        8: SelectType.COUNT,
+        9: SelectType.YES_NO,
+        10: SelectType.SPECIAL_CONDITION,
+    }
+    _SDK_SELECT_CONTEXTS = {
+        1: SelectContext.SETUP_ACTIVE_POKEMON,
+        2: SelectContext.SETUP_BENCH_POKEMON,
+        3: SelectContext.SWITCH,
+        4: SelectContext.TO_ACTIVE,
+        5: SelectContext.TO_BENCH,
+        6: SelectContext.TO_FIELD,
+        7: SelectContext.TO_HAND,
+        8: SelectContext.DISCARD,
+        9: SelectContext.TO_DECK,
+        10: SelectContext.TO_DECK_BOTTOM,
+        11: SelectContext.TO_PRIZE,
+        12: SelectContext.NOT_MOVE,
+        13: SelectContext.DAMAGE_COUNTER,
+        14: SelectContext.DAMAGE_COUNTER_ANY,
+        15: SelectContext.DAMAGE,
+        16: SelectContext.REMOVE_DAMAGE_COUNTER,
+        17: SelectContext.HEAL,
+        18: SelectContext.EVOLVES_FROM,
+        19: SelectContext.EVOLVES_TO,
+        20: SelectContext.DEVOLVE,
+        23: SelectContext.DETACH_FROM,
+        25: SelectContext.EFFECT_TARGET,
+        30: SelectContext.DISCARD_ENERGY,
+        33: SelectContext.SWITCH_ENERGY,
+        34: SelectContext.SKILL_ORDER,
+        35: SelectContext.ATTACK,
+        36: SelectContext.DISABLE_ATTACK,
+        37: SelectContext.EVOLVE,
+        38: SelectContext.DRAW_COUNT,
+        39: SelectContext.DAMAGE_COUNTER_COUNT,
+        40: SelectContext.REMOVE_DAMAGE_COUNTER_COUNT,
+        41: SelectContext.IS_FIRST,
+        42: SelectContext.MULLIGAN,
+        43: SelectContext.ACTIVATE,
+        44: SelectContext.FIRST_EFFECT,
+        45: SelectContext.MORE_DEVOLVE,
+        46: SelectContext.COIN_HEAD,
+        47: SelectContext.AFFECT_SPECIAL_CONDITION,
+        48: SelectContext.RECOVER_SPECIAL_CONDITION,
+    }
+    _SDK_OPTION_TYPES = {
+        0: OptionType.NUMBER,
+        1: OptionType.YES,
+        2: OptionType.NO,
+        3: OptionType.CARD,
+        4: OptionType.TOOL_CARD,
+        5: OptionType.ENERGY_CARD,
+        6: OptionType.ENERGY,
+        7: OptionType.PLAY,
+        8: OptionType.ATTACH,
+        9: OptionType.EVOLVE,
+        10: OptionType.ABILITY,
+        11: OptionType.DISCARD,
+        12: OptionType.RETREAT,
+        13: OptionType.ATTACK,
+        14: OptionType.END,
+        15: OptionType.SKILL,
+        16: OptionType.SPECIAL_CONDITION,
+    }
 
     def __init__(self, catalog: CardCatalog | None = None) -> None:
         self._catalog = catalog
@@ -143,6 +217,8 @@ class DefaultParser(ObservationParserInterface):
         )
 
     def _build_pokemon(self, data: Any) -> PokemonState | None:
+        if isinstance(data, list):
+            data = data[0] if data else None
         if data is None:
             return None
         if not isinstance(data, Mapping):
@@ -207,6 +283,16 @@ class DefaultParser(ObservationParserInterface):
         return select_type, select_context
 
     def _enum_value(self, enum_type: Any, value: Any) -> Any:
+        if isinstance(value, int) and not isinstance(value, bool):
+            mapping = cast(
+                dict[int, Any],
+                {
+                    SelectType: self._SDK_SELECT_TYPES,
+                    SelectContext: self._SDK_SELECT_CONTEXTS,
+                    OptionType: self._SDK_OPTION_TYPES,
+                }.get(enum_type, {}),
+            )
+            return mapping.get(value)
         if not isinstance(value, str):
             return None
         try:
@@ -217,6 +303,8 @@ class DefaultParser(ObservationParserInterface):
     def _parse_option_type(self, value: Any) -> OptionType:
         if isinstance(value, OptionType):
             return value
+        if isinstance(value, int) and not isinstance(value, bool):
+            return self._SDK_OPTION_TYPES.get(value, OptionType.CARD)
         if isinstance(value, str):
             try:
                 return OptionType(value.upper())

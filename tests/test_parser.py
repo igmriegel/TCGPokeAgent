@@ -123,3 +123,34 @@ def test_parse_rejects_malformed_option(sample_observation):
 
     with pytest.raises(ParseError, match="options must be mappings"):
         DefaultParser().parse(sample_observation)
+
+
+def test_parse_cabt_numeric_enums_and_active_arrays():
+    observation = {
+        "current": {
+            "turn": 0,
+            "turnActionCount": 1,
+            "yourIndex": 0,
+            "firstPlayer": -1,
+            "players": [
+                {"active": [], "bench": [], "benchMax": 5, "deckCount": 60},
+                {"active": [], "bench": [], "benchMax": 5, "deckCount": 60},
+            ],
+        },
+        "select": {
+            "type": 9,
+            "context": 41,
+            "minCount": 1,
+            "maxCount": 1,
+            "option": [{"type": 1}, {"type": 2}],
+        },
+    }
+    parsed = DefaultParser().parse(observation)
+
+    assert parsed.select_type == SelectType.YES_NO
+    assert parsed.select_context == SelectContext.IS_FIRST
+    assert [candidate.option_type for candidate in parsed.candidates] == [
+        OptionType.YES,
+        OptionType.NO,
+    ]
+    assert parsed.state.players[0].active is None
