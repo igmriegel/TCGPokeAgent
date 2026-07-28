@@ -154,7 +154,7 @@ the extracted-package command.
 
 ## S2 — Observation parser and factual state
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** normalize real SDK dataclasses and dictionaries without
 inventing hidden information.
 
@@ -194,6 +194,13 @@ option index preservation.
 - Every candidate maps to exactly one original option index.
 - Malformed payloads produce a structured parse failure that the wrapper can
   recover from.
+
+### Evidence recorded 2026-07-28
+
+- Parser tests: 10 passing, including dictionary/dataclass equivalence,
+  hidden hands/active/prizes, metadata resolution and malformed payloads
+- Full test suite: 43 passing
+- Static checks: Ruff and mypy passing
 
 ## S3 — Legal selection generation and total fallback
 
