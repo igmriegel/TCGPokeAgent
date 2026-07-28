@@ -13,4 +13,6 @@ export LOG_LEVEL=INFO
 
 uv run --frozen pytest tests/ -v --tb=short 2>&1
 
+uv run --frozen python scripts/cabt_smoke.py --matches 20 --agent-mode "${AGENT_MODE}"
+
 echo "=== Smoke complete ==="

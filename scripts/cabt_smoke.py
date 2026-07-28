@@ -1,0 +1,84 @@
+"""Run a bounded cabt smoke matrix against the packaged agent."""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import os
+from collections.abc import Callable
+from typing import Any
+
+
+@contextlib.contextmanager
+def _quiet_native_output():
+    """Hide native SDK diagnostics while preserving the smoke summary."""
+    stdout_fd = os.dup(1)
+    stderr_fd = os.dup(2)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            os.dup2(sink.fileno(), 1)
+            os.dup2(sink.fileno(), 2)
+            yield
+    finally:
+        os.dup2(stdout_fd, 1)
+        os.dup2(stderr_fd, 2)
+        os.close(stdout_fd)
+        os.close(stderr_fd)
+
+
+def _run_match(agent: Callable[[dict[str, Any]], list[int]], opponent: Any) -> bool:
+    """Run one match and return whether both players completed normally."""
+    from kaggle_environments import make
+
+    with _quiet_native_output():
+        environment = make("cabt", debug=False)
+        environment.run([agent, opponent])
+    return all(getattr(player, "status", None) == "DONE" for player in environment.state)
+
+
+def run_smoke(matches: int, agent_mode: str) -> tuple[int, int]:
+    """Run the agent on both sides for a fixed number of cabt matches."""
+    with _quiet_native_output():
+        from kaggle_environments.envs.cabt.cabt import random_agent
+
+        import main
+
+    os.environ["AGENT_MODE"] = agent_mode
+    completed = 0
+    failures = 0
+    for _ in range(matches):
+        main._agent = None
+        main._deck = None
+        for opponent in (random_agent,):
+            if _run_match(main.agent_policy, opponent):
+                completed += 1
+            else:
+                failures += 1
+        main._agent = None
+        main._deck = None
+        with _quiet_native_output():
+            from kaggle_environments import make
+
+            environment = make("cabt", debug=False)
+            environment.run([random_agent, main.agent_policy])
+        if all(getattr(player, "status", None) == "DONE" for player in environment.state):
+            completed += 1
+        else:
+            failures += 1
+    return completed, failures
+
+
+def main() -> None:
+    """Parse arguments, run smoke matches, and fail on any engine failure."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--matches", type=int, default=20)
+    parser.add_argument("--agent-mode", default="baseline")
+    args = parser.parse_args()
+    completed, failures = run_smoke(args.matches, args.agent_mode)
+    print(f"cabt smoke: {completed} completed, {failures} failed")
+    if failures:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
