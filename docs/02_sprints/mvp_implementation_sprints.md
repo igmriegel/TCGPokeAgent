@@ -204,7 +204,7 @@ option index preservation.
 
 ## S3 — Legal selection generation and total fallback
 
-**Status:** `PLANNED`  
+**Status:** `DONE`  
 **Objective:** guarantee a legal deterministic answer for every observed
 `SelectContext`.
 
@@ -249,6 +249,21 @@ scripts/run_smoke.sh baseline
 
 Store the context coverage table, smoke report, and one fallback trace per
 context family.
+
+### Evidence recorded 2026-07-28
+
+- Commits: `e3ff065` (selection legality), `d27938a` (baseline fallback),
+  `a543524` (legality and fallback tests), `4ee3b23` (cabt smoke gate)
+- Selection generation covers optional empty, single, multiple, stable
+  lexicographic ordering, sparse indices, duplicate rejection, and energy or
+  damage count requirements.
+- Baseline fallback covers known and unknown contexts, parser failures, and
+  unavailable options; output validation is applied at the runtime boundary.
+- Focused tests: 15 passing; full suite: 50 passing with one unrelated Python
+  deprecation warning.
+- Required baseline smoke: 20 matches on each side (40 games total), `40
+  completed, 0 failed`; no `INVALID`, `ERROR`, or `TIMEOUT` operational
+  failures.
 
 ## S4 — Explainable heuristic policy
 
