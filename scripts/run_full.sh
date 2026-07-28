@@ -12,10 +12,12 @@ export AGENT_MODE
 export LOG_LEVEL=INFO
 
 uv run --frozen python -c "
+import os
 from src.experiments.orchestrator import run_experiment
 from src.config.loader import load_config
 
 config = load_config('${CONFIG}')
+config.agent = os.environ.get('AGENT_MODE', config.agent)
 exp = run_experiment(
     name='full_${AGENT_MODE}',
     config=config,
