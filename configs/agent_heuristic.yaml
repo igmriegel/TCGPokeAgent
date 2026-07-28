@@ -1,1 +1,19 @@
 agent: heuristic
+weights:
+  win_now: 100.0
+  efficient_attack: 10.0
+  useful_evolution: 8.0
+  attack_enabling_energy: 6.0
+  bench_development: 4.0
+  draw_search: 5.0
+  resource_preservation: 3.0
+  safe_end_turn: 2.0
+  wasted_energy: -5.0
+  key_piece_discard: -8.0
+  pointless_evolution: -6.0
+  blocked_bench: -4.0
+  premature_end: -10.0
+feature_flags:
+  use_attack_signals: true
+  use_resource_signals: true
+  use_setup_signals: true

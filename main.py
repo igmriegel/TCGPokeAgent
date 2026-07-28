@@ -8,6 +8,7 @@ from typing import Any
 
 from src.agents.baseline import BaselineAgent
 from src.agents.heuristic import HeuristicAgent
+from src.config.loader import ConfigLoader
 from src.core import AgentPolicy
 from src.eval.validation import (
     check_deck,
@@ -32,7 +33,11 @@ def _load_deck() -> list[int]:
 def _build_agent() -> AgentPolicy:
     mode = os.environ.get("AGENT_MODE", "baseline").lower()
     if mode == "heuristic":
-        return HeuristicAgent()
+        config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
+        return HeuristicAgent(
+            weights=config.extra.get("weights"),
+            feature_flags=config.extra.get("feature_flags"),
+        )
     return BaselineAgent()
 
 
