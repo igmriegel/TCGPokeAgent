@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from itertools import combinations
 from collections.abc import Mapping
+from itertools import combinations
 
 from .candidate import Candidate
 from .interfaces import SelectionGenerator as SelectionGeneratorInterface
