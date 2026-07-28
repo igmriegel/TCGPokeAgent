@@ -45,7 +45,7 @@ def _(frames, mo, paths, pd):
         ]
     )
     mo.vstack([mo.md("# Competition dataset comparison"), overview])
-    return overview,
+    return (overview,)
 
 
 @app.cell
@@ -74,7 +74,7 @@ def _(english, mo):
         .head(20)
     )
     mo.vstack([mo.md("## Largest expansions"), expansion_summary])
-    return expansion_summary,
+    return (expansion_summary,)
 
 
 if __name__ == "__main__":
