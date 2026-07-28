@@ -17,3 +17,6 @@ htmlcov/
 
 # uv cache
 .uv/
+
+# Marimo session state
+notebooks/__marimo__/

@@ -75,6 +75,10 @@ docker compose run download
 # Open Marimo in browser
 docker compose up marimo
 
+# Or use Makefile shortcuts
+make marimo
+make marimo-edit NOTEBOOK=01_card_catalog_overview.py
+
 # Run experiment
 AGENT_MODE=heuristic docker compose run experiment
 
