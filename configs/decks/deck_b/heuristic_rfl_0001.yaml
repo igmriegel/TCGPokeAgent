@@ -1,0 +1,6 @@
+deck:
+  id: deck_b
+  path: src/artifacts/deck.csv
+  sha256: 1156379af39e71bc83eecb50d1e04c5cc480501d293621fcc89c2d355d99be78
+policy: {kind: heuristic, version: rfl-0001, feature_schema: v1}
+weights: {win_now: 100.0}
