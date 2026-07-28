@@ -2,7 +2,7 @@
 
 ## Cycle
 
-1. `preflight`: versions, deck, data and imports.
+1. `preflight`: versions, deck, package layout, writable outputs and imports.
 2. `smoke`: 20 matches on both sides.
 3. `full`: at least 200 matches.
 4. `compare`: candidate versus reference/ablation.
@@ -12,6 +12,16 @@
 8. `strategy-export`: evidence block.
 
 Target commands are in [`23_scripts_spec.md`](23_scripts_spec.md).
+
+Run the reproducible preflight from the repository root:
+
+```bash
+uv run --frozen python -m scripts.preflight --config configs/default.yaml
+```
+
+The command reports the pinned SDK version, validated deck size and package
+root. It exits with status `0` on success and `2` when an environment or
+package check fails.
 
 ## Runtime profiles
 
