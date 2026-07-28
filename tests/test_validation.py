@@ -67,3 +67,8 @@ def test_check_package_layout_rejects_missing_path(tmp_path) -> None:
 def test_check_writable_rejects_missing_directory(tmp_path) -> None:
     with pytest.raises(validation.PreflightError, match="directory not found"):
         validation.check_writable(tmp_path / "reports")
+
+
+def test_check_agent_output_rejects_boolean_index() -> None:
+    with pytest.raises(validation.PreflightError, match="bool"):
+        validation.check_agent_output([True])
