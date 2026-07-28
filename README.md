@@ -90,6 +90,11 @@ docker compose run --rm dev bash
 
 # Run agent (stdin)
 echo '{"select": {"type": "MAIN", ...}}' | docker compose run --rm agent
+
+# Generate a local replay with the bundled cg.game API
+PYTHONPATH=. .venv/bin/python scripts/run_replay.py \
+  --agent-one heuristic --agent-two random --matches 1
+# Then open visualizer.html and select the generated JSON under replays/
 ```
 
 ### Remote execution
