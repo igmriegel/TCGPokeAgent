@@ -172,6 +172,18 @@ class HeuristicAgent(AgentPolicy):
         self._generator = DefaultSelectionGenerator()
         self._scorer = SimpleHeuristicScorer(weights, feature_flags)
 
+    @property
+    def weights(self) -> dict[str, float]:
+        """Return a copy of the active heuristic weights."""
+        return dict(self._scorer.weights)
+
+    @classmethod
+    def from_profile(cls, profile_path: str, *, deck_id: str, deck_path: str) -> HeuristicAgent:
+        """Load a validated RFL profile, falling back to baseline weights."""
+        from src.rfl.profiles import agent_from_profile
+
+        return agent_from_profile(profile_path, active_deck_id=deck_id, active_deck_path=deck_path)
+
     def select(self, observation: dict[str, Any]) -> list[int]:
         """Return the best legal selection, or a deterministic empty fallback."""
         parsed = self._parser.parse(observation)

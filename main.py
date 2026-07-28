@@ -32,12 +32,27 @@ def _load_deck() -> list[int]:
 
 def _build_agent() -> AgentPolicy:
     mode = os.environ.get("AGENT_MODE", "baseline").lower()
+    if mode == "rfl":
+        try:
+            from src.rfl.profiles import agent_from_profile
+
+            root = Path(__file__).parent
+            profile = os.environ.get(
+                "AGENT_PROFILE", str(root / "configs" / "decks" / "mega_abomasnow_kyogre" / "heuristic_rfl_0001.yaml")
+            )
+            deck_path = root / "src" / "artifacts" / "deck.csv"
+            return agent_from_profile(profile, active_deck_id="mega_abomasnow_kyogre", active_deck_path=deck_path)
+        except (OSError, ValueError, TypeError):
+            return HeuristicAgent()
     if mode == "heuristic":
-        config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
-        return HeuristicAgent(
-            weights=config.extra.get("weights"),
-            feature_flags=config.extra.get("feature_flags"),
-        )
+        try:
+            config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
+            return HeuristicAgent(
+                weights=config.extra.get("weights"),
+                feature_flags=config.extra.get("feature_flags"),
+            )
+        except (FileNotFoundError, ValueError):
+            return BaselineAgent()
     return BaselineAgent()
 
 
