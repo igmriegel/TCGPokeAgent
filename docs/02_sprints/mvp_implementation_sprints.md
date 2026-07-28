@@ -54,7 +54,7 @@ has been implemented.
 
 ## S0 — Reproducible baseline and preflight
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** make the repository self-checking before gameplay logic is
 changed.
 
@@ -97,7 +97,7 @@ Save the preflight output, Python version, SDK version, and current commit SHA.
 
 ## S1 — SDK deck, wrapper, and package smoke
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** make the smallest real agent accepted by the installed `cabt`
 environment.
 
@@ -142,6 +142,15 @@ Run one `cabt` match against `random` on each side and retain the raw result.
 
 Record deck SHA-256, SDK version, package size, both-side match results, and
 the extracted-package command.
+
+### Evidence recorded 2026-07-28
+
+- SDK: `kaggle-environments==1.32.2`
+- Deck SHA-256: `1156379af39e71bc83eecb50d1e04c5cc480501d293621fcc89c2d355d99be78`
+- Package: `/tmp/pokemon-agent-s1.tar.gz`, 17,115 bytes
+- `agent-first`: `DONE/DONE`, rewards `[-1, 1]`, no operational failures
+- `agent-second`: `DONE/DONE`, rewards `[-1, 1]`, no operational failures
+- Extracted package smoke: initial deck output accepted, 37 tests passing
 
 ## S2 — Observation parser and factual state
 
