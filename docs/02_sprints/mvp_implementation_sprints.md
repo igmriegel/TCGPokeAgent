@@ -267,7 +267,7 @@ context family.
 
 ## S4 — Explainable heuristic policy
 
-**Status:** `PLANNED`  
+**Status:** `DONE`  
 **Objective:** replace the zero-score stub with a configurable policy whose
 decisions can be audited and measured.
 
@@ -309,6 +309,17 @@ fallback.
 - Every score has at least one reason or an explicit `no_signal` reason.
 - Heuristic smoke has no operational regression against baseline.
 - A measurable comparison protocol exists before claiming improvement.
+
+### Evidence recorded 2026-07-28
+
+- Commits: `a3a03a1` (heuristic scoring and profile integration), `e053865`
+  (heuristic tests), `eca8f11` (comparison protocol)
+- Full suite: 56 passing; Ruff and mypy passing.
+- Baseline smoke: 40/40 completed, 0 failed.
+- Heuristic smoke: 40/40 completed, 0 failed.
+- Paired protocol: `scripts/compare_agents.py --matches 10` ran 20 games per
+  policy, with baseline `13W/0D/7L` and heuristic `13W/0D/7L` against random.
+  This supports parity, not a claim of improvement.
 
 ## S5 — Real runner and decision-level observability
 
