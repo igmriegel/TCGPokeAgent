@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from itertools import combinations
+from collections.abc import Mapping
 
 from .candidate import Candidate
 from .interfaces import SelectionGenerator as SelectionGeneratorInterface
-from .selection import Selection
+from .selection import Selection, SelectionValidator
 
 
 class DefaultSelectionGenerator(SelectionGeneratorInterface):
@@ -16,9 +17,10 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
         remain_energy_cost: int = 0,
         remain_damage_counter: int = 0,
     ) -> list[Selection]:
-        if not candidates:
+        if min_count < 0 or max_count < min_count:
             return []
 
+        validator = SelectionValidator()
         results: list[Selection] = []
 
         for size in range(min_count, max_count + 1):
@@ -38,19 +40,19 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
                 indices = tuple(c.option_index for c in combo)
                 types = tuple(c.option_type for c in combo)
 
-                if not self._meets_energy_constraint(combo, remain_energy_cost):
-                    continue
-                if not self._meets_damage_constraint(combo, remain_damage_counter):
-                    continue
-                if not self._no_duplicate_indices(indices):
-                    continue
-
-                results.append(
-                    Selection(
-                        indices=indices,
-                        option_types=types,
+                selection = Selection(indices=indices, option_types=types)
+                try:
+                    validator.validate(
+                        selection,
+                        candidates,
+                        min_count,
+                        max_count,
+                        remain_energy_cost,
+                        remain_damage_counter,
                     )
-                )
+                except Exception:
+                    continue
+                results.append(selection)
 
         results.sort(key=lambda s: s.indices)
         return results
@@ -60,7 +62,7 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
             return True
         total = 0
         for c in combo:
-            count = c.option.get("count", 1) if isinstance(c.option, dict) else 1
+            count = c.option.get("count", 1) if isinstance(c.option, Mapping) else 1
             total += count
         return total >= required
 
@@ -69,7 +71,7 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
             return True
         total = 0
         for c in combo:
-            count = c.option.get("count", 1) if isinstance(c.option, dict) else 1
+            count = c.option.get("count", 1) if isinstance(c.option, Mapping) else 1
             total += count
         return total >= required
 

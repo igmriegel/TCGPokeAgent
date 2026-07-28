@@ -20,7 +20,7 @@ from .interfaces import (
 )
 from .parsed_decision import ParsedDecision
 from .parser import DefaultParser
-from .selection import Selection
+from .selection import Selection, SelectionValidator
 from .selection_generator import DefaultSelectionGenerator
 from .state import GameState, PlayerState, PokemonState
 from .types import (
@@ -63,6 +63,7 @@ __all__ = [
     "SearchBudgetExceededError",
     "SelectContext",
     "Selection",
+    "SelectionValidator",
     "SelectionGenerator",
     "SelectType",
     "ShortSearch",
