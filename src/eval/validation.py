@@ -220,3 +220,21 @@ def check_legal_selection(observation: Any, output: Any) -> None:
         raise PreflightError(
             f"agent output has {len(output)} indices, expected between {min_count} and {max_count}"
         )
+
+    energy_required = int(select.get("remainEnergyCost", 0) or 0)
+    damage_required = int(select.get("remainDamageCounter", 0) or 0)
+    selected_options = [options[index] for index in output]
+    for required, field, label in (
+        (energy_required, "count", "energy"),
+        (damage_required, "count", "damage"),
+    ):
+        if required <= 0:
+            continue
+        counts = [option.get(field, 1) for option in selected_options]
+        if any(isinstance(count, bool) or not isinstance(count, int) for count in counts):
+            raise PreflightError(f"selected option {field} values must be integers")
+        total = sum(counts)
+        if total < required:
+            raise PreflightError(
+                f"agent output provides {total} {label} count, expected at least {required}"
+            )
