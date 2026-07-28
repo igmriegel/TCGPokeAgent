@@ -44,8 +44,8 @@ has been implemented.
 | S2 | F1 | Observation normalization and factual state | S1 | golden parser coverage passes |
 | S3 | F1 | Legal selections and total deterministic fallback | S2 | 20 smoke matches, zero operational failures |
 | S4 | F2 | Configurable, explainable heuristic policy | S3 | heuristic improves or matches baseline without failures |
-| S5 | F3 | Real SDK runner and decision-level traces | S3 | one reproducible match and smoke matrix |
-| S6 | F3 | Reproducible experiments, reports, and promotion gates | S5 | full report with immutable artifacts |
+| S5 | F3 | Real SDK runner and decision-level traces | S3 | one trace-valid match and smoke matrix |
+| S6 | F3 | Replayable experiments, reports, and promotion gates | S5 | full report with immutable artifacts |
 | S7 | F4 | Belief construction and state evaluation | S4, S6 | belief invariants and evaluator tests pass |
 | S8 | F4 | Bounded short search with safe fallback | S7 | search gate passes without latency regressions |
 | S9 | F5 | Frozen submission and isolated validation | S6, S8 | final handoff checklist is green |
@@ -323,7 +323,8 @@ fallback.
 
 ## S5 — Real runner and decision-level observability
 
-**Status:** `PLANNED`  
+**Status:** `DONE`  
+**Started:** 2026-07-28
 **Objective:** execute actual candidate policies through the SDK and preserve
 enough trace data to diagnose every match.
 
@@ -331,7 +332,9 @@ enough trace data to diagnose every match.
 
 - Replace string agent placeholders in `MatchRunner` with callable policies
   and explicit opponent factories (`random`, `first`, heuristic, self-play).
-- Pass seed and side into the environment using the supported `cabt` API.
+- Pass the evaluation case identifier (seed) and side into the environment
+  using the supported `cabt` API; treat the identifier as metadata because the
+  native SDK RNG is not seedable.
 - Record match lifecycle, result, turns, status, exception category, and
   duration.
 - Record every decision: context, options, selected indices, legality result,
@@ -353,14 +356,41 @@ uv run --frozen pytest tests/ -v
 scripts/run_smoke.sh heuristic
 ```
 
-Run one fixed seed twice and compare the normalized match and decision traces.
+Run one fixed evaluation case and validate the normalized match and decision
+trace schema. Do not require byte-identical outcomes from repeated native
+`cabt` runs; use captured traces as the replay/audit source.
 
 ### Exit criteria
 
-- Same seed, side, deck, SDK, and policy reproduces the same trace.
+- Every match has a stable case identifier, ordered trace, policy/deck/SDK
+  metadata, and sufficient raw data for audit or action replay.
 - All four required opponents can be selected by configuration.
 - A single error is classified and does not abort batch accounting.
 - Smoke produces 20 match records, both sides represented, and zero failures.
+
+### Progress evidence recorded 2026-07-28
+
+- `MatchRunner` now executes callable policies against `cabt`, supports random
+  and first opponents, preserves seed metadata, isolates failed matches, and
+  records decision context, indices, legality, duration, and overage balance.
+- Focused runner tests, Ruff, and mypy pass; full suite: 59 passing with one
+  unrelated Python deprecation warning.
+- Heuristic smoke: 40/40 completed, 0 failed.
+- The original same-seed requirement was removed because `cabt` `libcg.so`
+  uses C++ `std::random_device` and exposes no seed hook. The revised contract
+  keeps the case identifier for matrix accounting and makes captured traces the
+  audit/replay source.
+
+### Completion evidence recorded 2026-07-28
+
+- Match traces now include lifecycle timestamps, termination reason, final
+  statuses, policy/opponent, SDK version, deck hash, and ordered decisions.
+- Decision traces include original option payloads, selected simulator indices,
+  legality, score/reason/search fields, duration, and overage balance.
+- Opponent factory supports `random`, `first`, `baseline`, `heuristic`, and
+  `self_play`; failed matches remain isolated from batch accounting.
+- Full suite: 61 passing with one unrelated Python deprecation warning; Ruff
+  and mypy pass; heuristic smoke: 40/40 completed, 0 failed.
 
 ## S6 — Reproducible experiments and reports
 

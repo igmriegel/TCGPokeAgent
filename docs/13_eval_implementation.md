@@ -19,7 +19,7 @@
 
 ## Execution
 
-Each match receives an explicit seed and internal deadline. The runner captures observation, selection, monotonic duration, overage balance, scorer reasons, and the status returned by the environment. A failure ends the match, but the batch continues to produce a complete diagnosis.
+Each match receives an explicit evaluation case identifier and internal deadline. The runner passes the identifier through the supported environment configuration and captures observation, selection, monotonic duration, overage balance, scorer reasons, and the status returned by the environment. Since `cabt` native randomness is not seedable, the identifier is used for matrix accounting and captured traces are the audit/replay source. A failure ends the match, but the batch continues to produce a complete diagnosis.
 
 Game order is predefined in the manifest. When parallelism is introduced, results remain ordered by `match_id`.
 
@@ -42,7 +42,7 @@ Smoke: 20 balanced matches, intended for integration. Full: minimum 200, with ma
 
 ## Tests
 
-- runner reproduces result with the same seed;
+- runner preserves case identifiers and produces complete audit traces;
 - failure of one match does not erase previous ones;
 - Wilson at 0%, 50%, and 100%;
 - percentiles for small batch;

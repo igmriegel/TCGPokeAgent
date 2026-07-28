@@ -41,7 +41,7 @@ Any `INVALID`, `ERROR`, or `TIMEOUT` fails the candidate, even if the win rate i
 
 ## Statistics
 
-Calculate metrics per [`03_metrics.md`](03_metrics.md). Wilson uses 95%, with number of wins as successes and total valid matches as `n`. Paired comparisons keep results by seed and side, not just aggregates.
+Calculate metrics per [`03_metrics.md`](03_metrics.md). Wilson uses 95%, with number of wins as successes and total valid matches as `n`. Paired comparisons keep results by evaluation case identifier and side, not just aggregates. For `cabt`, the identifier is metadata rather than a promise that native RNG outcomes repeat.
 
 ## Search gate
 

@@ -14,7 +14,7 @@ agent starting work in a fresh checkout.
 | Legal selection combinations | S3 | `selection.py`, `selection_generator.py` | cardinality, energy, damage, indices | `07`, `15` |
 | Total deterministic fallback | S3 | `src/agents/baseline.py`, `main.py` | all context families, 20 smoke matches | `10`, `19` |
 | Explainable heuristic | S4 | `src/agents/heuristic.py` | focused ranking and ablations | `10`, `15` |
-| Real match execution | S5 | `src/eval/runner.py` | reproducibility and failure isolation | `08`, `13` |
+| Real match execution | S5 | `src/eval/runner.py` | trace validity, case metadata, and failure isolation | `08`, `13` |
 | Immutable experiment artifacts | S6 | `src/experiments`, `src/eval/reporting.py` | manifest, JSONL, reports, gates | `09`, `14`, `16` |
 | Hidden-information model | S7 | `src/core/belief.py`, evaluator | cardinality and consistency | `07`, `12`, `15` |
 | Bounded search | S8 | `src/agents/search.py` | lifecycle, timeout, fallback, comparison | `08`, `10`, `15` |
