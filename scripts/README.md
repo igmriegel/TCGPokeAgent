@@ -3,6 +3,27 @@
 Implement thin wrappers for preflight, smoke/full, comparison, freeze, package, isolated validation, Strategy, and Kaggle inventory.
 
 Commands and exit codes: [`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).
+
+## End-to-end simulation submission
+
+Run every local gate, build and validate `submission.tar.gz`, then answer the
+interactive confirmation prompt:
+
+```bash
+scripts/submit_simulation.sh
+```
+
+Nothing is uploaded unless the prompt receives `y` or `yes`. To exercise the
+complete local pipeline without an upload:
+
+```bash
+scripts/submit_simulation.sh --dry-run
+```
+
+The flow requires an authenticated Kaggle CLI and submits to
+`pokemon-tcg-ai-battle`. Successful uploads create a credential-free receipt
+under `reports/submissions/`.
+
 ## Local replay visualization
 
 Generate a replay with the `cg.game` API bundled by the pinned

@@ -188,6 +188,24 @@ The full run uses 200 seeds on both player sides. Do not promote a profile from
 the smoke or small evaluation; use the holdout gates and extracted-package
 validation described in the runbook.
 
+## Simulation submission
+
+Run the complete local gate and receive an interactive confirmation before any
+upload:
+
+```bash
+scripts/submit_simulation.sh
+```
+
+To build and validate the same candidate without uploading:
+
+```bash
+scripts/submit_simulation.sh --dry-run
+```
+
+The script submits to `pokemon-tcg-ai-battle` through the official Kaggle CLI
+only after explicit confirmation.
+
 ## Data
 
 The official Kaggle competition datasets are stored in `data/raw/kaggle/`:

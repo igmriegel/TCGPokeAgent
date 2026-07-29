@@ -13,6 +13,7 @@ uv run --frozen python -m scripts.package_submission --artifact ARTIFACT
 uv run --frozen python -m scripts.validate_package --archive submission.tar.gz
 uv run --frozen python -m scripts.export_strategy --run RUN
 uv run --frozen python -m scripts.inventory_kaggle_data
+scripts/submit_simulation.sh
 ```
 
 ## Common rules
@@ -39,6 +40,23 @@ The inventory fails if any file lacks source, competition, version/date, size, S
 ## Package
 
 `package_submission` creates an explicit staging directory, copies only the allowlist, checks root and size and generates the tar. `validate_package` rejects path traversal and runs smoke without checkout imports.
+
+## Simulation submission
+
+`submit_simulation.sh` runs preflight, tests, Ruff, mypy, the both-side smoke
+gate, package construction, and isolated package validation. It prints the
+archive size and SHA-256, then requires explicit interactive confirmation
+before invoking:
+
+```bash
+kaggle competitions submit pokemon-tcg-ai-battle \
+  -f submission.tar.gz \
+  -m "<message>"
+```
+
+`--dry-run` executes all local gates and never uploads. `--yes` is reserved for
+explicitly authorized non-interactive execution. A successful submission
+writes a credential-free receipt under `reports/submissions/`.
 
 ## Idempotence
 
