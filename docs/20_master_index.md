@@ -19,6 +19,7 @@
 15. [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — monitored human demonstrations and insight extraction.
 16. [`29_gameplay_feedback.md`](29_gameplay_feedback.md) — canonical gameplay feedback, generalization, and development register.
 17. [`30_replay_learning_and_deck_agnostic_engine.md`](30_replay_learning_and_deck_agnostic_engine.md) — replay dataset, generic deck strategy, and learned-policy gates.
+18. [`31_competitive_replay_annotations.md`](31_competitive_replay_annotations.md) — post-hoc review of automated Kaggle agent matches.
 
 ## Product and research
 
@@ -34,6 +35,7 @@
 - [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — live human play, replay annotation, and preference-data design.
 - [`29_gameplay_feedback.md`](29_gameplay_feedback.md) — observed gameplay findings, deck rules, general principles, and traceable actions.
 - [`30_replay_learning_and_deck_agnostic_engine.md`](30_replay_learning_and_deck_agnostic_engine.md) — implemented replay-learning foundation and model promotion sequence.
+- [`31_competitive_replay_annotations.md`](31_competitive_replay_annotations.md) — decision-linked loss annotations for agent-versus-agent replays.
 
 ## Contracts by layer
 

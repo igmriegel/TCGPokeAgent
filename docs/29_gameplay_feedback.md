@@ -103,15 +103,15 @@ and technical interpretation belong in later fields.
 
 **Date:** 2026-07-29
 
-**Status:** `IN_PROGRESS`
+**Status:** `IMPLEMENTED`
 
 **Priority:** `P0`
 
 **Source:** human post-submission review of Kaggle submissions `55088176` and
 `55093119`.
 
-**Evidence type:** post-hoc gameplay review plus static inspection of the
-current heuristic scorer.
+**Evidence type:** post-hoc human review of automated agent-versus-agent
+gameplay plus static inspection of the current heuristic scorer.
 
 **Deck:** frozen Mega Abomasnow ex deck.
 
@@ -137,24 +137,20 @@ The replay review establishes the gameplay symptom. The score comparison
 establishes a credible code path, but decision-level traces are still required
 to quantify every occurrence.
 
-The failure recurred in submission `55093119`: the agent lost after leaving no
-additional Pokémon in play. This confirms that the deck-profile and Prize
-foundation did not complete the pre-terminal board-safety policy. Until the
-exact episode trace is linked, the report is evidence of recurrence rather
-than a decision-level root-cause proof.
+The failure recurred in submission `55093119`, episode `88879568`. The
+decision-linked annotation `KGR-88879568-002` confirms that Kyogre was a legal
+Bench play at steps 72, 81, and 100 while the Bench was empty. The engine
+selected an attack without first taking the non-terminal development action.
+Attacking remained correct after playing Kyogre; the error was the omitted
+sequence step. This confirms that the deck-profile and Prize foundation did
+not complete the pre-terminal board-safety policy.
 
-### Deck-specific rule
+### Implemented generic rule
 
-For the frozen Mega Abomasnow ex deck:
-
-- play every legally playable Snover while a Bench slot is available before a
-  non-winning attack or `END`;
-- evolve each eligible Snover into Mega Abomasnow ex before a non-winning
-  attack or `END`;
-- repeat this check after every action because one play or evolution does not
-  complete development for the whole turn;
-- preserve SDK legality and `benchMax`;
-- allow an immediate game-winning action to override development.
+For every deck, when CABT exposes a legal Pokémon `PLAY` action and the Bench
+has an open slot, choose a Pokémon play before `ATTACK` or `END`. Parse the
+next observation and repeat while another Pokémon remains legally playable.
+Attacking remains the correct terminal action after development.
 
 ### General principle
 
@@ -169,18 +165,19 @@ development window and should be classified the same way.
 
 The general algorithm is:
 
-1. derive the current board-development targets from the deck profile;
-2. inspect legal Basic Pokémon plays, evolutions, and required support setup;
-3. classify each opportunity as required, optional, blocked, or harmful;
-4. choose required development before a non-winning terminal action;
-5. parse the next observation and recompute instead of retaining a permanent
+1. inspect legal Pokémon plays and the factual open Bench capacity;
+2. choose a legal Pokémon play before a terminal action;
+3. parse the next observation and recompute instead of retaining a permanent
    "development complete" flag;
-6. permit the terminal action when no required development remains or a
-   declared override applies.
+4. permit the terminal action when no legal Pokémon play remains or the Bench
+   is full;
+5. use deck profiles for later evolution, support, and liability refinements.
 
 ### Applicability conditions
 
-This principle applies when at least one of these conditions is true:
+The implemented safe foundation applies whenever a Pokémon play is legal and
+the Bench has space. These conditions explain why that ordering is usually
+valuable:
 
 - the deck requires multiple attackers to complete its Prize plan;
 - an evolution line must be established before its evolved card can be used;
@@ -194,8 +191,9 @@ Bench-based engines, and decks that need multiple setup pieces in play.
 
 ### Exceptions
 
-The principle does not mean that every deck should blindly fill every Bench
-slot. Development may be skipped when:
+The current safe foundation intentionally fills open Bench slots with legally
+playable Pokémon before attacking. Future learned or profile-driven policies
+may propose skipping a legal play when:
 
 - another legal action wins the game immediately;
 - the Bench is full or the play is otherwise illegal;
@@ -207,23 +205,33 @@ slot. Development may be skipped when:
 - a card effect, lock, or resource constraint makes delayed development more
   valuable and the exception is represented by an explicit reason code.
 
-The Abomasnow deck rule intentionally overrides the generic target-count
-exception for legally playable Snover until the available Bench capacity or
-another explicit override blocks the play.
+None of these refinements is active yet. Each requires explicit reason codes,
+matchup evidence, and a non-regression gate before it may override the generic
+rule.
 
 ### Active development actions
 
 | ID | Action | Status |
 |---|---|---|
-| FB001-A1 | Add board counts, open slots, legal development options, and backup-attacker readiness | `PLANNED` |
-| FB001-A2 | Add a pre-terminal-action ordering layer instead of relying only on independent fixed scores | `PLANNED` |
-| FB001-A3 | Implement the Snover/Mega Abomasnow ex deck profile and required-action policy | `PLANNED` |
-| FB001-A4 | Add real and synthetic golden scenarios for repeated play, evolution, full Bench, and immediate win | `PLANNED` |
+| FB001-A1 | Add board counts, open slots, legal development options, and backup-attacker readiness | `IN_PROGRESS` |
+| FB001-A2 | Add a pre-terminal-action ordering layer instead of relying only on independent fixed scores | `IMPLEMENTED` |
+| FB001-A3 | Prioritize any legal Pokémon play with open Bench capacity without card-specific code | `IMPLEMENTED` |
+| FB001-A4 | Add real and synthetic golden scenarios for repeated play, evolution, full Bench, and immediate win | `IN_PROGRESS` |
 | FB001-A5 | Add skipped-development, conversion, board-width, and replacement-attacker metrics | `PLANNED` |
-| FB001-A6 | Run smoke and frozen matchup evaluation before packaging another submission | `PLANNED` |
+| FB001-A6 | Run smoke and frozen matchup evaluation before packaging another submission | `IN_PROGRESS` |
 
-The parent feedback remains `IN_PROGRESS` because its rule, diagnosis, and
-acceptance work are active even though the code actions remain planned.
+The generic play-before-attack policy is implemented. The feedback remains
+below `VALIDATED` until gameplay metrics and the frozen evaluation matrix pass.
+
+Decision evidence:
+
+- annotation:
+  `data/annotations/gameplay_reviews/v1/annotations.jsonl`;
+- active review: `KGR-88879568-002`, superseding `KGR-88879568-001`;
+- replay SHA-256:
+  `f3ede5bf92cc81a91914830c6240306af22ec3248ed46f9b15fb6dd6e3077fc5`;
+- earliest missed Kyogre play: decision `88879568:72:0`;
+- repeated missed plays: decisions `88879568:81:0` and `88879568:100:0`.
 
 ---
 
@@ -365,9 +373,9 @@ conversion.
 ### Traceability
 
 - Gameplay rule:
-  [`27_gameplay_rules.md`](27_gameplay_rules.md#confirmed-deck-rule-continuous-snoverabomasnow-development)
+  [`27_gameplay_rules.md`](27_gameplay_rules.md#confirmed-rule-play-available-pokémon-before-attacking)
 - Active remediation:
-  [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md#h2a--continuous-snoverabomasnow-board-development)
+  [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md#h2a--continuous-deck-agnostic-board-development)
 - MVP policy work:
   [`02_sprints/mvp_implementation_sprints.md`](02_sprints/mvp_implementation_sprints.md#s4--explainable-heuristic-policy)
 - Future human evidence capture:

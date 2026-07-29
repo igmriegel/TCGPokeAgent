@@ -127,7 +127,7 @@ survival, enables a stronger attack, increases Prize pressure, or activates a
 needed Ability. Do not evolve automatically when the lower stage has a
 strategically required attack or effect.
 
-#### Confirmed deck rule: continuous Snover/Abomasnow development
+#### Confirmed rule: play available Pokémon before attacking
 
 **Status:** `ACTIVE DEVELOPMENT — P0`
 
@@ -135,54 +135,52 @@ Canonical feedback record:
 [`FB-2026-001`](29_gameplay_feedback.md#fb-2026-001--continuous-board-development).
 
 Kaggle gameplay feedback showed that the current agent can attack while
-leaving Snover in hand and then lose after failing to maintain a developed
-Bench. The current fixed scores explain this failure mode: a high-damage attack
-can outrank playing Snover, and the attack ends the turn before the agent can
-return to board development.
+leaving a legally playable Pokémon in hand and then lose after failing to
+maintain a developed Bench. The current fixed scores explain this failure
+mode: a high-damage attack can outrank board development, and the attack ends
+the turn before the agent can return to `MAIN`.
 
 Rule:
 
 - On every `MAIN` decision, re-evaluate board development before choosing an
   attack.
-- If playing Snover is legal and a Bench slot is available, play it before a
-  non-winning attack.
-- If evolving an in-play Snover into Mega Abomasnow ex is legal, evolve it
-  before a non-winning attack.
+- If a Pokémon `PLAY` action is legal and a Bench slot is available, play a
+  Pokémon before attacking or ending the turn.
 - Repeat this evaluation after every action. Playing one Pokémon or completing
   one evolution must not mark board development as finished for the turn or
   match.
-- Never choose `END` or a non-winning attack while a required legal Snover play
-  or Snover-to-Abomasnow evolution remains.
-- An immediate game-winning action may override development. Legality,
-  `benchMax`, and card-specific restrictions always remain authoritative.
+- Never choose `END` or an attack while a legal Pokémon play and an open Bench
+  slot remain. Playing a Pokémon is non-terminal, so the engine can attack on
+  the following `MAIN` decision.
+- Legality, `benchMax`, and card-specific restrictions always remain
+  authoritative.
 
 Required implementation signals:
 
 - open Bench slots;
-- Snover and Mega Abomasnow ex counts in the Active Spot and on the Bench;
-- legal Snover `PLAY` options in the current hand;
-- legal Mega Abomasnow ex `EVOLVE` options and their targets;
+- Pokémon counts in the Active Spot and on the Bench;
+- legal Pokémon `PLAY` options in the current hand;
+- legal `EVOLVE` options and their targets;
 - presence of a prepared backup attacker;
 - whether the candidate attack wins the game or only deals damage.
 
 Required reason codes:
 
-- `develop_snover_before_attack`;
-- `evolve_abomasnow_before_attack`;
+- `play_available_pokemon_before_attack`;
+- `evolve_available_pokemon_before_attack`;
 - `maintain_backup_attacker`;
 - `immediate_win_overrides_development`;
 - `bench_full_blocks_development`.
 
 Golden scenarios:
 
-- one open Bench slot, Snover in hand, and a legal damaging attack selects
-  Snover;
-- multiple Snover plays remain legal across consecutive `MAIN` decisions and
+- one open Bench slot, a Pokémon in hand, and a legal damaging attack selects
+  the Pokémon play;
+- multiple Pokémon plays remain legal across consecutive `MAIN` decisions and
   each is reconsidered;
-- an eligible Benched Snover is evolved before a non-winning attack;
-- a game-winning attack remains preferred over Snover development;
+- an eligible Benched Pokémon can be evolved before attacking;
 - a full Bench never produces an invalid play;
-- `END` is rejected while a required Snover play or evolution remains legal.
+- `END` is rejected while a legal Pokémon play remains.
 
 ### 3. Choose the Supporter and tutor plan
 

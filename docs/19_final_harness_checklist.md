@@ -48,6 +48,7 @@ through a verified project Python adapter.
 - [x] manifest records source and output hashes;
 - [x] Rule Box, PrizeMap, and PrizeCheck have focused tests;
 - [x] the current deck profile is data rather than policy code;
+- [x] agent-versus-agent replay reviews preserve legal decisions and raw feedback;
 - [ ] linear ranker data-volume and paired promotion gates pass;
 - [ ] MLP data-volume and paired promotion gates pass;
 - [ ] RFL self-play and paired promotion gates pass.

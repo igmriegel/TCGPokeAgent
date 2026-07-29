@@ -23,7 +23,7 @@ engine locally and no sprint may mix hypothetical state into `GameState`.
 | H0 | Complete measurement and opponent baseline | S6, S9 | four-opponent matrix and decision metrics |
 | H1 | Complete card and attack catalog | H0 | deck coverage and catalog integrity |
 | H2 | Context-specific heuristic policies | H1 | focused context tests and non-inferiority |
-| H2A | Continuous Snover/Abomasnow development | current S4 recovery | zero skipped required development actions |
+| H2A | Continuous deck-agnostic board development | current S4 recovery | zero skipped required development actions |
 | H3 | Local tactical feature evaluator | H2 | tactical fixtures and latency gate |
 | H4 | Belief-derived scoring features | H1, H3 | calibration and factual separation |
 | H5 | Reproducible weight optimization | H2–H4 | validation gain and holdout discipline |
@@ -164,7 +164,7 @@ AGENT_MODE=heuristic scripts/run_smoke.sh heuristic
 
 ---
 
-## H2A — Continuous Snover/Abomasnow board development
+## H2A — Continuous deck-agnostic board development
 
 **Status:** `IN_PROGRESS`
 
@@ -176,8 +176,8 @@ registered as
 found losses in which the agent stopped placing Pokémon on the Bench and
 failed to continue the Snover-to-Mega-Abomasnow development line.
 
-**Objective:** make board development a repeated pre-attack obligation for the
-frozen Abomasnow deck instead of a one-time, fixed-score preference.
+**Objective:** make legal Pokémon plays a repeated pre-attack obligation for
+every deck instead of a one-time, fixed-score preference.
 
 ### Diagnosed gap
 
@@ -193,8 +193,8 @@ Abomasnow ex in play, open Bench slots, or backup-attacker readiness.
 - Add factual board-development features for Bench occupancy, open slots,
   Snover count, Mega Abomasnow ex count, eligible evolution targets, and
   prepared backup attackers.
-- Add a deck-specific pre-attack ordering layer: legal Snover plays and
-  Snover-to-Mega-Abomasnow evolutions outrank non-winning attacks.
+- Add a deck-agnostic pre-attack ordering layer: legal Pokémon plays with open
+  Bench capacity occur before attacks.
 - Re-evaluate development after every `MAIN` action; do not use a permanent
   "setup complete" flag.
 - Keep an immediate game-winning action above development and preserve all SDK
@@ -224,10 +224,10 @@ AGENT_MODE=heuristic scripts/run_smoke.sh heuristic
 
 ### Exit criteria
 
-- With an open Bench slot, every legal Snover play is selected before a
-  non-winning attack or `END`.
-- Every legal Snover-to-Mega-Abomasnow evolution is selected before a
-  non-winning attack or `END`.
+- With an open Bench slot, a legal Pokémon play is selected before an attack
+  or `END`, independently of the card name or active deck.
+- Evolution ordering remains a separate generic extension and cannot be marked
+  complete from the Pokémon-play gate alone.
 - Consecutive `MAIN` prompts prove that development is re-evaluated after each
   action.
 - Immediate game wins still dominate and full-Bench states remain valid.

@@ -248,3 +248,69 @@ evidence:
   receipt: "reports/submissions/20260729T221617Z-a16493a36264.json"
   archive: "reports/submissions/candidate-16f1e8b.tar.gz"
 ```
+
+## Competitive replay review record
+
+```yaml
+annotation_id: KGR-88879568-002
+supersedes: KGR-88879568-001
+status: accepted_evidence
+episode_id: 88879568
+actor_type: agent
+review_kind: post_hoc_human_review
+reviewed_side: 0
+match_outcome: loss
+verdict: mistake
+cause_code: sequencing
+confidence: 1.0
+finding: "The engine omitted a legal Kyogre Bench play before attacking on turns 11, 13, and 15."
+first_mistake:
+  decision_id: "88879568:72:0"
+  selected: "Hammer-lanche, index 3"
+  preferred: "Play Kyogre, index 1"
+repeated_mistakes:
+  - "88879568:81:0"
+  - "88879568:100:0"
+intended_follow_up: "Play Kyogre, receive the next MAIN prompt, then attack."
+decision: "Use as direct evidence for FB-2026-001 and H2A; the attack remains correct after development, and the review is not a human demonstration."
+evidence:
+  annotations: "data/annotations/gameplay_reviews/v1/annotations.jsonl"
+  replay_sha256: "f3ede5bf92cc81a91914830c6240306af22ec3248ed46f9b15fb6dd6e3077fc5"
+implementation:
+  annotation_commit: c16a960
+  policy_commit: e268c96
+  rule: "With open Bench capacity, choose any legal Pokemon PLAY before ATTACK or END."
+  card_specific_runtime_ids: []
+replay_regression:
+  "88879568:72:0": {recorded: [3], corrected_policy: [1]}
+  "88879568:81:0": {recorded: [5], corrected_policy: [1]}
+  "88879568:100:0": {recorded: [8], corrected_policy: [1]}
+validation:
+  unit_tests: "96 passed"
+  cabt_operational_smoke: "40 completed, 0 failed"
+  gameplay_smoke:
+    matches: 20
+    wins: 19
+    matches_with_attack: 20
+    operational_failures: 0
+    productive_main_actions: 219
+    end_turn_rate: 0.0837
+decision: "Accept the deck-agnostic implementation and smoke evidence; require the frozen comparison gate before a new submission."
+```
+
+## Kaggle replay synchronization record
+
+```yaml
+observed_at: "2026-07-29T23:15:36Z"
+submission_ids: [55093119, 55088176, 55086902]
+completed_replays_downloaded: 68
+raw_directory: "data/raw/kaggle/kaggle_gameplay_runs"
+raw_size: "107 MiB"
+schema_valid_replays: 68
+invalid_replays: 0
+sha256_duplicate_files: 0
+decision: "Retain all 68 distinct replay files; no byte-identical duplicate was safe to remove."
+limitations:
+  - "The current Kaggle submission continues to receive runs, so this is a timestamped snapshot."
+  - "The immutable gameplay_replays/v1 derived dataset still represents its original 31-match source set."
+```

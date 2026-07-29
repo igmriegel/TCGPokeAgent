@@ -87,6 +87,9 @@ For existing replays, add a separate review mode where a human can:
 
 Post-hoc annotations must be marked separately from live demonstrations because
 the reviewer can see information or outcomes unavailable at decision time.
+Reviews of automated Kaggle agent-versus-agent matches are not human gameplay
+demonstrations. Their separate schema and workflow are defined in
+[`31_competitive_replay_annotations.md`](31_competitive_replay_annotations.md).
 
 ## Human decision trace
 
