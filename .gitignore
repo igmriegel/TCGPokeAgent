@@ -16,6 +16,7 @@ htmlcov/
 *.log
 replays/
 reports/runs/
+reports/submissions/
 
 # uv cache
 .uv/
