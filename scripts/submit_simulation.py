@@ -135,15 +135,28 @@ def main(argv: list[str] | None = None) -> int:
             ]
         )
     if not args.skip_smoke:
-        commands.append(
+        commands.extend(
             [
-                python,
-                "-m",
-                "scripts.cabt_smoke",
-                "--matches",
-                "20",
-                "--agent-mode",
-                args.agent_mode,
+                [
+                    python,
+                    "-m",
+                    "scripts.cabt_smoke",
+                    "--matches",
+                    "20",
+                    "--agent-mode",
+                    args.agent_mode,
+                ],
+                [
+                    python,
+                    "-m",
+                    "scripts.gameplay_smoke",
+                    "--matches",
+                    "5",
+                    "--agent-mode",
+                    args.agent_mode,
+                    "--opponent",
+                    "random",
+                ],
             ]
         )
 

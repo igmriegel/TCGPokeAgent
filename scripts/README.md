@@ -24,6 +24,20 @@ The flow requires an authenticated Kaggle CLI and submits to
 `pokemon-tcg-ai-battle`. Successful uploads create a credential-free receipt
 under `reports/submissions/`.
 
+## Gameplay smoke
+
+Run a balanced matrix and reject an agent that completes games without
+observable gameplay:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/gameplay_smoke.py \
+  --matches 10 --agent-mode heuristic --opponent random
+```
+
+The summary reports productive main actions, attacks, matches with attacks,
+end-turn rate, wins, and operational failures. The high-level behavior is
+defined in [`docs/27_gameplay_rules.md`](../docs/27_gameplay_rules.md).
+
 ## Local replay visualization
 
 Generate a replay with the `cg.game` API bundled by the pinned

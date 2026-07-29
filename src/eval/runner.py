@@ -147,7 +147,10 @@ class MatchRunner:
                 else ErrorCategory.RUNTIME.value
             )
             error_message = (
-                "" if status is ExecutionStatus.OK else "one or more players did not finish"
+                ""
+                if status is ExecutionStatus.OK
+                else self._environment_error_message(environment)
+                or "one or more players did not finish"
             )
             termination_reason = "completed" if status is ExecutionStatus.OK else "incomplete"
         except Exception as error:
@@ -349,6 +352,17 @@ class MatchRunner:
             else getattr(player, "status", "unknown")
         )
         return str(status)
+
+    @staticmethod
+    def _environment_error_message(environment: Any) -> str:
+        """Return stderr emitted by agents in an incomplete environment run."""
+        messages = [
+            str(log.get("stderr", "")).strip()
+            for turn in getattr(environment, "logs", [])
+            for log in turn
+            if isinstance(log, Mapping) and log.get("stderr")
+        ]
+        return "\n".join(dict.fromkeys(message for message in messages if message))
 
     @staticmethod
     def _error_category(error: Exception) -> str:

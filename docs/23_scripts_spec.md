@@ -13,6 +13,7 @@ uv run --frozen python -m scripts.package_submission --artifact ARTIFACT
 uv run --frozen python -m scripts.validate_package --archive submission.tar.gz
 uv run --frozen python -m scripts.export_strategy --run RUN
 uv run --frozen python -m scripts.inventory_kaggle_data
+uv run --frozen python -m scripts.gameplay_smoke --matches 10 --agent-mode heuristic
 scripts/submit_simulation.sh
 ```
 
@@ -43,10 +44,11 @@ The inventory fails if any file lacks source, competition, version/date, size, S
 
 ## Simulation submission
 
-`submit_simulation.sh` runs preflight, tests, Ruff, mypy, the both-side smoke
-gate, package construction, and isolated package validation. It prints the
-archive size and SHA-256, then requires explicit interactive confirmation
-before invoking:
+`submit_simulation.sh` runs preflight, tests, Ruff, mypy, the both-side
+operational smoke gate, the observable-gameplay gate, package construction,
+and isolated package validation. The gameplay gate rejects a legal agent that
+never performs productive actions or attacks. The flow prints the archive size
+and SHA-256, then requires explicit interactive confirmation before invoking:
 
 ```bash
 kaggle competitions submit pokemon-tcg-ai-battle \
