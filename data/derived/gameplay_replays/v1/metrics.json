@@ -1,0 +1,243 @@
+{
+  "by_actor_context": {
+    "opponent": {
+      "0": {
+        "agreement_rate": 0.44030808729139925,
+        "agreements": 343,
+        "decisions": 779,
+        "divergences": 436
+      },
+      "1": {
+        "agreement_rate": 0.967741935483871,
+        "agreements": 30,
+        "decisions": 31,
+        "divergences": 1
+      },
+      "13": {
+        "agreement_rate": 0.5,
+        "agreements": 1,
+        "decisions": 2,
+        "divergences": 1
+      },
+      "14": {
+        "agreement_rate": 0.9583333333333334,
+        "agreements": 23,
+        "decisions": 24,
+        "divergences": 1
+      },
+      "15": {
+        "agreement_rate": 0.75,
+        "agreements": 3,
+        "decisions": 4,
+        "divergences": 1
+      },
+      "16": {
+        "agreement_rate": 1.0,
+        "agreements": 2,
+        "decisions": 2,
+        "divergences": 0
+      },
+      "18": {
+        "agreement_rate": 1.0,
+        "agreements": 1,
+        "decisions": 1,
+        "divergences": 0
+      },
+      "19": {
+        "agreement_rate": 0.75,
+        "agreements": 3,
+        "decisions": 4,
+        "divergences": 1
+      },
+      "2": {
+        "agreement_rate": 0.9166666666666666,
+        "agreements": 11,
+        "decisions": 12,
+        "divergences": 1
+      },
+      "21": {
+        "agreement_rate": 0.6451612903225806,
+        "agreements": 20,
+        "decisions": 31,
+        "divergences": 11
+      },
+      "22": {
+        "agreement_rate": 1.0,
+        "agreements": 19,
+        "decisions": 19,
+        "divergences": 0
+      },
+      "27": {
+        "agreement_rate": 1.0,
+        "agreements": 2,
+        "decisions": 2,
+        "divergences": 0
+      },
+      "3": {
+        "agreement_rate": 0.7575757575757576,
+        "agreements": 25,
+        "decisions": 33,
+        "divergences": 8
+      },
+      "30": {
+        "agreement_rate": 1.0,
+        "agreements": 16,
+        "decisions": 16,
+        "divergences": 0
+      },
+      "34": {
+        "agreement_rate": 0.0,
+        "agreements": 0,
+        "decisions": 1,
+        "divergences": 1
+      },
+      "37": {
+        "agreement_rate": 1.0,
+        "agreements": 7,
+        "decisions": 7,
+        "divergences": 0
+      },
+      "38": {
+        "agreement_rate": 0.875,
+        "agreements": 7,
+        "decisions": 8,
+        "divergences": 1
+      },
+      "4": {
+        "agreement_rate": 0.46808510638297873,
+        "agreements": 22,
+        "decisions": 47,
+        "divergences": 25
+      },
+      "40": {
+        "agreement_rate": 0.5,
+        "agreements": 1,
+        "decisions": 2,
+        "divergences": 1
+      },
+      "41": {
+        "agreement_rate": 0.8235294117647058,
+        "agreements": 14,
+        "decisions": 17,
+        "divergences": 3
+      },
+      "43": {
+        "agreement_rate": 1.0,
+        "agreements": 22,
+        "decisions": 22,
+        "divergences": 0
+      },
+      "5": {
+        "agreement_rate": 0.7222222222222222,
+        "agreements": 13,
+        "decisions": 18,
+        "divergences": 5
+      },
+      "7": {
+        "agreement_rate": 0.6404494382022472,
+        "agreements": 114,
+        "decisions": 178,
+        "divergences": 64
+      },
+      "8": {
+        "agreement_rate": 0.5833333333333334,
+        "agreements": 21,
+        "decisions": 36,
+        "divergences": 15
+      },
+      "9": {
+        "agreement_rate": 0.6666666666666666,
+        "agreements": 2,
+        "decisions": 3,
+        "divergences": 1
+      }
+    },
+    "own": {
+      "0": {
+        "agreement_rate": 0.9838337182448037,
+        "agreements": 426,
+        "decisions": 433,
+        "divergences": 7
+      },
+      "1": {
+        "agreement_rate": 1.0,
+        "agreements": 31,
+        "decisions": 31,
+        "divergences": 0
+      },
+      "2": {
+        "agreement_rate": 1.0,
+        "agreements": 11,
+        "decisions": 11,
+        "divergences": 0
+      },
+      "22": {
+        "agreement_rate": 1.0,
+        "agreements": 21,
+        "decisions": 21,
+        "divergences": 0
+      },
+      "3": {
+        "agreement_rate": 1.0,
+        "agreements": 26,
+        "decisions": 26,
+        "divergences": 0
+      },
+      "30": {
+        "agreement_rate": 1.0,
+        "agreements": 22,
+        "decisions": 22,
+        "divergences": 0
+      },
+      "34": {
+        "agreement_rate": 1.0,
+        "agreements": 5,
+        "decisions": 5,
+        "divergences": 0
+      },
+      "38": {
+        "agreement_rate": 1.0,
+        "agreements": 8,
+        "decisions": 8,
+        "divergences": 0
+      },
+      "4": {
+        "agreement_rate": 1.0,
+        "agreements": 6,
+        "decisions": 6,
+        "divergences": 0
+      },
+      "41": {
+        "agreement_rate": 1.0,
+        "agreements": 14,
+        "decisions": 14,
+        "divergences": 0
+      },
+      "7": {
+        "agreement_rate": 1.0,
+        "agreements": 145,
+        "decisions": 145,
+        "divergences": 0
+      },
+      "8": {
+        "agreement_rate": 1.0,
+        "agreements": 26,
+        "decisions": 26,
+        "divergences": 0
+      }
+    }
+  },
+  "decision_splits": {
+    "holdout": 252,
+    "regression": 748,
+    "train": 922,
+    "validation": 125
+  },
+  "own_results": {
+    "draws": 0,
+    "losses": 15,
+    "match_score_rate": 0.5161290322580645,
+    "wins": 16
+  },
+  "schema_version": "replay-metrics-v1"
+}

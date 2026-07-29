@@ -1,0 +1,16 @@
+{
+  "banned_keys": [
+    "agent_name",
+    "opponent_name",
+    "reward",
+    "rewards",
+    "search_begin_input",
+    "status",
+    "statuses",
+    "visualize"
+  ],
+  "findings": [],
+  "records_checked": 2047,
+  "schema_version": "leakage-audit-v1",
+  "status": "passed"
+}

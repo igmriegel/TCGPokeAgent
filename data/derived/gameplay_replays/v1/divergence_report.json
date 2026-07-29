@@ -1,0 +1,7081 @@
+{
+  "records": [
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836301:9:1",
+      "episode_id": 88836301,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836301:10:1",
+      "episode_id": 88836301,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836301:11:1",
+      "episode_id": 88836301,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836301:28:1",
+      "episode_id": 88836301,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:5:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:8:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:9:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        11
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88836827:10:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:11:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        14
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:12:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:13:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:30:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        17
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:32:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        18
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:34:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:35:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:36:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:38:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:39:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:43:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        14
+      ],
+      "selected_indices": [
+        20
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:45:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        20
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:46:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:47:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:48:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88836827:49:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88836827:50:0",
+      "episode_id": 88836827,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:10:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:15:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:16:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837361:17:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:18:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        21
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:19:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837361:20:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:21:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:22:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88837361:28:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:33:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:35:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:38:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:44:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:45:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:46:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837361:47:1",
+      "episode_id": 88837361,
+      "reference_indices": [],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:48:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:49:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837361:50:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:51:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:54:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:56:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:57:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88837361:59:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:67:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        9
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:68:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:69:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:70:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:75:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        12
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:77:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        13
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:78:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        14
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:80:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        18
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:81:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:82:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837361:83:1",
+      "episode_id": 88837361,
+      "reference_indices": [],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837361:84:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88837361:86:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88837361:87:1",
+      "episode_id": 88837361,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837886:13:0",
+      "episode_id": 88837886,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88837886:14:0",
+      "episode_id": 88837886,
+      "reference_indices": [
+        0,
+        3,
+        4
+      ],
+      "selected_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837886:18:0",
+      "episode_id": 88837886,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837886:19:0",
+      "episode_id": 88837886,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88837886:21:0",
+      "episode_id": 88837886,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 41,
+      "decision_id": "88838414:1:0",
+      "episode_id": 88838414,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838414:19:0",
+      "episode_id": 88838414,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838414:31:0",
+      "episode_id": 88838414,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838414:33:0",
+      "episode_id": 88838414,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838931:7:1",
+      "episode_id": 88838931,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88838931:8:1",
+      "episode_id": 88838931,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": []
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838931:19:1",
+      "episode_id": 88838931,
+      "reference_indices": [
+        11
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88838931:21:1",
+      "episode_id": 88838931,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88838931:22:1",
+      "episode_id": 88838931,
+      "reference_indices": [
+        0,
+        1,
+        2
+      ],
+      "selected_indices": []
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:20:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:21:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:22:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:30:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88839469:31:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        0,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839469:37:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:39:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:44:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:50:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:51:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88839469:57:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:59:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839469:60:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:61:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:64:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:65:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        12
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:66:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88839469:70:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:72:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        12
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:75:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:76:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839469:78:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:79:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:81:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88839469:85:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0,
+        1,
+        2
+      ],
+      "selected_indices": [
+        5,
+        4,
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839469:86:1",
+      "episode_id": 88839469,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:4:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:5:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:6:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:15:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:16:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:19:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:20:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:29:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:31:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:32:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:35:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:36:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:37:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:38:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        9
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:47:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88839991:50:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:53:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:55:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:56:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:57:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        15
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:58:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88839991:59:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:60:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:63:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        18
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:65:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        17
+      ],
+      "selected_indices": [
+        15
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88839991:66:0",
+      "episode_id": 88839991,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        9
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841042:12:1",
+      "episode_id": 88841042,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:12:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88841554:13:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:16:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:18:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:19:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88841554:33:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:36:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:40:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:44:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:47:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88841554:50:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:51:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:53:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:55:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:60:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 9,
+      "decision_id": "88841554:61:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0,
+        1,
+        2
+      ],
+      "selected_indices": [
+        1,
+        0,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:62:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:74:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:76:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:79:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88841554:81:1",
+      "episode_id": 88841554,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        13
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842092:9:1",
+      "episode_id": 88842092,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88842092:17:0",
+      "episode_id": 88842092,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842092:20:1",
+      "episode_id": 88842092,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88842092:22:1",
+      "episode_id": 88842092,
+      "reference_indices": [
+        0,
+        3
+      ],
+      "selected_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88842092:26:0",
+      "episode_id": 88842092,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842092:27:1",
+      "episode_id": 88842092,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88842092:29:0",
+      "episode_id": 88842092,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88842092:31:0",
+      "episode_id": 88842092,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842092:32:1",
+      "episode_id": 88842092,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 41,
+      "decision_id": "88842637:1:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:7:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88842637:8:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        0,
+        2
+      ],
+      "selected_indices": [
+        0,
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:10:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88842637:11:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        0,
+        2
+      ],
+      "selected_indices": []
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:13:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:19:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:20:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:22:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:23:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:28:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:30:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88842637:32:0",
+      "episode_id": 88842637,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:8:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:10:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:12:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:14:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88843168:15:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        29
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:16:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:17:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:19:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:27:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        10
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:28:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:39:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:40:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:41:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88843168:42:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        14
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:43:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88843168:44:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:45:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:53:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:55:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843168:57:1",
+      "episode_id": 88843168,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:6:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:8:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:13:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88843684:17:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:31:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        17
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:32:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:34:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:40:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88843684:50:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:51:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        19
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88843684:52:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1,
+        2
+      ],
+      "selected_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:53:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        23
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:60:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:62:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:65:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:66:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:70:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:74:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88843684:78:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:83:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:84:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:87:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:88:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88843684:98:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:104:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:107:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        12
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88843684:108:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88843684:121:0",
+      "episode_id": 88843684,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:6:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:11:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:16:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:17:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:19:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:22:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:32:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:33:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88844208:36:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:37:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88844208:38:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        2,
+        3
+      ],
+      "selected_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:40:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:46:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:48:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        15
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:53:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:57:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        10
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844208:58:0",
+      "episode_id": 88844208,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:6:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88844732:7:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:8:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:9:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 5,
+      "decision_id": "88844732:13:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        1,
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:21:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88844732:23:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88844732:28:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:29:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88844732:34:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:35:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:36:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        17
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:37:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        12
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:39:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        13
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:41:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        12
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88844732:48:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88844732:52:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:53:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        10
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:54:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88844732:57:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:58:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:61:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:63:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:64:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:65:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88844732:66:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0,
+        5
+      ],
+      "selected_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:68:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88844732:69:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2,
+        3
+      ],
+      "selected_indices": [
+        0,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:74:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:79:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:81:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:83:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:85:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:96:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:98:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:99:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:101:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88844732:102:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        3,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:104:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:105:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88844732:113:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88844732:114:0",
+      "episode_id": 88844732,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 38,
+      "decision_id": "88845248:4:0",
+      "episode_id": 88845248,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:6:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:7:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:10:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:12:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88845756:13:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1,
+        2
+      ],
+      "selected_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:22:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:23:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:34:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:55:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88845756:56:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        0,
+        5
+      ],
+      "selected_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:58:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88845756:68:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:70:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88845756:71:0",
+      "episode_id": 88845756,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:9:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:10:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 5,
+      "decision_id": "88846200:11:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        0,
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 34,
+      "decision_id": "88846200:12:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        1,
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:13:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88846200:14:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:16:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:19:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:20:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:23:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 19,
+      "decision_id": "88846200:24:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:26:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 5,
+      "decision_id": "88846200:27:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:28:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:31:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:35:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:40:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:42:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:67:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        10
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:68:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:70:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846200:75:0",
+      "episode_id": 88846200,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88846722:20:0",
+      "episode_id": 88846722,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847296:5:0",
+      "episode_id": 88847296,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847296:25:0",
+      "episode_id": 88847296,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847296:30:0",
+      "episode_id": 88847296,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847296:31:0",
+      "episode_id": 88847296,
+      "reference_indices": [
+        0,
+        1,
+        5
+      ],
+      "selected_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847296:33:0",
+      "episode_id": 88847296,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:5:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847755:6:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:7:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:11:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847755:12:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:14:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847755:15:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:17:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:22:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:26:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:29:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:30:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        12
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:32:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847755:33:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:34:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:37:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:46:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:49:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:63:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:64:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:65:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:66:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:67:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:69:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88847755:74:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:79:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:81:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:82:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:83:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88847755:84:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88847755:85:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88847755:87:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88847755:88:0",
+      "episode_id": 88847755,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 2,
+      "decision_id": "88848275:6:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0,
+        1,
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:12:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:13:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:15:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:17:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88848275:22:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:23:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:25:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:27:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88848275:28:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1,
+        3
+      ],
+      "selected_indices": [
+        1,
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88848275:29:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:30:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:31:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:32:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88848275:33:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1,
+        2
+      ],
+      "selected_indices": [
+        2,
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88848275:34:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:35:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88848275:38:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:40:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:42:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:43:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:45:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88848275:49:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:50:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88848275:51:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:53:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:54:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:55:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:56:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88848275:66:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:67:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88848275:70:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:71:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        11
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:72:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848275:73:1",
+      "episode_id": 88848275,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:22:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 5,
+      "decision_id": "88848795:23:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        1,
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:24:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        16
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88848795:31:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:33:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        13
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:34:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 5,
+      "decision_id": "88848795:37:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0,
+        1
+      ],
+      "selected_indices": [
+        2,
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:45:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:62:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:70:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88848795:78:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:86:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:87:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:88:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:90:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:93:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88848795:95:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 40,
+      "decision_id": "88848795:98:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 13,
+      "decision_id": "88848795:99:1",
+      "episode_id": 88848795,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:10:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:11:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:12:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:13:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:15:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:17:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:18:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        8
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:19:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:20:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:21:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:22:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:23:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88849310:24:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:32:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:36:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:37:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:38:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:45:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:46:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88849310:51:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:52:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:55:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:56:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:69:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:70:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        14
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849310:74:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:75:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:76:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:77:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88849310:78:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0,
+        2
+      ],
+      "selected_indices": [
+        3,
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:80:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:96:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:101:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88849310:102:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:103:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 14,
+      "decision_id": "88849310:110:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:120:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:123:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:124:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849310:126:1",
+      "episode_id": 88849310,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:6:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:9:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:15:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849850:16:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:18:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:24:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:26:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849850:27:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:28:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88849850:29:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:30:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        11
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:32:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:35:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88849850:36:0",
+      "episode_id": 88849850,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 41,
+      "decision_id": "88850842:1:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:10:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:11:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:13:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88850842:14:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0,
+        2
+      ],
+      "selected_indices": [
+        2,
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:15:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:25:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88850842:29:1",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:31:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:32:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:34:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88850842:35:1",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        17
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:36:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:37:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:39:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "own",
+      "context": 0,
+      "decision_id": "88850842:40:1",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        20
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:41:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:42:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:43:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0,
+        1,
+        2
+      ],
+      "selected_indices": [
+        1,
+        5,
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88850842:47:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:48:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        15
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:49:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:51:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:64:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        11
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:65:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88850842:69:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:71:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:72:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88850842:73:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:74:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88850842:78:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:80:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 3,
+      "decision_id": "88850842:81:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:82:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 8,
+      "decision_id": "88850842:83:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        1,
+        2
+      ],
+      "selected_indices": [
+        3,
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:85:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:86:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:92:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:93:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:94:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:96:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:97:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:104:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:105:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88850842:111:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:115:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:116:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:117:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:118:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:119:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:126:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:127:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:129:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:131:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:138:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:139:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        5
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88850842:140:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:141:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:143:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88850842:144:0",
+      "episode_id": 88850842,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 1,
+      "decision_id": "88851058:3:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:11:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:14:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:15:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88851058:16:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:17:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        5
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88851058:18:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:19:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:20:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:21:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:33:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:34:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:35:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        12
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:37:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:38:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88851058:42:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:49:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        14
+      ],
+      "selected_indices": [
+        12
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:51:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:52:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        10
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:54:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        9
+      ],
+      "selected_indices": [
+        7
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88851058:57:1",
+      "episode_id": 88851058,
+      "reference_indices": [
+        8
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:8:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:9:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:10:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:11:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:14:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88854459:15:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88854459:20:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:21:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:22:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:23:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:31:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        4
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 21,
+      "decision_id": "88854459:34:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88854459:35:1",
+      "episode_id": 88854459,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:7:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:8:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:10:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:11:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:19:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:21:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88862505:39:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        6
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:41:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88862505:44:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        3
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:46:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        12
+      ],
+      "selected_indices": [
+        11
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:47:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        13
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:49:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88862505:56:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:57:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        14
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:59:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        13
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:61:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        4
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:70:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        6
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:71:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        3
+      ],
+      "selected_indices": [
+        2
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 15,
+      "decision_id": "88862505:74:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 4,
+      "decision_id": "88862505:77:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:78:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        10
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:82:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        7
+      ],
+      "selected_indices": [
+        0
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 7,
+      "decision_id": "88862505:85:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        0
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:91:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        2
+      ],
+      "selected_indices": [
+        1
+      ]
+    },
+    {
+      "actor_role": "opponent",
+      "context": 0,
+      "decision_id": "88862505:92:0",
+      "episode_id": 88862505,
+      "reference_indices": [
+        1
+      ],
+      "selected_indices": [
+        0
+      ]
+    }
+  ],
+  "reference_policy": "generic_heuristic",
+  "schema_version": "policy-divergence-v1",
+  "summary": {
+    "decisions": 2047,
+    "divergences": 584,
+    "matches": 31,
+    "meaningful_decisions": 1836,
+    "opponent_agreements": 722,
+    "opponent_decisions": 1299,
+    "own_agreements": 741,
+    "own_decisions": 748,
+    "unique_opponent_decks": 27
+  }
+}
