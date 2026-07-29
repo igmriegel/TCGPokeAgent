@@ -30,6 +30,17 @@ engine locally and no sprint may mix hypothetical state into `GameState`.
 | H7 | Matchup-aware profiles | H0, H6 | robust per-matchup result |
 | H8 | Hardened heuristic-only promotion | H5–H7 | final matrix, package, manifest, rollback |
 
+## Cross-cutting HD track — Human demonstration capture
+
+**Status:** `IDEA`
+
+The HD0–HD5 stages in
+[`28_human_gameplay_capture.md`](../28_human_gameplay_capture.md) define a
+parallel track for observing live human decisions and annotating replays. Human
+traces may propose H2 rules, H5 weight hypotheses, or H6 preference examples,
+but they do not bypass the frozen validation and holdout gates. Live and
+post-hoc decisions remain separate datasets.
+
 ---
 
 ## H0 — Measurement baseline and complete opponent matrix

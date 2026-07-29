@@ -278,3 +278,11 @@ Golden scenarios:
 
 Every accepted rule should eventually have at least one real-observation
 fixture and one evaluation metric.
+
+## Human demonstrations
+
+Rules may also be proposed from monitored human gameplay. The capture workflow,
+trace schema, live-player interfaces, reasoning annotations, and safeguards are
+defined in [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md).
+Human choices are treated as preference evidence rather than automatic
+ground-truth labels.

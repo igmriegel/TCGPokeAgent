@@ -16,6 +16,7 @@
 12. [`25_rfl_experiments.md`](25_rfl_experiments.md) — RFL experiment runbook.
 13. [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — heuristic-only improvement sprints H0–H8.
 14. [`27_gameplay_rules.md`](27_gameplay_rules.md) — living high-level gameplay behavior.
+15. [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — monitored human demonstrations and insight extraction.
 
 ## Product and research
 
@@ -28,6 +29,7 @@
 - [`05_writeup_outline.md`](05_writeup_outline.md) — Strategy structure.
 - [`strategy_notes.md`](strategy_notes.md) — evidence log.
 - [`27_gameplay_rules.md`](27_gameplay_rules.md) — collaboratively maintained gameplay rules and behavioral metrics.
+- [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — live human play, replay annotation, and preference-data design.
 
 ## Contracts by layer
 

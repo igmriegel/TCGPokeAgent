@@ -20,6 +20,7 @@ External verification: **2026-07-27**.
 | `Observation.logs` | incremental events | belief and audit | verified |
 | `search_begin_input` | opaque search initialization | Search API | verified |
 | local replays/traces | transitions, decisions and results | analysis/training | derivable |
+| human demonstrations | visible state, legal options, selected indices, rationale and confidence | heuristic discovery/preference learning | derivable, consent-controlled |
 | ladder logs | errors, duration and OOD | external validation | derivable after export |
 
 ## Authenticated Kaggle inventory
