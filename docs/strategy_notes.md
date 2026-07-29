@@ -169,3 +169,42 @@ The current release is heuristic-only. Search is disabled explicitly because
 the documented native lifecycle is not yet integrated through a verified
 Python adapter. The release archive, manifest, and isolated validation are
 recorded in `reports/release_heuristic_manifest.json`.
+
+## Replay-learning foundation record
+
+```yaml
+experiment_id: EXP-20260729-003
+status: foundation_accepted
+hypothesis: "Kaggle gameplay runs can produce leak-free, deck-grouped decision evidence while the runtime policy remains deck-agnostic."
+agent_version: 35eebd9
+dataset_version: gameplay_replays_v1
+dataset_manifest_sha256: 26b7c7e18e744b2b56b1afc7b7fd83cf1e6870351a55bd4b92c5467720bb1d50
+sdk_version: "1.32.2"
+results:
+  matches: 31
+  decisions: 2047
+  non_forced_decisions: 1836
+  own_decisions: 748
+  opponent_decisions: 1299
+  distinct_opponent_decks: 27
+  opponent_reference_divergences: 577
+  own_reference_divergences: 7
+  leakage_findings: 0
+  unit_tests_passed: 89
+  cabt_smoke_games_completed: 40
+  cabt_smoke_failures: 0
+decision: "Accept the replay-learning foundation; retain the heuristic and do not promote a learned model."
+limitations:
+  - "Only 31 independent matches are available, below every learned-ranker promotion threshold."
+  - "Opponent actions are behavioral evidence, not labels of optimal play."
+  - "Rule Box and exact PrizeCheck behavior still require a paired tactical and matchup evaluation."
+evidence:
+  engine_commit: 35eebd9
+  metrics_commit: 6e6bf7a
+  ingestion_commit: e5cc635
+  dataset_manifest: "data/derived/gameplay_replays/v1/manifest.json"
+  leakage_report: "data/derived/gameplay_replays/v1/leakage_report.json"
+  divergence_report: "data/derived/gameplay_replays/v1/divergence_report.json"
+  summary: "data/derived/gameplay_replays/v1/summary.md"
+writeup_claim: "The versioned corpus preserves 2,047 legal decisions and 27 opponent deck multisets without promoting replay actions as ground truth."
+```

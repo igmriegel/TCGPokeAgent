@@ -28,6 +28,50 @@ toward:
 4. an efficient Prize trade;
 5. a Knock Out, multi-Prize Knock Out, or donk.
 
+## Rule Box and Prize semantics
+
+Rule Box status is a first-class card trait, not a deck-specific heuristic.
+Within the current CABT catalog, Pokémon ex have a Rule Box and concede two
+Prize cards when Knocked Out, while Mega Evolution Pokémon ex have a Rule Box
+and concede three. A Pokémon without either trait normally concedes one.
+
+The catalog value is the base value. Public Tools, Abilities, Stadiums, and
+attack effects may reduce, increase, or eliminate the contextual Prize value.
+The agent must trace both values and must not overwrite the base catalog fact
+with a temporary effect.
+
+Before valuing an attack, the policy must evaluate known damage-prevention
+effects whose conditions reference Rule Box, Pokémon ex, Abilities, or the
+defender. A legal attack that is known to deal no damage is not a productive
+attack merely because CABT exposes it. CABT remains the authority for legal
+options; the policy is responsible for recognizing strategically ineffective
+legal options.
+
+## PrizeMap and Prize checking
+
+`PrizeMap` is the current public-board route to victory. It maps every opposing
+Pokémon in play to remaining HP, base and contextual Prize value, immediate KO
+reachability, known protection, and attack cost. It is recomputed after every
+decision and ranks routes that can collect the remaining Prize cards with the
+fewest safe exchanges.
+
+Prize checking is a separate hidden-zone knowledge process for the acting
+player's own deck:
+
+- before a complete deck search, report probability and lower/upper bounds;
+- when CABT exposes `select.deck`, treat that exact remaining multiset as
+  actor-visible knowledge;
+- subtract the exact searchable deck and all known non-Prize zones from the
+  submitted deck to identify cards that remain prized;
+- update the result after draws and zone movements;
+- mark inconsistent cardinality and disable the derived feature instead of
+  inventing a fact.
+
+Tutor and setup decisions must use `searchable_count`. A confirmed prized card
+cannot be treated as an available search target. A probabilistic result must
+retain its confidence and must not be serialized as a factual `GameState`
+field.
+
 ## Turn decision sequence
 
 The sequence is a priority model. Card effects can interrupt it with nested

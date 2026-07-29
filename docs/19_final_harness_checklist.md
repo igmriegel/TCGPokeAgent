@@ -38,6 +38,24 @@ through a verified project Python adapter.
 - [ ] failures fall back to heuristic;
 - [ ] win rate does not drop against pure heuristic.
 
+## Replay-learning foundation
+
+- [x] replay observations are aligned with the following recorded action;
+- [x] simulator option indices are preserved and selections are validated;
+- [x] opponent decks are extracted as immutable 60-card multisets;
+- [x] train, validation, and holdout groups do not share actor deck hashes;
+- [x] model inputs exclude identity, future state, reward, and opaque payloads;
+- [x] manifest records source and output hashes;
+- [x] Rule Box, PrizeMap, and PrizeCheck have focused tests;
+- [x] the current deck profile is data rather than policy code;
+- [ ] linear ranker data-volume and paired promotion gates pass;
+- [ ] MLP data-volume and paired promotion gates pass;
+- [ ] RFL self-play and paired promotion gates pass.
+
+The checked items establish a reproducible learning harness. They do not
+promote a learned policy or prove that the current heuristic has reached the
+performance ceiling of the submitted deck.
+
 ## Submission approved — heuristic-only release
 
 - [x] `main.py` and `deck.csv` in root;

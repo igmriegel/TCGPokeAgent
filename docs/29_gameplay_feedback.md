@@ -218,6 +218,93 @@ another explicit override blocks the play.
 The parent feedback remains `IN_PROGRESS` because its rule, diagnosis, and
 acceptance work are active even though the code actions remain planned.
 
+---
+
+## FB-2026-002 — Rule Box-aware combat and Prize valuation
+
+**Date:** 2026-07-29
+
+**Status:** `IMPLEMENTED`
+
+**Priority:** `P0`
+
+**Source:** gameplay planning review plus verified CABT `CardData` metadata.
+
+**Evidence type:** SDK contract and replay matchup inspection.
+
+### Original feedback
+
+Rule Box status changes both combat and the Prize race. Pokémon ex and Mega
+Evolution Pokémon ex concede different numbers of Prize cards, and some
+Pokémon or Stadium effects prevent damage based on the attacker or defender
+having a Rule Box.
+
+### General principle
+
+Derive Rule Box status and base Prize value from the canonical catalog. Before
+scoring an attack or target, apply known public damage-prevention and Prize
+modifier effects. Trace an ineffective legal attack explicitly instead of
+valuing its printed damage.
+
+### Implemented foundation
+
+- catalog traits expose `has_rule_box` and `base_prize_value`;
+- Mega Evolution Pokémon ex remain Rule Box Pokémon even when only `megaEx` is
+  set by the SDK;
+- `PrizeMap` records contextual Prize value and known damage prevention;
+- the heuristic emits `attack_damage_prevented`;
+- focused tests cover normal, ex, Mega ex, and ex-based damage prevention.
+
+### Evaluation gate
+
+Promotion still requires the paired local matrix, zero operational failures,
+and the Rule Box tactical fixtures. This record remains below `VALIDATED`
+until that matrix exists.
+
+---
+
+## FB-2026-003 — Prize checking and searchable-card availability
+
+**Date:** 2026-07-29
+
+**Status:** `IMPLEMENTED`
+
+**Priority:** `P0`
+
+**Source:** gameplay planning review and CABT replay inspection.
+
+**Evidence type:** 31 Kaggle replays in which `select.deck` cardinality matches
+the actor's `deckCount`.
+
+### Original feedback
+
+The agent must know which of its cards are prized and which copies remain
+available to search. It must not plan a tutor sequence around a card confirmed
+to be unavailable.
+
+### General principle
+
+Maintain probabilistic own-card availability until a complete deck search
+exposes the remaining deck. After that observation, derive exact current
+prized and searchable counts from the immutable submitted deck and known
+zones. Never expose the estimate as a factual public state.
+
+### Implemented foundation
+
+- `PrizeCheckResult` distinguishes `PROBABILISTIC`, `EXACT`, and
+  `INCONSISTENT`;
+- each card exposes searchable/prized ranges, expectations, and probability;
+- exact deck searches produce exact counts;
+- confirmed unavailable tutor targets emit
+  `confirmed_prized_unsearchable`;
+- cardinality failure disables the signal safely.
+
+### Evaluation gate
+
+Golden replay cases must confirm exact counts across search, draw, discard,
+attachment, Evolution, and Prize-taking transitions before this record can
+move to `VALIDATED`.
+
 ### Reason codes
 
 - `develop_required_basic_before_terminal`;
