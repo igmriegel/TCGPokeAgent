@@ -110,6 +110,59 @@ evidence:
 writeup_claim: "The heuristic completed 400 player-side matches with zero operational failures; recorded match-duration p50/p95 were 270.75/1033.70 ms."
 ```
 
+## Gameplay recovery record
+
+```yaml
+experiment_id: EXP-20260729-002
+status: accepted
+hypothesis: "Resolving real CABT cards and prioritizing productive actions eliminates the end-turn-only policy without operational regressions."
+agent_version: c41ca40
+baseline_version: 55086902
+deck_version: mega_abomasnow_kyogre
+deck_sha256: 1156379af39e71bc83eecb50d1e04c5cc480501d293621fcc89c2d355d99be78
+sdk_version: "1.32.2"
+config:
+  files: [configs/agent_heuristic.yaml]
+  overrides:
+    opponent: random
+seeds: "native-unseeded balanced matrix"
+games_planned: 200
+matchups: [random]
+started_at: "2026-07-29"
+finished_at: "2026-07-29"
+results:
+  wins: 179
+  draws: 0
+  losses: 21
+  attacks: 472
+  matches_with_attack: 200
+  productive_main_actions: 1942
+  end_turn_rate: 0.0934
+  invalid: 0
+  error: 0
+  timeout: 0
+remote_validation:
+  submission_id: 55088176
+  episode_id: 88836243
+  state: COMPLETED
+  initial_public_score: 600.0
+  previous_final_public_score: 179.7
+  package_sha256: ee0a20585a423b33b2f8205671bb6e3f32539451c0b45b929dd8c74ed837e775
+  package_bytes: 513976
+decision: "Accept minimum observable-gameplay recovery; do not claim strategic or matchup-complete promotion."
+limitations:
+  - "The new public score may still change after additional evaluation."
+  - "The 200-game behavioral matrix uses only the random opponent."
+  - "Knock Out, Prize, donk, and termination-cause metrics remain pending."
+  - "Remote first-load latency was 335.6 ms; subsequent decisions stayed below 2 ms."
+evidence:
+  manifest: null
+  report: "docs/27_gameplay_rules.md"
+  traces:
+    - "tests/fixtures/cabt_main_turn.json"
+writeup_claim: "The recovered heuristic attacked in every game of a 200-game random-opponent smoke matrix and passed remote validation without agent stderr."
+```
+
 ## Release decision
 
 The current release is heuristic-only. Search is disabled explicitly because

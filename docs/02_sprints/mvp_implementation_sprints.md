@@ -656,6 +656,11 @@ imports unavailable.
   400 matches, 239 wins, 0 operational failures.
 - Final release is frozen as heuristic-only; search approval is intentionally
   excluded from this release scope.
+- Gameplay-recovery package `ee0a20585a42` is 513,976 bytes, includes the
+  competition `cg` catalog, passed the CABT file-agent gate, and completed
+  remote validation as submission `55088176`, episode `88836243`, without
+  stdout/stderr. Its initial public score was `600.0`; this is provisional
+  until Kaggle finishes any additional evaluation.
 
 ### Heuristic-only release decision recorded 2026-07-29
 
