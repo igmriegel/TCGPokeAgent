@@ -107,7 +107,8 @@ and technical interpretation belong in later fields.
 
 **Priority:** `P0`
 
-**Source:** human post-submission review of Kaggle submission `55088176`.
+**Source:** human post-submission review of Kaggle submissions `55088176` and
+`55093119`.
 
 **Evidence type:** post-hoc gameplay review plus static inspection of the
 current heuristic scorer.
@@ -135,6 +136,12 @@ remaining development for that turn.
 The replay review establishes the gameplay symptom. The score comparison
 establishes a credible code path, but decision-level traces are still required
 to quantify every occurrence.
+
+The failure recurred in submission `55093119`: the agent lost after leaving no
+additional Pokémon in play. This confirms that the deck-profile and Prize
+foundation did not complete the pre-terminal board-safety policy. Until the
+exact episode trace is linked, the report is evidence of recurrence rather
+than a decision-level root-cause proof.
 
 ### Deck-specific rule
 
