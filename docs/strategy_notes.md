@@ -220,7 +220,10 @@ baseline_submission_id: 55088176
 baseline_public_score_observed: 521.4
 candidate_submission_id: 55093119
 candidate_initial_public_score: 600.0
-candidate_evaluated_public_score: null
+candidate_evaluated_public_score: 530.9
+score_observed_at: "2026-07-29T22:22:39Z"
+evaluation_status: UPDATING
+current_public_score_delta: 9.5
 deck_version: mega_abomasnow_kyogre
 package_sha256: a16493a362645ed25cdeb7fce50cf72f8be85bb4120487221063ceb7cfb66aaa
 package_bytes: 523391
@@ -235,7 +238,7 @@ local_gates:
     matches_with_attack: 10
     operational_failures: 0
     end_turn_rate: 0.0935
-decision: "Wait for Kaggle gameplay runs to update the initial score before comparing the candidate with the baseline."
+decision: "Record the current +9.5 delta as provisional and wait for the remote score to stabilize before promotion or deck-ceiling conclusions."
 limitations:
   - "Kaggle initializes a new submission at 600.0; that value is not evaluation evidence."
   - "The remote opponent mix and evaluation variance are not controlled locally."
