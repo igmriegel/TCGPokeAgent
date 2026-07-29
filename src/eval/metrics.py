@@ -21,6 +21,8 @@ class AggregateMetrics:
     p50_duration_ms: float = 0.0
     p95_duration_ms: float = 0.0
     p99_duration_ms: float = 0.0
+    invalid: int = 0
+    timeouts: int = 0
 
 
 def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
@@ -31,7 +33,9 @@ def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
     wins = sum(1 for m in matches if m.result == "win")
     draws = sum(1 for m in matches if m.result == "draw")
     losses = sum(1 for m in matches if m.result == "loss")
-    errors = sum(1 for m in matches if m.status != "ok")
+    errors = sum(1 for m in matches if str(m.status) not in {"ok", "ExecutionStatus.OK"})
+    invalid = sum(1 for m in matches if str(m.status) in {"invalid", "ExecutionStatus.INVALID"})
+    timeouts = sum(1 for m in matches if str(m.status) in {"timeout", "ExecutionStatus.TIMEOUT"})
 
     win_rate = wins / total if total > 0 else 0.0
 
@@ -63,6 +67,8 @@ def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
         p50_duration_ms=percentile(50),
         p95_duration_ms=percentile(95),
         p99_duration_ms=percentile(99),
+        invalid=invalid,
+        timeouts=timeouts,
     )
 
 

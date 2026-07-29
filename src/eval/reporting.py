@@ -1,12 +1,32 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+import os
+import tempfile
+from dataclasses import fields, is_dataclass
 from pathlib import Path
 from typing import Any
 
 from .metrics import AggregateMetrics
 from .runner import RunReport
+
+
+def _json_value(value: Any) -> Any:
+    """Convert enums and nested dataclasses into JSON-compatible values."""
+    if hasattr(value, "value"):
+        return value.value
+    if is_dataclass(value) and not isinstance(value, type):
+        return {field.name: _json_value(getattr(value, field.name)) for field in fields(value)}
+    if isinstance(value, dict):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    if hasattr(value, "items"):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+    return value
 
 
 def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, Any]:
@@ -16,7 +36,7 @@ def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, 
         "total_matches": report.total_matches,
         "started_at": report.started_at,
         "finished_at": report.finished_at,
-        "matches": [asdict(match) for match in report.matches],
+        "matches": [_json_value(match) for match in report.matches],
         "metrics": {
             "total": metrics.total,
             "wins": metrics.wins,
@@ -29,13 +49,24 @@ def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, 
             "p50_duration_ms": round(metrics.p50_duration_ms, 2),
             "p95_duration_ms": round(metrics.p95_duration_ms, 2),
             "p99_duration_ms": round(metrics.p99_duration_ms, 2),
+            "invalid": metrics.invalid,
+            "timeouts": metrics.timeouts,
         },
     }
 
 
 def write_json(report: dict[str, Any], path: str | Path) -> None:
-    with open(path, "w") as f:
-        json.dump(report, f, indent=2)
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{destination.name}.", dir=destination.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(report, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+        os.replace(temporary, destination)
+    except BaseException:
+        os.unlink(temporary)
+        raise
 
 
 def write_markdown(report: dict[str, Any], path: str | Path) -> None:
@@ -55,5 +86,5 @@ def write_markdown(report: dict[str, Any], path: str | Path) -> None:
         f"{m.get('p95_duration_ms', 0):.1f} / {m.get('p99_duration_ms', 0):.1f} ms",
         "",
     ]
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))

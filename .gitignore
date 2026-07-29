@@ -15,6 +15,7 @@ coverage/
 htmlcov/
 *.log
 replays/
+reports/runs/
 
 # uv cache
 .uv/

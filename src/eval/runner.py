@@ -202,19 +202,33 @@ class MatchRunner:
         return make("cabt", configuration={"seed": seed}, debug=False)
 
     def _agent_for_mode(self, mode: str) -> AgentCallable:
+        """Build a policy with the SDK's initial-deck branch attached."""
+        deck_path = Path(__file__).parents[1] / "artifacts" / "deck.csv"
+        deck = [int(row) for row in deck_path.read_text(encoding="utf-8").splitlines() if row]
+
+        def with_deck(policy: AgentCallable) -> AgentCallable:
+            def wrapped(observation: dict[str, Any]) -> list[int]:
+                if observation.get("select") is None:
+                    return list(deck)
+                return list(policy(observation))
+
+            return wrapped
+
         if mode == "baseline":
             from src.agents.baseline import BaselineAgent
 
-            return BaselineAgent().select
+            return with_deck(BaselineAgent().select)
         if mode == "heuristic":
             from src.agents.heuristic import HeuristicAgent
             from src.config.loader import ConfigLoader
 
             config = ConfigLoader(Path(__file__).parents[2] / "configs").load("agent_heuristic")
-            return HeuristicAgent(
-                weights=config.extra.get("weights"),
-                feature_flags=config.extra.get("feature_flags"),
-            ).select
+            return with_deck(
+                HeuristicAgent(
+                    weights=config.extra.get("weights"),
+                    feature_flags=config.extra.get("feature_flags"),
+                ).select
+            )
         if mode == "self_play":
             return self._agent_for_mode("heuristic")
         if mode == "rfl":
@@ -224,10 +238,12 @@ class MatchRunner:
             profile = (
                 root / "configs" / "decks" / "mega_abomasnow_kyogre" / "heuristic_rfl_0001.yaml"
             )
-            deck = root / "src" / "artifacts" / "deck.csv"
-            return agent_from_profile(
-                profile, active_deck_id="mega_abomasnow_kyogre", active_deck_path=deck
-            ).select
+            deck_file = root / "src" / "artifacts" / "deck.csv"
+            return with_deck(
+                agent_from_profile(
+                    profile, active_deck_id="mega_abomasnow_kyogre", active_deck_path=deck_file
+                ).select
+            )
         raise ValueError(f"unsupported agent mode: {mode}")
 
     def _opponent_callable(self, opponent: str, agent_mode: str) -> AgentCallable:
