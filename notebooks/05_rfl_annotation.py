@@ -50,7 +50,10 @@ def _(mo):
 @app.cell
 def _(confidence, deck_id, justification, match_id, matchup, path, preferred, rejected, save, turn):
     if save.value:
-        parse_play = lambda value: [int(item.strip()) for item in value.split(",") if item.strip()]
+
+        def parse_play(value: str) -> list[int]:
+            return [int(item.strip()) for item in value.split(",") if item.strip()]
+
         rejected_plays = [parse_play(item) for item in rejected.value.split(";") if item.strip()]
         annotation = ExpertAnnotation(
             deck_id.value,

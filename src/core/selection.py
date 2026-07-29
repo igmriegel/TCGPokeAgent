@@ -78,9 +78,7 @@ class SelectionValidator:
         self._validate_count(selected, remain_energy_cost, "energy")
         self._validate_count(selected, remain_damage_counter, "damage")
 
-    def _validate_count(
-        self, candidates: Sequence[Candidate], required: int, label: str
-    ) -> None:
+    def _validate_count(self, candidates: Sequence[Candidate], required: int, label: str) -> None:
         if required <= 0:
             return
         total = sum(self._option_count(candidate.option) for candidate in candidates)

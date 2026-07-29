@@ -42,9 +42,7 @@ def _():
 @app.cell
 def _(config_loader_cls, pathlib):
     config_root = next(
-        path
-        for path in (pathlib.Path("configs"), pathlib.Path("../configs"))
-        if path.exists()
+        path for path in (pathlib.Path("configs"), pathlib.Path("../configs")) if path.exists()
     )
     config = config_loader_cls(config_root).load("agent_heuristic")
     base_weights = config.extra.get("weights", {})
@@ -133,8 +131,7 @@ def _(mo, scores):
     mo.vstack(
         [
             mo.md(
-                "# Heuristic score lab\n\n"
-                "Profiles are controlled fixtures for ablation analysis."
+                "# Heuristic score lab\n\nProfiles are controlled fixtures for ablation analysis."
             ),
             scores,
         ]
