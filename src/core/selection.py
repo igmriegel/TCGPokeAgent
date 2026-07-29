@@ -50,8 +50,8 @@ class SelectionValidator:
             candidates: Options available in the active decision.
             min_count: Minimum number of options required.
             max_count: Maximum number of options allowed.
-            remain_energy_cost: Minimum energy count that must be selected.
-            remain_damage_counter: Minimum damage-counter count that must be selected.
+            remain_energy_cost: Remaining cost reported by the repeated SDK prompt.
+            remain_damage_counter: Remaining counters reported by the repeated SDK prompt.
 
         Raises:
             LegalityViolationError: If any legality constraint is violated.
@@ -75,17 +75,8 @@ class SelectionValidator:
                 raise LegalityViolationError(f"option type mismatch for index: {index}")
             selected.append(candidate)
 
-        self._validate_count(selected, remain_energy_cost, "energy")
-        self._validate_count(selected, remain_damage_counter, "damage")
-
-    def _validate_count(self, candidates: Sequence[Candidate], required: int, label: str) -> None:
-        if required <= 0:
-            return
-        total = sum(self._option_count(candidate.option) for candidate in candidates)
-        if total < required:
-            raise LegalityViolationError(
-                f"selection provides {total} {label} count, expected at least {required}"
-            )
+        for candidate in selected:
+            self._option_count(candidate.option)
 
     def _option_count(self, option: Mapping[str, Any]) -> int:
         count = option.get("count", 1)

@@ -71,12 +71,11 @@ def test_invalid_bounds_have_no_legal_selections():
     assert gen.generate([], min_count=2, max_count=1) == []
 
 
-def test_energy_requirement_uses_option_count():
+def test_remaining_energy_cost_is_fulfilled_across_repeated_sdk_prompts():
     gen = DefaultSelectionGenerator()
     candidates = [_make_candidate(0, "ENERGY"), _make_candidate(1, "ENERGY")]
-    candidates[0] = Candidate(0, {"count": 2}, OptionType.ENERGY)
     selections = gen.generate(candidates, 1, 1, remain_energy_cost=2)
-    assert [selection.indices for selection in selections] == [(0,)]
+    assert [selection.indices for selection in selections] == [(0,), (1,)]
 
 
 def test_validator_rejects_duplicate_and_unknown_indices():

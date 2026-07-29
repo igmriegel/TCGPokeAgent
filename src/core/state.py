@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass(slots=True)
 class PokemonState:
-    card_id: str | None
+    card_id: int | str | None
     hp: int
     max_hp: int
     energies: list[dict[str, Any]] = field(default_factory=list)
@@ -27,10 +27,10 @@ class PlayerState:
     bench: list[PokemonState | None] = field(default_factory=list)
     bench_max: int = 8
     deck_count: int = 0
-    discard: list[str] = field(default_factory=list)
-    prize: list[str | None] = field(default_factory=list)
+    discard: list[Any] = field(default_factory=list)
+    prize: list[Any | None] = field(default_factory=list)
     hand_count: int = 0
-    hand: list[str] | None = None
+    hand: list[Any] | None = None
 
 
 @dataclass(slots=True)

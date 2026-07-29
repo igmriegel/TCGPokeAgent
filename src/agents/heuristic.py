@@ -6,10 +6,13 @@ from typing import Any
 from src.core import (
     AgentPolicy,
     Candidate,
+    CardCatalog,
     DefaultParser,
     DefaultSelectionGenerator,
     GameState,
     HeuristicScorer,
+    OptionType,
+    SelectContext,
     Selection,
 )
 
@@ -34,6 +37,14 @@ FEATURE_FLAGS = {
     "use_resource_signals",
     "use_setup_signals",
 }
+
+_CARD_KYOGRE = 721
+_CARD_SNOVER = 722
+_CARD_MEGA_ABOMASNOW_EX = 723
+_CARD_WATER_ENERGY = 3
+_ATTACK_RIPTIDE = 1042
+_ATTACK_HAMMER_LANCHE = 1046
+_CG_CATALOG = CardCatalog.from_cg()
 
 
 def _validated_weights(weights: Mapping[str, Any] | None) -> dict[str, float]:
@@ -91,9 +102,12 @@ class SimpleHeuristicScorer(HeuristicScorer):
             is_attack = candidate.option_type.value == "ATTACK" or "ATTACK" in context
             is_energy = candidate.option_type.value in {"ENERGY", "ENERGY_CARD"}
             is_end = candidate.option_type.value == "END"
+            sdk_score, sdk_reasons = self._sdk_score(state, candidate, selection.context)
+            score += sdk_score
+            reasons.extend(sdk_reasons)
 
             if self._truthy(option, "win", "wins", "isWin", "gameOver"):
-                score += self.weights["win_now"]
+                score += self.weights["win_now"] * 100.0
                 reasons.append("win_now")
             if self.feature_flags["use_attack_signals"] and is_attack:
                 damage = self._number(option, "damage", "expectedDamage", "value")
@@ -149,6 +163,199 @@ class SimpleHeuristicScorer(HeuristicScorer):
 
         return score, list(dict.fromkeys(reasons)) or ["no_signal"]
 
+    def _sdk_score(
+        self,
+        state: GameState,
+        candidate: Candidate,
+        context: SelectContext | None,
+    ) -> tuple[float, list[str]]:
+        option_type = candidate.option_type
+        if context is SelectContext.MAIN:
+            return self._main_action_score(state, candidate)
+        if option_type is OptionType.NUMBER:
+            number = self._number(candidate.option, "number")
+            return number * 10.0, ["prefer_larger_count"]
+        if option_type in {OptionType.YES, OptionType.NO}:
+            prefer_yes = context is not SelectContext.MULLIGAN
+            preferred = (
+                option_type is OptionType.YES if prefer_yes else option_type is OptionType.NO
+            )
+            return (20.0 if preferred else 0.0), ["prefer_yes" if prefer_yes else "avoid_mulligan"]
+        if option_type is OptionType.CARD:
+            return self._card_selection_score(state, candidate, context)
+        if option_type is OptionType.ATTACK:
+            return self._attack_score(state, candidate)
+        if option_type in {OptionType.ENERGY, OptionType.ENERGY_CARD}:
+            if context is None:
+                return 0.0, []
+            count = max(1.0, self._number(candidate.option, "count"))
+            return count * 10.0, ["satisfy_energy_cost"]
+        return 0.0, []
+
+    def _main_action_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
+        option_type = candidate.option_type
+        if option_type is OptionType.END:
+            return -1000.0, ["end_only_after_productive_actions"]
+        if option_type is OptionType.EVOLVE:
+            energy = self._feature_int(candidate, "target_energy_count")
+            return 500.0 + energy * 10.0, ["evolve_attacker"]
+        if option_type is OptionType.ABILITY:
+            return 450.0, ["use_available_ability"]
+        if option_type is OptionType.ATTACH:
+            return self._attachment_score(candidate)
+        if option_type is OptionType.PLAY:
+            return self._play_score(state, candidate)
+        if option_type is OptionType.ATTACK:
+            return self._attack_score(state, candidate)
+        if option_type is OptionType.RETREAT:
+            return 60.0, ["legal_retreat"]
+        if option_type is OptionType.DISCARD:
+            return 20.0, ["resolve_discard_action"]
+        return 1.0, ["productive_legal_action"]
+
+    def _attachment_score(self, candidate: Candidate) -> tuple[float, list[str]]:
+        card_id = self._feature_int(candidate, "card_id")
+        card_type = self._metadata_int(candidate.card, "cardType")
+        target_id = self._feature_int(candidate, "target_card_id")
+        energy_count = self._feature_int(candidate, "target_energy_count")
+        if card_id == _CARD_WATER_ENERGY or card_type in {5, 6}:
+            target_goal = {
+                _CARD_KYOGRE: 3,
+                _CARD_SNOVER: 2,
+                _CARD_MEGA_ABOMASNOW_EX: 3,
+            }.get(target_id, 1)
+            deficit = max(0, target_goal - energy_count)
+            active_bonus = 30.0 if bool(candidate.features.get("target_is_active", False)) else 0.0
+            return 350.0 + deficit * 25.0 + active_bonus, ["develop_attacker_energy"]
+        return 300.0, ["attach_useful_tool"]
+
+    def _play_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
+        card_id = self._feature_int(candidate, "card_id")
+        card_type = self._metadata_int(candidate.card, "cardType")
+        if card_type == 0:
+            bonus = 30.0 if card_id == _CARD_SNOVER else 20.0
+            return 300.0 + bonus, ["develop_bench"]
+        if card_type == 1:
+            return 240.0, ["play_item"]
+        if card_type == 2:
+            return 280.0, ["attach_tool"]
+        if card_type == 3:
+            hand_count = self._own_hand_count(state)
+            return 250.0 + max(0, 8 - hand_count) * 10.0, ["play_supporter"]
+        if card_type == 4:
+            return 180.0, ["play_stadium"]
+        return 150.0, ["play_known_legal_card"]
+
+    def _attack_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
+        attack_id = self._mapping_int(candidate.option, "attackId")
+        damage = self._metadata_int(candidate.attack, "damage")
+        if attack_id == _ATTACK_RIPTIDE:
+            damage = 20 * self._discard_count(state, _CARD_WATER_ENERGY)
+        elif attack_id == _ATTACK_HAMMER_LANCHE:
+            damage = 300 if self._own_deck_count(state) > 12 else 50
+        score = 200.0 + max(0, damage)
+        if damage <= 0:
+            score -= 80.0
+        return score, ["attack_for_damage"]
+
+    def _card_selection_score(
+        self,
+        state: GameState,
+        candidate: Candidate,
+        context: SelectContext | None,
+    ) -> tuple[float, list[str]]:
+        card_id = self._feature_int(candidate, "card_id")
+        card_type = self._metadata_int(candidate.card, "cardType")
+        energy_count = self._feature_int(candidate, "card_energy_count")
+        hp = self._feature_int(candidate, "card_hp")
+        if context is SelectContext.SETUP_ACTIVE_POKEMON:
+            score = 120.0 if card_id == _CARD_SNOVER else 110.0
+            return score, ["setup_active_attacker"]
+        if context is SelectContext.SETUP_BENCH_POKEMON:
+            score = 100.0 if card_type == 0 else -100.0
+            return score, ["setup_bench"]
+        if context in {
+            SelectContext.SWITCH,
+            SelectContext.TO_ACTIVE,
+            SelectContext.TO_FIELD,
+        }:
+            return hp + energy_count * 100.0, ["promote_prepared_attacker"]
+        if context is SelectContext.TO_HAND:
+            return self._card_resource_value(card_id, card_type), ["search_useful_card"]
+        if context in {
+            SelectContext.DISCARD,
+            SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
+        }:
+            if card_id == _CARD_WATER_ENERGY:
+                return 120.0, ["fuel_riptide"]
+            if card_type == 0:
+                return -100.0, ["preserve_pokemon"]
+            return 20.0, ["discard_replaceable_card"]
+        if context in {
+            SelectContext.DAMAGE,
+            SelectContext.DAMAGE_COUNTER,
+            SelectContext.DAMAGE_COUNTER_ANY,
+            SelectContext.EFFECT_TARGET,
+        }:
+            owner_is_self = bool(candidate.features.get("card_owner_is_self", False))
+            return (-hp if owner_is_self else 1000.0 - hp), ["target_vulnerable_pokemon"]
+        if context in {
+            SelectContext.HEAL,
+            SelectContext.REMOVE_DAMAGE_COUNTER,
+        }:
+            max_hp = self._feature_int(candidate, "card_max_hp")
+            return max_hp - hp, ["heal_most_damaged"]
+        return self._card_resource_value(card_id, card_type), ["card_resource_value"]
+
+    def _card_resource_value(self, card_id: int, card_type: int) -> float:
+        if card_id == _CARD_MEGA_ABOMASNOW_EX:
+            return 160.0
+        if card_id == _CARD_SNOVER:
+            return 150.0
+        if card_id == _CARD_KYOGRE:
+            return 140.0
+        if card_id == _CARD_WATER_ENERGY:
+            return 110.0
+        return {0: 120.0, 1: 100.0, 2: 90.0, 3: 100.0, 4: 70.0}.get(card_type, 10.0)
+
+    def _own_player(self, state: GameState) -> Any:
+        if 0 <= state.your_index < len(state.players):
+            return state.players[state.your_index]
+        return None
+
+    def _own_hand_count(self, state: GameState) -> int:
+        player = self._own_player(state)
+        return player.hand_count if player is not None else 0
+
+    def _own_deck_count(self, state: GameState) -> int:
+        player = self._own_player(state)
+        return player.deck_count if player is not None else 0
+
+    def _discard_count(self, state: GameState, card_id: int) -> int:
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        return sum(
+            1
+            for card in player.discard
+            if isinstance(card, Mapping)
+            and (card.get("id") == card_id or card.get("cardId") == card_id)
+        )
+
+    def _feature_int(self, candidate: Candidate, name: str) -> int:
+        value = candidate.features.get(name, 0)
+        return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+    def _metadata_int(self, metadata: Mapping[str, Any] | None, name: str) -> int:
+        if metadata is None:
+            return 0
+        value = metadata.get(name)
+        return int(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else 0
+
+    def _mapping_int(self, mapping: Mapping[str, Any], name: str) -> int:
+        value = mapping.get(name)
+        return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
     def _truthy(self, option: Mapping[str, Any], *names: str) -> bool:
         return any(bool(option.get(name, False)) for name in names)
 
@@ -168,7 +375,7 @@ class HeuristicAgent(AgentPolicy):
         weights: Mapping[str, Any] | None = None,
         feature_flags: Mapping[str, Any] | None = None,
     ) -> None:
-        self._parser = DefaultParser()
+        self._parser = DefaultParser(_CG_CATALOG)
         self._generator = DefaultSelectionGenerator()
         self._scorer = SimpleHeuristicScorer(weights, feature_flags)
 

@@ -142,18 +142,11 @@ def _validate_selection(observation: Mapping[str, Any], output: list[int]) -> No
         raise ValueError("agent output violates selection cardinality")
 
     selected_options = [options[index] for index in output]
-    for required_field in ("remainEnergyCost", "remainDamageCounter"):
-        required = int(select.get(required_field, 0) or 0)
-        if required <= 0:
-            continue
-        counts = [
-            option.get("count", 1) if isinstance(option, Mapping) else 1
-            for option in selected_options
-        ]
-        if any(isinstance(count, bool) or not isinstance(count, int) for count in counts):
-            raise ValueError("selected option count values must be integers")
-        if sum(counts) < required:
-            raise ValueError(f"agent output does not satisfy {required_field}")
+    counts = [
+        option.get("count", 1) if isinstance(option, Mapping) else 1 for option in selected_options
+    ]
+    if any(isinstance(count, bool) or not isinstance(count, int) or count < 0 for count in counts):
+        raise ValueError("selected option count values must be non-negative integers")
 
 
 def _fallback_selection(observation: dict[str, Any]) -> list[int]:

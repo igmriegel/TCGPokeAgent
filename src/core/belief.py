@@ -62,7 +62,11 @@ class DefaultBeliefBuilder:
         hand = [
             hidden[i] for i in range(hand_start, min(hand_start + opponent_hand_count, len(hidden)))
         ]
-        active = opponent.active.card_id if opponent and opponent.active else None
+        active = (
+            str(opponent.active.card_id)
+            if opponent and opponent.active and opponent.active.card_id is not None
+            else None
+        )
         return BeliefState(
             own_deck_remaining=hidden[:own_deck_count],
             opp_deck_remaining=hidden[own_deck_count:],

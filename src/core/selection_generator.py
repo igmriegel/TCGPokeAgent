@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from itertools import combinations
 
 from .candidate import Candidate
@@ -56,24 +55,3 @@ class DefaultSelectionGenerator(SelectionGeneratorInterface):
 
         results.sort(key=lambda s: s.indices)
         return results
-
-    def _meets_energy_constraint(self, combo: tuple[Candidate, ...], required: int) -> bool:
-        if required <= 0:
-            return True
-        total = 0
-        for c in combo:
-            count = c.option.get("count", 1) if isinstance(c.option, Mapping) else 1
-            total += count
-        return total >= required
-
-    def _meets_damage_constraint(self, combo: tuple[Candidate, ...], required: int) -> bool:
-        if required <= 0:
-            return True
-        total = 0
-        for c in combo:
-            count = c.option.get("count", 1) if isinstance(c.option, Mapping) else 1
-            total += count
-        return total >= required
-
-    def _no_duplicate_indices(self, indices: tuple[int, ...]) -> bool:
-        return len(indices) == len(set(indices))
