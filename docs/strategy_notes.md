@@ -213,12 +213,14 @@ writeup_claim: "The versioned corpus preserves 2,047 legal decisions and 27 oppo
 
 ```yaml
 experiment_id: EXP-20260729-004
-status: pending_remote_evaluation
+status: accepted
 hypothesis: "With the submitted deck held fixed, Rule Box-aware combat, PrizeCheck, and the deck-agnostic policy improve the remote result over the gameplay-recovery engine."
 agent_version: 16f1e8b
 baseline_submission_id: 55088176
 baseline_public_score_observed: 521.4
 candidate_submission_id: 55093119
+candidate_public_score: 600.0
+public_score_delta: 78.6
 deck_version: mega_abomasnow_kyogre
 package_sha256: a16493a362645ed25cdeb7fce50cf72f8be85bb4120487221063ceb7cfb66aaa
 package_bytes: 523391
@@ -233,7 +235,7 @@ local_gates:
     matches_with_attack: 10
     operational_failures: 0
     end_turn_rate: 0.0935
-decision: "Wait for remote completion; do not attribute remaining losses to the deck from a single aggregate score."
+decision: "Accept evidence that engine changes materially improved the fixed-deck system; do not claim a deck ceiling."
 limitations:
   - "The remote opponent mix and evaluation variance are not controlled locally."
   - "Holding the deck fixed measures engine progress, but a plateau alone does not prove a deck ceiling."
