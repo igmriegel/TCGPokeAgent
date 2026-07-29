@@ -1,8 +1,18 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+_all_attack: Callable[[], list[Any]] | None
+_all_card_data: Callable[[], list[Any]] | None
+try:
+    from cg.api import all_attack as _all_attack
+    from cg.api import all_card_data as _all_card_data
+except (ImportError, OSError):
+    _all_attack = None
+    _all_card_data = None
 
 
 class CardCatalog:
@@ -25,6 +35,18 @@ class CardCatalog:
             if row.get("Move Name")
         ]
         catalog.load_attacks(attacks)
+        return catalog
+
+    @classmethod
+    def from_cg(cls) -> "CardCatalog":
+        """Load the canonical card and attack metadata bundled with the CABT SDK."""
+        catalog = cls()
+        if _all_card_data is None or _all_attack is None:
+            return catalog
+        catalog.load_cards([{"id": card.cardId, **asdict(card)} for card in _all_card_data()])
+        catalog.load_attacks(
+            [{"id": attack.attackId, **asdict(attack)} for attack in _all_attack()]
+        )
         return catalog
 
     def load_cards(self, cards: list[dict[str, Any]]) -> None:

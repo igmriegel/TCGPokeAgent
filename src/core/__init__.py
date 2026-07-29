@@ -1,5 +1,6 @@
 from .belief import BeliefState, DefaultBeliefBuilder
 from .candidate import Candidate
+from .catalog import CardCatalog
 from .exceptions import (
     BeliefInconsistentError,
     EngineError,
@@ -43,6 +44,7 @@ __all__ = [
     "BeliefState",
     "DefaultBeliefBuilder",
     "BeliefInconsistentError",
+    "CardCatalog",
     "Candidate",
     "DefaultParser",
     "DefaultSelectionGenerator",

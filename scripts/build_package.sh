@@ -19,11 +19,12 @@ cp src/agents/baseline.py "${TMPDIR}/src/agents/"
 cp src/agents/heuristic.py "${TMPDIR}/src/agents/"
 cp src/agents/search.py "${TMPDIR}/src/agents/"
 cp src/core/*.py "${TMPDIR}/src/core/"
+cp -r cg "${TMPDIR}/cg"
 
 find "${TMPDIR}" -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 find "${TMPDIR}" -name '*.pyc' -delete
 
-tar czf "${OUTPUT}" -C "${TMPDIR}" main.py deck.csv src
+tar czf "${OUTPUT}" -C "${TMPDIR}" main.py deck.csv src cg
 
 echo "Package size: $(du -h "${OUTPUT}" | cut -f1)"
 echo "=== Package built: ${OUTPUT} ==="

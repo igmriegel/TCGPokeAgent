@@ -18,7 +18,7 @@ from typing import Any, cast
 from src.core.exceptions import PreflightError
 
 DEFAULT_SDK_VERSION = "1.32.2"
-REQUIRED_PACKAGE_PATHS = ("main.py", "src")
+REQUIRED_PACKAGE_PATHS = ("main.py", "src", "cg/api.py", "cg/libcg.so")
 MAX_PACKAGE_BYTES = 197_700_000
 
 __all__ = [
@@ -170,7 +170,7 @@ def _check_python_311_syntax(root: Path) -> None:
     for source_path in sorted(root.rglob("*.py")):
         try:
             ast.parse(
-                source_path.read_text(encoding="utf-8"),
+                source_path.read_text(encoding="utf-8-sig"),
                 filename=os.fspath(source_path),
                 feature_version=(3, 11),
             )
