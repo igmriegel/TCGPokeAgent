@@ -83,6 +83,60 @@ survival, enables a stronger attack, increases Prize pressure, or activates a
 needed Ability. Do not evolve automatically when the lower stage has a
 strategically required attack or effect.
 
+#### Confirmed deck rule: continuous Snover/Abomasnow development
+
+**Status:** `ACTIVE DEVELOPMENT — P0`
+
+Kaggle gameplay feedback showed that the current agent can attack while
+leaving Snover in hand and then lose after failing to maintain a developed
+Bench. The current fixed scores explain this failure mode: a high-damage attack
+can outrank playing Snover, and the attack ends the turn before the agent can
+return to board development.
+
+Rule:
+
+- On every `MAIN` decision, re-evaluate board development before choosing an
+  attack.
+- If playing Snover is legal and a Bench slot is available, play it before a
+  non-winning attack.
+- If evolving an in-play Snover into Mega Abomasnow ex is legal, evolve it
+  before a non-winning attack.
+- Repeat this evaluation after every action. Playing one Pokémon or completing
+  one evolution must not mark board development as finished for the turn or
+  match.
+- Never choose `END` or a non-winning attack while a required legal Snover play
+  or Snover-to-Abomasnow evolution remains.
+- An immediate game-winning action may override development. Legality,
+  `benchMax`, and card-specific restrictions always remain authoritative.
+
+Required implementation signals:
+
+- open Bench slots;
+- Snover and Mega Abomasnow ex counts in the Active Spot and on the Bench;
+- legal Snover `PLAY` options in the current hand;
+- legal Mega Abomasnow ex `EVOLVE` options and their targets;
+- presence of a prepared backup attacker;
+- whether the candidate attack wins the game or only deals damage.
+
+Required reason codes:
+
+- `develop_snover_before_attack`;
+- `evolve_abomasnow_before_attack`;
+- `maintain_backup_attacker`;
+- `immediate_win_overrides_development`;
+- `bench_full_blocks_development`.
+
+Golden scenarios:
+
+- one open Bench slot, Snover in hand, and a legal damaging attack selects
+  Snover;
+- multiple Snover plays remain legal across consecutive `MAIN` decisions and
+  each is reconsidered;
+- an eligible Benched Snover is evolved before a non-winning attack;
+- a game-winning attack remains preferred over Snover development;
+- a full Bench never produces an invalid play;
+- `END` is rejected while a required Snover play or evolution remains legal.
+
 ### 3. Choose the Supporter and tutor plan
 
 Only one Supporter can normally be played per turn, so Supporter selection must
@@ -219,6 +273,10 @@ Every evaluation report should track at least:
 - turns to first attack;
 - Energy attachments that enable an attack;
 - Bench occupancy and prepared backup attackers;
+- legal Snover plays skipped before an attack or `END`;
+- legal Snover-to-Abomasnow evolutions skipped before an attack or `END`;
+- Snover-to-Mega-Abomasnow conversion rate and turns to first backup attacker;
+- losses caused by having no replacement Pokémon after an Active Knock Out;
 - Supporter usage by role;
 - Knock Outs and Prize cards taken;
 - donks;
@@ -257,7 +315,8 @@ Still incomplete:
 - persistent turn plan shared across nested selections;
 - reliable attack damage including all card effects;
 - Prize, Knock Out, donk, and termination-reason metrics;
-- matchup-aware Bench management and resource preservation;
+- continuous Snover/Abomasnow development before non-winning attacks;
+- board-aware Bench management and resource preservation;
 - strategic pass rules;
 - full 200-match promotion evidence against a fixed opponent matrix.
 

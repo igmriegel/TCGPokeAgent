@@ -310,6 +310,9 @@ decisions can be audited and measured.
 - Implement the ordered score components in `docs/15_agent_implementation.md`:
   immediate win, attack efficiency, evolution, energy enablement, bench,
   draw/search, preservation, safe end, and penalties.
+- Make required board development a repeated pre-attack decision for the
+  frozen deck: legal Snover plays and Snover-to-Mega-Abomasnow evolutions must
+  outrank non-winning attacks and `END`.
 - Keep legality out of scoring and make the immediate-win component dominate
   all non-winning actions.
 - Load weights and feature flags from the agent profile; validate unknown or
@@ -333,7 +336,9 @@ scripts/run_smoke.sh heuristic
 
 Construct focused board fixtures proving: win-now priority, KO preference,
 attack-enabling energy, useful evolution, key-card preservation, and safe
-fallback.
+fallback. Include consecutive `MAIN` prompts proving that Snover placement and
+Snover-to-Mega-Abomasnow evolution are reconsidered before every non-winning
+attack.
 
 ### Exit criteria
 
@@ -341,6 +346,8 @@ fallback.
 - Every score has at least one reason or an explicit `no_signal` reason.
 - Heuristic smoke has no operational regression against baseline.
 - A measurable comparison protocol exists before claiming improvement.
+- No required legal Snover play or Snover-to-Mega-Abomasnow evolution is
+  skipped for a non-winning attack or `END`.
 
 ### Evidence recorded 2026-07-28
 

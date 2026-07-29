@@ -23,6 +23,7 @@ engine locally and no sprint may mix hypothetical state into `GameState`.
 | H0 | Complete measurement and opponent baseline | S6, S9 | four-opponent matrix and decision metrics |
 | H1 | Complete card and attack catalog | H0 | deck coverage and catalog integrity |
 | H2 | Context-specific heuristic policies | H1 | focused context tests and non-inferiority |
+| H2A | Continuous Snover/Abomasnow development | current S4 recovery | zero skipped required development actions |
 | H3 | Local tactical feature evaluator | H2 | tactical fixtures and latency gate |
 | H4 | Belief-derived scoring features | H1, H3 | calibration and factual separation |
 | H5 | Reproducible weight optimization | H2–H4 | validation gain and holdout discipline |
@@ -160,6 +161,77 @@ AGENT_MODE=heuristic scripts/run_smoke.sh heuristic
 - Equal inputs produce equal scores, reasons, and indices.
 - Unknown contexts remain legal and deterministic.
 - The H0 matrix shows no operational or win-rate regression.
+
+---
+
+## H2A — Continuous Snover/Abomasnow board development
+
+**Status:** `IN_PROGRESS`
+
+**Priority:** `P0`
+
+**Source:** human review of Kaggle submission `55088176` on 2026-07-29 found
+losses in which the agent stopped placing Pokémon on the Bench and failed to
+continue the Snover-to-Mega-Abomasnow development line.
+
+**Objective:** make board development a repeated pre-attack obligation for the
+frozen Abomasnow deck instead of a one-time, fixed-score preference.
+
+### Diagnosed gap
+
+The current `MAIN` scorer gives a legal Snover play approximately 330 points,
+while Hammer Lanche can receive approximately 500 points. Because attacking
+ends the turn, the policy can select damage before placing the available
+Snover and never revisit board development. Evolution has a high generic
+score, but the scorer does not explicitly model the number of Snover and Mega
+Abomasnow ex in play, open Bench slots, or backup-attacker readiness.
+
+### Work
+
+- Add factual board-development features for Bench occupancy, open slots,
+  Snover count, Mega Abomasnow ex count, eligible evolution targets, and
+  prepared backup attackers.
+- Add a deck-specific pre-attack ordering layer: legal Snover plays and
+  Snover-to-Mega-Abomasnow evolutions outrank non-winning attacks.
+- Re-evaluate development after every `MAIN` action; do not use a permanent
+  "setup complete" flag.
+- Keep an immediate game-winning action above development and preserve all SDK
+  legality and `benchMax` constraints.
+- Add stable reason codes for development, evolution, immediate-win override,
+  and full-Bench blocking.
+- Add golden observations from the Kaggle failure pattern and synthetic
+  boundary fixtures.
+- Extend decision traces and reports with skipped-development counters,
+  Snover-to-Abomasnow conversion, backup-attacker readiness, and board-loss
+  termination.
+- Re-run the behavioral smoke and the frozen comparison matrix before
+  promoting the change or creating another submission.
+
+### Target files
+
+`src/agents/heuristic.py`, `src/core/parser.py`, `src/agents/evaluator.py`,
+`src/eval/runner.py`, `src/eval/metrics.py`, focused heuristic tests, and real
+observation fixtures.
+
+### Verification
+
+```bash
+uv run --frozen pytest tests/test_heuristic_agent.py tests/test_cabt_golden_gameplay.py -v
+AGENT_MODE=heuristic scripts/run_smoke.sh heuristic
+```
+
+### Exit criteria
+
+- With an open Bench slot, every legal Snover play is selected before a
+  non-winning attack or `END`.
+- Every legal Snover-to-Mega-Abomasnow evolution is selected before a
+  non-winning attack or `END`.
+- Consecutive `MAIN` prompts prove that development is re-evaluated after each
+  action.
+- Immediate game wins still dominate and full-Bench states remain valid.
+- Evaluation reports zero skipped required development actions.
+- The frozen match matrix has zero `INVALID`, `ERROR`, and `TIMEOUT`, and does
+  not regress the accepted gameplay baseline.
 
 ---
 
