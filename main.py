@@ -60,6 +60,19 @@ def _build_agent() -> AgentPolicy:
             )
         except (FileNotFoundError, ValueError):
             return BaselineAgent()
+    if mode == "hybrid":
+        try:
+            config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
+            from src.agents.search import HybridAgent
+
+            return HybridAgent(
+                HeuristicAgent(
+                    weights=config.extra.get("weights"),
+                    feature_flags=config.extra.get("feature_flags"),
+                )
+            )
+        except (FileNotFoundError, ValueError):
+            return HeuristicAgent()
     return BaselineAgent()
 
 

@@ -1,3 +1,10 @@
 project: Pokemon_TCG_engine_Kaggle
 sdk_version: "1.32.2"
 seed: 42
+search:
+  enabled: false
+  reason: python_search_adapter_not_integrated
+  top_k: 3
+  max_depth: 4
+  max_decision_ms: 100
+  disable_below_overage_s: 30

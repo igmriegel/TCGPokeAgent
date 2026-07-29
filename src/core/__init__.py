@@ -1,3 +1,4 @@
+from .belief import BeliefState, DefaultBeliefBuilder
 from .candidate import Candidate
 from .exceptions import (
     BeliefInconsistentError,
@@ -39,6 +40,8 @@ __all__ = [
     "AgentMode",
     "AgentPolicy",
     "BeliefBuilder",
+    "BeliefState",
+    "DefaultBeliefBuilder",
     "BeliefInconsistentError",
     "Candidate",
     "DefaultParser",
