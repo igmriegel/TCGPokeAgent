@@ -1,5 +1,10 @@
 # Heuristic and short search implementation
 
+The high-level behavioral intent is maintained separately in
+[`27_gameplay_rules.md`](27_gameplay_rules.md). Changes to scoring or sequencing
+must identify which accepted gameplay rule they implement and which trace or
+metric verifies it.
+
 ## Dispatch by context
 
 | Group | Contexts | Initial rule |

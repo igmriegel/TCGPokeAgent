@@ -15,6 +15,7 @@
 11. [`24_handoff_spec.md`](24_handoff_spec.md) — handoff and gates.
 12. [`25_rfl_experiments.md`](25_rfl_experiments.md) — RFL experiment runbook.
 13. [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — heuristic-only improvement sprints H0–H8.
+14. [`27_gameplay_rules.md`](27_gameplay_rules.md) — living high-level gameplay behavior.
 
 ## Product and research
 
@@ -26,6 +27,7 @@
 - [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — executable non-search improvement backlog H0–H8.
 - [`05_writeup_outline.md`](05_writeup_outline.md) — Strategy structure.
 - [`strategy_notes.md`](strategy_notes.md) — evidence log.
+- [`27_gameplay_rules.md`](27_gameplay_rules.md) — collaboratively maintained gameplay rules and behavioral metrics.
 
 ## Contracts by layer
 

@@ -50,6 +50,38 @@ has been implemented.
 | S8 | F4 | Bounded short search with safe fallback | S7 | search gate passes without latency regressions |
 | S9 | F5 | Frozen submission and isolated validation | S6, S8 | final handoff checklist is green |
 
+## Gameplay recovery audit — 2026-07-29
+
+Validation episode `88828439` proved package compatibility but exposed that the
+promoted heuristic selected `END` for every main-phase decision and reached its
+only win by deck-out. The prior gates measured legality and completion without
+measuring gameplay. Historical evidence below remains useful as an operational
+record, but it no longer proves the affected sprint complete.
+
+| Sprint | Revised status | Finding | New completion requirement |
+|---|---|---|---|
+| S2 | `IN_PROGRESS` | synthetic fields did not match real CABT card and option references | golden real-observation fixtures and resolved `cg` card/attack metadata |
+| S3 | `IN_PROGRESS` | repeated Energy-cost prompts were rejected as incomplete selections | regression coverage for repeated Energy/damage prompts and zero runtime failures |
+| S4 | `IN_PROGRESS` | `PLAY`, `ATTACH`, and `EVOLVE` scored zero while `END` scored positively | behavioral gate with productive actions, attacks, explicit pass reasons, and paired evidence |
+| S5 | `IN_PROGRESS` | traces could diagnose decisions but reports did not aggregate gameplay behavior | action, attack, Knock Out, Prize, donk, and termination-reason metrics |
+| S6 | `IN_PROGRESS` | the 400-game report promoted operational completion without detecting non-gameplay | rerun at least 200 games with the new behavioral acceptance gate |
+| S7 | `IN_PROGRESS` | evaluator evidence predates the corrected factual state and card resolution | revalidate belief/evaluator against real observations before search |
+| S8 | `IN_PROGRESS` | search cannot be promoted over a broken or unstable heuristic | wait for the recovered S4/S7 gates and repeat latency/non-regression evidence |
+| S9 | `IN_PROGRESS` | submission `55086902` passed remotely but contains the superseded end-turn policy | rebuild and isolate the gameplay package; remote upload requires separate approval |
+
+Initial recovery evidence:
+
+- the competition `cg` catalog is now used to resolve real cards and attacks;
+- the remote main-turn observation is preserved as
+  `tests/fixtures/cabt_main_turn.json`;
+- repeated `DISCARD_ENERGY` prompts select one legal Energy per SDK call;
+- 200 balanced games against `random`: 200/200 completed, 179 wins, 472
+  attacks, attacks in 200/200 games, 1,942 productive main actions, and 9.34%
+  `END`;
+- 10 balanced heuristic self-play games: 10/10 completed, attacks in 10/10
+  games, and 7.38% `END`;
+- these are recovery smoke results, not the final 200-game promotion evidence.
+
 ---
 
 ## S0 — Reproducible baseline and preflight
@@ -154,7 +186,7 @@ the extracted-package command.
 
 ## S2 — Observation parser and factual state
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** normalize real SDK dataclasses and dictionaries without
 inventing hidden information.
 
@@ -204,7 +236,7 @@ option index preservation.
 
 ## S3 — Legal selection generation and total fallback
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** guarantee a legal deterministic answer for every observed
 `SelectContext`.
 
@@ -267,7 +299,7 @@ context family.
 
 ## S4 — Explainable heuristic policy
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** replace the zero-score stub with a configurable policy whose
 decisions can be audited and measured.
 
@@ -323,7 +355,7 @@ fallback.
 
 ## S5 — Real runner and decision-level observability
 
-**Status:** `DONE`  
+**Status:** `IN_PROGRESS`
 **Started:** 2026-07-28
 **Objective:** execute actual candidate policies through the SDK and preserve
 enough trace data to diagnose every match.
@@ -394,7 +426,7 @@ trace schema. Do not require byte-identical outcomes from repeated native
 
 ## S6 — Reproducible experiments and reports
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** make every comparison replayable, immutable, and promotable by
 an explicit gate.
 
@@ -447,7 +479,7 @@ agent, seed list, matchup matrix, versions, hashes, and acceptance decision.
 
 ## S7 — Belief builder and state evaluator
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** model hidden information separately from observed facts and
 provide a deterministic leaf evaluator for search.
 
@@ -574,7 +606,7 @@ Sources verified on 2026-07-29:
 
 ## S9 — Frozen submission and isolated handoff
 
-**Status:** `DONE`
+**Status:** `IN_PROGRESS`
 **Objective:** produce the smallest reproducibly validated submission artifact.
 
 ### Work
