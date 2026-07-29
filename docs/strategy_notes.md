@@ -208,3 +208,37 @@ evidence:
   summary: "data/derived/gameplay_replays/v1/summary.md"
 writeup_claim: "The versioned corpus preserves 2,047 legal decisions and 27 opponent deck multisets without promoting replay actions as ground truth."
 ```
+
+## Current-deck engine ceiling probe
+
+```yaml
+experiment_id: EXP-20260729-004
+status: pending_remote_evaluation
+hypothesis: "With the submitted deck held fixed, Rule Box-aware combat, PrizeCheck, and the deck-agnostic policy improve the remote result over the gameplay-recovery engine."
+agent_version: 16f1e8b
+baseline_submission_id: 55088176
+baseline_public_score_observed: 521.4
+candidate_submission_id: 55093119
+deck_version: mega_abomasnow_kyogre
+package_sha256: a16493a362645ed25cdeb7fce50cf72f8be85bb4120487221063ceb7cfb66aaa
+package_bytes: 523391
+local_gates:
+  unit_tests: "89 passed"
+  type_check: passed
+  lint: passed
+  cabt_operational_smoke: "40 completed, 0 failed"
+  gameplay_smoke:
+    matches: 10
+    wins: 9
+    matches_with_attack: 10
+    operational_failures: 0
+    end_turn_rate: 0.0935
+decision: "Wait for remote completion; do not attribute remaining losses to the deck from a single aggregate score."
+limitations:
+  - "The remote opponent mix and evaluation variance are not controlled locally."
+  - "Holding the deck fixed measures engine progress, but a plateau alone does not prove a deck ceiling."
+  - "Separating deck and engine effects requires a crossed comparison with at least two decks and frozen engine versions."
+evidence:
+  receipt: "reports/submissions/20260729T221617Z-a16493a36264.json"
+  archive: "reports/submissions/candidate-16f1e8b.tar.gz"
+```
