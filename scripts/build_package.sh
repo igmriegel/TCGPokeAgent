@@ -12,9 +12,12 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 
 cp main.py "${TMPDIR}/"
 cp src/artifacts/deck.csv "${TMPDIR}/"
+cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"
 cp -r src/ "${TMPDIR}/src/"
 mkdir -p "${TMPDIR}/configs"
 cp -r configs/decks "${TMPDIR}/configs/decks"
+cp configs/default.yaml "${TMPDIR}/configs/"
+cp configs/agent_heuristic.yaml "${TMPDIR}/configs/"
 
 find "${TMPDIR}" -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 find "${TMPDIR}" -name '*.pyc' -delete

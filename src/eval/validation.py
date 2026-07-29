@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import importlib
 import io
+import json
 import os
+import subprocess
+import tarfile
+import tempfile
 from collections.abc import Mapping
 from contextlib import redirect_stderr, redirect_stdout
 from importlib.metadata import PackageNotFoundError, version
@@ -13,6 +17,7 @@ from src.core.exceptions import PreflightError
 
 DEFAULT_SDK_VERSION = "1.32.2"
 REQUIRED_PACKAGE_PATHS = ("main.py", "src", "src/artifacts/deck.csv")
+MAX_PACKAGE_BYTES = 197_700_000
 
 __all__ = [
     "DEFAULT_SDK_VERSION",
@@ -24,6 +29,7 @@ __all__ = [
     "check_package_layout",
     "check_sdk_version",
     "check_writable",
+    "validate_package_archive",
 ]
 
 
@@ -90,6 +96,63 @@ def check_package_layout(root: str | Path = ".") -> None:
     missing = [path for path in REQUIRED_PACKAGE_PATHS if not (package_root / path).exists()]
     if missing:
         raise PreflightError(f"package layout missing: {', '.join(missing)}")
+
+
+def validate_package_archive(archive: str | Path) -> dict[str, Any]:
+    """Validate and smoke-test a submission archive in an isolated directory.
+
+    Args:
+        archive: Tar-gzip package to inspect.
+
+    Returns:
+        Archive size and extracted smoke output.
+
+    Raises:
+        PreflightError: If the archive violates the submission contract.
+    """
+    path = Path(archive)
+    if not path.is_file():
+        raise PreflightError(f"package archive not found: {path}")
+    if path.stat().st_size >= MAX_PACKAGE_BYTES:
+        raise PreflightError("package archive exceeds 197.7 MiB")
+    try:
+        with tarfile.open(path, "r:gz") as package:
+            members = package.getmembers()
+            names = [member.name.removeprefix("./") for member in members]
+            for name in names:
+                candidate = Path(name)
+                if candidate.is_absolute() or ".." in candidate.parts:
+                    raise PreflightError(f"unsafe package path: {name}")
+            if "main.py" not in names or "deck.csv" not in names:
+                raise PreflightError("package must contain root main.py and deck.csv")
+            with tempfile.TemporaryDirectory(prefix="pokemon-agent-validate-") as directory:
+                root = Path(directory)
+                package.extractall(root, filter="data")
+                check_package_layout(root)
+                initial = subprocess.run(
+                    [os.fspath(_python_executable()), "main.py"],
+                    cwd=root,
+                    input='{"select": null}',
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+                if initial.returncode != 0:
+                    raise PreflightError(f"isolated package failed: {initial.stderr.strip()}")
+                deck = json.loads(initial.stdout)
+                if not isinstance(deck, list) or len(deck) != 60:
+                    raise PreflightError("isolated package returned an invalid deck")
+    except (tarfile.TarError, OSError, json.JSONDecodeError) as error:
+        raise PreflightError(f"invalid package archive: {error}") from error
+    return {"archive": str(path), "bytes": path.stat().st_size, "deck_cards": 60}
+
+
+def _python_executable() -> str:
+    """Return the interpreter running the validation command."""
+    import sys
+
+    return sys.executable
 
 
 def check_deck(deck_path: str | Path) -> list[list[str]]:
@@ -238,3 +301,19 @@ def check_legal_selection(observation: Any, output: Any) -> None:
             raise PreflightError(
                 f"agent output provides {total} {label} count, expected at least {required}"
             )
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Validate the agent package or repository.")
+    parser.add_argument("--package", type=Path)
+    args = parser.parse_args()
+    if args.package:
+        print(validate_package_archive(args.package))
+    else:
+        check_sdk_version()
+        check_cabt_import()
+        check_package_layout()
+        check_deck(Path("src/artifacts/deck.csv"))
+        print("Preflight: PASS")
