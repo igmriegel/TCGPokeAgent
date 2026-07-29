@@ -41,3 +41,21 @@ A grid expands combinations in deterministic order, assigns a `run_id` per combi
 ## Promotion and rollback
 
 `promote` updates the stable reference only after all gates. The previous reference and its artifacts remain available. Configurations without a report, partial runs, and comparisons with different seeds cannot promote.
+
+## Remote Kaggle score lifecycle
+
+The public score returned immediately after a simulation submission is an
+initial value, not an evaluated result. In this competition that value is
+normally `600.0` and changes as Kaggle gameplay runs are completed.
+
+The harness records remote fields separately:
+
+- `initial_public_score`: the value first exposed after submission;
+- `evaluated_public_score`: the latest score after gameplay runs;
+- `score_observed_at`: the UTC timestamp of each observation;
+- `evaluation_status`: `PENDING`, `UPDATING`, or `STABLE`.
+
+No score delta, promotion decision, engine-versus-deck conclusion, or
+leaderboard claim may use the initial score. A comparison remains pending
+until a later observation demonstrates that remote evaluation has progressed
+and the result is explicitly frozen as evidence.
