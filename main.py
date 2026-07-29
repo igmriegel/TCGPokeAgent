@@ -1,6 +1,9 @@
+"""Kaggle and command-line entry points for the Pokemon TCG agent."""
+
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -8,35 +11,40 @@ from typing import Any
 
 from src.agents.baseline import BaselineAgent
 from src.agents.heuristic import HeuristicAgent
-from src.config.loader import ConfigLoader
 from src.core import AgentPolicy
 from src.eval.validation import (
     check_deck,
     check_legal_selection,
 )
-from src.logging_setup import get_logger, setup_logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 _agent: AgentPolicy | None = None
 _deck: list[int] | None = None
 
 
+def _project_root() -> Path:
+    source_path = globals().get("__file__")
+    if isinstance(source_path, str):
+        return Path(source_path).resolve().parent
+    return Path.cwd()
+
+
 def _load_deck() -> list[int]:
-    deck_path = Path(__file__).parent / "src" / "artifacts" / "deck.csv"
+    deck_path = _project_root() / "src" / "artifacts" / "deck.csv"
     if not deck_path.exists():
-        deck_path = Path(__file__).parent / "deck.csv"
+        deck_path = _project_root() / "deck.csv"
     rows = check_deck(deck_path)
     return [int(row[0]) for row in rows]
 
 
 def _build_agent() -> AgentPolicy:
-    mode = os.environ.get("AGENT_MODE", "baseline").lower()
+    mode = os.environ.get("AGENT_MODE", "heuristic").lower()
     if mode == "rfl":
         try:
             from src.rfl.profiles import agent_from_profile
 
-            root = Path(__file__).parent
+            root = _project_root()
             profile = os.environ.get(
                 "AGENT_PROFILE",
                 str(
@@ -49,34 +57,29 @@ def _build_agent() -> AgentPolicy:
                 active_deck_id="mega_abomasnow_kyogre",
                 active_deck_path=deck_path,
             )
-        except (OSError, ValueError, TypeError):
+        except (ImportError, OSError, ValueError, TypeError):
             return HeuristicAgent()
     if mode == "heuristic":
-        try:
-            config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
-            return HeuristicAgent(
-                weights=config.extra.get("weights"),
-                feature_flags=config.extra.get("feature_flags"),
-            )
-        except (FileNotFoundError, ValueError):
-            return BaselineAgent()
+        return HeuristicAgent()
     if mode == "hybrid":
         try:
-            config = ConfigLoader(Path(__file__).parent / "configs").load("agent_heuristic")
             from src.agents.search import HybridAgent
 
-            return HybridAgent(
-                HeuristicAgent(
-                    weights=config.extra.get("weights"),
-                    feature_flags=config.extra.get("feature_flags"),
-                )
-            )
-        except (FileNotFoundError, ValueError):
+            return HybridAgent(HeuristicAgent())
+        except (ImportError, ValueError):
             return HeuristicAgent()
     return BaselineAgent()
 
 
 def agent_policy(observation: dict[str, Any]) -> list[int]:
+    """Return a legal action for one CABT observation.
+
+    Args:
+        observation: Raw observation supplied by the CABT environment.
+
+    Returns:
+        Simulator option indices, or the canonical deck for the initial request.
+    """
     global _agent, _deck
 
     if _agent is None:
@@ -118,8 +121,9 @@ def _fallback_selection(observation: dict[str, Any]) -> list[int]:
 
 
 def main() -> None:
-    setup_logging(os.environ.get("LOG_LEVEL", "INFO"))
-    logger.info("agent_started", mode=os.environ.get("AGENT_MODE", "baseline"))
+    """Read one observation from stdin and write the selected action as JSON."""
+    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+    logger.info("agent_started mode=%s", os.environ.get("AGENT_MODE", "heuristic"))
 
     observation = _read_observation()
     result = agent_policy(observation)
@@ -141,6 +145,18 @@ def _read_observation() -> dict[str, Any]:
 def _write_result(result: list[int]) -> None:
     json.dump(result, sys.stdout, indent=None)
     sys.stdout.flush()
+
+
+def agent(obs_dict: dict[str, Any]) -> list[int]:
+    """Run the callable entry point discovered by ``kaggle-environments``.
+
+    Args:
+        obs_dict: Raw observation supplied by the simulation runtime.
+
+    Returns:
+        Simulator option indices, or the canonical deck for the initial request.
+    """
+    return agent_policy(obs_dict)
 
 
 if __name__ == "__main__":

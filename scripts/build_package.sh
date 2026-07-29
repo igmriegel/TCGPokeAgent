@@ -11,7 +11,6 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
 
 cp main.py "${TMPDIR}/"
-cp src/artifacts/deck.csv "${TMPDIR}/"
 cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"
 cp -r src/ "${TMPDIR}/src/"
 mkdir -p "${TMPDIR}/configs"
@@ -22,7 +21,7 @@ cp configs/agent_heuristic.yaml "${TMPDIR}/configs/"
 find "${TMPDIR}" -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 find "${TMPDIR}" -name '*.pyc' -delete
 
-tar czf "${OUTPUT}" -C "${TMPDIR}" .
+tar czf "${OUTPUT}" -C "${TMPDIR}" main.py deck.csv src configs
 
 echo "Package size: $(du -h "${OUTPUT}" | cut -f1)"
 echo "=== Package built: ${OUTPUT} ==="

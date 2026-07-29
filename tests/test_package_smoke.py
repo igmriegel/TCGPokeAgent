@@ -6,6 +6,8 @@ import sys
 import tarfile
 from pathlib import Path
 
+from src.eval.validation import validate_package_archive
+
 
 def test_extracted_package_runs_initial_deck(tmp_path) -> None:
     root = Path(__file__).parents[1]
@@ -34,3 +36,8 @@ def test_extracted_package_runs_initial_deck(tmp_path) -> None:
 
     assert len(json.loads(completed.stdout)) == 60
     assert completed.stderr
+
+    validation = validate_package_archive(archive)
+
+    assert validation["entry_point"] == "agent"
+    assert validation["python_target"] == "3.11"

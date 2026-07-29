@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib
 import io
 import json
@@ -11,7 +12,7 @@ from collections.abc import Mapping
 from contextlib import redirect_stderr, redirect_stdout
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from src.core.exceptions import PreflightError
 
@@ -129,6 +130,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 root = Path(directory)
                 package.extractall(root, filter="data")
                 check_package_layout(root)
+                _check_python_311_syntax(root)
                 initial = subprocess.run(
                     [os.fspath(_python_executable()), "main.py"],
                     cwd=root,
@@ -143,9 +145,75 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 deck = json.loads(initial.stdout)
                 if not isinstance(deck, list) or len(deck) != 60:
                     raise PreflightError("isolated package returned an invalid deck")
+                loader_result = _run_kaggle_loader_smoke(root)
     except (tarfile.TarError, OSError, json.JSONDecodeError) as error:
         raise PreflightError(f"invalid package archive: {error}") from error
-    return {"archive": str(path), "bytes": path.stat().st_size, "deck_cards": 60}
+    return {
+        "archive": str(path),
+        "bytes": path.stat().st_size,
+        "deck_cards": 60,
+        "entry_point": loader_result["entry_point"],
+        "python_target": "3.11",
+    }
+
+
+def _check_python_311_syntax(root: Path) -> None:
+    """Parse every packaged module using the Python 3.11 grammar."""
+    for source_path in sorted(root.rglob("*.py")):
+        try:
+            ast.parse(
+                source_path.read_text(encoding="utf-8"),
+                filename=os.fspath(source_path),
+                feature_version=(3, 11),
+            )
+        except SyntaxError as error:
+            relative = source_path.relative_to(root)
+            raise PreflightError(
+                f"package is not Python 3.11 compatible: {relative}: {error}"
+            ) from error
+
+
+def _run_kaggle_loader_smoke(root: Path) -> dict[str, Any]:
+    """Run the package without site packages and select its last callable."""
+    loader = """
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+sys.path.insert(0, str(root))
+source = root / "main.py"
+environment = {}
+exec(compile(source.read_text(encoding="utf-8"), str(source), "exec"), environment)
+entry_point = [value for value in environment.values() if callable(value)][-1]
+action = entry_point({"select": None})
+print(json.dumps({"entry_point": entry_point.__name__, "action": action}))
+"""
+    completed = subprocess.run(
+        [os.fspath(_python_executable()), "-S", "-c", loader, os.fspath(root)],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+    if completed.returncode != 0:
+        details = completed.stderr.strip() or completed.stdout.strip()
+        raise PreflightError(f"Kaggle loader smoke failed without site packages: {details}")
+    try:
+        result = cast(dict[str, Any], json.loads(completed.stdout))
+    except json.JSONDecodeError as error:
+        raise PreflightError("Kaggle loader smoke returned invalid JSON") from error
+    if not isinstance(result, dict):
+        raise PreflightError("Kaggle loader smoke returned a non-object result")
+    if result.get("entry_point") != "agent":
+        raise PreflightError(
+            f"Kaggle loader selected {result.get('entry_point')!r}, expected 'agent'"
+        )
+    action = result.get("action")
+    if not isinstance(action, list) or len(action) != 60:
+        raise PreflightError("Kaggle loader smoke returned an invalid deck")
+    return result
 
 
 def _python_executable() -> str:

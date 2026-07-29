@@ -19,6 +19,12 @@ def test_agent_policy_returns_canonical_deck(monkeypatch) -> None:
     assert result[:4] == [721, 721, 722, 722]
 
 
+def test_public_agent_delegates_to_agent_policy(monkeypatch) -> None:
+    monkeypatch.setattr(main, "agent_policy", lambda observation: [7])
+
+    assert main.agent({"select": None}) == [7]
+
+
 def test_agent_policy_delegates_legal_selection(monkeypatch, sample_observation) -> None:
     class FixedAgent:
         def select(self, observation: dict[str, Any]) -> list[int]:
