@@ -204,7 +204,7 @@ option index preservation.
 
 ## S3 — Legal selection generation and total fallback
 
-**Status:** `DONE`  
+**Status:** `DONE`
 **Objective:** guarantee a legal deterministic answer for every observed
 `SelectContext`.
 
@@ -267,7 +267,7 @@ context family.
 
 ## S4 — Explainable heuristic policy
 
-**Status:** `DONE`  
+**Status:** `DONE`
 **Objective:** replace the zero-score stub with a configurable policy whose
 decisions can be audited and measured.
 
@@ -394,7 +394,7 @@ trace schema. Do not require byte-identical outcomes from repeated native
 
 ## S6 — Reproducible experiments and reports
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** make every comparison replayable, immutable, and promotable by
 an explicit gate.
 
@@ -435,9 +435,19 @@ agent, seed list, matchup matrix, versions, hashes, and acceptance decision.
 - Incompatible seeds/decks/configurations cannot be compared.
 - Full evaluation executes at least 200 games only after smoke is green.
 
+### Evidence recorded 2026-07-29
+
+- Run manifest: `reports/runs/full_heuristic_final/27d3df870485/manifest.json`.
+- Report: 400 player-side matches over seeds 42–241, both sides represented;
+  239 wins, 161 losses, 0 draws, 0 errors, 0 invalid, 0 timeouts.
+- Wilson 95% interval: `[0.5487, 0.6444]`; match-duration p50/p95:
+  `270.75/1033.70 ms`. Decision-level aggregation remains part of H0.
+- Raw match records are persisted as `matches.jsonl` and the run identity is
+  content-addressed so an existing run is never overwritten.
+
 ## S7 — Belief builder and state evaluator
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** model hidden information separately from observed facts and
 provide a deterministic leaf evaluator for search.
 
@@ -474,14 +484,26 @@ uv run --frozen pytest tests/ -v
 - Snapshot output contains facts only; belief is represented separately.
 - All hidden-zone cardinality and subtraction invariants are tested.
 
+### Evidence recorded 2026-07-29
+
+- `DefaultBeliefBuilder` preserves factual `GameState` snapshots, produces
+  deterministic hypotheses, and marks impossible public card counts.
+- `StateEvaluator` returns a deterministic leaf value and disables evaluation
+  for inconsistent beliefs.
+- Focused and full tests pass.
+
 ## S8 — Bounded short search
 
-**Status:** `PLANNED`  
+**Status:** `IN_PROGRESS`
 **Objective:** add search as a safe decorator around the heuristic, never as a
 new failure mode.
 
 ### Work
 
+- Verify the documented Python signatures and native ABI for `search_begin`,
+  `search_step`, `search_release`, and `search_end`.
+- Implement a project-owned adapter without modifying installed
+  `site-packages`; fail closed to the heuristic when the adapter probe fails.
 - Implement the search gate: `MAIN`, multiple legal choices, relevant
   candidates, available `search_begin_input`, consistent belief, and at least
   30 seconds of overage.
@@ -497,8 +519,9 @@ new failure mode.
 
 ### Target files
 
-`src/agents/search.py`, `src/agents/evaluator.py`, `src/core/belief.py`,
-`src/agents/heuristic.py`, `src/core/interfaces.py`, `main.py`, and search tests.
+`src/agents/search.py`, a project-owned `cabt` search adapter,
+`src/agents/evaluator.py`, `src/core/belief.py`, `src/agents/heuristic.py`,
+`src/core/interfaces.py`, `main.py`, and search tests.
 
 ### Verification
 
@@ -513,14 +536,45 @@ seeds with search off and on.
 ### Exit criteria
 
 - Search never opens outside the declared gate.
+- The adapter probe verifies the installed Python wrapper and native symbols
+  without guessing undocumented ctypes signatures.
 - All intermediate states are released and `search_end` always executes.
 - Maximum search time is 100 ms and fallback latency remains within budget.
 - Search has zero operational failures and does not reduce the stable
   heuristic gate; otherwise keep search disabled.
 
+### Progress evidence recorded 2026-07-29
+
+- Gate, depth/top-k/budget limits, typed statistics, and release/end cleanup
+  are implemented in `src/agents/search.py`.
+- Hybrid smoke: 40/40 completed, 0 failed.
+- Search remains disabled because the project has not integrated a verified
+  Python adapter for the native lifecycle; no search-approved claim is made.
+
+### Capability correction recorded 2026-07-29
+
+The official `cabt` documentation exposes:
+
+- `search_begin(agent_observation, your_deck, your_prize, opponent_deck,
+  opponent_prize, opponent_hand, opponent_active, manual_coin=False)`;
+- `search_step(search_id, select)`;
+- `search_release(search_id)`;
+- `search_end()`.
+
+Local inspection of `kaggle-environments==1.32.2` found that its
+`cg/sim.py` wrapper does not bind these functions, while the bundled
+`libcg.so` exports `SearchBegin`, `SearchStep`, `SearchRelease`, and
+`SearchEnd`. S8 is therefore `IN_PROGRESS`, not blocked: the remaining work is
+to verify the native ABI or obtain the matching Python wrapper, implement the
+adapter, and execute the real search gate.
+
+Sources verified on 2026-07-29:
+[cabt API](https://matsuoinstitute.github.io/cabt/api.html) and
+[cabt sim module](https://matsuoinstitute.github.io/cabt/sim.html).
+
 ## S9 — Frozen submission and isolated handoff
 
-**Status:** `PLANNED`  
+**Status:** `DONE`
 **Objective:** produce the smallest reproducibly validated submission artifact.
 
 ### Work
@@ -561,6 +615,22 @@ imports unavailable.
 - The archive is below 197.7 MiB and has no unsafe paths.
 - The extracted artifact passes both-side smoke with zero operational failures.
 - Release manifest, hashes, report, and Strategy evidence are linked.
+
+### Progress evidence recorded 2026-07-29
+
+- Isolated package validation passed for `submission.tar.gz`: 38,394 bytes,
+  root `main.py`/`deck.csv`, 60-card deck, no unsafe paths.
+- Full evaluation report: `reports/runs/full_heuristic_final/27d3df870485/`;
+  400 matches, 239 wins, 0 operational failures.
+- Final release is frozen as heuristic-only; search approval is intentionally
+  excluded from this release scope.
+
+### Heuristic-only release decision recorded 2026-07-29
+
+The project accepts a heuristic-only S9 release. S8 is not a prerequisite for
+this explicitly scoped release because search is disabled and documented as an
+unintegrated optional capability. S8 may continue independently after the
+project-owned adapter and lifecycle tests are complete.
 
 ## Cross-sprint definition of done
 

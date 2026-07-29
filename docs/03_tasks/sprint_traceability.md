@@ -33,6 +33,20 @@ agent starting work in a fresh checkout.
 | M7 ISMCTS/PUCT | R7 | search trace, budget, justified gain |
 | M8 joint deck/policy/priors | R8 | robust pool and rollback |
 
+## Heuristic-only improvement traceability
+
+| Improvement | Sprint | Promotion evidence |
+|---|---|---|
+| Complete metrics and four-opponent matrix | H0 | per-side, per-matchup, and decision metrics |
+| Complete card and attack catalog | H1 | frozen-deck coverage and integrity report |
+| Context-specific heuristics | H2 | focused fixtures and H0 non-inferiority |
+| Local tactical estimates | H3 | tactical fixtures and latency gate |
+| Belief-derived score signals | H4 | calibration, consistency, and factual separation |
+| Weight optimization | H5 | reproducible study and temporal holdout |
+| Supervised selection ranker | H6 | paired holdout and isolated inference |
+| Matchup-aware profiles | H7 | robust four-opponent matrix |
+| Hardened heuristic-only release | H8 | frozen package, hashes, report, and rollback |
+
 ## Agent handoff checklist
 
 Before editing:

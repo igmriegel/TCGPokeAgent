@@ -14,6 +14,7 @@
 10. [`14_experiment_implementation.md`](14_experiment_implementation.md) — experiments.
 11. [`24_handoff_spec.md`](24_handoff_spec.md) — handoff and gates.
 12. [`25_rfl_experiments.md`](25_rfl_experiments.md) — RFL experiment runbook.
+13. [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — heuristic-only improvement sprints H0–H8.
 
 ## Product and research
 
@@ -22,6 +23,7 @@
 - [`03_metrics.md`](03_metrics.md) — metric definitions.
 - [`04_sprint_plan.md`](04_sprint_plan.md) — M0 to M8.
 - [`02_sprints/post_mvp_research_sprints.md`](02_sprints/post_mvp_research_sprints.md) — detailed post-MVP research sprints R1–R8.
+- [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — executable non-search improvement backlog H0–H8.
 - [`05_writeup_outline.md`](05_writeup_outline.md) — Strategy structure.
 - [`strategy_notes.md`](strategy_notes.md) — evidence log.
 
