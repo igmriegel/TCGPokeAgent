@@ -49,6 +49,9 @@ def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, 
             "p50_duration_ms": round(metrics.p50_duration_ms, 2),
             "p95_duration_ms": round(metrics.p95_duration_ms, 2),
             "p99_duration_ms": round(metrics.p99_duration_ms, 2),
+            "p50_decision_ms": round(metrics.p50_decision_ms, 2),
+            "p95_decision_ms": round(metrics.p95_decision_ms, 2),
+            "p99_decision_ms": round(metrics.p99_decision_ms, 2),
             "invalid": metrics.invalid,
             "timeouts": metrics.timeouts,
         },
@@ -84,6 +87,8 @@ def write_markdown(report: dict[str, Any], path: str | Path) -> None:
         f"- Avg duration: {m.get('avg_duration_ms', 0):.1f} ms",
         f"- p50/p95/p99: {m.get('p50_duration_ms', 0):.1f} / "
         f"{m.get('p95_duration_ms', 0):.1f} / {m.get('p99_duration_ms', 0):.1f} ms",
+        f"- Decision p50/p95/p99: {m.get('p50_decision_ms', 0):.1f} / "
+        f"{m.get('p95_decision_ms', 0):.1f} / {m.get('p99_decision_ms', 0):.1f} ms",
         "",
     ]
     with open(path, "w", encoding="utf-8") as f:

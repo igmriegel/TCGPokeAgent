@@ -21,6 +21,9 @@ class AggregateMetrics:
     p50_duration_ms: float = 0.0
     p95_duration_ms: float = 0.0
     p99_duration_ms: float = 0.0
+    p50_decision_ms: float = 0.0
+    p95_decision_ms: float = 0.0
+    p99_decision_ms: float = 0.0
     invalid: int = 0
     timeouts: int = 0
 
@@ -40,16 +43,19 @@ def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
     win_rate = wins / total if total > 0 else 0.0
 
     durations = sorted(m.duration_ms for m in matches)
+    decision_durations = sorted(
+        decision.duration_ms for match in matches for decision in match.decisions
+    )
 
-    def percentile(p: float) -> float:
-        if not durations:
+    def percentile(values: list[float], p: float) -> float:
+        if not values:
             return 0.0
-        k = (p / 100) * (len(durations) - 1)
+        k = (p / 100) * (len(values) - 1)
         f = math.floor(k)
         c = math.ceil(k)
         if f == c:
-            return durations[f]
-        return durations[f] * (c - k) + durations[c] * (k - f)
+            return values[f]
+        return values[f] * (c - k) + values[c] * (k - f)
 
     z = 1.96
     wilson_lower, wilson_upper = _wilson(wins, total, z)
@@ -64,9 +70,12 @@ def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
         wilson_lower=wilson_lower,
         wilson_upper=wilson_upper,
         avg_duration_ms=sum(durations) / len(durations) if durations else 0.0,
-        p50_duration_ms=percentile(50),
-        p95_duration_ms=percentile(95),
-        p99_duration_ms=percentile(99),
+        p50_duration_ms=percentile(durations, 50),
+        p95_duration_ms=percentile(durations, 95),
+        p99_duration_ms=percentile(durations, 99),
+        p50_decision_ms=percentile(decision_durations, 50),
+        p95_decision_ms=percentile(decision_durations, 95),
+        p99_decision_ms=percentile(decision_durations, 99),
         invalid=invalid,
         timeouts=timeouts,
     )
