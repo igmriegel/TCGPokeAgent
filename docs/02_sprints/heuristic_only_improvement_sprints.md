@@ -170,9 +170,11 @@ AGENT_MODE=heuristic scripts/run_smoke.sh heuristic
 
 **Priority:** `P0`
 
-**Source:** human review of Kaggle submission `55088176` on 2026-07-29 found
-losses in which the agent stopped placing Pokémon on the Bench and failed to
-continue the Snover-to-Mega-Abomasnow development line.
+**Source:** human review of Kaggle submission `55088176` on 2026-07-29,
+registered as
+[`FB-2026-001`](../29_gameplay_feedback.md#fb-2026-001--continuous-board-development),
+found losses in which the agent stopped placing Pokémon on the Bench and
+failed to continue the Snover-to-Mega-Abomasnow development line.
 
 **Objective:** make board development a repeated pre-attack obligation for the
 frozen Abomasnow deck instead of a one-time, fixed-score preference.

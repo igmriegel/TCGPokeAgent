@@ -158,6 +158,8 @@ Human traces can support several different outputs:
 
 - aggregate actions and reasons by `SelectContext`, board shape, and turn;
 - find repeated conditional patterns;
+- preserve each reviewed finding in the canonical
+  [`gameplay feedback register`](29_gameplay_feedback.md);
 - convert a pattern into a proposed rule using the template in
   [`27_gameplay_rules.md`](27_gameplay_rules.md);
 - require golden scenarios and an evaluation gate before implementation.
@@ -228,4 +230,3 @@ match for which we can answer:
 - what the current agent would have selected;
 - what happened next;
 - whether the difference suggests a reusable gameplay rule.
-

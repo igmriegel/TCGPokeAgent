@@ -17,6 +17,7 @@
 13. [`02_sprints/heuristic_only_improvement_sprints.md`](02_sprints/heuristic_only_improvement_sprints.md) — heuristic-only improvement sprints H0–H8.
 14. [`27_gameplay_rules.md`](27_gameplay_rules.md) — living high-level gameplay behavior.
 15. [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — monitored human demonstrations and insight extraction.
+16. [`29_gameplay_feedback.md`](29_gameplay_feedback.md) — canonical gameplay feedback, generalization, and development register.
 
 ## Product and research
 
@@ -30,6 +31,7 @@
 - [`strategy_notes.md`](strategy_notes.md) — evidence log.
 - [`27_gameplay_rules.md`](27_gameplay_rules.md) — collaboratively maintained gameplay rules and behavioral metrics.
 - [`28_human_gameplay_capture.md`](28_human_gameplay_capture.md) — live human play, replay annotation, and preference-data design.
+- [`29_gameplay_feedback.md`](29_gameplay_feedback.md) — observed gameplay findings, deck rules, general principles, and traceable actions.
 
 ## Contracts by layer
 

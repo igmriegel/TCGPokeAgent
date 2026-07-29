@@ -87,6 +87,9 @@ strategically required attack or effect.
 
 **Status:** `ACTIVE DEVELOPMENT — P0`
 
+Canonical feedback record:
+[`FB-2026-001`](29_gameplay_feedback.md#fb-2026-001--continuous-board-development).
+
 Kaggle gameplay feedback showed that the current agent can attack while
 leaving Snover in hand and then lose after failing to maintain a developed
 Bench. The current fixed scores explain this failure mode: a high-damage attack
