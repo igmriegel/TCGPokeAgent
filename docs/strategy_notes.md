@@ -314,3 +314,37 @@ limitations:
   - "The current Kaggle submission continues to receive runs, so this is a timestamped snapshot."
   - "The immutable gameplay_replays/v1 derived dataset still represents its original 31-match source set."
 ```
+
+## Replay termination monitoring record
+
+```yaml
+replays: 68
+explicit_result_reasons: 68
+terminal_state_consistency_passed: 68
+reason_totals:
+  all_prizes_taken: 11
+  deck_out: 8
+  no_pokemon_in_play: 49
+owner_classified_replays: 65
+owner_results:
+  wins:
+    all_prizes_taken: 9
+    deck_out: 6
+    no_pokemon_in_play: 16
+  losses:
+    all_prizes_taken: 2
+    deck_out: 1
+    no_pokemon_in_play: 31
+ambiguous_validation_replays:
+  count: 3
+  reason_totals:
+    deck_out: 1
+    no_pokemon_in_play: 2
+decision: "Monitor explicit Result.reason values in the Marimo dashboard and keep mirror-validation owner outcomes unknown."
+evidence:
+  notebook: "notebooks/03_run_results_dashboard.py"
+  extractor: "src/data/replay_outcomes.py"
+limitations:
+  - "Both sides use the same owner name in three validation episodes, so perspective W/L cannot be assigned from replay identity."
+  - "Simultaneous terminal conditions may exist; the explicit CABT reason is retained as authoritative."
+```
