@@ -41,3 +41,4 @@ def test_extracted_package_runs_initial_deck(tmp_path) -> None:
 
     assert validation["entry_point"] == "agent"
     assert validation["python_target"] == "3.11"
+    assert validation["cabt_file_agent"] == "passed"

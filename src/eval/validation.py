@@ -11,13 +11,14 @@ import tempfile
 from collections.abc import Mapping
 from contextlib import redirect_stderr, redirect_stdout
 from importlib.metadata import PackageNotFoundError, version
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, cast
 
 from src.core.exceptions import PreflightError
 
 DEFAULT_SDK_VERSION = "1.32.2"
-REQUIRED_PACKAGE_PATHS = ("main.py", "src", "src/artifacts/deck.csv")
+REQUIRED_PACKAGE_PATHS = ("main.py", "src")
 MAX_PACKAGE_BYTES = 197_700_000
 
 __all__ = [
@@ -95,6 +96,11 @@ def check_package_layout(root: str | Path = ".") -> None:
     """
     package_root = Path(root)
     missing = [path for path in REQUIRED_PACKAGE_PATHS if not (package_root / path).exists()]
+    if not (
+        (package_root / "deck.csv").is_file()
+        or (package_root / "src" / "artifacts" / "deck.csv").is_file()
+    ):
+        missing.append("deck.csv or src/artifacts/deck.csv")
     if missing:
         raise PreflightError(f"package layout missing: {', '.join(missing)}")
 
@@ -146,6 +152,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 if not isinstance(deck, list) or len(deck) != 60:
                     raise PreflightError("isolated package returned an invalid deck")
                 loader_result = _run_kaggle_loader_smoke(root)
+                cabt_result = _run_cabt_file_agent_smoke(root)
     except (tarfile.TarError, OSError, json.JSONDecodeError) as error:
         raise PreflightError(f"invalid package archive: {error}") from error
     return {
@@ -154,6 +161,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
         "deck_cards": 60,
         "entry_point": loader_result["entry_point"],
         "python_target": "3.11",
+        "cabt_file_agent": cabt_result,
     }
 
 
@@ -181,7 +189,7 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-sys.path.insert(0, str(root))
+sys.path.append(str(root))
 source = root / "main.py"
 environment = {}
 exec(compile(source.read_text(encoding="utf-8"), str(source), "exec"), environment)
@@ -191,7 +199,7 @@ print(json.dumps({"entry_point": entry_point.__name__, "action": action}))
 """
     completed = subprocess.run(
         [os.fspath(_python_executable()), "-S", "-c", loader, os.fspath(root)],
-        cwd=root,
+        cwd=root.parent,
         text=True,
         capture_output=True,
         check=False,
@@ -214,6 +222,58 @@ print(json.dumps({"entry_point": entry_point.__name__, "action": action}))
     if not isinstance(action, list) or len(action) != 60:
         raise PreflightError("Kaggle loader smoke returned an invalid deck")
     return result
+
+
+def _run_cabt_file_agent_smoke(root: Path) -> str:
+    """Run one CABT episode with both agents loaded from the extracted file."""
+    if find_spec("kaggle_environments") is None:
+        return "sdk-unavailable"
+
+    smoke = """
+import json
+import pathlib
+import sys
+
+from kaggle_environments import make
+
+agent_path = str(pathlib.Path(sys.argv[1]) / "main.py")
+environment = make("cabt", debug=False)
+environment.run([agent_path, agent_path])
+statuses = [getattr(player, "status", None) for player in environment.state]
+errors = [
+    log.get("stderr", "")
+    for turn in environment.logs
+    for log in turn
+    if log.get("stderr")
+]
+print("CABT_FILE_AGENT_RESULT=" + json.dumps({"statuses": statuses, "errors": errors}))
+"""
+    completed = subprocess.run(
+        [os.fspath(_python_executable()), "-c", smoke, os.fspath(root)],
+        cwd=root.parent,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=30,
+    )
+    marker = "CABT_FILE_AGENT_RESULT="
+    result_line = next(
+        (line for line in reversed(completed.stdout.splitlines()) if line.startswith(marker)),
+        "",
+    )
+    if completed.returncode != 0 or not result_line:
+        details = completed.stderr.strip() or completed.stdout.strip()
+        raise PreflightError(f"CABT file-agent smoke failed: {details}")
+    try:
+        result = cast(dict[str, Any], json.loads(result_line.removeprefix(marker)))
+    except json.JSONDecodeError as error:
+        raise PreflightError("CABT file-agent smoke returned invalid JSON") from error
+    statuses = result.get("statuses")
+    if statuses != ["DONE", "DONE"]:
+        raise PreflightError(
+            f"CABT file-agent smoke ended with statuses {statuses}: {result.get('errors')}"
+        )
+    return "passed"
 
 
 def _python_executable() -> str:

@@ -25,6 +25,20 @@ def test_public_agent_delegates_to_agent_policy(monkeypatch) -> None:
     assert main.agent({"select": None}) == [7]
 
 
+def test_project_root_uses_loader_sys_path_when_file_is_undefined(monkeypatch, tmp_path) -> None:
+    package_root = tmp_path / "agent"
+    working_root = tmp_path / "working"
+    package_root.mkdir()
+    working_root.mkdir()
+    (package_root / "main.py").touch()
+    (package_root / "deck.csv").touch()
+    monkeypatch.delitem(main.__dict__, "__file__")
+    monkeypatch.setattr(sys, "path", [*sys.path, str(package_root)])
+    monkeypatch.chdir(working_root)
+
+    assert main._discover_project_root() == package_root
+
+
 def test_agent_policy_delegates_legal_selection(monkeypatch, sample_observation) -> None:
     class FixedAgent:
         def select(self, observation: dict[str, Any]) -> list[int]:
