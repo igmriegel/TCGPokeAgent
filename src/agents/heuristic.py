@@ -250,7 +250,10 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
             bonus = 30.0 if self._has_role(card_id, "evolution_basic") else 20.0
-            return 300.0 + bonus, ["develop_bench"]
+            return 300.0 + bonus, [
+                "develop_bench",
+                "play_available_pokemon_before_attack",
+            ]
         if card_type == 1:
             return 240.0, ["play_item"]
         if card_type == 2:
@@ -521,6 +524,17 @@ class HeuristicAgent(AgentPolicy):
         )
         if not selections:
             return []
+        required_development = self._required_board_development_indices(
+            parsed.state, parsed.candidates, parsed.select_context
+        )
+        if required_development:
+            development_selections = [
+                selection
+                for selection in selections
+                if any(index in required_development for index in selection.indices)
+            ]
+            if development_selections:
+                selections = development_selections
         ranked = []
         for selection in selections:
             selection_with_context = Selection(
@@ -534,3 +548,31 @@ class HeuristicAgent(AgentPolicy):
             ranked.append((score, selection_with_context.indices, reasons, selection_with_context))
         ranked.sort(key=lambda item: (-item[0], item[1]))
         return list(ranked[0][3].indices)
+
+    @staticmethod
+    def _required_board_development_indices(
+        state: GameState,
+        candidates: Sequence[Candidate],
+        context: SelectContext | None,
+    ) -> set[int]:
+        if context is not SelectContext.MAIN or not state.players:
+            return set()
+        player_index = state.your_index if 0 <= state.your_index < len(state.players) else 0
+        player = state.players[player_index]
+        occupied_bench = sum(pokemon is not None for pokemon in player.bench)
+        if occupied_bench >= player.bench_max:
+            return set()
+        return {
+            candidate.option_index
+            for candidate in candidates
+            if HeuristicAgent._is_pokemon_play(candidate)
+        }
+
+    @staticmethod
+    def _is_pokemon_play(candidate: Candidate) -> bool:
+        if candidate.option_type is not OptionType.PLAY or not isinstance(candidate.card, Mapping):
+            return False
+        try:
+            return int(candidate.card.get("cardType", -1)) == 0
+        except (TypeError, ValueError):
+            return False
