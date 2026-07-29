@@ -12,7 +12,7 @@ from typing import Any, cast
 
 from src.agents.baseline import BaselineAgent
 from src.agents.heuristic import HeuristicAgent
-from src.core import AgentPolicy
+from src.core import AgentPolicy, DeckDefinition, DeckProfile
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def _build_agent() -> AgentPolicy:
         except (ImportError, OSError, ValueError, TypeError):
             return HeuristicAgent()
     if mode == "heuristic":
-        return HeuristicAgent()
+        return HeuristicAgent(deck_profile=_load_deck_profile())
     if mode == "hybrid":
         try:
             from src.agents.search import HybridAgent
@@ -90,6 +90,18 @@ def _build_agent() -> AgentPolicy:
         except (ImportError, ValueError):
             return HeuristicAgent()
     return BaselineAgent()
+
+
+def _load_deck_profile() -> DeckProfile | None:
+    """Load the optional declarative strategy bundled with the active deck."""
+    profile_path = _project_root() / "src" / "artifacts" / "deck_profile.json"
+    if not profile_path.exists():
+        return None
+    try:
+        data = json.loads(profile_path.read_text(encoding="utf-8"))
+        return DeckProfile.from_dict(data) if isinstance(data, Mapping) else None
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return None
 
 
 def agent_policy(observation: dict[str, Any]) -> list[int]:
@@ -110,6 +122,7 @@ def agent_policy(observation: dict[str, Any]) -> list[int]:
 
     select = observation.get("select")
     if select is None:
+        _agent.start_match(DeckDefinition.from_cards(_deck, "active"))
         return list(_deck)
 
     try:

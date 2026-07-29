@@ -7,11 +7,19 @@ from src.core import (
     AgentPolicy,
     Candidate,
     CardCatalog,
+    DeckDefinition,
+    DeckProfile,
     DefaultParser,
     DefaultSelectionGenerator,
     GameState,
+    GenericDeckProfileBuilder,
     HeuristicScorer,
     OptionType,
+    PrizeChecker,
+    PrizeCheckMode,
+    PrizeCheckResult,
+    PrizeMap,
+    PrizeMapBuilder,
     SelectContext,
     Selection,
 )
@@ -38,12 +46,6 @@ FEATURE_FLAGS = {
     "use_setup_signals",
 }
 
-_CARD_KYOGRE = 721
-_CARD_SNOVER = 722
-_CARD_MEGA_ABOMASNOW_EX = 723
-_CARD_WATER_ENERGY = 3
-_ATTACK_RIPTIDE = 1042
-_ATTACK_HAMMER_LANCHE = 1046
 _CG_CATALOG = CardCatalog.from_cg()
 
 
@@ -78,9 +80,28 @@ class SimpleHeuristicScorer(HeuristicScorer):
         self,
         weights: Mapping[str, Any] | None = None,
         feature_flags: Mapping[str, Any] | None = None,
+        deck_profile: DeckProfile | None = None,
+        catalog: CardCatalog | None = None,
     ) -> None:
         self.weights = _validated_weights(weights)
         self.feature_flags = _validated_flags(feature_flags)
+        self.deck_profile = deck_profile
+        self.catalog = catalog or _CG_CATALOG
+        self.prize_check: PrizeCheckResult | None = None
+        self.prize_map: PrizeMap | None = None
+
+    def set_deck_profile(self, profile: DeckProfile) -> None:
+        """Replace the declarative deck strategy for a new match."""
+        self.deck_profile = profile
+
+    def set_strategic_context(
+        self,
+        prize_check: PrizeCheckResult | None,
+        prize_map: PrizeMap | None,
+    ) -> None:
+        """Set match-scoped Prize knowledge used for the current decision."""
+        self.prize_check = prize_check
+        self.prize_map = prize_map
 
     def score(
         self,
@@ -214,16 +235,11 @@ class SimpleHeuristicScorer(HeuristicScorer):
         return 1.0, ["productive_legal_action"]
 
     def _attachment_score(self, candidate: Candidate) -> tuple[float, list[str]]:
-        card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         target_id = self._feature_int(candidate, "target_card_id")
         energy_count = self._feature_int(candidate, "target_energy_count")
-        if card_id == _CARD_WATER_ENERGY or card_type in {5, 6}:
-            target_goal = {
-                _CARD_KYOGRE: 3,
-                _CARD_SNOVER: 2,
-                _CARD_MEGA_ABOMASNOW_EX: 3,
-            }.get(target_id, 1)
+        if card_type in {5, 6}:
+            target_goal = self._attack_energy_target(target_id)
             deficit = max(0, target_goal - energy_count)
             active_bonus = 30.0 if bool(candidate.features.get("target_is_active", False)) else 0.0
             return 350.0 + deficit * 25.0 + active_bonus, ["develop_attacker_energy"]
@@ -233,7 +249,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
-            bonus = 30.0 if card_id == _CARD_SNOVER else 20.0
+            bonus = 30.0 if self._has_role(card_id, "evolution_basic") else 20.0
             return 300.0 + bonus, ["develop_bench"]
         if card_type == 1:
             return 240.0, ["play_item"]
@@ -247,11 +263,23 @@ class SimpleHeuristicScorer(HeuristicScorer):
         return 150.0, ["play_known_legal_card"]
 
     def _attack_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
-        attack_id = self._mapping_int(candidate.option, "attackId")
+        active_target = next(
+            (
+                target
+                for target in (self.prize_map.targets if self.prize_map else ())
+                if target.zone == "active"
+            ),
+            None,
+        )
+        if active_target and active_target.damage_prevented:
+            return -1000.0, ["attack_damage_prevented"]
         damage = self._metadata_int(candidate.attack, "damage")
-        if attack_id == _ATTACK_RIPTIDE:
-            damage = 20 * self._discard_count(state, _CARD_WATER_ENERGY)
-        elif attack_id == _ATTACK_HAMMER_LANCHE:
+        text = str((candidate.attack or {}).get("text", "")).casefold()
+        if "damage for each basic" in text and "discard pile" in text:
+            energy_type = self._attack_energy_type(candidate)
+            multiplier = self._leading_damage_multiplier(text)
+            damage = multiplier * self._discard_basic_energy_count(state, energy_type)
+        elif "discard the top 6 cards" in text and "100 damage for each basic" in text:
             damage = 300 if self._own_deck_count(state) > 12 else 50
         score = 200.0 + max(0, damage)
         if damage <= 0:
@@ -269,7 +297,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         energy_count = self._feature_int(candidate, "card_energy_count")
         hp = self._feature_int(candidate, "card_hp")
         if context is SelectContext.SETUP_ACTIVE_POKEMON:
-            score = 120.0 if card_id == _CARD_SNOVER else 110.0
+            score = 120.0 if self._has_role(card_id, "evolution_basic") else 110.0
             return score, ["setup_active_attacker"]
         if context is SelectContext.SETUP_BENCH_POKEMON:
             score = 100.0 if card_type == 0 else -100.0
@@ -281,13 +309,17 @@ class SimpleHeuristicScorer(HeuristicScorer):
         }:
             return hp + energy_count * 100.0, ["promote_prepared_attacker"]
         if context is SelectContext.TO_HAND:
+            if self.prize_check and self.prize_check.mode is PrizeCheckMode.EXACT:
+                availability = self.prize_check.availability(card_id)
+                if availability and availability.searchable_exact == 0:
+                    return -1000.0, ["confirmed_prized_unsearchable"]
             return self._card_resource_value(card_id, card_type), ["search_useful_card"]
         if context in {
             SelectContext.DISCARD,
             SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
         }:
-            if card_id == _CARD_WATER_ENERGY:
-                return 120.0, ["fuel_riptide"]
+            if card_type in {5, 6}:
+                return 120.0, ["discard_energy_for_synergy"]
             if card_type == 0:
                 return -100.0, ["preserve_pokemon"]
             return 20.0, ["discard_replaceable_card"]
@@ -308,15 +340,64 @@ class SimpleHeuristicScorer(HeuristicScorer):
         return self._card_resource_value(card_id, card_type), ["card_resource_value"]
 
     def _card_resource_value(self, card_id: int, card_type: int) -> float:
-        if card_id == _CARD_MEGA_ABOMASNOW_EX:
+        if self.deck_profile and card_id in self.deck_profile.resource_values:
+            return self.deck_profile.resource_values[card_id]
+        if self._has_role(card_id, "primary_attacker"):
             return 160.0
-        if card_id == _CARD_SNOVER:
+        if self._has_role(card_id, "evolution_basic"):
             return 150.0
-        if card_id == _CARD_KYOGRE:
+        if self._has_role(card_id, "attacker"):
             return 140.0
-        if card_id == _CARD_WATER_ENERGY:
-            return 110.0
         return {0: 120.0, 1: 100.0, 2: 90.0, 3: 100.0, 4: 70.0}.get(card_type, 10.0)
+
+    def _has_role(self, card_id: int, role: str) -> bool:
+        return bool(self.deck_profile and self.deck_profile.has_role(card_id, role))
+
+    def _attack_energy_target(self, card_id: int) -> int:
+        if self.deck_profile and card_id in self.deck_profile.attack_energy_targets:
+            return max(1, self.deck_profile.attack_energy_targets[card_id])
+        card = self.catalog.get_card(str(card_id)) or {}
+        costs = []
+        for attack_id in card.get("attacks", []):
+            attack = self.catalog.get_attack(str(attack_id)) or {}
+            energies = attack.get("energies", [])
+            if isinstance(energies, list):
+                costs.append(len(energies))
+        return max(costs, default=1)
+
+    def _attack_energy_type(self, candidate: Candidate) -> int:
+        energies = (candidate.attack or {}).get("energies", [])
+        if not isinstance(energies, list) or not energies:
+            return -1
+        value = energies[0]
+        return value if isinstance(value, int) and not isinstance(value, bool) else -1
+
+    def _discard_basic_energy_count(self, state: GameState, energy_type: int) -> int:
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        count = 0
+        for card in player.discard:
+            if not isinstance(card, Mapping):
+                continue
+            card_id = card.get("id", card.get("cardId"))
+            metadata = self.catalog.get_card(str(card_id)) or {}
+            if (
+                self._metadata_int(metadata, "cardType") == 5
+                and self._metadata_int(metadata, "energyType") == energy_type
+            ):
+                count += 1
+        return count
+
+    def _leading_damage_multiplier(self, text: str) -> int:
+        words = text.split()
+        for index, word in enumerate(words):
+            if word == "damage" and index:
+                try:
+                    return int(words[index - 1])
+                except ValueError:
+                    return 0
+        return 0
 
     def _own_player(self, state: GameState) -> Any:
         if 0 <= state.your_index < len(state.players):
@@ -374,10 +455,42 @@ class HeuristicAgent(AgentPolicy):
         self,
         weights: Mapping[str, Any] | None = None,
         feature_flags: Mapping[str, Any] | None = None,
+        deck_profile: DeckProfile | None = None,
     ) -> None:
         self._parser = DefaultParser(_CG_CATALOG)
         self._generator = DefaultSelectionGenerator()
-        self._scorer = SimpleHeuristicScorer(weights, feature_flags)
+        self._scorer = SimpleHeuristicScorer(
+            weights, feature_flags, deck_profile=deck_profile, catalog=_CG_CATALOG
+        )
+        self._configured_profile = deck_profile
+        self._deck: DeckDefinition | None = None
+        self._prize_checker: PrizeChecker | None = None
+        self._prize_map_builder = PrizeMapBuilder(_CG_CATALOG)
+
+    def start_match(self, deck: DeckDefinition) -> None:
+        """Reset the deck strategy without changing generic policy code."""
+        self._deck = deck
+        self._prize_checker = PrizeChecker(deck)
+        profile = (
+            self._configured_profile
+            if self._configured_profile and self._configured_profile.deck_sha256 == deck.sha256
+            else GenericDeckProfileBuilder(_CG_CATALOG).build(deck)
+        )
+        evolution_basics = tuple(sorted({line[0] for line in profile.evolution_lines if line}))
+        roles = dict(profile.roles)
+        roles["evolution_basic"] = evolution_basics
+        self._scorer.set_deck_profile(
+            DeckProfile(
+                deck_id=profile.deck_id,
+                deck_sha256=profile.deck_sha256,
+                schema_version=profile.schema_version,
+                roles=roles,
+                evolution_lines=profile.evolution_lines,
+                attack_energy_targets=profile.attack_energy_targets,
+                board_targets=profile.board_targets,
+                resource_values=profile.resource_values,
+            )
+        )
 
     @property
     def weights(self) -> dict[str, float]:
@@ -394,6 +507,9 @@ class HeuristicAgent(AgentPolicy):
     def select(self, observation: dict[str, Any]) -> list[int]:
         """Return the best legal selection, or a deterministic empty fallback."""
         parsed = self._parser.parse(observation)
+        prize_check = self._prize_checker.check(observation) if self._prize_checker else None
+        prize_map = self._prize_map_builder.build(parsed.state)
+        self._scorer.set_strategic_context(prize_check, prize_map)
         if parsed.max_count == 0:
             return []
         selections = self._generator.generate(

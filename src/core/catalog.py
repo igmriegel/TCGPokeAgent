@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -13,6 +13,23 @@ try:
 except (ImportError, OSError):
     _all_attack = None
     _all_card_data = None
+
+
+@dataclass(frozen=True, slots=True)
+class CardTraits:
+    """Normalized strategic traits derived from canonical card metadata."""
+
+    card_id: int
+    is_pokemon: bool
+    has_rule_box: bool
+    is_ex: bool
+    is_mega_ex: bool
+    is_tera: bool
+    base_prize_value: int
+    prevents_damage_from_ex: bool = False
+    prevents_damage_from_ability: bool = False
+    prevents_prizes_when_ko_by_ex: bool = False
+    prize_reduction_when_ko: int = 0
 
 
 class CardCatalog:
@@ -64,6 +81,45 @@ class CardCatalog:
         if self._attacks is None:
             return None
         return self._attacks.get(str(attack_id))
+
+    def get_traits(self, card_id: str | int) -> CardTraits:
+        """Return safe strategic traits for a card.
+
+        Args:
+            card_id: Canonical card identifier.
+
+        Returns:
+            Derived traits. Unknown cards return conservative defaults.
+        """
+        card = self.get_card(str(card_id)) or {}
+        numeric_id = int(card_id) if str(card_id).isdigit() else 0
+        is_pokemon = int(card.get("cardType", -1)) == 0
+        is_mega_ex = bool(card.get("megaEx", False))
+        is_ex = bool(card.get("ex", False))
+        has_rule_box = is_pokemon and (is_ex or is_mega_ex)
+        text = " ".join(
+            str(skill.get("text", ""))
+            for skill in card.get("skills", [])
+            if isinstance(skill, dict)
+        ).casefold()
+        prevents_all = "prevent all damage" in text
+        return CardTraits(
+            card_id=numeric_id,
+            is_pokemon=is_pokemon,
+            has_rule_box=has_rule_box,
+            is_ex=is_ex,
+            is_mega_ex=is_mega_ex,
+            is_tera=bool(card.get("tera", False)),
+            base_prize_value=3 if is_mega_ex else 2 if is_ex else 1 if is_pokemon else 0,
+            prevents_damage_from_ex=prevents_all
+            and ("pokémon {ex}" in text or "pokemon {ex}" in text),
+            prevents_damage_from_ability=prevents_all and "have an ability" in text,
+            prevents_prizes_when_ko_by_ex=(
+                "can't take any prize" in text or "can’t take any prize" in text
+            )
+            and ("pokémon {ex}" in text or "pokemon {ex}" in text),
+            prize_reduction_when_ko=1 if "takes 1 fewer prize card" in text else 0,
+        )
 
     @property
     def loaded(self) -> bool:

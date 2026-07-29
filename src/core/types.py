@@ -44,6 +44,9 @@ class AgentMode(str, Enum):
     BASELINE = "baseline"
     HEURISTIC = "heuristic"
     HYBRID = "hybrid"
+    LINEAR_RANKER = "linear_ranker"
+    MLP_RANKER = "mlp_ranker"
+    RFL = "rfl"
 
 
 class SelectType(str, Enum):

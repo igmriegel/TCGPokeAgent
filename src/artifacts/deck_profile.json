@@ -1,0 +1,40 @@
+{
+  "attack_energy_targets": {
+    "721": 3,
+    "722": 2,
+    "723": 3
+  },
+  "board_targets": {
+    "minimum_attackers": 2,
+    "reserved_bench_slots": 1
+  },
+  "deck_id": "mega_abomasnow_kyogre",
+  "deck_sha256": "3882cfbbfe84f0bb88d114890b6de1f42cc1c86f1c793b2062c8b9daa0aa936a",
+  "evolution_lines": [
+    [
+      722,
+      723
+    ]
+  ],
+  "resource_values": {
+    "3": 110.0,
+    "721": 140.0,
+    "722": 150.0,
+    "723": 160.0
+  },
+  "roles": {
+    "attacker": [
+      721,
+      722,
+      723
+    ],
+    "evolution_basic": [
+      722
+    ],
+    "primary_attacker": [
+      723,
+      721
+    ]
+  },
+  "schema_version": "v1"
+}

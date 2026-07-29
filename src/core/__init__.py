@@ -1,6 +1,7 @@
 from .belief import BeliefState, DefaultBeliefBuilder
 from .candidate import Candidate
-from .catalog import CardCatalog
+from .catalog import CardCatalog, CardTraits
+from .deck import DeckDefinition, DeckProfile, GenericDeckProfileBuilder
 from .exceptions import (
     BeliefInconsistentError,
     EngineError,
@@ -22,9 +23,19 @@ from .interfaces import (
 )
 from .parsed_decision import ParsedDecision
 from .parser import DefaultParser
+from .prize import (
+    CardAvailability,
+    PrizeChecker,
+    PrizeCheckMode,
+    PrizeCheckResult,
+    PrizeMap,
+    PrizeMapBuilder,
+    PrizeTarget,
+)
 from .selection import Selection, SelectionValidator
 from .selection_generator import DefaultSelectionGenerator
 from .state import GameState, PlayerState, PokemonState
+from .strategy import RankedSelection, SelectionRanker, StrategicContext
 from .types import (
     AgentMode,
     ErrorCategory,
@@ -45,13 +56,18 @@ __all__ = [
     "DefaultBeliefBuilder",
     "BeliefInconsistentError",
     "CardCatalog",
+    "CardAvailability",
+    "CardTraits",
     "Candidate",
     "DefaultParser",
     "DefaultSelectionGenerator",
+    "DeckDefinition",
+    "DeckProfile",
     "EngineError",
     "ErrorCategory",
     "ExecutionStatus",
     "GameState",
+    "GenericDeckProfileBuilder",
     "HeuristicScorer",
     "InvalidOutputError",
     "LegalityViolationError",
@@ -64,14 +80,23 @@ __all__ = [
     "ParsedDecision",
     "PlayerState",
     "PokemonState",
+    "PrizeCheckMode",
+    "PrizeCheckResult",
+    "PrizeChecker",
+    "PrizeMap",
+    "PrizeMapBuilder",
+    "PrizeTarget",
+    "RankedSelection",
     "SearchAPIError",
     "SearchBudgetExceededError",
     "SelectContext",
     "Selection",
+    "SelectionRanker",
     "SelectionValidator",
     "SelectionGenerator",
     "SelectType",
     "ShortSearch",
     "StateEvaluator",
+    "StrategicContext",
     "TurnPhase",
 ]

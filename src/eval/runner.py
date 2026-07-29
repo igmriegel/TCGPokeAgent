@@ -9,7 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, cast
 
-from src.core import ErrorCategory, ExecutionStatus
+from src.core import DeckDefinition, ErrorCategory, ExecutionStatus
 from src.eval.validation import check_legal_selection
 
 AgentCallable = Callable[[dict[str, Any]], list[int]]
@@ -212,6 +212,10 @@ class MatchRunner:
         def with_deck(policy: AgentCallable) -> AgentCallable:
             def wrapped(observation: dict[str, Any]) -> list[int]:
                 if observation.get("select") is None:
+                    owner = getattr(policy, "__self__", None)
+                    start_match = getattr(owner, "start_match", None)
+                    if callable(start_match):
+                        start_match(DeckDefinition.from_cards(deck, "evaluation"))
                     return list(deck)
                 return list(policy(observation))
 

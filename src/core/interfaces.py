@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from .candidate import Candidate
+from .deck import DeckDefinition
 from .parsed_decision import ParsedDecision
 from .selection import Selection
 from .state import GameState
@@ -32,6 +33,13 @@ class HeuristicScorer(ABC):
 
 
 class AgentPolicy(ABC):
+    def start_match(self, deck: DeckDefinition) -> None:
+        """Reset optional match-scoped policy state.
+
+        Args:
+            deck: Active immutable deck definition.
+        """
+
     @abstractmethod
     def select(self, observation: dict[str, Any]) -> list[int]: ...
 

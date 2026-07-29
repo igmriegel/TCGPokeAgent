@@ -295,6 +295,8 @@ class DefaultParser(ObservationParserInterface):
             attack = (
                 self._catalog.get_attack(str(attack_id)) if self._catalog and attack_id else None
             )
+            card_traits = self._catalog.get_traits(str(card_id or 0)) if self._catalog else None
+            target_traits = self._catalog.get_traits(str(target_card_id)) if self._catalog else None
             candidates.append(
                 Candidate(
                     option_index=index,
@@ -305,6 +307,12 @@ class DefaultParser(ObservationParserInterface):
                     features={
                         "has_card_metadata": card is not None,
                         "has_attack_metadata": attack is not None,
+                        "card_has_rule_box": (
+                            card_traits.has_rule_box if card_traits is not None else False
+                        ),
+                        "card_base_prize_value": (
+                            card_traits.base_prize_value if card_traits is not None else 0
+                        ),
                         "card_id": int(card_id) if isinstance(card_id, int) else 0,
                         "card_hp": self._mapping_int(resolved_card, "hp"),
                         "card_max_hp": self._mapping_int(resolved_card, "maxHp"),
@@ -315,6 +323,12 @@ class DefaultParser(ObservationParserInterface):
                         if resolved_card
                         else False,
                         "target_card_id": target_card_id,
+                        "target_has_rule_box": (
+                            target_traits.has_rule_box if target_traits is not None else False
+                        ),
+                        "target_base_prize_value": (
+                            target_traits.base_prize_value if target_traits is not None else 0
+                        ),
                         "target_hp": self._mapping_int(target, "hp"),
                         "target_max_hp": self._mapping_int(target, "maxHp"),
                         "target_energy_count": self._mapping_length(target, "energies"),

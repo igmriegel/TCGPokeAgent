@@ -13,6 +13,10 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 cp main.py "${TMPDIR}/"
 cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"
 mkdir -p "${TMPDIR}/src/agents" "${TMPDIR}/src/core"
+mkdir -p "${TMPDIR}/src/artifacts"
+if [[ -f src/artifacts/deck_profile.json ]]; then
+    cp src/artifacts/deck_profile.json "${TMPDIR}/src/artifacts/"
+fi
 cp src/__init__.py "${TMPDIR}/src/"
 cp src/agents/__init__.py "${TMPDIR}/src/agents/"
 cp src/agents/baseline.py "${TMPDIR}/src/agents/"
