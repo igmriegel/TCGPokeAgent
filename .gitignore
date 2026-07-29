@@ -17,6 +17,7 @@ htmlcov/
 replays/
 reports/runs/
 reports/submissions/
+episode-*-agent-*-logs.json
 
 # uv cache
 .uv/
