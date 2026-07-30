@@ -435,3 +435,18 @@ limitations:
   - "The formal 200-match and frozen opponent-matrix promotion gates have not run."
   - "HDI-7-04 remains TBD and outside the implemented policy."
 ```
+
+## HDI v1 remote score correction
+
+```yaml
+observed_at: "2026-07-30T21:20:12Z"
+corrects: "HDI v1 experimental submission score snapshot"
+submission_id: 55119505
+initial_observed_public_score: 600.0
+latest_public_score: 490.4
+reference_submission_id: 55088176
+reference_public_score: 539.2
+score_delta_experimental_minus_reference: -48.8
+decision: "Do not promote HDI v1; retain the submission as experimental evidence and require the frozen local comparison before further policy changes."
+limitation: "Kaggle recalculated the public score after the first COMPLETE listing, so the later listing is the canonical current value."
+```

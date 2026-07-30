@@ -20,7 +20,7 @@ four-opponent matrix, decision-level gameplay metrics, several feedback
 validation gates, and the final checklist remain open.
 
 The independent HDI v1 candidate was accepted as submission `55119505` and
-scored 600.0, compared with 539.2 for reference submission `55088176`. This is
+scored 490.4, compared with 539.2 for reference submission `55088176`. This is
 experimental evidence only: the required local 200-match comparison and
 promotion matrix have not run, so the release policy remains heuristic.
 
@@ -31,7 +31,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Quality | 132 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
 | Local evaluation | 400 matches vs `random`: 239W/0D/161L, 59.75% win rate, zero operational failures | Operational baseline only |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
-| Kaggle HDI v1 experiment | `55119505`: 600.0 public score, +60.8 versus reference | Promising evidence; do not auto-promote |
+| Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
 | Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
 | Package | Isolated heuristic and HDI v1 package validation passed | Usable artifacts |
 | Search | Native lifecycle lacks a verified project Python adapter | Disabled and deferred |
