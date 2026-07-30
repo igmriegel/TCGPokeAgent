@@ -27,6 +27,14 @@ def test_load_agent_config():
     assert config.agent == "heuristic"
 
 
+def test_load_hdi_agent_config():
+    loader = ConfigLoader("configs")
+    config = loader.load("agent_hdi_v1.yaml")
+
+    assert config.agent == "hdi_v1"
+    assert config.extra["ordinal_policy"]["version"] == "hdi-v1"
+
+
 def test_load_without_suffix():
     loader = ConfigLoader("configs")
     config = loader.load("default")

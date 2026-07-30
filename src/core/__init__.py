@@ -1,7 +1,7 @@
 from .belief import BeliefState, DefaultBeliefBuilder
 from .candidate import Candidate
 from .catalog import CardCatalog, CardTraits
-from .deck import DeckDefinition, DeckProfile, GenericDeckProfileBuilder
+from .deck import AttackPlan, DeckDefinition, DeckProfile, GenericDeckProfileBuilder
 from .exceptions import (
     BeliefInconsistentError,
     EngineError,
@@ -48,6 +48,7 @@ from .types import (
 
 __all__ = [
     "AgentPolicy",
+    "AttackPlan",
     "BeliefBuilder",
     "BeliefState",
     "DefaultBeliefBuilder",

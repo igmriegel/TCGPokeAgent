@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from typing import Any
 
 from src.core import (
@@ -494,16 +495,7 @@ class HeuristicAgent(AgentPolicy):
         evolution_basics = tuple(sorted({line[0] for line in profile.evolution_lines if line}))
         roles = dict(profile.roles)
         roles["evolution_basic"] = evolution_basics
-        active_profile = DeckProfile(
-            deck_id=profile.deck_id,
-            deck_sha256=profile.deck_sha256,
-            schema_version=profile.schema_version,
-            roles=roles,
-            evolution_lines=profile.evolution_lines,
-            attack_energy_targets=profile.attack_energy_targets,
-            board_targets=profile.board_targets,
-            resource_values=profile.resource_values,
-        )
+        active_profile = replace(profile, roles=roles)
         self._active_deck_profile = active_profile
         self._scorer.set_deck_profile(active_profile)
 

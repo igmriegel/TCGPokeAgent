@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import main
+from src.agents.hdi import HdiAgent
 
 
 def test_agent_policy_returns_canonical_deck(monkeypatch) -> None:
@@ -77,3 +78,9 @@ def test_main_stdout_contains_only_json() -> None:
     result = json.loads(completed.stdout)
     assert len(result) == 60
     assert completed.stderr
+
+
+def test_build_agent_selects_hdi_mode(monkeypatch) -> None:
+    monkeypatch.setenv("AGENT_MODE", "hdi_v1")
+
+    assert isinstance(main._build_agent(), HdiAgent)

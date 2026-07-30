@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from src.agents.baseline import BaselineAgent
+from src.agents.hdi import HdiAgent
 from src.agents.heuristic import HeuristicAgent
 from src.core import AgentPolicy, DeckProfile, SelectionRanker
 
@@ -16,6 +17,7 @@ SUPPORTED_AGENT_MODES = frozenset(
     {
         "baseline",
         "heuristic",
+        "hdi_v1",
         "hybrid",
         "rfl",
         "xgboost_ranker",
@@ -111,6 +113,8 @@ def build_agent(
     weights, feature_flags = _heuristic_config(project_root)
     if normalized == "baseline":
         return BaselineAgent()
+    if normalized == "hdi_v1":
+        return HdiAgent(profile)
     heuristic = HeuristicAgent(weights, feature_flags, profile)
     if normalized == "heuristic":
         return heuristic

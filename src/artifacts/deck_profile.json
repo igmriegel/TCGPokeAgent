@@ -1,40 +1,148 @@
 {
   "attack_energy_targets": {
-    "721": 3,
-    "722": 2,
-    "723": 3
+    "721": 1,
+    "722": 1,
+    "723": 2
   },
+  "attack_plans": {
+    "1042": {
+      "basic_energy_role": "basic_energy",
+      "damage_per_basic_energy_in_discard": 20,
+      "energy_cost": 1,
+      "guaranteed_damage": 0,
+      "name": "Riptide",
+      "potential_damage": 0,
+      "requires_guaranteed_ko": true,
+      "returns_basic_energy_from_discard": true
+    },
+    "1043": {
+      "energy_cost": 3,
+      "guaranteed_damage": 130,
+      "name": "Swirling Waves",
+      "potential_damage": 130,
+      "previous_attack_id": 1042,
+      "requires_guaranteed_ko": true
+    },
+    "1044": {
+      "energy_cost": 1,
+      "guaranteed_damage": 10,
+      "name": "Beat",
+      "potential_damage": 10
+    },
+    "1045": {
+      "energy_cost": 2,
+      "guaranteed_damage": 30,
+      "name": "Icy Snow",
+      "potential_damage": 30
+    },
+    "1046": {
+      "energy_cost": 2,
+      "guaranteed_damage": 0,
+      "name": "Hammer-lanche",
+      "potential_damage": 600
+    },
+    "1047": {
+      "energy_cost": 3,
+      "guaranteed_damage": 200,
+      "name": "Frost Barrier",
+      "potential_damage": 200,
+      "requires_guaranteed_ko": true
+    }
+  },
+  "bench_priority": [
+    "development_priority",
+    "ready_attacker",
+    "low_prize_backup"
+  ],
   "board_targets": {
     "minimum_attackers": 2,
-    "reserved_bench_slots": 1
+    "reserved_bench_slots": 0
   },
   "deck_id": "mega_abomasnow_kyogre",
   "deck_sha256": "3882cfbbfe84f0bb88d114890b6de1f42cc1c86f1c793b2062c8b9daa0aa936a",
+  "discard_priority": [
+    "basic_energy",
+    "powerglass",
+    "redundant_supporter",
+    "duplicate_pokemon",
+    "protected_resource"
+  ],
   "evolution_lines": [
     [
       722,
       723
     ]
   ],
+  "prize_priority": [
+    "guaranteed_win",
+    "highest_prize_ko",
+    "lowest_effort"
+  ],
+  "prize_values": {
+    "721": 1,
+    "722": 1,
+    "723": 3
+  },
+  "promotion_priority": [
+    "ready_attacker",
+    "lowest_ko_risk",
+    "lowest_prize_value"
+  ],
   "resource_values": {
-    "3": 110.0,
-    "721": 140.0,
-    "722": 150.0,
-    "723": 160.0
+    "3": 10.0,
+    "721": 145.0,
+    "722": 155.0,
+    "723": 180.0,
+    "1092": 200.0,
+    "1121": 130.0,
+    "1145": 135.0,
+    "1163": 30.0,
+    "1219": 105.0,
+    "1227": 110.0,
+    "1262": 120.0
   },
   "roles": {
+    "ace_spec": [
+      1092
+    ],
     "attacker": [
       721,
       722,
       723
     ],
+    "basic_energy": [
+      3
+    ],
+    "development_priority": [
+      722
+    ],
     "evolution_basic": [
       722
     ],
+    "evolution_search": [
+      1145
+    ],
+    "free_switch": [
+      1262
+    ],
+    "general_search": [
+      1121
+    ],
+    "hand_refresh": [
+      1227
+    ],
+    "powerglass": [
+      1163
+    ],
     "primary_attacker": [
-      723,
+      723
+    ],
+    "secondary_attacker": [
       721
+    ],
+    "trainer_search": [
+      1219
     ]
   },
-  "schema_version": "v1"
+  "schema_version": "v2"
 }

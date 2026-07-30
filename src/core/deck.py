@@ -12,6 +12,57 @@ from .catalog import CardCatalog
 
 
 @dataclass(frozen=True, slots=True)
+class AttackPlan:
+    """Describe one deck-specific attack without embedding it in policy code."""
+
+    attack_id: int
+    name: str
+    energy_cost: int
+    guaranteed_damage: int = 0
+    potential_damage: int = 0
+    requires_guaranteed_ko: bool = False
+    previous_attack_id: int | None = None
+    damage_per_basic_energy_in_discard: int = 0
+    basic_energy_role: str = "basic_energy"
+    returns_basic_energy_from_discard: bool = False
+
+    @classmethod
+    def from_dict(cls, attack_id: int, data: Mapping[str, Any]) -> AttackPlan:
+        """Parse one attack plan mapping.
+
+        Args:
+            attack_id: Canonical attack identifier.
+            data: Declarative attack attributes.
+
+        Returns:
+            Validated immutable attack plan.
+        """
+        previous = data.get("previous_attack_id")
+        return cls(
+            attack_id=attack_id,
+            name=str(data.get("name", "")),
+            energy_cost=max(0, int(data.get("energy_cost", 0))),
+            guaranteed_damage=max(0, int(data.get("guaranteed_damage", 0))),
+            potential_damage=max(0, int(data.get("potential_damage", 0))),
+            requires_guaranteed_ko=bool(data.get("requires_guaranteed_ko", False)),
+            previous_attack_id=(
+                int(previous)
+                if isinstance(previous, (int, str))
+                and not isinstance(previous, bool)
+                and str(previous).isdigit()
+                else None
+            ),
+            damage_per_basic_energy_in_discard=max(
+                0, int(data.get("damage_per_basic_energy_in_discard", 0))
+            ),
+            basic_energy_role=str(data.get("basic_energy_role", "basic_energy")),
+            returns_basic_energy_from_discard=bool(
+                data.get("returns_basic_energy_from_discard", False)
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class DeckDefinition:
     """Identify an immutable deck independently from its card order."""
 
@@ -73,8 +124,14 @@ class DeckProfile:
     roles: Mapping[str, tuple[int, ...]] = field(default_factory=dict)
     evolution_lines: tuple[tuple[int, ...], ...] = ()
     attack_energy_targets: Mapping[int, int] = field(default_factory=dict)
+    attack_plans: Mapping[int, AttackPlan] = field(default_factory=dict)
     board_targets: Mapping[str, int] = field(default_factory=dict)
     resource_values: Mapping[int, float] = field(default_factory=dict)
+    prize_values: Mapping[int, int] = field(default_factory=dict)
+    discard_priority: tuple[str, ...] = ()
+    promotion_priority: tuple[str, ...] = ()
+    bench_priority: tuple[str, ...] = ()
+    prize_priority: tuple[str, ...] = ()
 
     def cards_for_role(self, role: str) -> tuple[int, ...]:
         """Return cards assigned to a semantic role.
@@ -110,6 +167,11 @@ class DeckProfile:
                 int(card): int(value)
                 for card, value in dict(data.get("attack_energy_targets", {})).items()
             },
+            attack_plans={
+                int(attack_id): AttackPlan.from_dict(int(attack_id), attributes)
+                for attack_id, attributes in dict(data.get("attack_plans", {})).items()
+                if isinstance(attributes, Mapping)
+            },
             board_targets={
                 str(name): int(value) for name, value in dict(data.get("board_targets", {})).items()
             },
@@ -117,6 +179,13 @@ class DeckProfile:
                 int(card): float(value)
                 for card, value in dict(data.get("resource_values", {})).items()
             },
+            prize_values={
+                int(card): int(value) for card, value in dict(data.get("prize_values", {})).items()
+            },
+            discard_priority=tuple(str(value) for value in data.get("discard_priority", ())),
+            promotion_priority=tuple(str(value) for value in data.get("promotion_priority", ())),
+            bench_priority=tuple(str(value) for value in data.get("bench_priority", ())),
+            prize_priority=tuple(str(value) for value in data.get("prize_priority", ())),
         )
 
     @classmethod
@@ -151,7 +220,9 @@ class GenericDeckProfileBuilder:
         evolution_by_name: dict[str, int] = {}
         evolution_lines: list[tuple[int, ...]] = []
         attack_energy_targets: dict[int, int] = {}
+        attack_plans: dict[int, AttackPlan] = {}
         resource_values: dict[int, float] = {}
+        prize_values: dict[int, int] = {}
 
         for card_id in sorted(deck.counts):
             card = self._catalog.get_card(str(card_id)) or {}
@@ -171,11 +242,23 @@ class GenericDeckProfileBuilder:
                     energies = attack.get("energies", [])
                     if isinstance(energies, list):
                         costs.append(len(energies))
+                    damage = attack.get("damage", 0)
+                    guaranteed_damage = (
+                        damage if isinstance(damage, int) and not isinstance(damage, bool) else 0
+                    )
+                    attack_plans[int(attack_id)] = AttackPlan(
+                        attack_id=int(attack_id),
+                        name=str(attack.get("name", "")),
+                        energy_cost=len(energies) if isinstance(energies, list) else 0,
+                        guaranteed_damage=max(0, guaranteed_damage),
+                        potential_damage=max(0, guaranteed_damage),
+                    )
                 attack_energy_targets[card_id] = min(costs) if costs else 1
             elif card.get("skills"):
                 support.append(card_id)
             traits = self._catalog.get_traits(str(card_id))
             resource_values[card_id] = 100.0 + traits.base_prize_value * 10.0
+            prize_values[card_id] = traits.base_prize_value
 
         for card_id in pokemon:
             card = self._catalog.get_card(str(card_id)) or {}
@@ -202,6 +285,17 @@ class GenericDeckProfileBuilder:
             },
             evolution_lines=tuple(sorted(evolution_lines)),
             attack_energy_targets=attack_energy_targets,
+            attack_plans=attack_plans,
             board_targets={"minimum_attackers": 2, "reserved_bench_slots": 1},
             resource_values=resource_values,
+            prize_values=prize_values,
+            discard_priority=(
+                "basic_energy",
+                "redundant_resource",
+                "duplicate_pokemon",
+                "protected_resource",
+            ),
+            promotion_priority=("ready_attacker", "lowest_ko_risk", "lowest_prize_value"),
+            bench_priority=("attacker", "evolution_basic"),
+            prize_priority=("guaranteed_win", "highest_prize_ko", "lowest_effort"),
         )

@@ -1,0 +1,6 @@
+include: default.yaml
+agent: hdi_v1
+ordinal_policy:
+  version: hdi-v1
+  hidden_information: forbidden
+  tie_breaker: original_option_index
