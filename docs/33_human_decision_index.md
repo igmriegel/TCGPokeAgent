@@ -6,9 +6,9 @@
 
 **Document status:** `INTERVIEW DRAFT`
 
-**Active interview phase:** `6 — Energy and mobility`
+**Active interview phase:** `9 — Turn end and opponent plan`
 
-**Confirmed phases:** `5 / 9`
+**Confirmed phases:** `8 / 9`
 
 **Runtime impact:** `NONE`
 
@@ -115,10 +115,10 @@ rules; they do not define them.
 | 3 | State reading | `CONFIRMED` | `MAPPED` | `PARTIAL` | `REPLAY` | Closed; replay sampling may add evidence but cannot redefine the phase |
 | 4 | Turn plan | `CONFIRMED` | `MAPPED` | `PARTIAL` | `REPLAY` | Closed; replay sampling may add evidence but cannot redefine the phase |
 | 5 | Draw, search, and development | `CONFIRMED` | `MAPPED` | `PARTIAL` | `REPLAY` | Closed; replay sampling may add evidence but cannot redefine the phase |
-| 6 | Energy and mobility | `DRAFT` | `MAPPED` | `PARTIAL` | `FIXTURE` | Reviewer confirms current/future attachment and mobility choices |
-| 7 | Combat | `UNREVIEWED` | `MAPPED` | `PARTIAL` | `FIXTURE` | Reviewer confirms target, attack, Prize-trade, and immediate-win logic |
-| 8 | Costs and nested decisions | `UNREVIEWED` | `MAPPED` | `PARTIAL` | `FIXTURE` | Reviewer confirms costs, optional effects, counts, and ordering |
-| 9 | Turn end and opponent plan | `UNREVIEWED` | `MAPPED` | `PARTIAL` | `NONE` | Reviewer confirms pass, preservation, exposure, and response logic |
+| 6 | Energy and mobility | `CONFIRMED` | `MAPPED` | `PARTIAL` | `FIXTURE` | Closed; replay sampling may add evidence but cannot redefine the phase |
+| 7 | Combat | `DRAFT` | `MAPPED` | `PARTIAL` | `FIXTURE` | Reviewer confirms target, attack, Prize-trade, and immediate-win logic |
+| 8 | Costs and nested decisions | `CONFIRMED` | `MAPPED` | `PARTIAL` | `FIXTURE` | Closed; replay sampling may add evidence but cannot redefine the phase |
+| 9 | Turn end and opponent plan | `CONFIRMED` | `MAPPED` | `PARTIAL` | `FIXTURE` | Closed; replay sampling may add evidence but cannot redefine the phase |
 
 Phase-level evidence is only the strongest evidence for any item in the phase.
 It is not proof that the whole phase is covered.
@@ -1341,7 +1341,7 @@ Powerglass use.
 
 ## Phase 6 — Energy and mobility
 
-**Interview state:** `OPEN — awaiting reviewer answers`
+**Interview state:** `CONFIRMED`
 
 | Candidate decision | Initial checklist | Current implementation |
 |---|---|---|
@@ -1354,9 +1354,187 @@ Powerglass use.
 Required records: `HDI-6-01` attachment target, `HDI-6-02` Energy
 preservation, `HDI-6-03` retreat/switch, and `HDI-6-04` Special Conditions.
 
+### Recorded reviewer input
+
+For the turn's Energy attachment, first complete a reachable current-turn
+attack when doing so is strategically useful. If that line is not available,
+build the next attacker without starving the current plan. Kyogre is a valid
+future or current target only when it makes sense in the Prize trade or Prize
+race, or when one of its attacks can Knock Out the opposing Pokémon.
+
+Attach to the Active when the Active is expected to survive for more than one
+turn, even if it cannot attack immediately. Otherwise attach to the Bench to
+build the replacement attacker. If the Active is the only Pokémon in play,
+attach to it regardless of the lack of an immediate attack.
+
+### Candidate record HDI-6-01 — Choose the Energy attachment target
+
+- **Question:** Which Pokémon should receive the available Energy this turn?
+- **Objective:** Preserve or improve the Prize race by completing the strongest
+  reachable attack line, then prepare a replacement attacker without wasting
+  the attachment.
+- **Facts:** Legal attachment options, current and required attack Energy,
+  Active and Bench, expected survivability from visible board state, opposing
+  Pokémon and HP, Prize counts, and declared deck attack targets.
+- **Beliefs:** Hidden opposing responses and uncertain future damage; these may
+  affect expected survival but cannot be treated as facts.
+- **Priority conditions:** (1) complete a useful current-turn attack; (2) if
+  that is unavailable, build the next attacker; (3) consider Kyogre only when
+  its Prize trade/race value is meaningful or one of its attacks can certainly
+  Knock Out the opposing Pokémon.
+- **Vetoes and exceptions:** Do not attach to a fragile Active that is not
+  expected to survive beyond the turn when a legal Bench target can be built.
+  Attach to the Active when it is expected to survive more than one turn even
+  without an immediate attack. If it is the only Pokémon in play, attach to
+  the Active.
+- **Tie-breaker:** When the same priority applies to multiple targets, prefer
+  the target with the clearer attack requirement and then the lower original
+  CABT option index.
+- **Horizon:** Current turn and the next attack/development turn.
+- **Deck dependency:** Uses the declarative attack Energy targets and attacker
+  roles, while allowing the reviewed Kyogre exception to override a generic
+  primary-attacker preference.
+- **Mapping:** `ATTACH_ENERGY`, `ATTACH_TO`, `ENERGY`, `ENERGY_CARD`, and
+  `MAIN`/nested attachment contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-6-02 — Preserve or spend Energy
+
+- **Question:** When should an Energy card be kept, recovered, attached, or
+  discarded as a cost?
+- **Objective:** Put every legally usable Energy into play while retaining
+  only the minimum needed to execute the next legal attachment or a certain
+  `Riptide` Knock Out.
+- **Facts:** Legal attachment availability, Energy by zone, attack costs,
+  discard costs, Basic Water Energy count in the discard, and whether `Riptide`
+  can certainly Knock Out the opposing Pokémon.
+- **Beliefs:** Hidden Energy or recovery cards in the opponent's zones remain
+  hypotheses and cannot justify preserving an Energy.
+- **Priority conditions:** (1) attach a legally usable Energy rather than
+  leaving it stranded in hand; (2) when paying a Secret Box or Ultra Ball
+  discard cost, prefer Energy in most cases; (3) preserve Basic Water Energy in
+  the discard only when the current or reachable `Riptide` line will certainly
+  Knock Out; (4) recover from the discard only when the hand lacks an Energy
+  for the current turn's legal attachment.
+- **Vetoes and exceptions:** Keep at least one Energy available for the legal
+  attachment of the current turn before spending Energy as a discard cost.
+  There is no general reservation for Mega Abomasnow ex, Kyogre, or a specific
+  attack, and no exception that justifies leaving an attachable Energy dead in
+  hand. Energy is not recovered from the field. The last available Energy may
+  be spent only subject to the current-turn attachment requirement; otherwise
+  an Energy in play is preferable to one stranded in hand.
+- **Tie-breaker:** When several Energy cards are interchangeable, use the
+  lower original CABT option index after satisfying the attachment and
+  `Riptide` conditions.
+- **Horizon:** Current turn through the next legal attachment and attack.
+- **Deck dependency:** Uses the declared Basic Water Energy type and attack
+  requirements but does not reserve a fixed quantity for either attacker.
+- **Mapping:** `ATTACH_ENERGY`, `ATTACH_FROM`, `TO_HAND_ENERGY`,
+  `TO_DECK_ENERGY`, `DISCARD_ENERGY_CARD`, `DISCARD_CARD_OR_ATTACHED_CARD`,
+  `ENERGY`, `ENERGY_CARD`, and nested cost/recovery contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-6-03 — Choose retreat or switch
+
+- **Question:** When should the Active retreat or be switched, and which
+  Pokémon should be promoted?
+- **Objective:** Preserve the board and improve the Prize race by promoting a
+  ready attacker or denying an expected Knock Out.
+- **Facts:** Active HP and status, visible Knock Out risk, legal retreat and
+  switch options, retreat cost, attached Energy, Bench attackers and their
+  attack readiness, opposing Pokémon, and public Prize counts.
+- **Beliefs:** Unrevealed opposing responses remain hypotheses and cannot by
+  themselves force a switch.
+- **Priority conditions:** (1) switch when another attacker is ready and the
+  Active is at risk of being Knocked Out; (2) use a free switch such as
+  Surfing Beach to avoid a Knock Out, enable a situational Kyogre `Riptide`
+  line, or change the Prize trade; (3) when paying retreat, prefer lines that
+  place additional Energy in the discard for `Riptide`; (4) otherwise keep the
+  Active if it can continue attacking and no ready replacement improves the
+  position.
+- **Promotion choice:** Promote the Pokémon that is ready to attack; if none
+  is ready, prefer the legal Pokémon that gives the opponent the smaller Prize
+  gain.
+- **Vetoes and exceptions:** Do not switch merely because the Active can be
+  replaced. Accept the exposed Active when retreat is not legal or no useful
+  continuation is available. There is no additional exception for an
+  immediate Knock Out or Prize-race result beyond the free-switch conditions
+  above.
+- **Tie-breaker:** Among equally ready candidates, prefer the one conceding
+  fewer Prizes and then the lower original CABT option index.
+- **Horizon:** Current turn through the opponent's next attack and the next
+  available `Riptide` line.
+- **Deck dependency:** Uses declared retreat costs, attack readiness, Kyogre's
+  `Riptide`, and Prize values; it does not create a generic Bench reservation.
+- **Mapping:** `SWITCH`, `TO_ACTIVE`, `TO_FIELD`, `RETREAT`, `ENERGY`,
+  `ENERGY_CARD`, and `CARD` in mobility and nested switch contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-6-04 — Resolve Special Conditions
+
+- **Question:** Should the Active be cured, switched, or left under a Special
+  Condition?
+- **Objective:** Remove the condition while preserving the attack plan and
+  avoiding an unnecessary Knock Out or high-cost sacrifice.
+- **Facts:** Active Special Condition, legal recovery effects, legal switch and
+  retreat options, Bench attackers, visible Knock Out risk, and the cost of
+  each recovery or pivot line.
+- **Beliefs:** Hidden opposing effects do not justify exploiting or accepting a
+  condition as though it were certain future value.
+- **Priority conditions:** (1) remove the condition whenever possible when a
+  ready alternative attacker exists or the recovery is a low-cost sacrifice;
+  (2) prefer Surfing Beach when it can remove the condition through a free
+  switch; (3) switch to the Bench to remove the condition, avoid a Knock Out,
+  or enable a situational Knock Out; (4) accept the condition only as a last
+  resort.
+- **Recovery costs:** It is correct to spend a card, Energy, or switch effect
+  to cure the condition when the resulting line is lower cost than remaining
+  exposed or losing the attack plan.
+- **Promotion choice:** Promote the Pokémon that is ready to attack; if none
+  is ready, choose the legal Pokémon with the lower sacrifice cost.
+- **Vetoes and exceptions:** Special Conditions are not strategic effects to
+  exploit, and their specific type does not change the priority order. Remain
+  with the affected Active only when no legal switch is available or every
+  available sacrifice has a higher cost.
+- **Tie-breaker:** Among equivalent recovery lines, prefer the free switch,
+  then the lower original CABT option index.
+- **Horizon:** Current turn through the next attack and expected opponent
+  response.
+- **Deck dependency:** Uses declared attacker readiness, retreat and switch
+  effects, and the cost profile of the deck; it does not grant conditions
+  matchup-specific value.
+- **Mapping:** `AFFECT_SPECIAL_CONDITION`, `RECOVER_SPECIAL_CONDITION`,
+  `SWITCH`, `TO_ACTIVE`, `TO_FIELD`, `CARD`, `SPECIAL_CONDITION`, and nested
+  recovery contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Phase 6 confirmation summary
+
+Energy is attached whenever legally possible rather than left stranded in
+hand. The first priority is a reachable current-turn attack, followed by
+building a future attacker. Kyogre is considered only when it has clear
+Prize-trade/race value or a possible Knock Out. The Active receives Energy when
+it is expected to survive beyond the turn or is the only Pokémon in play;
+otherwise the Bench receives it. No fixed Energy reserve exists for either
+attacker. Energy is the preferred discard cost while preserving the current
+turn's legal attachment, and Basic Water Energy in the discard is preserved
+only for a certain `Riptide` Knock Out. Recovery comes only from the discard
+when the hand lacks an Energy for that attachment. Retreat and switching serve
+ready-attacker promotion, Knock Out prevention, situational `Riptide`, and
+Prize-trade improvement. Special Conditions are removed whenever a ready
+alternative or low-cost recovery exists, with Surfing Beach preferred; they
+are never exploited and are accepted only as a last resort.
+
+**Reviewer confirmation:** Accepted on 2026-07-30. Later evidence may annotate
+the Energy and mobility records, but changing them requires reopening Phase 6.
+
 ## Phase 7 — Combat
 
-**Interview state:** `QUEUED`
+**Interview state:** `OPEN — awaiting reviewer answers`
 
 | Candidate decision | Initial checklist | Current implementation |
 |---|---|---|
@@ -1368,6 +1546,122 @@ preservation, `HDI-6-03` retreat/switch, and `HDI-6-04` Special Conditions.
 
 Required records: `HDI-7-01` immediate win, `HDI-7-02` damage/effects,
 `HDI-7-03` target and Prize trade, and `HDI-7-04` preventive combat.
+
+**Pending reviewer decision:** `HDI-7-04` remains `TBD`. No sufficiently
+elaborated preventive-combat strategy has been established for attack denial,
+damage reduction, protection, resource lock, or setup effects. Do not infer a
+rule from the current heuristic or replay frequency; keep this record open
+until the reviewer supplies an explicit priority order and exceptions.
+
+**Partial phase closure:** `HDI-7-01`, `HDI-7-02`, and `HDI-7-03` are confirmed.
+Only `HDI-7-04` remains open; Phase 7 stays in `DRAFT` until that record is
+resolved.
+
+### Candidate record HDI-7-01 — Verify immediate victory
+
+- **Question:** Which terminal win should be selected, and when does it alter
+  the normal action sequence?
+- **Objective:** End the game as soon as a legal, certain victory is available
+  while preserving the same consistent sequencing when intervening actions do
+  not prevent that victory.
+- **Facts:** All legal options, current and opposing Prize counts, opposing
+  Pokémon in play, attack damage and effects, and explicit terminal indicators
+  supplied by CABT.
+- **Beliefs:** Hidden cards or future responses are not needed to reject an
+  apparent win; CABT legality and the visible terminal result are decisive.
+- **Valid wins:** Taking all remaining Prize cards and leaving the opponent
+  with no Pokémon in play are both valid objectives. A legal Knock Out that
+  takes the opponent's last Prize has immediate priority.
+- **Priority conditions:** Inspect every legal option for both terminal win
+  conditions before selecting. If a legal terminal action is available and
+  another action could prevent it, choose the win. If intervening actions do
+  not prevent the win, keep the established action sequence rather than
+  inventing a special ordering exception.
+- **Vetoes and exceptions:** Do not reject an apparent victory because of an
+  uncertain hidden response, an ordinary cost, or a possible later effect;
+  reject only when CABT legality or the visible result shows that it is not a
+  real terminal win.
+- **Tie-breaker:** Among equivalent terminal wins, use the lower original CABT
+  option index after applying the normal sequencing rule.
+- **Horizon:** Current prompt and terminal state.
+- **Deck dependency:** Uses Prize objectives and the deck's attack/effect
+  capabilities, without adding an opponent-deck assumption.
+- **Mapping:** `MAIN`, `ATTACK`, `CARD`, `YES`, `NO`, and terminal option flags
+  or equivalent combat contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-7-02 — Evaluate attack damage and effects
+
+- **Question:** How should damage, Knock Outs, and attack effects be compared?
+- **Objective:** Maximize the attack's immediate and follow-up value while
+  preserving the established turn plan.
+- **Facts:** Legal attacks, guaranteed damage, potential damage, Knock Out
+  status, attack effects, prevention, attached Energy, opposing HP, and the
+  visible follow-up board state.
+- **Beliefs:** Hidden responses may affect potential lines but do not convert
+  potential damage into guaranteed damage.
+- **Priority conditions:** (1) take an immediate Knock Out; (2) prefer the
+  highest guaranteed damage when no Knock Out is available; (3) use an effect
+  that prevents or reduces the opponent's next attack; (4) protect the Active;
+  (5) prepare damage or board state for the next turn; (6) discard or recover
+  Energy when it improves the line; (7) use lower-damage effects only when
+  their strategic value exceeds the raw damage line.
+- **Attack-specific exception:** `Riptide` may be preferred over a higher
+  immediate-damage line when returning Basic Water Energy to the deck improves
+  the chance of revealing Energy for a later `Hammer-lanche`. `Frost Barrier`
+  should preferably be used only when its damage guarantees a Knock Out, as
+  established in Phase 1.
+- **Damage certainty:** Evaluate guaranteed damage first, then potential
+  damage. Potential damage may break a tie or support a preparation line but
+  cannot replace a guaranteed result when the two outcomes differ materially.
+- **Tie-breaker:** If two attacks produce the same result, preserve the status
+  quo and choose the lower original CABT option index.
+- **Vetoes and exceptions:** Do not choose a lower-damage effect merely because
+  it is novel or situational; it must improve control, protection, preparation,
+  Energy cycling, or another declared objective.
+- **Horizon:** Current attack through the opponent's next turn and the next
+  `Hammer-lanche` or attack line.
+- **Deck dependency:** Uses declared attack effects, `Riptide`,
+  `Hammer-lanche`, and `Frost Barrier`; it does not infer unverified effects
+  from hidden cards.
+- **Mapping:** `ATTACK`, `ATTACK_EFFECT`, `DAMAGE`, `KNOCK_OUT`,
+  `AFFECT_SPECIAL_CONDITION`, `RECOVER_SPECIAL_CONDITION`, `ENERGY`, and
+  combat-resolution contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-7-03 — Choose the target and Prize trade
+
+- **Question:** Which legal opposing Pokémon should be targeted when several
+  targets are available?
+- **Objective:** Maximize Prize gains while removing the greatest threat at
+  the lowest resource cost and avoiding an imminent counter-Knock Out.
+- **Facts:** Target legality, Prize value, HP and damage requirement, opposing
+  attack threat, Rule Box status, our available attacks and resources, and the
+  likely promoted Pokémon after the Knock Out.
+- **Beliefs:** Hidden responses remain hypotheses; target selection must use
+  visible threat and Prize information.
+- **Priority conditions:** (1) prefer a Knock Out that takes the most Prizes;
+  (2) among profitable targets, prefer the easier Knock Out and/or the target
+  with the greatest future threat; (3) prefer a lower-Prize target only when it
+  is the best available way to maximize gains, remove a threat, or stabilize
+  the board; (4) a non-Prize Knock Out is acceptable when it removes a threat
+  or prevents the opponent's next attack and thereby stabilizes our position.
+- **Vetoes and exceptions:** Do not accept an imminent counter-Knock Out from
+  the promotion caused by the attack when another legal target avoids it. Rule
+  Box status is not an independent reason to avoid a profitable target; the
+  objective is to maximize our gains.
+- **Tie-breaker:** Choose the target requiring the least effort and preserving
+  the most resources, then use the lower original CABT option index.
+- **Horizon:** Current attack, resulting promotion, and the opponent's next
+  attack.
+- **Deck dependency:** Uses declared Prize values, attack costs, and attacker
+  roles; it does not impose a separate Rule Box penalty.
+- **Mapping:** `ATTACK`, `DAMAGE`, `KNOCK_OUT`, `TARGET`, `EFFECT_TARGET`,
+  `CARD`, and combat target-selection contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
 
 ## Phase 8 — Costs and nested decisions
 
@@ -1384,9 +1678,119 @@ Required records: `HDI-7-01` immediate win, `HDI-7-02` damage/effects,
 Required records: `HDI-8-01` discard/cost, `HDI-8-02` counter allocation,
 `HDI-8-03` effect order, and `HDI-8-04` optional/count choices.
 
+### Recorded reviewer input
+
+- Discard costs follow this order: Basic Water Energy, an unneeded Powerglass,
+  a redundant Supporter, a duplicate Pokémon, and only then a unique Pokémon
+  or another protected card. Preserve the last Pokémon in a line, the last
+  Trainer copy, cards needed next turn, and enough Energy for the turn's legal
+  attachment. A unique card or final Pokémon copy may be discarded only when
+  the resulting advantage is greater than the value of keeping it in hand.
+- Damage counters should first be concentrated toward a Knock Out, then used
+  to prepare the next-turn Knock Out, avoid an opposing finish, and preserve
+  the board. Healing should favor the Pokémon with the greatest strategic
+  value, considering whether it is Active, has high remaining HP, is the main
+  attacker, or concedes the most Prizes.
+- Resolve multi-effect cards in the established order: obtain information,
+  search before discarding when legal, discard before drawing when required,
+  evolve before attaching Energy, attach before attacking, and resolve
+  mandatory effects before optional ones. Preserve a legal exit before making
+  irreversible choices.
+- Accept beneficial optional effects and choose the largest beneficial count.
+  Choose only the necessary amount when a larger count would consume an
+  important resource. Refuse an optional effect when its cost or consequence
+  creates a material disadvantage. Continue a repeatable sequence until the
+  next repetition would cause a disadvantage; no separate coin strategy was
+  specified.
+
+### Candidate record HDI-8-01 — Choose discard costs
+
+- **Question:** Which cards should be discarded to pay a legal cost?
+- **Objective:** Pay the cost while preserving the attack, development, and
+  next-turn lines with the greatest strategic value.
+- **Facts:** Legal cost combinations, card copies by role, Energy attachment
+  availability, active search/evolution requirements, and next-turn needs.
+- **Beliefs:** Unknown replacement cards remain hypotheses and cannot make a
+  unique card safely disposable.
+- **Priority conditions:** Discard Basic Water Energy, then unneeded Powerglass,
+  redundant Supporter, duplicate Pokémon, and finally a unique Pokémon or
+  other protected card.
+- **Vetoes and exceptions:** Preserve the last Pokémon in a line, last Trainer
+  copy, next-turn requirements, and enough Energy for the current attachment.
+  Discard a unique card or final Pokémon only when the immediate advantage of
+  the cost exceeds its retention value.
+- **Mapping:** `DISCARD`, `DISCARD_CARD_OR_ATTACHED_CARD`,
+  `DISCARD_ENERGY_CARD`, `CARD`, `ENERGY_CARD`, `TOOL_CARD`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-8-02 — Allocate counters and healing
+
+- **Question:** Where should damage counters be placed or removed?
+- **Objective:** Convert damage into a Knock Out or future advantage while
+  preserving the most valuable Pokémon.
+- **Facts:** Damage, HP, Knock Out thresholds, attack targets, Prize values,
+  Active/Bench position, attacker role, and legal counter or healing effects.
+- **Priority conditions:** Concentrate counters for a Knock Out; otherwise
+  prepare the next-turn Knock Out, prevent an opposing finish, and preserve
+  the board. Heal the Pokémon with the greatest strategic value, considering
+  Active status, HP, main-attacker role, and Prize value.
+- **Mapping:** `DAMAGE_COUNTER`, `HEAL`, `CARD`, `DAMAGE`, `HP`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-8-03 — Order nested effects
+
+- **Question:** In which order should a multi-effect card or ability resolve?
+- **Objective:** Preserve legality, information, and optional exits before
+  committing irreversible resources.
+- **Priority conditions:** Information first; search before discard when legal;
+  discard before draw when required; evolve before attaching Energy; attach
+  before attack; mandatory effects before optional effects.
+- **Vetoes:** Do not choose an irreversible effect while it would remove every
+  legal continuation.
+- **Mapping:** `SKILL_ORDER`, `FIRST_EFFECT`, `LOOK`, `TO_HAND`, `DISCARD`,
+  `EVOLVE`, `ATTACH_ENERGY`, `ATTACK`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-8-04 — Select optional effects and counts
+
+- **Question:** How should optional effects, counts, repetitions, and
+  `YES`/`NO` prompts be resolved?
+- **Objective:** Take the greatest beneficial effect without creating a
+  material resource disadvantage.
+- **Priority conditions:** Accept beneficial effects; choose the largest count
+  when the additional amount remains beneficial; otherwise choose only the
+  necessary amount. Continue repeatable effects until the next repetition
+  would cause a disadvantage.
+- **Vetoes and exceptions:** Refuse an optional effect when its cost or result
+  creates a material disadvantage. No separate coin-outcome policy was
+  specified.
+- **Mapping:** `YES`, `NO`, `COUNT`, `CONTINUE`, and nested optional-effect
+  contexts.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Phase 8 confirmation summary
+
+Costs preserve line-critical resources: discard Basic Water Energy first,
+followed by unneeded Powerglass, redundant Supporters, and duplicate Pokémon;
+unique cards and final Pokémon copies are protected unless the immediate
+advantage outweighs their retention value. Damage counters are concentrated
+for Knock Outs and healing favors the Pokémon with the greatest strategic
+value. Nested effects resolve in the order that preserves information and
+legality, with mandatory effects before optional ones. Beneficial optional
+effects are accepted at the largest beneficial count, while repetition stops
+when it would create a material disadvantage.
+
+**Reviewer confirmation:** Accepted on 2026-07-30. Later evidence may annotate
+the cost and nested-decision records, but changing them requires reopening
+Phase 8.
+
 ## Phase 9 — Turn end and opponent plan
 
-**Interview state:** `QUEUED`
+**Interview state:** `OPEN — awaiting reviewer answers`
 
 | Candidate decision | Initial checklist | Current implementation |
 |---|---|---|
@@ -1398,6 +1802,142 @@ Required records: `HDI-8-01` discard/cost, `HDI-8-02` counter allocation,
 
 Required records: `HDI-9-01` terminal action, `HDI-9-02` resource and
 replacement state, and `HDI-9-03` opponent-response branches.
+
+### Candidate record HDI-9-01 — Continue or end the turn
+
+- **Question:** When should the agent continue making legal selections and
+  when should it choose `END`?
+- **Objective:** Complete every action that improves or materially preserves
+  the position, while ending only when no safe improvement remains.
+- **Facts:** All legal options, terminal win indicators, available Energy,
+  Evolution, development, search, mobility, Special Condition, and attack
+  actions, plus visible board exposure.
+- **Priority conditions:** (1) check for a guaranteed win and advance it;
+  (2) if a win can be secured through preparation without being endangered,
+  keep the normal sequence and complete those preparations; (3) complete legal
+  actions that materially improve or preserve the board, including attachment,
+  Evolution, Snover development, search, mobility, condition recovery, and
+  next-attacker preparation; (4) choose `END` only when no safe improvement
+  remains.
+- **Attack rule:** Do not attack merely to avoid passing. Pass when an attack
+  causes no relevant damage, does not prepare a Knock Out, exposes the Active,
+  spends important resources, or fails to improve the Prize race.
+- **Preservation rule:** There is no separate cost threshold that makes
+  passing preferable while productive legal actions remain. Sequence all
+  useful actions rather than ending early to preserve Energy, unique Pokémon,
+  search cards, switching options, or next-turn resources.
+- **Vetoes and exceptions:** Normally avoid ending the turn while any legal
+  action materially improves or preserves the position. A likely opposing
+  Knock Out alone does not justify `END` if a legal action can improve the
+  position or create a better response.
+- **Tie-breaker:** Follow the established action order and then choose the
+  lower original CABT option index among equivalent actions.
+- **Horizon:** Remainder of the current turn and the opponent's next response.
+- **Mapping:** `MAIN`, `ATTACK`, `ATTACH`, `EVOLVE`, `TO_BENCH`, `PLAY`,
+  `SEARCH`, `SWITCH`, `RECOVER_SPECIAL_CONDITION`, and `END`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-9-02 — Desired state at turn end
+
+- **Question:** Once no immediate win remains, what board state should be
+  established before choosing `END`?
+- **Objective:** End with a full, attack-capable board and the strongest
+  practical response to the next turn, prioritizing the next turn while
+  considering the short continuation beyond it.
+- **Facts:** Legal attachment and preparation actions, Active and Bench
+  readiness, attached Energy, retreat and switch options, Prize values, HP,
+  available search and recovery cards, Bench occupancy, and declared deck
+  roles.
+- **Priority conditions:** (1) retain next-turn Energy whenever possible; if
+  only one Energy line is feasible, prioritize the guaranteed attack on the
+  next turn; (2) prepare a Bench attacker rather than reinforce a sacrificial
+  Active; (3) leave a replacement whenever possible, prioritizing a ready
+  attacker, then a one-Energy attacker, then the lower-Prize liability; (4)
+  keep a low-Prize Bench Pokémon as a possible sacrifice; (5) maintain a full
+  Bench with ready attackers and Energy links, adapting attacker variety to
+  the matchup; (6) use search and unique cards immediately when they improve
+  the current position, but preserve a switch card even when a switch is
+  currently legal.
+- **Replacement and exposure rule:** The Bench should not be left empty or
+  without a ready attacker. If the Active is at risk of a Knock Out, either
+  switch immediately or prepare the replacement while remaining Active; no
+  third risk posture is defined. A final state is preferred when it has lower
+  Knock Out risk and preserves more attack possibilities.
+- **Resource rule:** No fixed list of resources is reserved beyond the
+  practical next-turn Energy, replacement, switch, and attack lines. The
+  equal-priority objective is to maximize Bench attackers, Energy in play, and
+  reduction of Knock Out risk. A search card or unique card may be spent before
+  `END` to make an attacker ready.
+- **Vetoes and exceptions:** Do not reserve a Bench slot for a named Pokémon;
+  the current deck has no such slot-reservation strategy. Filling the final
+  Bench slot is acceptable. Bench development without attack capability is
+  justified when it prevents losing because no Pokémon would remain in play.
+  No additional forbidden final configuration or explicit acceptable-risk
+  threshold was identified; unknown cases remain `TBD`.
+- **Tie-breaker:** If final states are otherwise equivalent, choose lower
+  Knock Out exposure, then the state preserving more attack possibilities.
+- **Horizon:** Primarily the opponent's next turn/attack, with at most a
+  two-turn continuation.
+- **Mapping:** `MAIN`, `ATTACH`, `EVOLVE`, `TO_BENCH`, `PLAY`, `SEARCH`,
+  `SWITCH`, `TO_ACTIVE`, and `END`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Candidate record HDI-9-03 — Projected opponent response
+
+- **Question:** How should the agent account for the opponent's likely next
+  response before choosing `END`?
+- **Objective:** Consider a low-cost, publicly supported response projection
+  without allowing an unverified threat hypothesis to override the strongest
+  rewarding line.
+- **Facts:** Public opponent board, visible attacks and damage, known Energy,
+  public discard, remaining Prizes, and revealed cards or effects.
+- **Priority conditions:** (1) always check a direct Knock Out on the Active;
+  (2) against a spread deck, account for Bench Knock Outs and damage spread;
+  (3) retain an active attacker and Bench Energy-link targets even while
+  reducing exposure; (4) if the opponent is near victory, keep an attacker
+  capable of winning immediately, then reduce Active Prize value, protect a
+  specific Pokémon, and only then accept a low-value sacrifice; (5) abandon
+  long-term preparation when necessary to survive the next turn; (6) sometimes
+  prefer a state preventing the next Knock Out even without increasing damage.
+- **Belief boundary:** Use only publicly supported, provable response lines.
+  An unguaranteed probable threat does not change the decision for now. When
+  information is insufficient, observe and develop our own game rather than
+  inventing hidden cards or matchup assumptions.
+- **Robustness rule:** Prefer the line with the greatest reward if the
+  opponent does not respond; minimizing the worst result is the secondary
+  criterion. A predictable opposing Knock Out may be accepted when it enables
+  a better promotion response. Avoid `END` while an attack or another legal
+  action remains; `END` is reserved for the point at which no attack or useful
+  continuation is available.
+- **Exposure exceptions:** Leaving the Active exposed is acceptable when it
+  gives few Prizes, can counter-attack, has no better replacement, switching
+  would consume important resources, or the Knock Out would not change the
+  Prize race. These cases have equal validity.
+- **Updating and horizon:** A revealed opponent card, attack, or preference
+  does not automatically alter the current plan. Re-evaluate when a relevant
+  threat appears, projecting primarily the next turn/attack and at most two
+  turns. No specific response is currently designated as always ignorable or
+  as an additional forced `END` exception.
+- **Tie-breaker:** For equivalent expected outcomes, choose lower overall
+  risk, then lower Active exposure, then lower Prize value conceded.
+- **Mapping:** `MAIN`, `ATTACK`, `SWITCH`, `TO_ACTIVE`, `TO_BENCH`, `PLAY`,
+  `SEARCH`, and `END`.
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
+  Validation `FIXTURE`.
+
+### Phase 9 confirmation summary
+
+The reviewer confirms that turn end is not an early-pass decision. The agent
+should continue useful legal sequencing, finish with a full board and a ready
+attacker whenever possible, preserve a practical next-turn line, and project
+only low-cost, public opponent responses. Reward maximization comes before
+worst-case minimization; defensive Prize-race adjustments apply when the
+opponent is close to winning. No additional exceptions were supplied for
+previously unanswered edge cases, so those remain `TBD` rather than inferred.
+
+**Confirmation date:** 2026-07-30.
 
 ## CABT `SelectContext` appendix
 
