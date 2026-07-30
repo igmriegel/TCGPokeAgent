@@ -23,6 +23,7 @@ services:
     environment:
       - AGENT_MODE=${AGENT_MODE:-baseline}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - KAGGLE_OWNER_NAME=${KAGGLE_OWNER_NAME:-}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
       - ./notebooks:/app/notebooks
