@@ -10,7 +10,7 @@
 
 **Confirmed phases:** `8 / 9`
 
-**Runtime impact:** `NONE`
+**Runtime impact:** `PARTIAL`
 
 ## Purpose and authority
 
@@ -38,6 +38,22 @@ deck construction. The engine must remain usable with multiple decks.
 No entry in this document changes `AgentPolicy.select() -> list[int]`. A
 confirmed human decision becomes a rule or backlog item only after explicit
 approval of the consolidated index.
+
+## HDI v1 implementation boundary
+
+The independent `AGENT_MODE=hdi_v1` runtime implements a partial, deterministic
+subset of the confirmed records. It validates legal selections through the
+shared generator, derives only actor-visible facts, prioritizes guaranteed
+wins and Knock Outs, separates guaranteed from potential damage, applies
+Rule Box damage prevention, uses declarative attack/cost/resource roles,
+prepares attackers, handles promotion and discard ordering, and preserves
+original CABT option indices as the final tie-breaker.
+
+The implementation is intentionally `PARTIAL`: complete Trainer chains,
+multi-action reservations, every attack effect, every opponent damage
+projection, and unobservable or ambiguous conditions remain `TBD`. No new
+`BeliefState` is introduced. `HDI-7-04` remains pending and is not implemented
+or inferred from current behavior.
 
 ## Knowledge boundary
 
@@ -234,13 +250,12 @@ Kyogre; Snover evolves into Mega Abomasnow ex; and `Riptide` scales with Basic
 Water Energy in the discard pile. These facts do not establish the strategic
 priorities by themselves—the priorities come from the reviewer.
 
-The bundled profile does not fully represent the reviewed plan: it currently
-lists both Mega Abomasnow ex and Kyogre as `primary_attacker`, and its
-three-Energy target for Kyogre aligns with `Swirling Waves` rather than the
-one-Energy `Riptide` line. This is an implementation gap only; it is not
-corrected during the interview. Its `reserved_bench_slots: 1` target also
-cannot override the reviewed instruction to play every legally available
-Snover.
+The bundled profile now represents Mega Abomasnow ex as the primary attacker,
+Kyogre as the conditional secondary attacker, Snover as the development
+priority, and the one-Energy `Riptide` line separately from three-Energy
+`Swirling Waves`. It also declares zero reserved Bench slots for this deck.
+The runtime coverage remains partial because the complete multi-turn Trainer
+and attacker-switch plan is not represented.
 
 The current heuristic can count Basic Water Energy in the discard for
 `Riptide` damage and has partial Rule Box prevention handling. It does not
@@ -419,7 +434,7 @@ across two or more Item uses.
   `MAIN`, `TO_HAND`, `DISCARD`, `ATTACH_TO`, `SWITCH`, `ATTACK`, and
   `EFFECT_TARGET`.
 - **Option types:** Potentially all strategic option types.
-- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `NONE`;
+- **Coverage:** Human `CONFIRMED`; CABT `MAPPED`; Implementation `PARTIAL`;
   Validation `REPLAY`.
 - **Evidence:** The replay corpus contains varied opponent decks, but no replay
   is accepted here until the conceptual branch is confirmed.

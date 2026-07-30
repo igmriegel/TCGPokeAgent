@@ -77,6 +77,7 @@ This table prevents roadmap work from existing without an executable owner.
 | FB001-A3 | Generic Pokémon play before attack with open Bench | `e268c96`, replay regression |
 | RF-001 | Replay ingestion and leakage-safe dataset foundation | `gameplay_replays/v1` manifest |
 | RA-001 | Decision-linked post-hoc replay annotations | `competitive-gameplay-review-v1` records |
+| T-014 | Independent HDI v1 experimental submission | `55119505`: 600.0 public score; local smoke and extracted-package validation passed; no automatic promotion |
 
 ## Task update rule
 

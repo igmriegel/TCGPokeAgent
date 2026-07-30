@@ -9,7 +9,7 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** heuristic-only; learned rankers are unpromoted candidates
+**Current release:** heuristic-only; HDI v1 and learned rankers are unpromoted candidates
 
 ## Executive summary
 
@@ -19,18 +19,21 @@ failures. The project is not ready to claim a fully closed MVP because the
 four-opponent matrix, decision-level gameplay metrics, several feedback
 validation gates, and the final checklist remain open.
 
-The latest candidate must not be promoted: submission `55093119` currently
-scores below the accepted gameplay-recovery submission `55088176`.
+The independent HDI v1 candidate was accepted as submission `55119505` and
+scored 600.0, compared with 539.2 for reference submission `55088176`. This is
+experimental evidence only: the required local 200-match comparison and
+promotion matrix have not run, so the release policy remains heuristic.
 
 ## Verified snapshot
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 107 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
+| Quality | 132 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
 | Local evaluation | 400 matches vs `random`: 239W/0D/161L, 59.75% win rate, zero operational failures | Operational baseline only |
-| Kaggle stable candidate | `55088176`: 516.3 public score | Keep as remote reference |
-| Kaggle experimental candidate | `55093119`: 503.2 public score | Do not promote |
-| Package | Isolated heuristic-only package validation passed | Usable rollback artifact |
+| Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
+| Kaggle HDI v1 experiment | `55119505`: 600.0 public score, +60.8 versus reference | Promising evidence; do not auto-promote |
+| Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
+| Package | Isolated heuristic and HDI v1 package validation passed | Usable artifacts |
 | Search | Native lifecycle lacks a verified project Python adapter | Disabled and deferred |
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
@@ -52,29 +55,32 @@ operational evidence until that metadata discrepancy is resolved.
 | Feedback FB-2026-001–003 | Implemented, not validated | Core rules and focused tests exist | Six open validation/measurement actions |
 | Human capture HD0–HD5 | Deferred | Design only; post-hoc agent replay review is separate | First live human trace and staged delivery gates |
 | Learned policies | Runtime implemented, not promoted | Shared schema, grouped datasets, XGBoost/LightGBM native runtime, fallback, and separate extracted-package smoke | Required human data, temporal holdout, paired CABT matrix, and promotion gates |
+| HDI v1 | Experimental, not promoted | Ordinal runtime, declarative profile, 40-episode smoke, extracted package, and remote score | Full reproducible local comparison and formal promotion decision |
 
 ## Current decisions
 
 1. Keep `55088176` as the remote comparison reference.
-2. Do not submit another candidate before the frozen comparison gate.
-3. Finish board-development evidence before adding more heuristic rules.
-4. Rebuild the derived replay dataset from the 85-file raw snapshot.
-5. Keep search and human-capture delivery outside the immediate release path.
-6. Require `scripts/audit_documentation.py` to pass with every code or
+2. Treat `55119505` as an HDI v1 experiment, not an automatic promotion.
+3. Run the frozen local comparison before deciding whether HDI v1 can replace
+   the heuristic release policy.
+4. Finish board-development evidence before adding more heuristic rules.
+5. Rebuild the derived replay dataset from the 85-file raw snapshot.
+6. Keep search and human-capture delivery outside the immediate release path.
+7. Require `scripts/audit_documentation.py` to pass with every code or
    documentation change.
-7. Keep heuristic as the release policy until one ranker passes every gate in
-   [`32_learning_to_rank.md`](32_learning_to_rank.md).
+8. Keep heuristic as the release policy until an alternative passes its full
+   promotion gate.
 
 ## Next work
 
 The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
-1. finish board-development scenarios and metrics;
-2. run the frozen four-opponent comparison and correct report metadata;
+1. run the frozen HDI v1 versus heuristic comparison and correct report metadata;
+2. finish board-development scenarios and metrics;
 3. validate Rule Box/PrizeMap and PrizeCheck transitions;
 4. rebuild the replay dataset;
-5. close the heuristic-only release checklist.
+5. close the release checklist.
 
 ## Evidence links
 

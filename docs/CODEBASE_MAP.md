@@ -10,7 +10,8 @@
 
 | Path | Entry point | Status |
 |---|---|---|
-| Competition agent | `main.py` → parser → legal selections → heuristic → fallback | Active, packaged |
+| Competition agent | `main.py` → parser → legal selections → selected policy → fallback | Active, packaged |
+| HDI experiment | `AGENT_MODE=hdi_v1` → factual context → ordinal rules | Implemented; experimental, not promoted |
 | Learned candidates | shared features → XGBoost or LightGBM → exact heuristic fallback | Implemented; not promoted |
 | Local evaluation | `scripts/run_smoke.sh`, `scripts/run_full.sh`, `scripts/gameplay_smoke.py` | Active; opponent matrix incomplete |
 | Replay operations | `scripts/run_replay.py`, replay ingestion and annotation CLIs | Active tooling |
@@ -24,6 +25,7 @@
 |---|---|---|
 | `src/__init__.py`, `src/agents/__init__.py`, `src/agents/factory.py` | Package boundaries and centralized mode/deck/model factory | Package smoke |
 | `src/agents/baseline.py` | Deterministic context fallback | `tests/test_baseline_agent.py` |
+| `src/agents/hdi.py` | HDI v1 ordinal policy, factual combat context, and deterministic tie-breaking | `tests/test_hdi_agent.py`, HDI package smoke |
 | `src/agents/heuristic.py` | Scoring and board-development ordering | `tests/test_heuristic_agent.py`, CABT golden gameplay |
 | `src/agents/search.py` | Bounded adapter scaffold and heuristic pass-through wrapper | `tests/test_search.py`; not integrated into decisions |
 | `src/core/candidate.py`, `src/core/parsed_decision.py`, `src/core/policy_decision.py` | Parsed and auditable policy decision vocabulary | Parser, heuristic, and ranking tests |

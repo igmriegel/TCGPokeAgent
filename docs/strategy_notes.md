@@ -409,3 +409,29 @@ derived_dataset_version: gameplay_replays_v1
 derived_dataset_matches: 31
 decision: "Retain the raw snapshot and create a new derived dataset version; v1 remains immutable."
 ```
+
+## HDI v1 experimental submission
+
+```yaml
+observed_at: "2026-07-30T21:14:25Z"
+submission_id: 55119505
+mode: hdi_v1
+deck_id: mega_abomasnow_kyogre
+archive: submission_hdi_v1.tar.gz
+archive_bytes: 539099
+archive_sha256: 359adce7030e6c9d3b4b97482ab7a2f90f68bec60acf8e836fae18c9372f3a36
+package_payload_sha256: 1a08204a59c3c3dd82a0f722c1df121a469121d6ac3234da2f2584e3f17011c7
+local_gates:
+  unit_tests: "132 passed"
+  cabt_operational_smoke: "40 completed, 0 failed"
+  extracted_package_validation: passed
+reference_submission_id: 55088176
+reference_public_score: 539.2
+experimental_public_score: 600.0
+score_delta_experimental_minus_reference: 60.8
+decision: "Retain the result as promising experimental evidence; do not promote HDI v1 until the formal local comparison and release gates pass."
+limitations:
+  - "The remote score does not control opponent composition or evaluation variance."
+  - "The formal 200-match and frozen opponent-matrix promotion gates have not run."
+  - "HDI-7-04 remains TBD and outside the implemented policy."
+```
