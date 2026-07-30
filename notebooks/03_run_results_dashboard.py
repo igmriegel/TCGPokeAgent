@@ -29,13 +29,18 @@ def _(json, pathlib, pd):
     for report_path in sorted(report_root.rglob("*.json")):
         try:
             report = json.loads(report_path.read_text(encoding="utf-8"))
+            required_fields = {"config", "agent_mode", "total_matches", "metrics"}
+            if not isinstance(report, dict) or not required_fields.issubset(report):
+                continue
             metrics = report.get("metrics", {})
+            if not isinstance(metrics, dict):
+                continue
             rows.append(
                 {
                     "report": report_path.name,
                     "path": str(report_path),
-                    "config": report.get("config", "unknown"),
-                    "agent_mode": report.get("agent_mode", "unknown"),
+                    "config": str(report.get("config", "unknown")),
+                    "agent_mode": str(report.get("agent_mode", "unknown")),
                     "matches": report.get("total_matches", metrics.get("total", 0)),
                     "wins": metrics.get("wins", 0),
                     "draws": metrics.get("draws", 0),
@@ -73,22 +78,23 @@ def _(mo, report_root, reports):
             f"No JSON reports found under `{report_root}`. Run an experiment first; "
             "the cells below will populate automatically."
         )
-        mo.md(f"# Run results dashboard\n\n> {message}")
+        _output = mo.md(f"# Run results dashboard\n\n> {message}")
     else:
-        mo.vstack(
+        _output = mo.vstack(
             [
                 mo.md("# Run results dashboard"),
                 mo.md(f"Reports loaded: **{len(reports)}** from `{report_root}`"),
                 reports.drop(columns=["path"]),
             ]
         )
+    _output
     return
 
 
 @app.cell
 def _(mo, pd, reports):
     if reports.empty:
-        mo.md("## No comparison chart yet")
+        _output = mo.md("## No comparison chart yet")
     else:
         outcome_rows = []
         for _, row in reports.iterrows():
@@ -101,14 +107,15 @@ def _(mo, pd, reports):
                     }
                 )
         outcome_table = pd.DataFrame(outcome_rows)
-        mo.vstack([mo.md("## Outcome table"), outcome_table])
+        _output = mo.vstack([mo.md("## Outcome table"), outcome_table])
+    _output
     return
 
 
 @app.cell
 def _(mo, plt, reports):
     if reports.empty:
-        mo.md("## No duration chart yet")
+        _output = mo.md("## No duration chart yet")
     else:
         figure, axes = plt.subplots(1, 2, figsize=(12, 4))
         labels = reports["agent_mode"] + " / " + reports["config"]
@@ -120,7 +127,8 @@ def _(mo, plt, reports):
         axes[1].set_title("p95 match duration (ms)")
         axes[1].tick_params(axis="x", rotation=35)
         figure.tight_layout()
-        figure
+        _output = figure
+    _output
     return
 
 
@@ -243,7 +251,7 @@ def _(filtered_replay_outcomes, mo, replay_errors, replay_outcomes, replay_root)
 @app.cell
 def _(filtered_replay_outcomes, mo, pd):
     if filtered_replay_outcomes.empty:
-        mo.md("### No termination outcomes match the current filters")
+        _output = mo.md("### No termination outcomes match the current filters")
     else:
         termination_matrix = (
             pd.crosstab(
@@ -253,14 +261,15 @@ def _(filtered_replay_outcomes, mo, pd):
             .reindex(["win", "draw", "loss", "unknown"], fill_value=0)
             .dropna(axis=0, how="all")
         )
-        mo.vstack([mo.md("### Outcomes by termination reason"), termination_matrix])
+        _output = mo.vstack([mo.md("### Outcomes by termination reason"), termination_matrix])
+    _output
     return
 
 
 @app.cell
 def _(filtered_replay_outcomes, mo, pd, plt):
     if filtered_replay_outcomes.empty:
-        mo.md("### No termination chart yet")
+        _output = mo.md("### No termination chart yet")
     else:
         chart_matrix = pd.crosstab(
             filtered_replay_outcomes["owner_outcome"],
@@ -280,14 +289,15 @@ def _(filtered_replay_outcomes, mo, pd, plt):
         termination_axis.tick_params(axis="x", rotation=0)
         termination_axis.legend(title="Termination reason")
         termination_figure.tight_layout()
-        termination_figure
+        _output = termination_figure
+    _output
     return
 
 
 @app.cell
 def _(filtered_replay_outcomes, mo):
     if filtered_replay_outcomes.empty:
-        mo.md("### No replay details yet")
+        _output = mo.md("### No replay details yet")
     else:
         detail_columns = [
             "episode_id",
@@ -304,7 +314,8 @@ def _(filtered_replay_outcomes, mo):
             "episode_id",
             ascending=False,
         )
-        mo.vstack([mo.md("### Replay-level terminal evidence"), replay_detail_table])
+        _output = mo.vstack([mo.md("### Replay-level terminal evidence"), replay_detail_table])
+    _output
     return
 
 
@@ -316,7 +327,9 @@ def _(mo, replay_errors, replay_outcomes):
         else replay_outcomes
     )
     if replay_errors.empty and consistency_warnings.empty:
-        mo.md("### Data quality\n\nAll loaded terminal reasons match their terminal state.")
+        _output = mo.md(
+            "### Data quality\n\nAll loaded terminal reasons match their terminal state."
+        )
     else:
         quality_items = [mo.md("### Data quality warnings")]
         if not consistency_warnings.empty:
@@ -334,7 +347,8 @@ def _(mo, replay_errors, replay_outcomes):
             )
         if not replay_errors.empty:
             quality_items.append(replay_errors)
-        mo.vstack(quality_items)
+        _output = mo.vstack(quality_items)
+    _output
     return
 
 

@@ -21,14 +21,18 @@ services:
     ports:
       - "${MARIMO_PORT:-2718}:2718"
     environment:
+      - PYTHONPATH=/app
       - AGENT_MODE=${AGENT_MODE:-baseline}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - KAGGLE_OWNER_NAME=${KAGGLE_OWNER_NAME:-}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
+      - ./src:/app/src:ro
+      - ./configs:/app/configs:ro
       - ./notebooks:/app/notebooks
       - ./data:/app/data
       - ./reports:/app/reports
+      - ./runs:/app/runs
     restart: unless-stopped
 
   experiment:

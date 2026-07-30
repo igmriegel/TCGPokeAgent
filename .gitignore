@@ -17,6 +17,8 @@ htmlcov/
 replays/
 reports/runs/
 reports/submissions/
+runs/*
+!runs/.gitkeep
 episode-*-agent-*-logs.json
 
 # uv cache

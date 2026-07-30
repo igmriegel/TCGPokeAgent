@@ -5,25 +5,29 @@ notebooks dependency is installed. The persistence layer remains usable without
 Marimo, which is important for the submission package.
 """
 
-from pathlib import Path
-
 import marimo
 
-from src.rfl.annotations import AnnotationStore, ExpertAnnotation
-
+__generated_with = "0.23.15"
 app = marimo.App()
 
 
 @app.cell
 def _():
+    from pathlib import Path
+
     import marimo as mo
 
-    return mo
+    from src.rfl.annotations import AnnotationStore, ExpertAnnotation
+
+    annotation_store_cls = AnnotationStore
+    expert_annotation_cls = ExpertAnnotation
+    path_cls = Path
+    return annotation_store_cls, expert_annotation_cls, mo, path_cls
 
 
 @app.cell
 def _(mo):
-    path = mo.ui.text(value="runs/rfl/annotations.jsonl", label="Annotation JSONL")
+    path = mo.ui.text(value="../runs/rfl/annotations.jsonl", label="Annotation JSONL")
     match_id = mo.ui.text(label="Match ID")
     deck_id = mo.ui.text(label="Deck ID")
     matchup = mo.ui.text(label="Matchup")
@@ -48,14 +52,28 @@ def _(mo):
 
 
 @app.cell
-def _(confidence, deck_id, justification, match_id, matchup, path, preferred, rejected, save, turn):
+def _(
+    annotation_store_cls,
+    confidence,
+    deck_id,
+    expert_annotation_cls,
+    justification,
+    match_id,
+    matchup,
+    path,
+    path_cls,
+    preferred,
+    rejected,
+    save,
+    turn,
+):
     if save.value:
 
         def parse_play(value: str) -> list[int]:
             return [int(item.strip()) for item in value.split(",") if item.strip()]
 
         rejected_plays = [parse_play(item) for item in rejected.value.split(";") if item.strip()]
-        annotation = ExpertAnnotation(
+        annotation = expert_annotation_cls(
             deck_id.value,
             "unknown",
             matchup.value,
@@ -67,11 +85,14 @@ def _(confidence, deck_id, justification, match_id, matchup, path, preferred, re
             confidence=confidence.value,
             specialist_version="marimo-v1",
         )
-        AnnotationStore(Path(path.value)).append(
+        annotation_store_cls(path_cls(path.value)).append(
             annotation, set(annotation.preferred_actions).union(*rejected_plays)
         )
-        return "Saved"
-    return ""
+        _status = "Saved"
+    else:
+        _status = ""
+    _status
+    return
 
 
 if __name__ == "__main__":
