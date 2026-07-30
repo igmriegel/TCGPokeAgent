@@ -3,42 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, ClassVar
+from typing import Any
+
+from src.core.feature_schema import FeatureSchema
+
+__all__ = ["DecisionTrace", "FeatureSchema"]
 
 
 def _json_dict(value: Any) -> dict[str, Any]:
     """Return a JSON-compatible mapping for a schema object."""
     return asdict(value)
-
-
-@dataclass(frozen=True, slots=True)
-class FeatureSchema:
-    """Describe the ordered features used by a promoted policy."""
-
-    version: str = "v1"
-    names: tuple[str, ...] = ()
-    groups: dict[str, tuple[str, ...]] = field(default_factory=dict)
-    kind: ClassVar[str] = "FeatureSchema"
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize the schema with stable list values."""
-        return {
-            "kind": self.kind,
-            "version": self.version,
-            "names": list(self.names),
-            "groups": {key: list(value) for key, value in self.groups.items()},
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> FeatureSchema:
-        """Load and validate a feature schema mapping."""
-        if data.get("kind", cls.kind) != cls.kind:
-            raise ValueError("unsupported feature schema kind")
-        return cls(
-            str(data.get("version", "v1")),
-            tuple(data.get("names", ())),
-            {str(k): tuple(v) for k, v in dict(data.get("groups", {})).items()},
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +39,11 @@ class DecisionTrace:
     action_sequence: list[dict[str, Any]] = field(default_factory=list)
     feature_schema: str = "v1"
     schema_version: str = "v1"
+    ranked: list[dict[str, Any]] = field(default_factory=list)
+    features: list[dict[str, Any]] = field(default_factory=list)
+    fallback_used: bool = False
+    model_backend: str = ""
+    model_version: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize this trace."""

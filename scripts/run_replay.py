@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from src.agents.baseline import BaselineAgent
-from src.agents.heuristic import HeuristicAgent
+from src.agents.factory import build_agent
+from src.core import DeckDefinition
 from src.eval.validation import check_deck
 
 Agent = Callable[[dict[str, Any]], list[int]]
@@ -44,17 +44,12 @@ def _load_deck(path: str | Path = "src/artifacts/deck.csv") -> list[int]:
 def _build_agent(name: str, deck: list[int]) -> Agent:
     """Build a replay policy by name, including the initial deck response."""
     normalized = name.lower()
-    if normalized == "baseline":
-        policy: Any = BaselineAgent()
-    elif normalized == "heuristic":
-        policy = HeuristicAgent()
-    elif normalized == "random":
-        policy = None
-    else:
-        raise ValueError(f"unknown replay agent: {name}")
+    policy: Any = None if normalized == "random" else build_agent(normalized, root=Path.cwd())
 
     def select(observation: dict[str, Any]) -> list[int]:
         if observation.get("select") is None:
+            if policy is not None:
+                policy.start_match(DeckDefinition.from_cards(deck, "replay"))
             return list(deck)
         if policy is None:
             select_data = observation["select"]

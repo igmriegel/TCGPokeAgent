@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -15,6 +16,7 @@ from src.core import (
     GenericDeckProfileBuilder,
     HeuristicScorer,
     OptionType,
+    PolicyDecision,
     PrizeChecker,
     PrizeCheckMode,
     PrizeCheckResult,
@@ -22,7 +24,10 @@ from src.core import (
     PrizeMapBuilder,
     SelectContext,
     Selection,
+    SelectionRanker,
 )
+from src.ranking.features import SelectionFeatureExtractor
+from src.ranking.rankers import HeuristicSelectionRanker
 
 WEIGHTS: dict[str, float] = {
     "win_now": 100.0,
@@ -459,6 +464,7 @@ class HeuristicAgent(AgentPolicy):
         weights: Mapping[str, Any] | None = None,
         feature_flags: Mapping[str, Any] | None = None,
         deck_profile: DeckProfile | None = None,
+        ranker: SelectionRanker | None = None,
     ) -> None:
         self._parser = DefaultParser(_CG_CATALOG)
         self._generator = DefaultSelectionGenerator()
@@ -466,9 +472,15 @@ class HeuristicAgent(AgentPolicy):
             weights, feature_flags, deck_profile=deck_profile, catalog=_CG_CATALOG
         )
         self._configured_profile = deck_profile
+        self._active_deck_profile = deck_profile
         self._deck: DeckDefinition | None = None
         self._prize_checker: PrizeChecker | None = None
         self._prize_map_builder = PrizeMapBuilder(_CG_CATALOG)
+        self._feature_extractor = SelectionFeatureExtractor(self._scorer)
+        self._heuristic_ranker = HeuristicSelectionRanker()
+        self._ranker = ranker or self._heuristic_ranker
+        self._fallback_count = 0
+        self._last_decision: PolicyDecision | None = None
 
     def start_match(self, deck: DeckDefinition) -> None:
         """Reset the deck strategy without changing generic policy code."""
@@ -482,23 +494,33 @@ class HeuristicAgent(AgentPolicy):
         evolution_basics = tuple(sorted({line[0] for line in profile.evolution_lines if line}))
         roles = dict(profile.roles)
         roles["evolution_basic"] = evolution_basics
-        self._scorer.set_deck_profile(
-            DeckProfile(
-                deck_id=profile.deck_id,
-                deck_sha256=profile.deck_sha256,
-                schema_version=profile.schema_version,
-                roles=roles,
-                evolution_lines=profile.evolution_lines,
-                attack_energy_targets=profile.attack_energy_targets,
-                board_targets=profile.board_targets,
-                resource_values=profile.resource_values,
-            )
+        active_profile = DeckProfile(
+            deck_id=profile.deck_id,
+            deck_sha256=profile.deck_sha256,
+            schema_version=profile.schema_version,
+            roles=roles,
+            evolution_lines=profile.evolution_lines,
+            attack_energy_targets=profile.attack_energy_targets,
+            board_targets=profile.board_targets,
+            resource_values=profile.resource_values,
         )
+        self._active_deck_profile = active_profile
+        self._scorer.set_deck_profile(active_profile)
 
     @property
     def weights(self) -> dict[str, float]:
         """Return a copy of the active heuristic weights."""
         return dict(self._scorer.weights)
+
+    @property
+    def fallback_count(self) -> int:
+        """Return the number of learned inference failures in this process."""
+        return self._fallback_count
+
+    @property
+    def last_decision(self) -> PolicyDecision | None:
+        """Return the latest auditable decision, if a decision has run."""
+        return self._last_decision
 
     @classmethod
     def from_profile(cls, profile_path: str, *, deck_id: str, deck_path: str) -> HeuristicAgent:
@@ -508,13 +530,25 @@ class HeuristicAgent(AgentPolicy):
         return agent_from_profile(profile_path, active_deck_id=deck_id, active_deck_path=deck_path)
 
     def select(self, observation: dict[str, Any]) -> list[int]:
-        """Return the best legal selection, or a deterministic empty fallback."""
+        """Return the best legal selection while preserving the public contract."""
+        return list(self.decide(observation).selection.indices)
+
+    def decide(self, observation: dict[str, Any]) -> PolicyDecision:
+        """Return an auditable ranking decision for one observation.
+
+        Args:
+            observation: Raw actor-visible CABT observation.
+
+        Returns:
+            Complete policy decision including alternatives, features, and latency.
+        """
+        started = time.perf_counter()
         parsed = self._parser.parse(observation)
         prize_check = self._prize_checker.check(observation) if self._prize_checker else None
         prize_map = self._prize_map_builder.build(parsed.state)
         self._scorer.set_strategic_context(prize_check, prize_map)
         if parsed.max_count == 0:
-            return []
+            return self._record_empty_decision(started)
         selections = self._generator.generate(
             parsed.candidates,
             parsed.min_count,
@@ -523,7 +557,7 @@ class HeuristicAgent(AgentPolicy):
             parsed.remain_damage_counter,
         )
         if not selections:
-            return []
+            return self._record_empty_decision(started)
         required_development = self._required_board_development_indices(
             parsed.state, parsed.candidates, parsed.select_context
         )
@@ -535,19 +569,64 @@ class HeuristicAgent(AgentPolicy):
             ]
             if development_selections:
                 selections = development_selections
-        ranked = []
-        for selection in selections:
-            selection_with_context = Selection(
+        contextualized = [
+            Selection(
                 indices=selection.indices,
                 option_types=selection.option_types,
                 context=parsed.select_context,
             )
-            score, reasons = self._scorer.score(
-                parsed.state, selection_with_context, parsed.candidates
-            )
-            ranked.append((score, selection_with_context.indices, reasons, selection_with_context))
-        ranked.sort(key=lambda item: (-item[0], item[1]))
-        return list(ranked[0][3].indices)
+            for selection in selections
+        ]
+        features = self._feature_extractor.extract(
+            parsed,
+            contextualized,
+            deck_profile=self._active_deck_profile,
+            prize_check=prize_check,
+        )
+        fallback_used = False
+        ranker = self._ranker
+        try:
+            ranked = ranker.rank(parsed, contextualized, features)
+            self._validate_ranking(contextualized, ranked)
+        except Exception:
+            if ranker is self._heuristic_ranker:
+                raise
+            self._fallback_count += 1
+            fallback_used = True
+            ranker = self._heuristic_ranker
+            ranked = ranker.rank(parsed, contextualized, features)
+        result = PolicyDecision(
+            selection=ranked[0].selection,
+            ranked=tuple(ranked),
+            features=tuple(features),
+            fallback_used=fallback_used,
+            model_backend=str(getattr(ranker, "backend", "heuristic")),
+            model_version=str(getattr(ranker, "model_version", "heuristic-v1")),
+            duration_ms=(time.perf_counter() - started) * 1000.0,
+        )
+        self._last_decision = result
+        return result
+
+    def _record_empty_decision(self, started: float) -> PolicyDecision:
+        selection = Selection(indices=(), option_types=())
+        result = PolicyDecision(
+            selection=selection,
+            ranked=(),
+            features=(),
+            fallback_used=False,
+            model_backend=str(getattr(self._ranker, "backend", "heuristic")),
+            model_version=str(getattr(self._ranker, "model_version", "heuristic-v1")),
+            duration_ms=(time.perf_counter() - started) * 1000.0,
+        )
+        self._last_decision = result
+        return result
+
+    @staticmethod
+    def _validate_ranking(selections: Sequence[Selection], ranked: Sequence[Any]) -> None:
+        expected = {selection.indices for selection in selections}
+        actual = {item.selection.indices for item in ranked}
+        if not ranked or expected != actual or len(ranked) != len(selections):
+            raise RuntimeError("ranker did not return every legal selection exactly once")
 
     @staticmethod
     def _required_board_development_indices(

@@ -9,7 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, cast
 
-from src.core import DeckDefinition, ErrorCategory, ExecutionStatus
+from src.core import ErrorCategory, ExecutionStatus, PolicyDecision
 from src.eval.validation import check_legal_selection
 
 AgentCallable = Callable[[dict[str, Any]], list[int]]
@@ -41,6 +41,11 @@ class DecisionRecord:
     state_after: dict[str, Any] | None = None
     action_sequence: list[dict[str, Any]] = field(default_factory=list)
     teacher_decision: list[int] | None = None
+    ranked: list[dict[str, Any]] = field(default_factory=list)
+    features: list[dict[str, Any]] = field(default_factory=list)
+    fallback_used: bool = False
+    model_backend: str = ""
+    model_version: str = ""
 
     def to_trace(self, match_id: str, deck_id: str = "default", matchup: str = "unknown") -> Any:
         """Convert the runner record to the versioned RFL decision schema."""
@@ -64,6 +69,11 @@ class DecisionRecord:
             duration_ms=self.duration_ms,
             state_after=self.state_after,
             action_sequence=self.action_sequence,
+            ranked=self.ranked,
+            features=self.features,
+            fallback_used=self.fallback_used,
+            model_backend=self.model_backend,
+            model_version=self.model_version,
         )
 
 
@@ -206,52 +216,28 @@ class MatchRunner:
 
     def _agent_for_mode(self, mode: str) -> AgentCallable:
         """Build a policy with the SDK's initial-deck branch attached."""
-        deck_path = Path(__file__).parents[1] / "artifacts" / "deck.csv"
-        deck = [int(row) for row in deck_path.read_text(encoding="utf-8").splitlines() if row]
+        from src.agents.factory import build_agent, load_deck
 
-        def with_deck(policy: AgentCallable) -> AgentCallable:
+        root = Path(__file__).parents[2]
+        deck = load_deck(root)
+
+        def with_deck(policy: Any) -> AgentCallable:
             def wrapped(observation: dict[str, Any]) -> list[int]:
                 if observation.get("select") is None:
-                    owner = getattr(policy, "__self__", None)
-                    start_match = getattr(owner, "start_match", None)
+                    start_match = getattr(policy, "start_match", None)
                     if callable(start_match):
+                        from src.core import DeckDefinition
+
                         start_match(DeckDefinition.from_cards(deck, "evaluation"))
                     return list(deck)
-                return list(policy(observation))
+                return list(policy.select(observation))
 
+            setattr(wrapped, "policy_owner", policy)
             return wrapped
 
-        if mode == "baseline":
-            from src.agents.baseline import BaselineAgent
-
-            return with_deck(BaselineAgent().select)
-        if mode == "heuristic":
-            from src.agents.heuristic import HeuristicAgent
-            from src.config.loader import ConfigLoader
-
-            config = ConfigLoader(Path(__file__).parents[2] / "configs").load("agent_heuristic")
-            return with_deck(
-                HeuristicAgent(
-                    weights=config.extra.get("weights"),
-                    feature_flags=config.extra.get("feature_flags"),
-                ).select
-            )
         if mode == "self_play":
             return self._agent_for_mode("heuristic")
-        if mode == "rfl":
-            from src.rfl.profiles import agent_from_profile
-
-            root = Path(__file__).parents[2]
-            profile = (
-                root / "configs" / "decks" / "mega_abomasnow_kyogre" / "heuristic_rfl_0001.yaml"
-            )
-            deck_file = root / "src" / "artifacts" / "deck.csv"
-            return with_deck(
-                agent_from_profile(
-                    profile, active_deck_id="mega_abomasnow_kyogre", active_deck_path=deck_file
-                ).select
-            )
-        raise ValueError(f"unsupported agent mode: {mode}")
+        return with_deck(build_agent(mode, root=root))
 
     def _opponent_callable(self, opponent: str, agent_mode: str) -> AgentCallable:
         from kaggle_environments.envs.cabt import cabt
@@ -288,6 +274,7 @@ class MatchRunner:
                 error_message = str(error)
             current = observation.get("current")
             turn = current.get("turn") if isinstance(current, Mapping) else None
+            policy_decision = self._policy_decision(policy)
             records.append(
                 DecisionRecord(
                     decision_index=len(records),
@@ -309,11 +296,60 @@ class MatchRunner:
                     state_before=self._state_snapshot(observation),
                     error_category=error_category,
                     error_message=error_message,
+                    score=(
+                        policy_decision.ranked[0].score
+                        if policy_decision and policy_decision.ranked
+                        else None
+                    ),
+                    reasons=(
+                        list(policy_decision.ranked[0].reasons)
+                        if policy_decision and policy_decision.ranked
+                        else []
+                    ),
+                    ranked=self._serialize_ranking(policy_decision),
+                    features=self._serialize_features(policy_decision),
+                    fallback_used=policy_decision.fallback_used if policy_decision else False,
+                    model_backend=policy_decision.model_backend if policy_decision else "",
+                    model_version=policy_decision.model_version if policy_decision else "",
                 )
             )
             return result
 
         return wrapped
+
+    @staticmethod
+    def _policy_decision(policy: AgentCallable) -> PolicyDecision | None:
+        owner = getattr(policy, "policy_owner", None)
+        decision = getattr(owner, "last_decision", None)
+        return decision if isinstance(decision, PolicyDecision) else None
+
+    @staticmethod
+    def _serialize_ranking(decision: PolicyDecision | None) -> list[dict[str, Any]]:
+        if decision is None:
+            return []
+        return [
+            {
+                "indices": list(item.indices),
+                "score": item.score,
+                "rank": item.rank,
+                "reasons": list(item.reasons),
+                "margin_to_next": item.margin_to_next,
+            }
+            for item in decision.ranked
+        ]
+
+    @staticmethod
+    def _serialize_features(decision: PolicyDecision | None) -> list[dict[str, Any]]:
+        if decision is None:
+            return []
+        return [
+            {
+                "indices": list(item.selection.indices),
+                "schema_version": item.schema_version,
+                "values": list(item.values),
+            }
+            for item in decision.features
+        ]
 
     @staticmethod
     def _state_snapshot(observation: Mapping[str, Any]) -> dict[str, Any]:

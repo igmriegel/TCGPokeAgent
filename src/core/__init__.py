@@ -12,6 +12,7 @@ from .exceptions import (
     SearchAPIError,
     SearchBudgetExceededError,
 )
+from .feature_schema import FeatureSchema
 from .interfaces import (
     AgentPolicy,
     BeliefBuilder,
@@ -23,6 +24,7 @@ from .interfaces import (
 )
 from .parsed_decision import ParsedDecision
 from .parser import DefaultParser
+from .policy_decision import PolicyDecision, SelectionFeatures
 from .prize import (
     CardAvailability,
     PrizeChecker,
@@ -61,6 +63,7 @@ __all__ = [
     "EngineError",
     "ErrorCategory",
     "ExecutionStatus",
+    "FeatureSchema",
     "GameState",
     "GenericDeckProfileBuilder",
     "HeuristicScorer",
@@ -72,6 +75,7 @@ __all__ = [
     "ParseError",
     "ParsedDecision",
     "PlayerState",
+    "PolicyDecision",
     "PokemonState",
     "PrizeCheckMode",
     "PrizeCheckResult",
@@ -84,6 +88,7 @@ __all__ = [
     "SearchBudgetExceededError",
     "SelectContext",
     "Selection",
+    "SelectionFeatures",
     "SelectionRanker",
     "SelectionValidator",
     "SelectionGenerator",

@@ -8,11 +8,27 @@ import os
 import sys
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from src.agents.baseline import BaselineAgent
-from src.agents.heuristic import HeuristicAgent
-from src.core import AgentPolicy, DeckDefinition, DeckProfile
+_SOURCE_PATH = globals().get("__file__")
+_BOOTSTRAP_ROOT = (
+    Path(_SOURCE_PATH).resolve().parent if isinstance(_SOURCE_PATH, str) else Path.cwd()
+)
+if not (_BOOTSTRAP_ROOT / "vendor").is_dir():
+    _BOOTSTRAP_ROOT = next(
+        (
+            Path(entry).resolve()
+            for entry in reversed(sys.path)
+            if entry and (Path(entry).resolve() / "vendor").is_dir()
+        ),
+        _BOOTSTRAP_ROOT,
+    )
+_VENDOR_PATH = _BOOTSTRAP_ROOT / "vendor"
+if _VENDOR_PATH.is_dir():
+    sys.path.insert(0, str(_VENDOR_PATH))
+
+from src.agents.factory import build_agent, load_deck, load_deck_profile  # noqa: E402
+from src.core import AgentPolicy, DeckDefinition  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -47,61 +63,32 @@ def _project_root() -> Path:
 
 
 def _load_deck() -> list[int]:
-    deck_path = _project_root() / "src" / "artifacts" / "deck.csv"
-    if not deck_path.exists():
-        deck_path = _project_root() / "deck.csv"
-    cards = [line.strip() for line in deck_path.read_text(encoding="utf-8").splitlines()]
-    if len(cards) != 60:
-        raise ValueError(f"deck has {len(cards)} cards, expected 60")
-    deck = [int(card) for card in cards]
-    if any(card <= 0 for card in deck):
-        raise ValueError("deck card identifiers must be positive integers")
-    return deck
+    return load_deck(_project_root())
 
 
 def _build_agent() -> AgentPolicy:
-    mode = os.environ.get("AGENT_MODE", "heuristic").lower()
-    if mode == "rfl":
+    return build_agent(_configured_agent_mode(), root=_project_root())
+
+
+def _configured_agent_mode() -> str:
+    configured = os.environ.get("AGENT_MODE")
+    if configured:
+        return configured
+    manifest = _project_root() / "package_manifest.json"
+    if manifest.is_file():
         try:
-            from src.rfl.profiles import agent_from_profile
-
-            root = _project_root()
-            profile = os.environ.get(
-                "AGENT_PROFILE",
-                str(
-                    root / "configs" / "decks" / "mega_abomasnow_kyogre" / "heuristic_rfl_0001.yaml"
-                ),
-            )
-            deck_path = root / "src" / "artifacts" / "deck.csv"
-            return agent_from_profile(
-                profile,
-                active_deck_id="mega_abomasnow_kyogre",
-                active_deck_path=deck_path,
-            )
-        except (ImportError, OSError, ValueError, TypeError):
-            return HeuristicAgent()
-    if mode == "heuristic":
-        return HeuristicAgent(deck_profile=_load_deck_profile())
-    if mode == "hybrid":
-        try:
-            from src.agents.search import HybridAgent
-
-            return cast(AgentPolicy, HybridAgent(HeuristicAgent()))
-        except (ImportError, ValueError):
-            return HeuristicAgent()
-    return BaselineAgent()
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            backend = payload.get("backend")
+            if isinstance(backend, str):
+                return backend
+        except (OSError, json.JSONDecodeError):
+            pass
+    return "heuristic"
 
 
-def _load_deck_profile() -> DeckProfile | None:
+def _load_deck_profile() -> Any:
     """Load the optional declarative strategy bundled with the active deck."""
-    profile_path = _project_root() / "src" / "artifacts" / "deck_profile.json"
-    if not profile_path.exists():
-        return None
-    try:
-        data = json.loads(profile_path.read_text(encoding="utf-8"))
-        return DeckProfile.from_dict(data) if isinstance(data, Mapping) else None
-    except (OSError, TypeError, ValueError, json.JSONDecodeError):
-        return None
+    return load_deck_profile(_project_root())
 
 
 def agent_policy(observation: dict[str, Any]) -> list[int]:
@@ -186,7 +173,7 @@ def _fallback_selection(observation: dict[str, Any]) -> list[int]:
 def main() -> None:
     """Read one observation from stdin and write the selected action as JSON."""
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
-    logger.info("agent_started mode=%s", os.environ.get("AGENT_MODE", "heuristic"))
+    logger.info("agent_started mode=%s", _configured_agent_mode())
 
     observation = _read_observation()
     result = agent_policy(observation)
