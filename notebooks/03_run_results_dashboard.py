@@ -16,9 +16,16 @@ def _():
     import matplotlib.pyplot as plt
     import pandas as pd
 
+    from src.core import catalog as card_catalog
     from src.data.replay_outcomes import load_replay_outcomes
 
-    return json, load_replay_outcomes, mo, os, pathlib, pd, plt
+    return card_catalog, json, load_replay_outcomes, mo, os, pathlib, pd, plt
+
+
+@app.cell
+def _(card_catalog):
+    catalog = card_catalog.CardCatalog.from_cg()
+    return (catalog,)
 
 
 @app.cell
@@ -179,11 +186,12 @@ def _(mo, os, pathlib):
 
 
 @app.cell
-def _(load_replay_outcomes, owner_name, pd, replay_reload, replay_root):
+def _(load_replay_outcomes, owner_name, pd, replay_reload, replay_root, catalog):
     replay_reload.value
     loaded_replay_outcomes, replay_load_errors = load_replay_outcomes(
         replay_root,
         owner_name=owner_name.value.strip() or None,
+        catalog=catalog,
     )
     replay_columns = [
         "episode_id",
@@ -199,6 +207,9 @@ def _(load_replay_outcomes, owner_name, pd, replay_reload, replay_root):
         "loser_deck_remaining",
         "winner_pokemon_in_play",
         "loser_pokemon_in_play",
+        "opponent_name",
+        "opponent_deck_archetype",
+        "opponent_deck_hash",
         "source_path",
     ]
     replay_outcomes = pd.DataFrame(
@@ -359,6 +370,100 @@ def _(filtered_replay_outcomes, mo):
             ascending=False,
         )
         _output = mo.vstack([mo.md("### Replay-level terminal evidence"), replay_detail_table])
+    _output
+    return
+
+
+@app.cell
+def _(mo):
+    top_n_decks = mo.ui.dropdown(
+        options=["5", "10", "15", "20", "all"],
+        value="10",
+        label="Top N decks to show",
+    )
+    mo.vstack(
+        [
+            mo.md("## Matchup analysis"),
+            top_n_decks,
+        ]
+    )
+    return (top_n_decks,)
+
+
+@app.cell
+def _(filtered_replay_outcomes, pd, top_n_decks):
+    if filtered_replay_outcomes.empty:
+        matchup = pd.DataFrame()
+    else:
+        matchup = (
+            filtered_replay_outcomes.groupby("opponent_deck_archetype")
+            .agg(
+                wins=("owner_outcome", lambda x: (x == "win").sum()),
+                losses=("owner_outcome", lambda x: (x == "loss").sum()),
+                draws=("owner_outcome", lambda x: (x == "draw").sum()),
+                total=("owner_outcome", "count"),
+            )
+            .assign(win_rate=lambda df: (df["wins"] / df["total"]).round(3))
+            .sort_values("total", ascending=False)
+        )
+        if top_n_decks.value != "all":
+            matchup = matchup.head(int(top_n_decks.value))
+    return (matchup,)
+
+
+@app.cell
+def _(matchup, mo):
+    if matchup.empty:
+        _output = mo.md("### No matchup data yet")
+    else:
+        _output = mo.vstack([mo.md("### Win/loss by opponent deck"), matchup])
+    _output
+    return
+
+
+@app.cell
+def _(matchup, mo, plt):
+    if matchup.empty:
+        _output = mo.md("### No matchup chart yet")
+    else:
+        colors = ["#4c78a8" if wr >= 0.5 else "#e45756" for wr in matchup["win_rate"]]
+        fig, ax = plt.subplots(figsize=(10, max(3, len(matchup) * 0.5)))
+        bars = ax.barh(matchup.index, matchup["win_rate"], color=colors)
+        ax.set_xlabel("Win rate")
+        ax.set_title("Win rate by opponent deck")
+        ax.set_xlim(0, 1)
+        ax.axvline(x=0.5, color="gray", linestyle="--", alpha=0.5)
+        for bar, wr in zip(bars, matchup["win_rate"]):
+            ax.text(
+                bar.get_width() + 0.01,
+                bar.get_y() + bar.get_height() / 2,
+                f"{wr:.1%}",
+                va="center",
+                fontsize=9,
+            )
+        fig.tight_layout()
+        _output = fig
+    _output
+    return
+
+
+@app.cell
+def _(filtered_replay_outcomes, mo, pd):
+    if filtered_replay_outcomes.empty:
+        _output = mo.md("### No opponent data yet")
+    else:
+        opp = (
+            filtered_replay_outcomes.groupby("opponent_name")
+            .agg(
+                wins=("owner_outcome", lambda x: (x == "win").sum()),
+                losses=("owner_outcome", lambda x: (x == "loss").sum()),
+                draws=("owner_outcome", lambda x: (x == "draw").sum()),
+                total=("owner_outcome", "count"),
+            )
+            .assign(win_rate=lambda df: (df["wins"] / df["total"]).round(3))
+            .sort_values("total", ascending=False)
+        )
+        _output = mo.vstack([mo.md("### Win/loss by opponent name"), opp])
     _output
     return
 

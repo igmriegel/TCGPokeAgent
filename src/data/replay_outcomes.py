@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
+
+if TYPE_CHECKING:
+    from src.core.catalog import CardCatalog
 
 TERMINATION_REASON_BY_CODE = {
     1: "all_prizes_taken",
@@ -34,6 +39,10 @@ class ReplayOutcome:
     loser_deck_remaining: int | None
     winner_pokemon_in_play: int | None
     loser_pokemon_in_play: int | None
+    opponent_name: str | None
+    opponent_deck_cards: tuple[int, ...]
+    opponent_deck_hash: str
+    opponent_deck_archetype: str
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the normalized replay outcome."""
@@ -44,12 +53,14 @@ def extract_replay_outcome(
     replay_path: str | Path,
     *,
     owner_name: str | None = None,
+    catalog: CardCatalog | None = None,
 ) -> ReplayOutcome:
     """Extract the explicit result log and terminal public state.
 
     Args:
         replay_path: CABT replay JSON file.
         owner_name: Optional agent name used only to classify owner outcome.
+        catalog: Optional card catalog for deck archetype resolution.
 
     Returns:
         Normalized terminal evidence.
@@ -95,6 +106,22 @@ def extract_replay_outcome(
         else "loss"
     )
 
+    opponent_index = 1 - owner_index if owner_index is not None else None
+    agents = replay.get("info", {}).get("Agents", [])
+    opponent_name = (
+        agents[opponent_index].get("Name")
+        if isinstance(agents, list)
+        and opponent_index is not None
+        and 0 <= opponent_index < len(agents)
+        and isinstance(agents[opponent_index], Mapping)
+        else None
+    )
+    opponent_deck_ids = _deck_card_ids(replay, opponent_index) if opponent_index is not None else ()
+    opponent_hash = _deck_hash(opponent_deck_ids) if opponent_deck_ids else ""
+    opponent_archetype = (
+        _deck_archetype(opponent_deck_ids, catalog) if opponent_deck_ids else "unknown"
+    )
+
     players = current.get("players")
     if not isinstance(players, list) or len(players) != 2:
         raise ValueError(f"replay terminal state does not contain two players: {path}")
@@ -134,6 +161,10 @@ def extract_replay_outcome(
         loser_deck_remaining=loser_deck,
         winner_pokemon_in_play=winner_pokemon,
         loser_pokemon_in_play=loser_pokemon,
+        opponent_name=opponent_name,
+        opponent_deck_cards=opponent_deck_ids,
+        opponent_deck_hash=opponent_hash,
+        opponent_deck_archetype=opponent_archetype,
     )
 
 
@@ -141,12 +172,14 @@ def load_replay_outcomes(
     replay_dir: str | Path,
     *,
     owner_name: str | None = None,
+    catalog: CardCatalog | None = None,
 ) -> tuple[list[ReplayOutcome], list[dict[str, str]]]:
     """Load every replay while retaining per-file extraction failures.
 
     Args:
         replay_dir: Directory containing CABT replay JSON files.
         owner_name: Optional owner agent name for W/D/L classification.
+        catalog: Optional card catalog for deck archetype resolution.
 
     Returns:
         Successfully normalized outcomes and structured errors.
@@ -155,10 +188,54 @@ def load_replay_outcomes(
     errors: list[dict[str, str]] = []
     for path in sorted(Path(replay_dir).glob("*.json")):
         try:
-            outcomes.append(extract_replay_outcome(path, owner_name=owner_name))
+            outcomes.append(extract_replay_outcome(path, owner_name=owner_name, catalog=catalog))
         except ValueError as error:
             errors.append({"path": str(path), "error": str(error)})
     return outcomes, errors
+
+
+def _deck_card_ids(replay: Mapping[str, Any], player_index: int) -> tuple[int, ...]:
+    """Extract the 60-card deck from the initial visualization frame."""
+    try:
+        action = replay["steps"][0][0]["visualize"][0]["action"]
+        return tuple(int(c) for c in action[player_index])
+    except (KeyError, IndexError, TypeError):
+        return ()
+
+
+def _deck_hash(card_ids: tuple[int, ...]) -> str:
+    """SHA-256 hex digest of sorted card IDs (first 16 chars)."""
+    canonical = ",".join(str(c) for c in sorted(card_ids))
+    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+
+def _deck_archetype(
+    card_ids: tuple[int, ...],
+    catalog: CardCatalog | None = None,
+) -> str:
+    """Resolve deck archetype from card IDs using the card catalog.
+
+    Strategy: find all Pokemon in the deck, return the highest-HP one
+    (or primary/secondary if multiple) as the archetype label.
+    """
+    if not card_ids or catalog is None:
+        return "unknown"
+    counts = Counter(card_ids)
+    pokemon: list[tuple[int, str, int]] = []
+    for card_id, qty in counts.items():
+        traits = catalog.get_traits(card_id)
+        if traits.is_pokemon:
+            card = catalog.get_card(str(card_id)) or {}
+            hp = int(card.get("hp", 0) or 0)
+            name = card.get("name", f"card_{card_id}")
+            pokemon.append((hp, name, qty))
+    if not pokemon:
+        return "unknown"
+    pokemon.sort(key=lambda x: (-x[0], -x[2]))
+    primary = pokemon[0][1]
+    if len(pokemon) > 1:
+        return f"{primary} / {pokemon[1][1]}"
+    return primary
 
 
 def _terminal_visualization(replay: Mapping[str, Any]) -> Mapping[str, Any]:
