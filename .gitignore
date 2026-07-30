@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 dist/
 *.tar.gz
+*.tar.gz.sha256
 *.tgz
 data/raw/
 .env

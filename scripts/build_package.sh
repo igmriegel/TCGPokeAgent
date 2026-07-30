@@ -8,7 +8,7 @@ BACKEND="${2:-heuristic}"
 MODEL_DIR="${3:-}"
 
 case "${BACKEND}" in
-    heuristic|xgboost_ranker|lightgbm_ranker) ;;
+    heuristic|hdi_v1|xgboost_ranker|lightgbm_ranker) ;;
     *) echo "Unsupported package backend: ${BACKEND}" >&2; exit 2 ;;
 esac
 
@@ -28,6 +28,7 @@ cp src/__init__.py "${TMPDIR}/src/"
 cp src/agents/__init__.py "${TMPDIR}/src/agents/"
 cp src/agents/baseline.py "${TMPDIR}/src/agents/"
 cp src/agents/factory.py "${TMPDIR}/src/agents/"
+cp src/agents/hdi.py "${TMPDIR}/src/agents/"
 cp src/agents/heuristic.py "${TMPDIR}/src/agents/"
 cp src/agents/search.py "${TMPDIR}/src/agents/"
 cp src/core/*.py "${TMPDIR}/src/core/"
@@ -50,7 +51,7 @@ from src.ranking.features import write_feature_schema
 write_feature_schema(Path(sys.argv[1]) / "feature_schema.json")
 PY
 
-if [[ "${BACKEND}" != "heuristic" ]]; then
+if [[ "${BACKEND}" == "xgboost_ranker" || "${BACKEND}" == "lightgbm_ranker" ]]; then
     if [[ -z "${MODEL_DIR}" || ! -f "${MODEL_DIR}/ranker_manifest.json" ]]; then
         echo "Ranker package requires a model directory with ranker_manifest.json" >&2
         exit 2
@@ -86,21 +87,31 @@ root = Path(sys.argv[1])
 backend = sys.argv[2]
 deck_sha = sha256((root / "deck.csv").read_bytes()).hexdigest()
 schema_sha = sha256((root / "feature_schema.json").read_bytes()).hexdigest()
+payload_hash = sha256()
+for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    if path.name == "package_manifest.json" or "__pycache__" in path.parts:
+        continue
+    relative = path.relative_to(root).as_posix().encode()
+    payload_hash.update(relative)
+    payload_hash.update(b"\0")
+    payload_hash.update(path.read_bytes())
 model = {}
-if backend != "heuristic":
+if backend in {"xgboost_ranker", "lightgbm_ranker"}:
     model = json.loads((root / "model" / "ranker_manifest.json").read_text())
     if model.get("backend") != backend:
         raise SystemExit("model backend differs from requested package backend")
 manifest = {
     "backend": backend,
-    "backend_version": model.get("library_version", "builtin"),
+    "backend_version": model.get(
+        "library_version", "hdi-v1" if backend == "hdi_v1" else "builtin"
+    ),
     "model_file": model.get("model_file"),
     "model_sha256": model.get("model_sha256"),
     "feature_schema": "feature_schema.json",
     "feature_schema_sha256": schema_sha,
     "dataset_id": model.get("dataset_id"),
     "split_ids": model.get("split_ids", {}),
-    "deck_id": model.get("deck_id", "active"),
+    "deck_id": model.get("deck_id", "mega_abomasnow_kyogre"),
     "deck_sha256": deck_sha,
     "parameters": model.get("parameters", {}),
     "metrics": {
@@ -109,6 +120,7 @@ manifest = {
         "holdout": model.get("holdout_metrics", {}),
     },
     "package_size_bytes": 0,
+    "package_payload_sha256": payload_hash.hexdigest(),
     "latency": model.get("latency", model.get("validation_metrics", {}).get("latency_p95_ms")),
     "extracted_validation": {
         "status": "passed",
@@ -146,5 +158,18 @@ path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 PY
 done
 
+"${PYTHON_BIN}" - "${OUTPUT}" <<'PY'
+from hashlib import sha256
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+path.with_name(path.name + ".sha256").write_text(
+    f"{sha256(path.read_bytes()).hexdigest()}  {path.name}\n",
+    encoding="utf-8",
+)
+PY
+
 echo "Package size: $(du -h "${OUTPUT}" | cut -f1)"
+echo "Package SHA-256: $(cut -d' ' -f1 "${OUTPUT}.sha256")"
 echo "=== Package built: ${OUTPUT} ==="

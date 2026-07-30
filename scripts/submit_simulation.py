@@ -31,7 +31,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--agent-mode",
         default="heuristic",
-        choices=("baseline", "heuristic", "rfl"),
+        choices=("baseline", "heuristic", "hdi_v1", "rfl"),
         help="Agent mode used by the smoke gate.",
     )
     parser.add_argument(
@@ -163,7 +163,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for command in commands:
             _run(command)
-        _run(["scripts/build_package.sh", str(archive)])
+        package_backend = args.agent_mode if args.agent_mode == "hdi_v1" else "heuristic"
+        _run(["scripts/build_package.sh", str(archive), package_backend])
         _run([python, "-m", "src.eval.validation", "--package", str(archive)])
     except (OSError, RuntimeError) as error:
         print(f"\nSUBMISSION PIPELINE FAILED: {error}", file=sys.stderr)
@@ -171,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
 
     digest = _sha256(archive)
     message = args.message or (
-        f"heuristic-only {datetime.now(timezone.utc):%Y-%m-%dT%H:%MZ} sha256:{digest[:12]}"
+        f"{args.agent_mode} {datetime.now(timezone.utc):%Y-%m-%dT%H:%MZ} sha256:{digest[:12]}"
     )
     kaggle = shutil.which("kaggle")
     if kaggle is None:
