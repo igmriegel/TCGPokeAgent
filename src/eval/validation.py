@@ -136,6 +136,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 root = Path(directory)
                 package.extractall(root, filter="data")
                 check_package_layout(root)
+                manifest = _validate_package_manifest(root, path.stat().st_size)
                 _check_python_311_syntax(root)
                 initial = subprocess.run(
                     [os.fspath(_python_executable()), "main.py"],
@@ -152,6 +153,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 if not isinstance(deck, list) or len(deck) != 60:
                     raise PreflightError("isolated package returned an invalid deck")
                 loader_result = _run_kaggle_loader_smoke(root)
+                ranker_result = _run_ranker_smoke(root, manifest)
                 cabt_result = _run_cabt_file_agent_smoke(root)
     except (tarfile.TarError, OSError, json.JSONDecodeError) as error:
         raise PreflightError(f"invalid package archive: {error}") from error
@@ -162,12 +164,156 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
         "entry_point": loader_result["entry_point"],
         "python_target": "3.11",
         "cabt_file_agent": cabt_result,
+        "backend": manifest["backend"],
+        "ranker_smoke": ranker_result,
     }
+
+
+def _validate_package_manifest(root: Path, archive_size: int) -> dict[str, Any]:
+    manifest_path = root / "package_manifest.json"
+    if not manifest_path.is_file():
+        return {"backend": "heuristic"}
+    try:
+        manifest = cast(dict[str, Any], json.loads(manifest_path.read_text(encoding="utf-8")))
+    except json.JSONDecodeError as error:
+        raise PreflightError("package manifest is invalid JSON") from error
+    backend = manifest.get("backend")
+    if backend not in {"heuristic", "xgboost_ranker", "lightgbm_ranker"}:
+        raise PreflightError("package manifest declares an unsupported backend")
+    required = {
+        "backend_version",
+        "feature_schema",
+        "feature_schema_sha256",
+        "dataset_id",
+        "split_ids",
+        "deck_id",
+        "deck_sha256",
+        "parameters",
+        "metrics",
+        "package_size_bytes",
+        "latency",
+        "extracted_validation",
+    }
+    missing = required - set(manifest)
+    if missing:
+        raise PreflightError(f"package manifest fields missing: {', '.join(sorted(missing))}")
+    declared_size = manifest.get("package_size_bytes")
+    if not isinstance(declared_size, int) or abs(declared_size - archive_size) > 2048:
+        raise PreflightError("package manifest size does not match the archive")
+    schema_path = root / str(manifest["feature_schema"])
+    if not schema_path.is_file() or _sha256_path(schema_path) != manifest["feature_schema_sha256"]:
+        raise PreflightError("package feature schema hash mismatch")
+    if _sha256_path(root / "deck.csv") != manifest["deck_sha256"]:
+        raise PreflightError("package deck hash mismatch")
+    if backend == "heuristic":
+        return manifest
+    model_dir = root / "model"
+    model_file = manifest.get("model_file")
+    if not isinstance(model_file, str) or not (model_dir / model_file).is_file():
+        raise PreflightError("ranker package model is unavailable")
+    if _sha256_path(model_dir / model_file) != manifest.get("model_sha256"):
+        raise PreflightError("ranker package model hash mismatch")
+    required_backend = "xgboost" if backend == "xgboost_ranker" else "lightgbm"
+    competing_backend = "lightgbm" if backend == "xgboost_ranker" else "xgboost"
+    if not (root / "vendor" / required_backend).is_dir():
+        raise PreflightError("ranker package does not contain its declared backend")
+    if (root / "vendor" / competing_backend).exists():
+        raise PreflightError("ranker package contains the competing backend")
+    return manifest
+
+
+def _run_ranker_smoke(root: Path, manifest: Mapping[str, Any]) -> str:
+    backend = manifest.get("backend", "heuristic")
+    if backend == "heuristic":
+        return "not-applicable"
+    smoke = """
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+sys.path.insert(0, str(root))
+import main
+
+deck = main.agent_policy({"select": None})
+observation = {
+    "current": {
+        "turn": 1,
+        "turnActionCount": 0,
+        "yourIndex": 0,
+        "firstPlayer": 0,
+        "players": [
+            {"deckCount": 53, "prize": [None] * 6, "hand": [], "bench": []},
+            {"deckCount": 53, "prize": [None] * 6, "handCount": 0, "bench": []},
+        ],
+    },
+    "select": {
+        "type": 9,
+        "context": 41,
+        "minCount": 1,
+        "maxCount": 1,
+        "option": [{"type": 1}, {"type": 2}],
+    },
+}
+action = main.agent_policy(observation)
+decision = main._agent.last_decision
+model_used = decision.model_backend == sys.argv[2] and not decision.fallback_used
+
+class Broken:
+    def predict(self, values):
+        raise RuntimeError("forced package fallback")
+
+main._agent._ranker._predictor = Broken()
+fallback_action = main.agent_policy(observation)
+fallback = main._agent.last_decision
+print(json.dumps({
+    "deck": len(deck),
+    "action": action,
+    "model_used": model_used,
+    "duration_ms": decision.duration_ms,
+    "fallback_legal": fallback_action in ([0], [1]),
+    "fallback_used": fallback.fallback_used,
+    "fallback_count": main._agent.fallback_count,
+}))
+"""
+    completed = subprocess.run(
+        [
+            os.fspath(_python_executable()),
+            "-S",
+            "-c",
+            smoke,
+            os.fspath(root),
+            str(backend),
+        ],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=20,
+    )
+    if completed.returncode != 0:
+        details = completed.stderr.strip() or completed.stdout.strip()
+        raise PreflightError(f"ranker package smoke failed: {details}")
+    try:
+        result = cast(dict[str, Any], json.loads(completed.stdout))
+    except json.JSONDecodeError as error:
+        raise PreflightError("ranker package smoke returned invalid JSON") from error
+    if not result.get("model_used"):
+        raise PreflightError("ranker package did not execute an in-game model decision")
+    if not result.get("fallback_used") or result.get("fallback_count") != 1:
+        raise PreflightError("ranker package did not exercise heuristic inference fallback")
+    if not result.get("fallback_legal"):
+        raise PreflightError("ranker package fallback returned an invalid decision")
+    if float(result.get("duration_ms", float("inf"))) > 100.0:
+        raise PreflightError("ranker package decision exceeded the 100ms budget")
+    return "passed"
 
 
 def _check_python_311_syntax(root: Path) -> None:
     """Parse every packaged module using the Python 3.11 grammar."""
     for source_path in sorted(root.rglob("*.py")):
+        if "vendor" in source_path.relative_to(root).parts:
+            continue
         try:
             ast.parse(
                 source_path.read_text(encoding="utf-8-sig"),
@@ -179,6 +325,12 @@ def _check_python_311_syntax(root: Path) -> None:
             raise PreflightError(
                 f"package is not Python 3.11 compatible: {relative}: {error}"
             ) from error
+
+
+def _sha256_path(path: Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _run_kaggle_loader_smoke(root: Path) -> dict[str, Any]:
