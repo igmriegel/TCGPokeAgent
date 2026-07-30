@@ -16,8 +16,9 @@ production pipeline nor are they the single source of a decision.
   newest-first view of recently downloaded Kaggle episodes.
 - [`04_heuristic_score_lab.py`](04_heuristic_score_lab.py) — inspects score
   reasons and compares heuristic weight/feature ablations on controlled cases.
-- [`05_rfl_annotation.py`](05_rfl_annotation.py) — records decision-level
-  expert annotations against legal trace options.
+- [`05_rfl_annotation.py`](05_rfl_annotation.py) — prioritizes failure,
+  divergence, margin, and three-ranker disagreement signals, then records
+  immutable `FeedbackEventV2` evidence.
 
 Run locally from the project root:
 

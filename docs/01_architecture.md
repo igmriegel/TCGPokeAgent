@@ -11,12 +11,17 @@ policy with the active deck and returns that deck. Otherwise:
    energy, and damage constraints.
 3. `HeuristicAgent` may require a legal board-development play before a
    terminal attack or end-turn choice.
-4. `SimpleHeuristicScorer` ranks the remaining selections with traceable
-   reasons.
-5. `HybridAgent` is currently a heuristic pass-through. `BoundedShortSearch`
+4. `SelectionFeatureExtractor` creates the immutable
+   `selection-ranking-v1` vector for every remaining legal selection.
+5. `HeuristicSelectionRanker`, `XGBoostSelectionRanker`, or
+   `LightGBMSelectionRanker` orders the same rows. Learned inference failures
+   reuse the exact heuristic ranking and are counted.
+6. `PolicyDecision` records alternatives, scores, ranks, margins, features,
+   backend/version, fallback state, and latency.
+7. `HybridAgent` is currently a heuristic pass-through. `BoundedShortSearch`
    is unit-tested separately but is not connected to policy decisions.
-6. `main.py` validates the selected indices and returns them.
-7. Any policy or validation failure returns the minimal deterministic
+8. `main.py` validates the selected indices and returns them.
+9. Any policy or validation failure returns the minimal deterministic
    cardinality fallback.
 
 ## Components and dependencies
@@ -27,6 +32,8 @@ policy with the active deck and returns that deck. Otherwise:
 | `SelectionGenerator` | `SelectData`, candidates | `list[Selection]` | core contracts |
 | `BeliefBuilder` | facts, logs, reference decks | consistent `BeliefState` | core |
 | `HeuristicScorer` | state, selection | score + reasons | core |
+| `SelectionFeatureExtractor` | parsed decision, legal selections | shared ordered rows | factual core and deck profile |
+| `SelectionRanker` | parsed decision, selections, shared rows | `list[RankedSelection]` | selected native backend or heuristic |
 | `StateEvaluator` | search state | scalar value | core |
 | `BoundedShortSearch` | opaque search input, belief, ranked candidates | selection or heuristic fallback | injected adapter; not integrated |
 | `AgentPolicy` | `Observation` | `list[int]` | preceding components |

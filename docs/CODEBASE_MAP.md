@@ -11,6 +11,7 @@
 | Path | Entry point | Status |
 |---|---|---|
 | Competition agent | `main.py` → parser → legal selections → heuristic → fallback | Active, packaged |
+| Learned candidates | shared features → XGBoost or LightGBM → exact heuristic fallback | Implemented; not promoted |
 | Local evaluation | `scripts/run_smoke.sh`, `scripts/run_full.sh`, `scripts/gameplay_smoke.py` | Active; opponent matrix incomplete |
 | Replay operations | `scripts/run_replay.py`, replay ingestion and annotation CLIs | Active tooling |
 | RFL profile | Local `AGENT_MODE=rfl` → deck profile → heuristic agent | Local-only; excluded from current package |
@@ -21,16 +22,16 @@
 
 | Modules | Responsibility | Direct evidence |
 |---|---|---|
-| `src/__init__.py`, `src/agents/__init__.py` | Package boundaries | Package smoke |
+| `src/__init__.py`, `src/agents/__init__.py`, `src/agents/factory.py` | Package boundaries and centralized mode/deck/model factory | Package smoke |
 | `src/agents/baseline.py` | Deterministic context fallback | `tests/test_baseline_agent.py` |
 | `src/agents/heuristic.py` | Scoring and board-development ordering | `tests/test_heuristic_agent.py`, CABT golden gameplay |
 | `src/agents/search.py` | Bounded adapter scaffold and heuristic pass-through wrapper | `tests/test_search.py`; not integrated into decisions |
-| `src/core/candidate.py`, `src/core/parsed_decision.py` | Parsed decision vocabulary | Parser and heuristic tests |
+| `src/core/candidate.py`, `src/core/parsed_decision.py`, `src/core/policy_decision.py` | Parsed and auditable policy decision vocabulary | Parser, heuristic, and ranking tests |
 | `src/core/parser.py`, `src/core/catalog.py` | Observation normalization and card metadata | `tests/test_parser.py`, CABT golden gameplay |
 | `src/core/selection.py`, `src/core/selection_generator.py` | Legal index combinations and validation | `tests/test_selection_generator.py` |
 | `src/core/state.py`, `src/core/belief.py` | Factual state and separate hidden-state hypotheses | parser and belief tests |
 | `src/core/deck.py`, `src/core/prize.py`, `src/core/strategy.py` | Deck roles, PrizeCheck/PrizeMap, strategic context | prize, heuristic, and RFL profile tests |
-| `src/core/types.py`, `src/core/exceptions.py`, `src/core/interfaces.py`, `src/core/__init__.py` | Shared enums, typed failures, interfaces, exports | Imported throughout tests and runtime |
+| `src/core/types.py`, `src/core/exceptions.py`, `src/core/interfaces.py`, `src/core/feature_schema.py`, `src/core/__init__.py` | Shared enums, typed failures, feature contract, interfaces, exports | Imported throughout tests and runtime |
 
 `main.py` is the only competition entry point. It returns the deck for the
 initial request, delegates decisions to the selected policy, validates output,
@@ -67,15 +68,18 @@ human gameplay demonstrations.
 | Modules | Responsibility | Status |
 |---|---|---|
 | `src/rfl/__init__.py`, `src/rfl/schemas.py`, `src/rfl/annotations.py` | Versioned traces and expert labels | Tested foundation |
+| `src/rfl/feedback.py` | Immutable FeedbackEventV2, insight lifecycle, and active-review priority | `tests/test_ranking.py` |
 | `src/rfl/dataset.py`, `src/rfl/rewards.py` | Leakage-safe splits and hybrid rewards | Tested foundation |
 | `src/rfl/profiles.py` | Deck-bound heuristic profile loading | Active in `AGENT_MODE=rfl` |
 | `src/rfl/promotion.py` | Preference, operational, latency, and declared package gates | Tested; RFL-aware package validation not implemented |
 | `src/rfl/optimizer.py`, `src/rfl/visualization.py` | Manual study optimization and optional plots | Runbook-only tooling; not wired to release automation |
 | `src/agents/evaluator.py` | Search leaf evaluator | Focused tests; not connected to current bounded-search adapter |
+| `src/ranking/__init__.py`, `src/ranking/features.py`, `src/ranking/rankers.py` | Shared leakage-safe vectors and three runtime rankers | ranking and extracted-package tests |
+| `src/ranking/dataset.py`, `src/ranking/training.py` | Grouped qid/group-size datasets, native training, metrics, and model manifests | ranking tests; native toy smoke |
 
-These modules are intentionally dormant or manual, not release evidence.
-Promotion requires the holdout and package gates in
-[`25_rfl_experiments.md`](25_rfl_experiments.md).
+The learned runtime is implemented but remains candidate infrastructure, not
+release evidence. Promotion requires the holdout and package gates in
+[`32_learning_to_rank.md`](32_learning_to_rank.md).
 
 ## Non-Python runtime assets
 

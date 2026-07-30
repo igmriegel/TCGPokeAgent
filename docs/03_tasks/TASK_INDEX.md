@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 2 |
+| In progress | 3 |
 | Ready | 8 |
 | Deferred | 7 |
-| Total open | 17 |
+| Total open | 18 |
 
 ## Active release queue
 
@@ -38,6 +38,7 @@ documents to these totals.
 | T-008 | P1 | `READY` | Revalidate parser, selection, and fallback against current real observations | S2, S3 | Add current replay-derived fixtures and run focused gates |
 | T-009 | P1 | `READY` | Revalidate belief and evaluator against corrected factual state | S7 | Add real-observation invariant cases |
 | T-011 | P1 | `IN_PROGRESS` | Close the heuristic-only package and handoff checklist | S9 | Resolve unchecked evidence and rebuild after promoted changes |
+| T-013 | P1 | `IN_PROGRESS` | Qualify XGBoost and LightGBM ranker candidates | Learned-policy gates | Capture 250 human groups, freeze holdout, and run paired matrix |
 
 ## Active-track coverage
 

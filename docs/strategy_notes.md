@@ -318,6 +318,32 @@ limitations:
   - "The immutable gameplay_replays/v1 derived dataset still represents its original 31-match source set."
 ```
 
+## Native ranker infrastructure smoke
+
+```yaml
+observed_at: "2026-07-30"
+scope: "Infrastructure smoke with synthetic grouped rows; not promotion evidence"
+feature_schema: selection-ranking-v1
+xgboost:
+  distribution: xgboost-cpu==3.0.2
+  archive_bytes: 56652886
+  extracted_validation: passed
+lightgbm:
+  distribution: lightgbm==4.6.0
+  archive_bytes: 55281528
+  extracted_validation: passed
+checks:
+  - backend-exclusive archive
+  - native model reload
+  - real in-game model decision
+  - forced and counted heuristic fallback
+  - CABT file-agent episode
+decision: "Keep heuristic promoted; ranker infrastructure may begin real data capture and holdout studies."
+limitations:
+  - "Synthetic rows do not establish gameplay quality."
+  - "No promotion-volume, human-agreement, holdout, or opponent-matrix gate has run."
+```
+
 ## Replay termination monitoring record
 
 ```yaml

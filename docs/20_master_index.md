@@ -62,6 +62,7 @@ Read these before changing runtime behavior:
 - [`29_gameplay_feedback.md`](29_gameplay_feedback.md) — canonical feedback records.
 - [`30_replay_learning_and_deck_agnostic_engine.md`](30_replay_learning_and_deck_agnostic_engine.md) — replay-learning foundation.
 - [`31_competitive_replay_annotations.md`](31_competitive_replay_annotations.md) — post-hoc agent replay reviews.
+- [`32_learning_to_rank.md`](32_learning_to_rank.md) — grouped datasets, native rankers, packages, and promotion gates.
 - [`25_rfl_experiments.md`](25_rfl_experiments.md) — learned-policy experiment runbook.
 
 ## Planning detail

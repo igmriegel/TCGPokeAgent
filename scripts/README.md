@@ -2,7 +2,8 @@
 
 The implemented scripts cover preflight, smoke/full evaluation, agent
 comparison, gameplay checks, local replay generation, data download, package
-construction, documentation drift, and guarded Kaggle submission.
+construction, grouped ranker training, documentation drift, and guarded Kaggle
+submission.
 
 Canonical command inventory:
 [`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).

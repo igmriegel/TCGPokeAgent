@@ -73,15 +73,20 @@ Start the Marimo annotation interface:
 uv run --frozen marimo edit notebooks/05_rfl_annotation.py
 ```
 
-Save annotations under a run-specific directory, for example:
+Feed candidate signals from a run-specific JSONL and save immutable feedback,
+for example:
 
 ```text
-runs/rfl/<study_id>/annotations.jsonl
+runs/rfl/<study_id>/review_candidates.jsonl
+runs/rfl/<study_id>/feedback_v2.jsonl
 ```
 
-Every preferred, acceptable or rejected index must exist in the corresponding
-trace. The annotation store rejects illegal indices and records the match ID,
-deck hash, matchup, turn, confidence, specialist version and schema version.
+The workbench orders operational failures and board collapse first, followed
+by divergent losses, low-margin choices, three-ranker disagreement, rare
+contexts, and controls. Every preferred, acceptable, or rejected index must
+exist in the corresponding legal options. `FeedbackStoreV2` rejects illegal
+or overlapping relevance classes and preserves reviewer, replay hash,
+actor-visible state, confidence, tags, and lineage.
 
 ## 5. Optimize heuristic weights
 

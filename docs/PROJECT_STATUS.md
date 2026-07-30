@@ -9,7 +9,7 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** heuristic-only; search disabled
+**Current release:** heuristic-only; learned rankers are unpromoted candidates
 
 ## Executive summary
 
@@ -26,7 +26,7 @@ scores below the accepted gameplay-recovery submission `55088176`.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 101 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
+| Quality | 107 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
 | Local evaluation | 400 matches vs `random`: 239W/0D/161L, 59.75% win rate, zero operational failures | Operational baseline only |
 | Kaggle stable candidate | `55088176`: 516.3 public score | Keep as remote reference |
 | Kaggle experimental candidate | `55093119`: 503.2 public score | Do not promote |
@@ -51,7 +51,7 @@ operational evidence until that metadata discrepancy is resolved.
 | Release S9 | In progress | Heuristic-only package and remote submissions exist | Final checklist and stable promotion evidence |
 | Feedback FB-2026-001–003 | Implemented, not validated | Core rules and focused tests exist | Six open validation/measurement actions |
 | Human capture HD0–HD5 | Deferred | Design only; post-hoc agent replay review is separate | First live human trace and staged delivery gates |
-| Learned policies | Not promoted | Replay-learning foundation exists | Data volume, temporal holdout, paired evaluation, and package gates |
+| Learned policies | Runtime implemented, not promoted | Shared schema, grouped datasets, XGBoost/LightGBM native runtime, fallback, and separate extracted-package smoke | Required human data, temporal holdout, paired CABT matrix, and promotion gates |
 
 ## Current decisions
 
@@ -62,6 +62,8 @@ operational evidence until that metadata discrepancy is resolved.
 5. Keep search and human-capture delivery outside the immediate release path.
 6. Require `scripts/audit_documentation.py` to pass with every code or
    documentation change.
+7. Keep heuristic as the release policy until one ranker passes every gate in
+   [`32_learning_to_rank.md`](32_learning_to_rank.md).
 
 ## Next work
 
