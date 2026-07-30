@@ -1,0 +1,6 @@
+include: agent_heuristic.yaml
+agent: lightgbm_ranker
+ranker:
+  backend: lightgbm_ranker
+  model_dir: model
+  feature_schema: selection-ranking-v1

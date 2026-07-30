@@ -1,0 +1,6 @@
+include: agent_heuristic.yaml
+agent: xgboost_ranker
+ranker:
+  backend: xgboost_ranker
+  model_dir: model
+  feature_schema: selection-ranking-v1

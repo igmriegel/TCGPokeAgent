@@ -2,6 +2,14 @@
 
 from .annotations import AnnotationStore, ExpertAnnotation
 from .dataset import HybridDataset, HybridExample, TraceStore, partition_traces, split_matches
+from .feedback import (
+    FeedbackEventV2,
+    FeedbackStoreV2,
+    InsightRecord,
+    InsightStatus,
+    ReviewCandidate,
+    prioritize_review_queue,
+)
 from .profiles import PolicyProfile, ProfileCompatibilityError, load_profile
 from .promotion import (
     PreferenceMetrics,
@@ -19,8 +27,12 @@ __all__ = [
     "DecisionTrace",
     "ExpertAnnotation",
     "FeatureSchema",
+    "FeedbackEventV2",
+    "FeedbackStoreV2",
     "HybridDataset",
     "HybridExample",
+    "InsightRecord",
+    "InsightStatus",
     "TraceStore",
     "PolicyProfile",
     "PreferenceMetrics",
@@ -28,11 +40,13 @@ __all__ = [
     "PromotionCriteria",
     "PromotionDecision",
     "RewardBreakdown",
+    "ReviewCandidate",
     "hybrid_reward",
     "apply_promotion_gates",
     "evaluate_preferences",
     "load_profile",
     "partition_traces",
+    "prioritize_review_queue",
     "split_matches",
     "write_promotion_manifest",
 ]

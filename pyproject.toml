@@ -24,6 +24,14 @@ dev = [
 notebooks = [
     "marimo>=0.12",
 ]
+ranker-lightgbm = [
+    "lightgbm==4.6.0",
+    "scikit-learn==1.7.1",
+]
+ranker-xgboost = [
+    "scikit-learn==1.7.1",
+    "xgboost-cpu==3.0.2",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
