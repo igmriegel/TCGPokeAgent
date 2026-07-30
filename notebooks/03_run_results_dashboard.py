@@ -164,6 +164,7 @@ def _(mo, os, pathlib):
         value="all",
         label="Termination reason",
     )
+    replay_reload = mo.ui.run_button(label="Reload downloaded replays")
     mo.vstack(
         [
             mo.md("## Competitive replay termination monitor"),
@@ -171,14 +172,15 @@ def _(mo, os, pathlib):
                 "The terminal `Result` log is authoritative. Board, deck, and "
                 "Prize counts are retained as consistency evidence."
             ),
-            mo.hstack([owner_name, outcome_filter, reason_filter]),
+            mo.hstack([owner_name, outcome_filter, reason_filter, replay_reload]),
         ]
     )
-    return outcome_filter, owner_name, reason_filter, replay_root
+    return outcome_filter, owner_name, reason_filter, replay_reload, replay_root
 
 
 @app.cell
-def _(load_replay_outcomes, owner_name, pd, replay_root):
+def _(load_replay_outcomes, owner_name, pd, replay_reload, replay_root):
+    replay_reload.value
     loaded_replay_outcomes, replay_load_errors = load_replay_outcomes(
         replay_root,
         owner_name=owner_name.value.strip() or None,
@@ -234,10 +236,14 @@ def _(filtered_replay_outcomes, mo, replay_errors, replay_outcomes, replay_root)
         if not replay_outcomes.empty
         else 0
     )
+    latest_episode = (
+        str(int(replay_outcomes["episode_id"].max())) if not replay_outcomes.empty else "n/a"
+    )
     mo.md(
         f"""
         Replays loaded from `{replay_root}`: **{len(replay_outcomes)}**
 
+        Latest episode: **{latest_episode}** ·
         Result reasons explicit: **{explicit_count}** ·
         Owner outcomes classified: **{owner_classified_count}** ·
         Filtered rows: **{len(filtered_replay_outcomes)}** ·
@@ -245,6 +251,44 @@ def _(filtered_replay_outcomes, mo, replay_errors, replay_outcomes, replay_root)
         Load errors: **{len(replay_errors)}**
         """
     )
+    return
+
+
+@app.cell
+def _(mo, replay_outcomes):
+    if replay_outcomes.empty:
+        _output = mo.md("### No downloaded replay snapshot yet")
+    else:
+        recent_columns = [
+            "episode_id",
+            "owner_outcome",
+            "termination_reason",
+            "terminal_turn",
+            "reason_consistent",
+            "source_path",
+        ]
+        recent_replays = (
+            replay_outcomes[recent_columns]
+            .sort_values("episode_id", ascending=False)
+            .head(20)
+            .assign(
+                source_file=lambda frame: frame["source_path"].map(
+                    lambda value: value.rsplit("/", maxsplit=1)[-1]
+                )
+            )
+            .drop(columns=["source_path"])
+        )
+        _output = mo.vstack(
+            [
+                mo.md("### Latest downloaded competitive replays"),
+                mo.md(
+                    "Newest 20 episodes discovered in the raw Kaggle replay directory. "
+                    "Use **Reload downloaded replays** after fetching another snapshot."
+                ),
+                recent_replays,
+            ]
+        )
+    _output
     return
 
 

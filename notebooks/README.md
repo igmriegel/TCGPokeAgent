@@ -12,7 +12,8 @@ production pipeline nor are they the single source of a decision.
   duplicate checks, cross-track equality, and a basic expansion summary.
 - [`03_run_results_dashboard.py`](03_run_results_dashboard.py) — compares
   experiment reports and monitors explicit Prize, deck-out, and empty-board
-  termination reasons from competitive CABT replays.
+  termination reasons from competitive CABT replays, including a reloadable
+  newest-first view of recently downloaded Kaggle episodes.
 - [`04_heuristic_score_lab.py`](04_heuristic_score_lab.py) — inspects score
   reasons and compares heuristic weight/feature ablations on controlled cases.
 
