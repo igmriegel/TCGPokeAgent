@@ -37,19 +37,14 @@ from .selection_generator import DefaultSelectionGenerator
 from .state import GameState, PlayerState, PokemonState
 from .strategy import RankedSelection, SelectionRanker, StrategicContext
 from .types import (
-    AgentMode,
     ErrorCategory,
     ExecutionStatus,
-    MatchResult,
-    MatchupLabel,
     OptionType,
     SelectContext,
     SelectType,
-    TurnPhase,
 )
 
 __all__ = [
-    "AgentMode",
     "AgentPolicy",
     "BeliefBuilder",
     "BeliefState",
@@ -71,8 +66,6 @@ __all__ = [
     "HeuristicScorer",
     "InvalidOutputError",
     "LegalityViolationError",
-    "MatchResult",
-    "MatchupLabel",
     "NoValidSelectionError",
     "ObservationParser",
     "OptionType",
@@ -98,5 +91,4 @@ __all__ = [
     "ShortSearch",
     "StateEvaluator",
     "StrategicContext",
-    "TurnPhase",
 ]

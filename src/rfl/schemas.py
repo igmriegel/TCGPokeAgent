@@ -69,25 +69,3 @@ class DecisionTrace:
     def to_dict(self) -> dict[str, Any]:
         """Serialize this trace."""
         return _json_dict(self)
-
-
-@dataclass(frozen=True, slots=True)
-class TurnTrace:
-    """Capture all decisions and actions belonging to one turn."""
-
-    match_id: str
-    turn: int
-    deck_id: str
-    deck_sha256: str
-    matchup: str
-    decisions: list[DecisionTrace] = field(default_factory=list)
-    actions: list[dict[str, Any]] = field(default_factory=list)
-    state_before: dict[str, Any] = field(default_factory=dict)
-    state_after: dict[str, Any] = field(default_factory=dict)
-    schema_version: str = "v1"
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize the turn and nested decisions."""
-        data = _json_dict(self)
-        data["decisions"] = [item.to_dict() for item in self.decisions]
-        return data

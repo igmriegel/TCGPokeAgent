@@ -9,11 +9,10 @@ from .promotion import (
     PromotionDecision,
     apply_promotion_gates,
     evaluate_preferences,
-    validate_extracted_package,
     write_promotion_manifest,
 )
 from .rewards import RewardBreakdown, hybrid_reward
-from .schemas import DecisionTrace, FeatureSchema, TurnTrace
+from .schemas import DecisionTrace, FeatureSchema
 
 __all__ = [
     "AnnotationStore",
@@ -29,13 +28,11 @@ __all__ = [
     "PromotionCriteria",
     "PromotionDecision",
     "RewardBreakdown",
-    "TurnTrace",
     "hybrid_reward",
     "apply_promotion_gates",
     "evaluate_preferences",
     "load_profile",
     "partition_traces",
     "split_matches",
-    "validate_extracted_package",
     "write_promotion_manifest",
 ]

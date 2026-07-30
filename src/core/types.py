@@ -1,25 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import NewType
-
-MatchupLabel = NewType("MatchupLabel", str)
-
-
-class TurnPhase(str, Enum):
-    UNKNOWN = "unknown"
-    START = "start"
-    DRAW = "draw"
-    MAIN = "main"
-    ATTACK = "attack"
-    END = "end"
-
-
-class MatchResult(str, Enum):
-    WIN = "win"
-    DRAW = "draw"
-    LOSS = "loss"
-    UNKNOWN = "unknown"
 
 
 class ExecutionStatus(str, Enum):
@@ -38,15 +19,6 @@ class ErrorCategory(str, Enum):
     RUNTIME = "runtime"
     INVALID = "invalid"
     UNKNOWN = "unknown"
-
-
-class AgentMode(str, Enum):
-    BASELINE = "baseline"
-    HEURISTIC = "heuristic"
-    HYBRID = "hybrid"
-    LINEAR_RANKER = "linear_ranker"
-    MLP_RANKER = "mlp_ranker"
-    RFL = "rfl"
 
 
 class SelectType(str, Enum):

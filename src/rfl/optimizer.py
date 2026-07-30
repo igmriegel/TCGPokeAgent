@@ -163,14 +163,3 @@ class WeightOptimizer:
         )
         connection.commit()
         connection.close()
-
-
-def study_is_resumable(path: str | Path) -> bool:
-    """Return whether an existing SQLite study file is readable."""
-    try:
-        connection = sqlite3.connect(path)
-        connection.execute("select 1")
-        connection.close()
-        return True
-    except sqlite3.Error:
-        return False

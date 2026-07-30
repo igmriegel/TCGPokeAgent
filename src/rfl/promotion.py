@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
-import tarfile
-import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
 
 from src.eval.metrics import AggregateMetrics
-from src.eval.validation import check_package_layout
 
 from .annotations import ExpertAnnotation
 from .schemas import DecisionTrace
@@ -161,29 +156,6 @@ def apply_promotion_gates(
         baseline=baseline,
         package_valid=package_valid,
     )
-
-
-def validate_extracted_package(archive: str | Path) -> bool:
-    """Extract and validate a submission archive in an isolated temporary directory."""
-    try:
-        with tempfile.TemporaryDirectory(prefix="rfl-package-") as directory:
-            root = Path(directory)
-            with tarfile.open(archive) as package:
-                package.extractall(root)
-            check_package_layout(root)
-            completed = subprocess.run(
-                ["python", "main.py"],
-                cwd=root,
-                input='{"select": null}',
-                env={**os.environ, "AGENT_MODE": "rfl"},
-                text=True,
-                capture_output=True,
-                timeout=30,
-                check=False,
-            )
-            return completed.returncode == 0 and completed.stdout.strip().startswith("[")
-    except (OSError, tarfile.TarError, subprocess.SubprocessError):
-        return False
 
 
 def write_promotion_manifest(path: str | Path, decision: PromotionDecision) -> None:
