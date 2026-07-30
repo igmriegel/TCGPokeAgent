@@ -1,6 +1,9 @@
 # Strategy evidence log
 
-This file is append-only for accepted decisions. Drafts may be edited; records with `status: accepted` only receive explicit corrections.
+This file is append-only historical evidence. It does not report current
+project status. Use [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for current
+metrics and decisions. Drafts may be edited; accepted records only receive
+explicit correction records.
 
 ## States
 
@@ -347,4 +350,36 @@ evidence:
 limitations:
   - "Both sides use the same owner name in three validation episodes, so perspective W/L cannot be assigned from replay identity."
   - "Simultaneous terminal conditions may exist; the explicit CABT reason is retained as authoritative."
+```
+
+## Remote score correction
+
+```yaml
+observed_at: "2026-07-30T02:58:27Z"
+corrects: EXP-20260729-004
+baseline_submission_id: 55088176
+baseline_public_score: 516.3
+candidate_submission_id: 55093119
+candidate_public_score: 503.2
+score_delta_candidate_minus_baseline: -13.1
+decision: "Retain 55088176 as the remote comparison reference and do not promote 55093119."
+limitations:
+  - "Remote evaluation variance and opponent composition are not controlled locally."
+```
+
+## Kaggle replay synchronization correction
+
+```yaml
+observed_at: "2026-07-30T02:58:27Z"
+corrects: "Kaggle replay synchronization record at 2026-07-29T23:15:36Z"
+raw_replays: 85
+schema_valid_replays: 85
+invalid_replays: 0
+raw_size: "135 MiB"
+attributable_matches: 82
+ambiguous_mirror_validation_matches: 3
+distinct_opponent_decks: 62
+derived_dataset_version: gameplay_replays_v1
+derived_dataset_matches: 31
+decision: "Retain the raw snapshot and create a new derived dataset version; v1 remains immutable."
 ```

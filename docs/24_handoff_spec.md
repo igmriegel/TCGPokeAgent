@@ -1,54 +1,36 @@
-# Implementation handoff
+# Handoff specification
 
-## Closed decisions
+## Frozen decisions
 
-- Python 3.12 selected by `.python-version` and reproduced in Docker;
-- dependencies resolved exclusively by `pyproject.toml` and `uv.lock`;
-- SDK initial `kaggle-environments==1.32.2`;
-- single deck from `cabt.first_agent`;
-- input `Observation`, output `list[int]`;
-- decision unit `Selection`;
-- `GameState` factual separated from `BeliefState`;
-- total deterministic fallback;
-- heuristic before search/models;
-- search top 3, depth 4, 100 ms, cutoff at 30 s;
-- smoke 20 and full >= 200, both sides;
-- zero `INVALID`, `ERROR`, `TIMEOUT`;
-- package revalidated after extraction.
+- Python 3.12 and dependencies from `pyproject.toml`/`uv.lock`;
+- `kaggle-environments==1.32.2`;
+- official 60-card deck;
+- `Observation` input and `list[int]` output;
+- `Selection` as the decision unit;
+- factual `GameState`, separate hypothetical `BeliefState`;
+- deterministic legal fallback;
+- heuristic before optional search or learned policies;
+- zero `INVALID`, `ERROR`, and `TIMEOUT`;
+- package validation after clean extraction.
 
-None of these points require a new architectural decision to start the MVP.
+## Required delivery
 
-## First engineer delivery
-
-Deliver F0 and F1 from [`11_implementation_order.md`](11_implementation_order.md), including:
-
-- reproducible environment;
-- validated deck;
-- wrapper and minimum package;
-- `Selection`, `GameState` and candidate types;
-- parser with fixtures;
-- fallback for all observed contexts;
-- smoke of 20 matches and report.
-
-## Required evidence in PR
-
-- tests and command executed;
-- SDK version;
-- deck hash;
-- results per side;
-- failure counts;
-- multiple selection example;
-- extracted and tested package;
-- `strategy_notes.md` update when there is an experimental claim.
-
-## Available data
-
-The eight datasets from both tracks are in `data/raw/kaggle/`, with SHA-256, schema and provenance in the manifest. There is no pending authentication block to start the inventory or implementation.
-
-## Change rule
-
-A behavior change updates code, test, config, experiment manifest, report and Strategy. An external contract change requires official source and date. A version only replaces the stable one after complete gate and preserved rollback.
+1. source and configuration for the selected policy;
+2. root `main.py` and `deck.csv`;
+3. frozen release manifest with code, deck, SDK, config, and package hashes;
+4. focused tests and quality-gate results;
+5. both-side frozen evaluation report;
+6. isolated package smoke;
+7. remote submission receipt when promotion is requested;
+8. rollback reference;
+9. evidence-log entry for experimental claims.
 
 ## Acceptance
 
-The handoff is complete when the first delivery passes all "MVP integrated" items from [`19_final_harness_checklist.md`](19_final_harness_checklist.md). The submission is only complete when it also passes the "Submission approved" block.
+The handoff is complete only when every applicable row in
+[`19_final_harness_checklist.md`](19_final_harness_checklist.md) is `PASS`.
+Search and learned-model gates may be `N/A` only when explicitly excluded from
+the release scope.
+
+Task status belongs in [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md);
+current release status belongs in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).

@@ -197,7 +197,7 @@ Resolution: load included file, shallow-merge current on top. See
 Environment variable `AGENT_MODE`:
 - `baseline` — BaselineAgent (fallback only)
 - `heuristic` — HeuristicAgent (+ scorer)
-- `hybrid` — HeuristicAgent + ShortSearch (planned)
+- `hybrid` — HeuristicAgent with search configured off until the native adapter is verified
 
 ---
 
@@ -212,9 +212,9 @@ Environment variable `AGENT_MODE`:
 | F4 | Belief + ShortSearch | Search doesn't reduce wins, ≤100ms |
 | F5 | Frozen package, final matrix | All handoff spec items |
 
-Current status: contract scaffolding and basic unit tests exist; executable
-completion is tracked by the detailed MVP sprints in
-`docs/02_sprints/mvp_implementation_sprints.md`. Do not mark F0-F5 complete without their
+Current status is reported only in `docs/PROJECT_STATUS.md`; task status is
+reported only in `docs/03_tasks/TASK_INDEX.md`. Sprint specifications define
+scope and gates but do not own status. Do not mark F0-F5 complete without their
 documented gates and evidence.
 
 ---
@@ -315,7 +315,9 @@ scripts/build_package.sh submission.tar.gz
 
 ## References
 
-- `docs/20_master_index.md` — canonical doc index
+- `docs/20_master_index.md` — canonical documentation hub
+- `docs/PROJECT_STATUS.md` — current verified status and decisions
+- `docs/03_tasks/TASK_INDEX.md` — executable backlog and task counts
 - `docs/01_architecture.md` — detailed architecture
 - `docs/11_implementation_order.md` — vertical slice plan
 - `docs/24_handoff_spec.md` — submission acceptance criteria

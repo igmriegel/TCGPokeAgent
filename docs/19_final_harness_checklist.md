@@ -1,71 +1,51 @@
-# Objective readiness criteria
+# Release acceptance checklist
 
-## Documentation ready
+> Canonical release gate. `PASS` requires linked evidence from the candidate
+> being promoted. `PARTIAL` blocks promotion. `N/A` requires an explicit scope
+> decision.
 
-- [x] contract uses `Observation` and `list[int]`;
-- [x] `Selection` covers zero, one and multiple options;
-- [x] `SelectType`, `SelectContext` and `OptionType` have a defined role;
-- [x] `GameState` contains facts and `BeliefState` contains hypotheses;
-- [x] parser, scorer, belief, search and evaluation interfaces are independent;
-- [x] smoke, full, search and package gates are measurable;
-- [x] roadmap and Strategy track have promotion criteria;
-- [x] external sources have verification date;
-- [x] Kaggle downloads have hash, format, local schema and sanitized samples.
+**Last audited:** 2026-07-29
 
-## MVP integrated
+**Release scope:** heuristic-only; native search disabled
 
-- [ ] Python 3.12 environment created by `uv sync --frozen`;
-- [ ] SDK 1.32.2 and `kagglehub` installed from `uv.lock`;
-- [ ] preflight confirms the exact SDK distribution version;
-- [ ] official 60-card deck validated;
-- [ ] initial wrapper and game branch pass;
-- [ ] fallback covers all observed contexts;
-- [ ] smoke 20/20 with no failures;
-- [x] full report with >= 200 matches;
-- [ ] both sides and four opponents;
-- [x] complete metrics and Wilson.
+## Gate summary
 
-## Search approved
+| Gate | State | Evidence or gap |
+|---|---|---|
+| Documentation and contracts | `PASS` | Protocol, vocabulary, metrics, persistence, and handoff contracts exist |
+| Reproducible environment | `PASS` | Python 3.12, frozen `uv.lock`, SDK 1.32.2, preflight |
+| Legal runtime behavior | `PASS` | Parser/fallback tests and zero operational failures in recorded smoke |
+| Package isolation and safety | `PASS` | Root files, size, traversal checks, extracted-content smoke |
+| Full local evaluation | `PARTIAL` | 400 matches exist, but only against `random`; report metadata needs reconciliation |
+| Gameplay behavior | `PARTIAL` | Productive play recovered; full development and gameplay metrics remain open |
+| Feedback validation | `PARTIAL` | FB-2026-001–003 implemented but not frozen-gate validated |
+| Search | `N/A` | Disabled because no verified project Python adapter exists |
+| Learned policy | `N/A` | No model is proposed for this release |
+| Remote promotion | `PARTIAL` | `55093119` scores below stable reference `55088176` |
 
-Not applicable to the current heuristic-only release. Search is disabled by
-configuration because the documented native lifecycle is not yet exposed
-through a verified project Python adapter.
+## Blocking items
 
-- [ ] only `MAIN`, more than one candidate and overage >= 30 s;
-- [ ] top 3, depth <= 4, <= 100 ms;
-- [ ] consistent determinization;
-- [ ] released states and guaranteed `search_end`;
-- [ ] failures fall back to heuristic;
-- [ ] win rate does not drop against pure heuristic.
+- [ ] T-001–T-003: complete board-development behavior and metrics.
+- [ ] T-004: run the frozen four-opponent, both-side comparison.
+- [ ] T-005–T-006: validate Rule Box/PrizeMap and PrizeCheck transitions.
+- [ ] Resolve local report `agent_mode` metadata.
+- [ ] Rebuild and validate the final artifact after the promoted policy is frozen.
+- [ ] Confirm the remote candidate is non-inferior to the stable reference.
 
-## Replay-learning foundation
+## Already satisfied
 
-- [x] replay observations are aligned with the following recorded action;
-- [x] simulator option indices are preserved and selections are validated;
-- [x] opponent decks are extracted as immutable 60-card multisets;
-- [x] train, validation, and holdout groups do not share actor deck hashes;
-- [x] model inputs exclude identity, future state, reward, and opaque payloads;
-- [x] manifest records source and output hashes;
-- [x] Rule Box, PrizeMap, and PrizeCheck have focused tests;
-- [x] the current deck profile is data rather than policy code;
-- [x] agent-versus-agent replay reviews preserve legal decisions and raw feedback;
-- [ ] linear ranker data-volume and paired promotion gates pass;
-- [ ] MLP data-volume and paired promotion gates pass;
-- [ ] RFL self-play and paired promotion gates pass.
+- [x] `Observation` to legal `list[int]` contract.
+- [x] Factual `GameState` and separate `BeliefState`.
+- [x] Official 60-card deck and exact SDK version.
+- [x] Deterministic fallback and original option indices.
+- [x] Zero `INVALID`, `ERROR`, and `TIMEOUT` in recorded full local evaluation.
+- [x] Package below 197.7 MiB with no unsafe archive paths.
+- [x] Isolated package execution and remote-compatible root layout.
+- [x] Release hashes, manifest, rollback artifact, and evidence log.
+- [x] Search explicitly disabled for the heuristic-only scope.
 
-The checked items establish a reproducible learning harness. They do not
-promote a learned policy or prove that the current heuristic has reached the
-performance ceiling of the submitted deck.
+## Decision rule
 
-## Submission approved — heuristic-only release
-
-- [x] `main.py` and `deck.csv` in root;
-- [ ] imports work in `/kaggle_simulations/agent/`;
-- [x] size < 197.7 MiB;
-- [x] tar without path traversal;
-- [x] smoke passes using only extracted content;
-- [x] hashes and manifest frozen;
-- [x] linked Strategy evidence.
-- [x] search disabled explicitly with documented SDK reason.
-
-Readiness requires all items from the corresponding block; partial percentage does not replace a gate.
+The next candidate may be promoted only when every applicable gate is `PASS`.
+A prior release may remain usable while a new candidate is blocked. Current
+headline status belongs in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).

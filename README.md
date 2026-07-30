@@ -1,16 +1,18 @@
 # Pokémon TCG Engine for Kaggle
 
-Executable plan, in English, to build, measure, and submit an agent to the **PTCG AI Battle Challenge**. API and code identifiers remain in English.
+Python agent, evaluation harness, replay-learning foundation, and submission
+tooling for the **PTCG AI Battle Challenge**.
 
 ## Objective
 
-The project evolves along three inseparable tracks:
+The project has three tracks:
 
-1. **Submittable MVP:** fixed deck, real integration with `cabt`, explicit heuristics, short search and deterministic fallback.
-2. **Continuous improvement:** promotion by metrics to supervised rankers, self-play, RL and search under imperfect information.
-3. **Strategy:** hypothesis, ablation, result and traceable evidence from the first version.
-
-This revision defines the implementation; the existing Python modules and YAML files do not yet implement these contracts.
+1. **Heuristic release:** fixed deck, CABT integration, legal fallback, explicit
+   gameplay rules, evaluation, and isolated packaging.
+2. **Evidence-driven improvement:** replay analysis, paired comparisons, and
+   optional learned policies.
+3. **Deferred capabilities:** native short search and live human gameplay
+   capture after the release gates are green.
 
 ## External contract
 
@@ -23,28 +25,17 @@ This revision defines the implementation; the existing Python modules and YAML f
 
 Sources verified on **2026-07-27**: [competition Simulation](https://www.kaggle.com/competitions/pokemon-tcg-ai-battle/overview/description), [`cabt` API](https://matsuoinstitute.github.io/cabt/api.html) and [environment specification](https://raw.githubusercontent.com/Kaggle/kaggle-environments/master/kaggle_environments/envs/cabt/cabt.json).
 
-## Implementation order
-
-1. Prepare SDK, official deck and minimal wrapper.
-2. Preserve raw `Observation` and normalize state/options.
-3. Generate all valid `Selection`, including empty or multiple.
-4. Implement fallback by `SelectContext`.
-5. Implement `HeuristicScorer`.
-6. Build runner, metrics and smoke test of 20 matches.
-7. Add `BeliefBuilder`, `StateEvaluator` and `ShortSearch`.
-8. Run full gate of at least 200 matches.
-9. Package, extract into temporary directory and repeat validation using only the package.
-
-Start at the [canonical index](docs/20_master_index.md), follow the [detailed
-MVP sprint backlog](docs/02_sprints/mvp_implementation_sprints.md), and use the [MVP
-vertical order](docs/11_implementation_order.md) as the dependency gate.
+Start with the [current status](docs/PROJECT_STATUS.md), choose work from the
+[task index](docs/03_tasks/TASK_INDEX.md), and use the
+[documentation hub](docs/20_master_index.md) to find contracts, gates, and
+implementation guides.
 
 ## Structure
 
-- `docs/`: contracts, gates, roadmap and Strategy record.
-- `src/`: reserved namespaces for implementation.
-- `configs/`: existing profiles; the future contract is in `docs/22_config_spec.md`.
-- `scripts/`: commands to be implemented as per `docs/23_scripts_spec.md`.
+- `docs/`: canonical status, tasks, contracts, gates, and evidence.
+- `src/`: agent, domain, evaluation, data, experiment, and learning code.
+- `configs/`: versioned runtime and evaluation profiles.
+- `scripts/`: operational, evaluation, package, and submission commands.
 - `data/raw/kaggle/`: authorized destination for official downloads, separated by competition.
 - `notebooks/`: exploration; never the sole source of a decision.
 

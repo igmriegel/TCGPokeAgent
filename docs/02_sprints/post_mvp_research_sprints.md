@@ -1,194 +1,53 @@
-# Post-MVP research sprints
+# Post-MVP research specifications
 
-These sprints implement the M1–M8 roadmap in
-[`04_sprint_plan.md`](../04_sprint_plan.md). They start only after the MVP gate in
-[`mvp_implementation_sprints.md`](mvp_implementation_sprints.md) is complete.
-Each sprint preserves the stable candidate, uses the same versioned evaluation
-protocol, and can be rolled back independently. No research sprint may change
-the submission policy without a paired comparison and a new release manifest.
+R1–R8 are deferred until the heuristic release gates are green. Current status
+belongs in the [`roadmap`](../04_sprint_plan.md).
 
-## Research operating rules
+## Shared promotion gate
 
-- Freeze the deck, SDK, holdout, and opponent matrix before comparing models.
-- Keep training/validation data separate from the final temporal holdout.
-- Log feature schema, model hash, random seed, training data hash, and runtime
-  latency in the experiment manifest.
-- Compare against the stable heuristic and the previous promoted candidate on
-  identical seeds and both sides.
-- Promote only when win rate is non-inferior or improved, operational failures
-  remain zero, and latency/package gates remain green.
+Every research candidate freezes the deck, SDK, data split, opponent matrix,
+seeds/case identifiers, feature schema, and artifact hash. It must preserve
+zero operational failures, pass isolated package and latency checks, improve
+or remain non-inferior to the stable heuristic, and retain rollback.
 
-## R1 — Configurable heuristic and ablation matrix (M1)
+## R1 — Configurable heuristic ablations
 
-**Dependency:** S4 and S6.  
-**Outcome:** a reproducible rule-level baseline and ablation report.
+Produce a rule-level baseline by disabling one feature family at a time while
+preserving all other inputs. Gate: deterministic matrix and paired report.
 
-### Work
+## R2 — Linear NumPy ranker
 
-- Define feature groups and rule flags in the agent configuration.
-- Generate one experiment per disabled rule family while freezing all other
-  inputs.
-- Store score/reason distributions and decision latency, not only W/D/L.
-- Add paired bootstrap or confidence reporting appropriate to the fixed seed
-  pairs.
-- Promote only the simplest rule set that meets the gate.
+Train a regularized legal-selection ranker from leakage-safe decision groups.
+Gate: temporal holdout, deterministic export, latency, and paired comparison.
 
-### Verification and exit
+## R3 — LightGBM LambdaRank
 
-Run the full ablation grid, confirm deterministic matrix expansion, and attach
-the report to `strategy_notes.md`. A missing rule trace or changed seed set
-fails the sprint.
+Evaluate a grouped listwise ranker only after dependency, package-size, and
+runtime review. Gate: isolated package plus explainability and ablation report.
 
-## R2 — Linear NumPy ranker (M2)
+## R4 — NumPy MLP fallback
 
-**Dependency:** R1.  
-**Outcome:** a small supervised ranker that beats or matches the heuristic on a
-temporal holdout.
+Provide a dependency-light nonlinear alternative when R3 is unsafe or
+insufficient. Gate: numerical stability and at least 95% of the promoted
+ranker's measured gain.
 
-### Work
+## R5 — PPO with action masking
 
-- Define a versioned decision-ranking dataset from validated traces.
-- Generate legal candidate pairs/sets and labels from outcomes or search
-  preferences without leaking future information.
-- Train a regularized linear model with deterministic preprocessing and save
-  coefficients plus feature schema.
-- Integrate inference behind `AgentMode`, preserving heuristic fallback for
-  unknown features and invalid model output.
-- Compare heuristic, ablated heuristic, and ranker on validation and holdout.
+Train against a frozen curriculum and opponent pool while masking illegal
+selections. Gate: reproducible improvement over the fixed pool and heuristic.
 
-### Verification and exit
+## R6 — Recurrent belief model
 
-Test serialization round-trip, feature ordering, inference latency, and
-package size. Promotion requires paired holdout evidence and zero operational
-failures.
+Add history only when it improves hidden-information matchups without leaking
+future state. Gate: calibration, ablation, and robust paired gain.
 
-## R3 — LightGBM LambdaRank (M3)
+## R7 — Information-set search
 
-**Dependency:** R2.  
-**Outcome:** a compact listwise ranker, only if its dependency is safe for the
-submission environment.
+Combine verified CABT search with multiple determinizations and learned or
+heuristic priors. Gate: traceable budget, state cleanup, and gain that justifies
+latency.
 
-### Work
+## R8 — Joint deck, policy, and priors
 
-- Add LightGBM only through `pyproject.toml`/`uv.lock` after a package-size and
-  runtime review.
-- Train grouped ranking examples by decision, with temporal split and fixed
-  seed.
-- Export the smallest compatible model and verify loading in the isolated
-  submission package.
-- Produce SHAP/feature-importance and ablation evidence without using it as
-  runtime logic.
-
-### Verification and exit
-
-If package or latency gates fail, mark R3 rejected and retain R2. A research
-gain without isolated-package compatibility cannot be promoted.
-
-## R4 — NumPy MLP fallback (M4)
-
-**Dependency:** R3 rejected or insufficient.  
-**Outcome:** a dependency-light nonlinear ranker.
-
-### Work
-
-- Implement a fixed small MLP in NumPy with deterministic training/export.
-- Quantize or simplify weights if needed for the package limit.
-- Add numerical stability, finite-output, and timeout guards.
-- Compare against the linear ranker and retain it only if it preserves at least
-  95% of the promoted ranker gain under all operational gates.
-
-### Verification and exit
-
-Test inference against a reference implementation, malformed model files,
-finite outputs, latency percentiles, and clean extraction. Otherwise retain
-the simpler stable model.
-
-## R5 — PPO with action masking and curriculum (M5)
-
-**Dependency:** promoted supervised baseline and a reliable simulator runner.  
-**Outcome:** an offline-trained policy candidate that never proposes illegal
-actions.
-
-### Work
-
-- Define a fixed action encoding over legal selection candidates and an action
-  mask generated by the same legality layer as runtime.
-- Build curriculum stages from supervised imitation to self-play and record
-  environment/version seeds.
-- Keep training code outside the submission package; export only inference
-  artifacts.
-- Evaluate against fixed pool, promoted heuristic/ranker, and previous release.
-- Add collapse detection, invalid-action count, and checkpoint rollback.
-
-### Verification and exit
-
-Promotion requires statistically credible improvement, zero invalid runtime
-actions, reproducibility from the training manifest, and package compliance.
-
-## R6 — GRU-PPO or belief model (M6)
-
-**Dependency:** R5 and validated hidden-information traces.  
-**Outcome:** history-aware policy for matchups where public state is
-insufficient.
-
-### Work
-
-- Define a serialized event/history vocabulary with versioned padding and masks.
-- Train a compact recurrent policy or belief predictor using only legal,
-  timestamped histories.
-- Compare predicted hidden-card distributions against the deterministic belief
-  builder and expose calibration/error metrics.
-- Ensure runtime state is bounded and reset at match boundaries.
-
-### Verification and exit
-
-Test reset behavior, hidden-state determinism, memory/latency bounds, and
-cross-match contamination. Promote only when hidden-information matchups gain
-without degrading public-state matchups.
-
-## R7 — ISMCTS/PUCT with determinizations (M7)
-
-**Dependency:** S7, S8, and a promoted evaluator/belief model.  
-**Outcome:** bounded imperfect-information search with measurable value.
-
-### Work
-
-- Implement deterministic-seeded determinizations from `BeliefState`.
-- Add PUCT/ISMCTS node state, legal-action expansion, rollout/evaluator calls,
-  and transposition keys that exclude mutable hidden assumptions.
-- Enforce the existing 100 ms/30 s gates and release all simulator states.
-- Compare search budget tiers and determinizations against the stable
-  heuristic/ranker.
-
-### Verification and exit
-
-Keep ISMCTS disabled if gain does not justify CPU, complexity, or variance.
-Every accepted version needs a replayable search trace and no runtime failure.
-
-## R8 — Joint deck, policy, and priors (M8)
-
-**Dependency:** a stable policy and a sufficiently diverse opponent pool.  
-**Outcome:** robust deck/policy co-optimization with rollback.
-
-### Work
-
-- Version deck candidates as immutable artifacts and validate each with the
-  SDK before gameplay evaluation.
-- Define a multi-objective score covering win rate, matchup variance,
-  robustness, latency, and package size.
-- Search deck/policy/prior combinations only on training/validation data; keep
-  the holdout untouched until final selection.
-- Record the ladder/opponent-pool distribution and sensitivity to shifts.
-
-### Verification and exit
-
-Promote only a candidate that improves robustness across the declared pool,
-passes both-side operational gates, and preserves a complete rollback path to
-the previous deck and policy.
-
-## Research completion gate
-
-The research roadmap is complete only when every promoted milestone has a
-manifest, data/model hashes, paired comparison, holdout result, Strategy entry,
-and reproducible rollback artifact. Rejected milestones remain documented and
-must not be presented as implemented.
+Optimize only after policy evaluation is stable. Gate: robustness across a
+diverse fixed pool, isolated package, and preserved rollback.

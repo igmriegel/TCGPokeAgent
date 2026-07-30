@@ -1,18 +1,18 @@
-# Sprint tasks
+# Tasks
 
-This directory contains task-level handoff material for implementing the
-sprints. It is the starting point for a human or coding agent that needs to
-identify the objective, source files, tests, and acceptance gate for a change.
+Use [`TASK_INDEX.md`](TASK_INDEX.md) as the only task-status registry.
 
-- [`sprint_traceability.md`](sprint_traceability.md) — maps every MVP and
-  post-MVP objective to its sprint, code locations, evidence, and acceptance
-  documents.
+Before working:
 
-Execution order:
+1. choose the highest-priority unblocked task;
+2. read its linked sprint and contract;
+3. preserve unrelated worktree changes;
+4. freeze the applicable gate before implementation.
 
-1. Read [`../02_sprints/mvp_implementation_sprints.md`](../02_sprints/mvp_implementation_sprints.md)
-   or the relevant research sprint.
-2. Use the traceability matrix to locate code, tests, and contracts.
-3. Run the sprint's verification commands and record evidence.
-4. Update the sprint status only after its exit criteria are met.
+Before marking a task done:
 
+1. run its focused verification and the required quality gates;
+2. record immutable evidence;
+3. update the task row;
+4. update `PROJECT_STATUS.md` only if a headline decision changed;
+5. create an atomic commit.

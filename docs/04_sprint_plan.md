@@ -1,30 +1,73 @@
-# Roadmap from MVP to research
+# Canonical roadmap
 
-This is the strategic roadmap. The executable MVP backlog is in
-[`02_sprints/mvp_implementation_sprints.md`](02_sprints/mvp_implementation_sprints.md),
-the post-MVP research backlog is in
-[`02_sprints/post_mvp_research_sprints.md`](02_sprints/post_mvp_research_sprints.md),
-and the cross-reference from objectives to code/tests is in
-[`03_tasks/sprint_traceability.md`](03_tasks/sprint_traceability.md).
+> This file owns track-level status, dependencies, and gates. Action-level
+> status belongs in [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 
-| Milestone | Delivery | Gate |
+**Last reviewed:** 2026-07-29
+
+## Immediate objective
+
+Close the heuristic-only release with trustworthy gameplay evidence. Search,
+human capture, and learned policies remain outside the immediate release path.
+
+## MVP track
+
+| Sprint | Outcome | Status | Closure gate |
+|---|---|---|---|
+| S0 | Reproducible environment and preflight | `DONE` | Exact SDK and static checks |
+| S1 | Deck, wrapper, and isolated package smoke | `DONE` | Both-side package execution |
+| S2 | Factual parser and real observation coverage | `IN_PROGRESS` | Current real golden fixtures |
+| S3 | Legal selections and deterministic fallback | `IN_PROGRESS` | Revalidated contexts; zero operational failures |
+| S4 | Explainable gameplay heuristic | `IN_PROGRESS` | Board-development rules plus frozen non-regression |
+| S5 | Runner, traces, and gameplay metrics | `IN_PROGRESS` | Decision and termination metrics |
+| S6 | Immutable experiments and promotion gates | `IN_PROGRESS` | Four-opponent, both-side report |
+| S7 | Belief and leaf evaluation | `IN_PROGRESS` | Real-observation invariants |
+| S8 | Bounded native search | `DEFERRED` | Verified adapter, latency, cleanup, and non-regression |
+| S9 | Frozen heuristic-only release | `IN_PROGRESS` | Final acceptance checklist |
+
+## Heuristic improvement track
+
+| Sprint | Outcome | Status | Dependency |
+|---|---|---|---|
+| H0 | Complete measurement baseline | `READY` | S5–S6 |
+| H1 | Catalog integrity and deck coverage | `READY` | H0 |
+| H2 | Context-specific scoring | `READY` | H1 |
+| H2A | Continuous board development | `IN_PROGRESS` | Current S4 recovery |
+| H3 | Local tactical evaluator | `DEFERRED` | H2 |
+| H4 | Belief-derived signals | `DEFERRED` | H1, H3 |
+| H5 | Weight optimization | `DEFERRED` | H2–H4 |
+| H6 | Supervised ranker | `DEFERRED` | H5 and more data |
+| H7 | Matchup-aware profiles | `DEFERRED` | H0, H6 |
+| H8 | Hardened heuristic release | `READY` | H0 and selected improvements |
+
+## Human gameplay track
+
+| Stage | Outcome | Status |
 |---|---|---|
-| M0 | SDK 1.32.2, official deck, wrapper, parser and fallback | smoke of 20; zero failures |
-| M1 | configurable heuristics and per-rule ablations | reproducible gain without new failures |
-| M2 | linear NumPy ranker | beats heuristics on temporal holdout and paired matches |
-| M3 | LightGBM LambdaRank | local gain, SHAP/ablation and compatible package |
-| M4 | small NumPy MLP, if LightGBM is unsafe | preserves at least 95% of ranker gain |
-| M5 | PPO with action masking and curriculum | beats fixed pool and previous version with confidence |
-| M6 | GRU-PPO or belief model | gain in hidden information matchups |
-| M7 | ISMCTS/PUCT with multiple determinizations | gain justifies CPU and latency |
-| M8 | joint optimization of deck, policy and priors | robustness against diverse pool and ladder meta |
+| HD0 | Trace schema and privacy contract | `DEFERRED` |
+| HD1 | Terminal human player | `DEFERRED` |
+| HD2 | Browser player | `DEFERRED` |
+| HD3 | Replay annotation UI | `DEFERRED` |
+| HD4 | Human/agent disagreement report | `DEFERRED` |
+| HD5 | Preference export | `DEFERRED` |
 
-## Mandatory sequence
+Post-hoc reviews of automated Kaggle matches are implemented separately and do
+not count as human demonstrations.
 
-No milestone skips the previous one as a comparable baseline. Each promotion preserves rollback to the best stable version and records hypothesis, ablation, deck, model and report.
+## Research track
 
-## Deferred approaches
+R1–R8 remain `DEFERRED` until the MVP comparison and release gates are green:
+configurable ablations, linear ranker, LambdaRank, NumPy MLP, PPO, recurrent
+belief model, information-set search, and joint deck/policy optimization.
 
-- LLM at runtime: size, latency and non-determinism do not solve a textual need.
-- Initial tabular DQN: variable options and combinations make the representation fragile.
-- Initial full MCTS: hidden information requires a validated belief and evaluator first.
+## Promotion rules
+
+Every promoted candidate must:
+
+1. preserve zero `INVALID`, `ERROR`, and `TIMEOUT`;
+2. use a frozen deck, opponent matrix, acceptance expression, and artifact;
+3. compare both sides against the stable reference;
+4. pass package isolation and latency gates;
+5. retain a rollback candidate and append evidence to `strategy_notes.md`.
+
+Detailed sprint scope is available under [`02_sprints/`](02_sprints/README.md).
