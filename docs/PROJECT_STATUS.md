@@ -4,9 +4,10 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-07-29
+**Last verified:** 2026-07-30
 
-**Code baseline:** `main` at `4b28b08`, synchronized with `origin/main`
+**Code baseline:** `main`; exact revisions are preserved in Git and release
+manifests rather than copied into this self-changing status page
 
 **Current release:** heuristic-only; search disabled
 
@@ -25,7 +26,7 @@ scores below the accepted gameplay-recovery submission `55088176`.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 100 tests pass; Ruff, formatting, and mypy pass | Green |
+| Quality | 101 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
 | Local evaluation | 400 matches vs `random`: 239W/0D/161L, 59.75% win rate, zero operational failures | Operational baseline only |
 | Kaggle stable candidate | `55088176`: 516.3 public score | Keep as remote reference |
 | Kaggle experimental candidate | `55093119`: 503.2 public score | Do not promote |
@@ -34,6 +35,7 @@ scores below the accepted gameplay-recovery submission `55088176`.
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
 | Human gameplay capture | No live human match captured | HD0–HD5 remain deferred |
+| Documentation integrity | All `src` modules inventoried; internal links, task IDs, counts, and stale claims checked automatically | Living gate |
 
 The local 400-match artifact reports `agent_mode: baseline` although its path
 and project evidence describe the heuristic evaluation. Treat the result as
@@ -58,6 +60,8 @@ operational evidence until that metadata discrepancy is resolved.
 3. Finish board-development evidence before adding more heuristic rules.
 4. Rebuild the derived replay dataset from the 85-file raw snapshot.
 5. Keep search and human-capture delivery outside the immediate release path.
+6. Require `scripts/audit_documentation.py` to pass with every code or
+   documentation change.
 
 ## Next work
 
@@ -73,6 +77,7 @@ The recommended order is:
 ## Evidence links
 
 - [Task registry](03_tasks/TASK_INDEX.md)
+- [Codebase map](CODEBASE_MAP.md)
 - [Roadmap](04_sprint_plan.md)
 - [Acceptance checklist](19_final_harness_checklist.md)
 - [Feedback register](29_gameplay_feedback.md)

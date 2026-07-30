@@ -5,6 +5,10 @@ The high-level behavioral intent is maintained separately in
 must identify which accepted gameplay rule they implement and which trace or
 metric verifies it.
 
+**Current implementation note:** `HybridAgent.select()` delegates directly to
+the heuristic. The algorithm below is the S8 target and must not be reported
+as active search behavior.
+
 ## Dispatch by context
 
 | Group | Contexts | Initial rule |
@@ -60,11 +64,13 @@ score =
 
 1. Start monotonic clock.
 2. Check gates and build belief.
-3. Call `search_begin` with the `Observation` exactly as received.
+3. Call `search_begin` with the opaque `search_begin_input` exactly as
+   received.
 4. For each of the top 3 heuristic selections, call `search_step`.
 5. Continue for at most 4 selections in the branch, using heuristic for intermediate responses.
 6. Stop at end of turn, terminal, or budget.
-7. Evaluate leaf with `StateEvaluator`.
+7. Evaluate the adapter score; the standalone `StateEvaluator` remains a
+   deferred leaf-evaluation component and is not wired to this adapter.
 8. Release every intermediate `searchId` with `search_release`.
 9. Execute `search_end()` in `finally`.
 10. Choose highest value; tie by index.

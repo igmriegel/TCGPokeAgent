@@ -1,5 +1,7 @@
 # Experiments
 
-Implement reproducible specs, immutable runs, registry, grids, ablations, and promotion/rollback.
+The orchestrator creates immutable run directories, manifests, match records,
+and JSON/Markdown reports. Grids and automated promotion/rollback remain
+outside this module.
 
 Contract: [`docs/09_experiment_contracts.md`](../../docs/09_experiment_contracts.md).

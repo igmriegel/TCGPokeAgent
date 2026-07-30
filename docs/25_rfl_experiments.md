@@ -140,26 +140,20 @@ Promotion is allowed only when `decision.promoted` is `True`. Persist the
 decision with `write_promotion_manifest`; failed candidates remain artifacts
 and must not replace the active profile.
 
-## 7. Validate the extracted submission package
+## 7. Package gate
 
-Build and validate the exact archive that would be submitted:
+The current package allowlist is heuristic-only: it excludes `src/rfl/` and
+`configs/decks/`. Therefore an RFL profile cannot be promoted or described as
+package-valid today. The generic archive validator can validate the heuristic
+fallback, but that is not evidence that an RFL profile loaded.
 
-```bash
-archive="runs/rfl/<study_id>/submission.tar.gz"
-mkdir -p "$(dirname "$archive")"
-scripts/build_package.sh "$archive"
-PYTHONPATH=. uv run --frozen python - <<PY
-from src.rfl.promotion import validate_extracted_package
+Before an RFL promotion attempt, create an executable task that:
 
-if not validate_extracted_package("$archive"):
-    raise SystemExit("extracted package validation failed")
-print("extracted package: OK")
-PY
-```
-
-The package validator runs `main.py` with `AGENT_MODE=rfl`; this confirms that
-the promoted deck profile is included in the archive and that the initial deck
-response still works.
+1. extends the explicit package allowlist with the required RFL modules and
+   selected deck-bound profile;
+2. makes profile-load failure fatal in the RFL validation mode;
+3. runs at least one in-game decision, not only the initial deck response;
+4. verifies the loaded profile version and deck SHA-256 from extracted files.
 
 ## Required evidence before promotion
 
@@ -170,7 +164,7 @@ response still works.
 - win rate with Wilson interval and comparison to baseline;
 - `INVALID`, `ERROR` and `TIMEOUT` counts;
 - p50/p95/p99 decision latency;
-- extracted-package validation result;
+- RFL-aware extracted-package validation result;
 - promotion manifest and rollback profile.
 
 The repository tests validate the contracts, but they do not substitute for the

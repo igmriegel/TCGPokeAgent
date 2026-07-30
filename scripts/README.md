@@ -1,8 +1,11 @@
 # Operational scripts
 
-Implement thin wrappers for preflight, smoke/full, comparison, freeze, package, isolated validation, Strategy, and Kaggle inventory.
+The implemented scripts cover preflight, smoke/full evaluation, agent
+comparison, gameplay checks, local replay generation, data download, package
+construction, documentation drift, and guarded Kaggle submission.
 
-Commands and exit codes: [`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).
+Canonical command inventory:
+[`docs/23_scripts_spec.md`](../docs/23_scripts_spec.md).
 
 ## End-to-end simulation submission
 

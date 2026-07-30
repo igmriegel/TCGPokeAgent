@@ -8,6 +8,7 @@ other documents link to it instead of copying it.
 | Question | Canonical source |
 |---|---|
 | What is the current project state? | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) |
+| Which code is active, manual, or deferred? | [`CODEBASE_MAP.md`](CODEBASE_MAP.md) |
 | What should be done next? | [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md) |
 | Which tracks and gates exist? | [`04_sprint_plan.md`](04_sprint_plan.md) |
 | Is the release acceptable? | [`19_final_harness_checklist.md`](19_final_harness_checklist.md) |
@@ -20,6 +21,7 @@ other documents link to it instead of copying it.
 | Information | Owner | Update rule |
 |---|---|---|
 | Current metrics, scores, release decision | `PROJECT_STATUS.md` | Update after verification |
+| Code ownership, consumers, tests, maturity | `CODEBASE_MAP.md` | Update with module lifecycle changes |
 | Task priority and status | `TASK_INDEX.md` | Update when work changes state |
 | Track dependencies and gates | `04_sprint_plan.md` | Update only when planning changes |
 | Acceptance criteria | `19_final_harness_checklist.md` and `24_handoff_spec.md` | Check only with evidence |

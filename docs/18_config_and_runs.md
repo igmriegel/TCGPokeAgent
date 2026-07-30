@@ -1,12 +1,13 @@
 # Execution profiles
 
-The current YAML files are placeholders and are not changed in this revision. The implementation must migrate them to the canonical schema of [`22_config_spec.md`](22_config_spec.md).
+The current YAML files are executable under the flat schema documented in
+[`22_config_spec.md`](22_config_spec.md).
 
 ## Profiles
 
 | Profile | Games | Search | Trace | Usage |
 |---:|---|---|---|
-| `smoke` | 20 | per candidate | reduced | integration and fast failure |
+| `eval_small` | 10 seeds | disabled | full runner records | quick iteration only |
 | `full` | >= 200 | per candidate | full | experimental decision |
 | `heuristic` | defined by eval | no | configurable | stable baseline |
 | `search` | defined by eval | yes, 100 ms | search metrics | ablation |
@@ -24,8 +25,12 @@ These values are MVP invariants. Changes require an experiment and a new version
 
 ## Precedence
 
-`default` < agent profile < evaluation profile < CLI override. The manifest stores the final value and origin of each override.
+Included YAML is deep-merged with the including file. Current run scripts may
+override `config.agent` in memory. The manifest stores the resolved
+configuration, but it does not yet record field-level origin.
 
 ## Seeds
 
-Profiles do not use implicit seeds. Smoke and full load fixed versioned lists; changing them creates a new protocol revision.
+`run_experiment` defaults to `range(config.runs)` unless explicit seeds are
+passed. A promotion run must freeze and record its actual seed list; the YAML
+files do not currently contain versioned seed lists.

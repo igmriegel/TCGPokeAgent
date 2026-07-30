@@ -4,20 +4,23 @@
 
 | File | Responsibility |
 |---|---|
-| `src/core/types.py` | aliases, result/failure enums, and re-exports of `cabt` enums |
-| `src/core/action.py` | `Candidate`, `Selection`, and validation |
-| `src/core/state.py` | `GameState`, player/Pokémon views, and `BeliefState` |
+| `src/core/types.py` | project enums for selection, modes, results, and errors |
+| `src/core/candidate.py` | one metadata-enriched simulator option |
+| `src/core/selection.py` | one legal tuple of original option indices and validation |
+| `src/core/state.py` | factual `GameState` and player/Pokémon views |
+| `src/core/belief.py` | separate hidden-state hypotheses |
 | `src/core/parser.py` | observation → normalized decision |
 | `src/core/interfaces.py` | small independent protocols |
-| `src/core/catalog.py` | cache of `all_card_data()` and `all_attack()` |
-
-The legacy name `action.py` may remain for layout compatibility, but it does not define a singular action; its public type is `Selection`.
+| `src/core/catalog.py` | cache of card and attack metadata |
+| `src/core/deck.py` | active deck and declarative strategy roles |
+| `src/core/prize.py` | PrizeCheck and contextual PrizeMap |
 
 ## Parser
 
 ### Input
 
-Accept the `Observation` dataclass or payload convertible by `to_observation_class`. Store the converted input without mutation.
+Accept a mapping, dataclass, or object carrying CABT fields. Normalize a deep
+copy without mutating the caller.
 
 ### Factual state
 
@@ -40,7 +43,9 @@ Do not prune by quality at this layer.
 
 ## `BeliefBuilder`
 
-Subtract public cards and unambiguous events from logs from the known deck. Fill hidden zones in stable order from the remaining multiset. For the opponent, use the versioned reference deck and remove public cards. Validate that each list delivered to `search_begin` has exactly the required length.
+Subtract public cards and unambiguous events from logs from the known deck.
+Fill hidden zones in stable order from the remaining multiset. Validate the
+result before the search gate opens.
 
 If a subtraction results in a negative value, a Basic is missing in opponent setup, or a cardinality does not close, mark `consistent=False` and do not search.
 

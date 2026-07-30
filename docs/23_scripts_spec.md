@@ -1,65 +1,57 @@
-# Operational commands contract
+# Operational command inventory
 
-These commands are implementation targets; they are not declared available
-today. Every Python entry point runs through the frozen `uv` environment.
+> This page lists commands that exist now. Proposed commands belong in the
+> task index, not in the executable inventory.
 
-```bash
-uv run --frozen python -m scripts.preflight --config configs/default.yaml
-uv run --frozen python -m scripts.run_eval --profile smoke --agent heuristic
-uv run --frozen python -m scripts.run_eval --profile full --agent search
-uv run --frozen python -m scripts.compare_runs --candidate RUN --baseline RUN
-uv run --frozen python -m scripts.freeze_candidate --run RUN
-uv run --frozen python -m scripts.package_submission --artifact ARTIFACT
-uv run --frozen python -m scripts.validate_package --archive submission.tar.gz
-uv run --frozen python -m scripts.export_strategy --run RUN
-uv run --frozen python -m scripts.inventory_kaggle_data
-uv run --frozen python -m scripts.gameplay_smoke --matches 10 --agent-mode heuristic
-scripts/submit_simulation.sh
-```
+## Quality and consistency
 
-## Common rules
+| Command | Purpose |
+|---|---|
+| `uv run --frozen pytest tests/ -q` | Unit, integration, package, and documentation gates |
+| `uv run --frozen pre-commit run --all-files` | Format, lint, and type checks |
+| `uv run --frozen python scripts/audit_documentation.py` | Documentation/code drift audit |
+| `uv run --frozen python -m scripts.preflight --config configs/default.yaml` | SDK, deck, package layout, and writable-output checks (`scripts/preflight.py`) |
 
-- `--help` and stable exit codes;
-- config and overrides printed before mutation;
-- output path printed at the end;
-- stdout for summary, stderr for diagnostics;
-- `0` success, `2` invalid input/config, `3` gate failed, `4` runtime failure;
-- scripts call `src/`, do not duplicate game logic.
+## Evaluation and replay
 
-## Kaggle inventory
+| Command | Purpose |
+|---|---|
+| `scripts/run_smoke.sh heuristic` | Tests plus 20-seed both-side CABT smoke |
+| `scripts/run_full.sh heuristic configs/eval_full.yaml` | Immutable full run and reports |
+| `uv run --frozen python scripts/compare_agents.py --matches 10` | Baseline/heuristic comparison against random |
+| `uv run --frozen python scripts/gameplay_smoke.py --matches 10 --agent-mode heuristic` | Observable-gameplay gate |
+| `uv run --frozen python scripts/run_replay.py --agent-one heuristic --agent-two random` | Local visualizer replay |
+| `uv run --frozen python -m src.data.replay_ingestor --input DIR --output NEW_DIR --owner-name NAME` | Versioned replay dataset |
+| `uv run --frozen python -m src.data.gameplay_annotations --help` | Post-hoc replay inspection and annotation |
 
-After accepting the rules:
+## Data, package, and submission
 
-```bash
-kaggle competitions download pokemon-tcg-ai-battle -p data/raw/kaggle/simulation
-kaggle competitions download pokemon-tcg-ai-battle-challenge-strategy -p data/raw/kaggle/strategy
-uv run --frozen python -m scripts.inventory_kaggle_data
-```
+| Command | Purpose |
+|---|---|
+| `scripts/download_data.sh --check` | Verify official dataset manifest |
+| `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
+| `scripts/build_package.sh submission.tar.gz` | Build the explicit submission allowlist |
+| `uv run --frozen python -m src.eval.validation --package submission.tar.gz` | Validate an extracted archive |
+| `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
+| `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit |
 
-The inventory fails if any file lacks source, competition, version/date, size, SHA-256, format, license/status, utility and leakage risk.
+## Internal helpers
 
-## Package
+`scripts/cabt_smoke.py` is the Python implementation invoked by
+`scripts/run_smoke.sh`. `scripts/submit_simulation.py` implements the guarded
+pipeline invoked by `scripts/submit_simulation.sh`. They remain directly
+executable for focused debugging, but the shell wrappers are the public
+commands.
 
-`package_submission` creates an explicit staging directory, copies only the allowlist, checks root and size and generates the tar. `validate_package` rejects path traversal and runs smoke without checkout imports.
+## Command guarantees
 
-## Simulation submission
+- scripts run from the repository root or normalize their working directory;
+- generated run directories and reports do not overwrite an existing run ID;
+- policy logic remains in `src/`, not in shell wrappers;
+- submission never uploads without `--yes` or an affirmative prompt;
+- successful uploads write a credential-free receipt;
+- generated data and reports follow the persistence contracts.
 
-`submit_simulation.sh` runs preflight, tests, Ruff, mypy, the both-side
-operational smoke gate, the observable-gameplay gate, package construction,
-and isolated package validation. The gameplay gate rejects a legal agent that
-never performs productive actions or attacks. The flow prints the archive size
-and SHA-256, then requires explicit interactive confirmation before invoking:
-
-```bash
-kaggle competitions submit pokemon-tcg-ai-battle \
-  -f submission.tar.gz \
-  -m "<message>"
-```
-
-`--dry-run` executes all local gates and never uploads. `--yes` is reserved for
-explicitly authorized non-interactive execution. A successful submission
-writes a credential-free receipt under `reports/submissions/`.
-
-## Idempotence
-
-Preflight and inventory can be repeated. Runs and freezes never overwrite existing IDs. Package can be reproduced with the same inputs and records its hash, even if tar metadata prevents byte-identity without normalization.
+There is no standalone freeze, comparison-of-run-files, strategy-export, or
+Kaggle-inventory command today. Those capabilities must not be presented as
+available until implemented and added to this inventory.

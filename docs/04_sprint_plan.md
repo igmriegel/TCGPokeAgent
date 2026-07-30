@@ -3,7 +3,7 @@
 > This file owns track-level status, dependencies, and gates. Action-level
 > status belongs in [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 
-**Last reviewed:** 2026-07-29
+**Last reviewed:** 2026-07-30
 
 ## Immediate objective
 
@@ -29,16 +29,16 @@ human capture, and learned policies remain outside the immediate release path.
 
 | Sprint | Outcome | Status | Dependency |
 |---|---|---|---|
-| H0 | Complete measurement baseline | `READY` | S5–S6 |
-| H1 | Catalog integrity and deck coverage | `READY` | H0 |
-| H2 | Context-specific scoring | `READY` | H1 |
+| H0 | Complete measurement baseline | `READY` | T-004; S5–S6 |
+| H1 | Catalog integrity and deck coverage | `BLOCKED` | H0 |
+| H2 | Context-specific scoring | `BLOCKED` | H1 |
 | H2A | Continuous board development | `IN_PROGRESS` | Current S4 recovery |
 | H3 | Local tactical evaluator | `DEFERRED` | H2 |
 | H4 | Belief-derived signals | `DEFERRED` | H1, H3 |
 | H5 | Weight optimization | `DEFERRED` | H2–H4 |
 | H6 | Supervised ranker | `DEFERRED` | H5 and more data |
 | H7 | Matchup-aware profiles | `DEFERRED` | H0, H6 |
-| H8 | Hardened heuristic release | `READY` | H0 and selected improvements |
+| H8 | Hardened heuristic release | `BLOCKED` | H0 and selected improvements |
 
 ## Human gameplay track
 
@@ -71,3 +71,5 @@ Every promoted candidate must:
 5. retain a rollback candidate and append evidence to `strategy_notes.md`.
 
 Detailed sprint scope is available under [`02_sprints/`](02_sprints/README.md).
+Every non-deferred, non-done track must have an owner in the
+[`task index`](03_tasks/TASK_INDEX.md#active-track-coverage).

@@ -1,43 +1,49 @@
 # Product overview
 
-## Expected result
+## Delivered system
 
-Deliver a reproducible agent that:
+The repository contains a reproducible CABT agent that:
 
-- always returns a legal `Selection` in `list[int]` format;
-- plays with a fixed 60-card deck validated by the SDK;
-- uses explicit heuristics as a safe path;
-- applies short search only when beneficial and within budget;
-- produces sufficient evidence for technical promotion and for the Strategy writeup.
+- returns the active 60-card deck for the initial request;
+- parses gameplay observations without renumbering simulator options;
+- generates and validates legal `Selection` values;
+- ranks decisions with explicit heuristic reasons;
+- retains deterministic fallback at both policy and entry-point boundaries;
+- runs local CABT evaluation, replay ingestion, reporting, packaging, and
+  isolated archive validation.
 
-## MVP scope
+Current implementation maturity is mapped in
+[`CODEBASE_MAP.md`](CODEBASE_MAP.md); current release evidence is in
+[`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-The MVP uses Python 3.12 and `kaggle-environments==1.32.2`, the official agent
-deck `cabt.first_agent`, a heuristic policy and search up to 100 ms on `MAIN`
-decisions. `pyproject.toml` and `uv.lock` are the only dependency sources, and
-all acceptance commands run through `uv`. Multi-deck support, deck
-optimization, training and learned models are left for after the first valid
-package.
+## Current release scope
 
-## Definition of submittable
+The release path uses Python 3.12, `kaggle-environments==1.32.2`, the bundled
+fixed deck, and the heuristic policy. Native short search exists behind an
+explicitly disabled gate because its project adapter and promotion evidence
+are incomplete. Learned profiles and live human gameplay capture are outside
+the current release.
 
-A candidate is submittable when:
+## Definition of promotable
 
-- it passes 20 smoke matches and at least 200 of the full gate;
-- it plays on both sides against `random`, `first`, heuristics without search and self-play;
-- it registers zero `INVALID`, `ERROR` and `TIMEOUT`;
-- it meets package format, size and imports;
-- it maintains deterministic fallback for each `SelectContext`;
-- it is re-validated after extracting the `.tar.gz`.
+A candidate is promotable only when:
 
-## Non-objectives of this revision
+- smoke and full gates use frozen seeds, both player sides, and the declared
+  opponent matrix;
+- all decisions have zero `INVALID`, `ERROR`, and `TIMEOUT`;
+- gameplay metrics show productive actions rather than merely legal output;
+- package format, size, imports, and extracted execution pass;
+- the candidate is non-inferior to the stable reference under the frozen
+  acceptance expression;
+- the release checklist contains evidence for every applicable gate.
 
-This phase does not implement Python modules, does not alter executable YAML and does not train models. The only later exception authorized by the user is the storage of official datasets in `data/raw/kaggle/`, currently blocked until acceptance of the competition rules.
+The current candidate is not promotable; see
+[`19_final_harness_checklist.md`](19_final_harness_checklist.md).
 
 ## Sources of truth
 
-1. Official `cabt` API for types and Search API.
-2. `cabt.json` for budget and action shape.
-3. Competition page for SDK and package.
-4. These documents for architecture, gates and operation.
-5. Implemented code, when it exists, accompanied by a test demonstrating compliance.
+1. Competition and CABT protocol for the external boundary.
+2. Contract documents for intended internal behavior.
+3. Tests and immutable run artifacts for implementation evidence.
+4. `CODEBASE_MAP.md` for code ownership and maturity.
+5. `PROJECT_STATUS.md` and `TASK_INDEX.md` for current decisions and work.

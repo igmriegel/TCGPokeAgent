@@ -52,12 +52,11 @@ main.py                          # Entry point: stdin → stdout JSON agent
 src/
 ├── core/                        # Domain layer
 │   ├── types.py                 # Enums: SelectType, SelectContext, OptionType,
-│   │                            #   TurnPhase, MatchResult, AgentMode, ErrorCategory
+│   │                            #   ExecutionStatus and ErrorCategory
 │   ├── state.py                 # GameState, PlayerState, PokemonState
 │   ├── belief.py                # BeliefState
 │   ├── candidate.py             # Candidate
 │   ├── selection.py             # Selection (output type)
-│   ├── action.py                # Re-exports Selection (legacy compat)
 │   ├── parsed_decision.py       # ParsedDecision
 │   ├── selection_generator.py   # DefaultSelectionGenerator
 │   ├── catalog.py               # CardCatalog
@@ -79,13 +78,13 @@ src/
 │   └── loader.py                # ConfigLoader (include resolution, Config dataclass)
 ├── experiments/                 # Experiment orchestration
 │   └── orchestrator.py          # run_experiment()
-├── logging_setup.py             # structlog configuration
 └── artifacts/
-    └── deck.csv                 # 60-card deck (placeholder, replace with real deck)
+    ├── deck.csv                 # Active 60-card deck
+    └── deck_profile.json        # Declarative deck roles
 configs/                         # YAML profiles (default, agent_*, eval_*)
 tests/                           # pytest fixtures + tests
 scripts/                         # run_smoke, run_full, build_package
-docs/                            # 26 markdown files: architecture, contracts, specs
+docs/                            # Canonical status, code map, contracts, evidence
 ```
 
 ---
@@ -191,13 +190,13 @@ include: default.yaml
 runs: 200
 ```
 
-Resolution: load included file, shallow-merge current on top. See
+Resolution: load included file, deep-merge current on top. See
 `src/config/loader.py`.
 
 Environment variable `AGENT_MODE`:
 - `baseline` — BaselineAgent (fallback only)
 - `heuristic` — HeuristicAgent (+ scorer)
-- `hybrid` — HeuristicAgent with search configured off until the native adapter is verified
+- `hybrid` — heuristic pass-through; bounded search is not integrated
 
 ---
 
@@ -317,6 +316,7 @@ scripts/build_package.sh submission.tar.gz
 
 - `docs/20_master_index.md` — canonical documentation hub
 - `docs/PROJECT_STATUS.md` — current verified status and decisions
+- `docs/CODEBASE_MAP.md` — code-to-consumer, test, and maturity map
 - `docs/03_tasks/TASK_INDEX.md` — executable backlog and task counts
 - `docs/01_architecture.md` — detailed architecture
 - `docs/11_implementation_order.md` — vertical slice plan

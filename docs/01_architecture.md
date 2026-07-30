@@ -2,26 +2,33 @@
 
 ## Decision flow
 
-`main.py` receives the observation. If `select is None`, it returns the deck. Otherwise:
+`main.py` receives the observation. If `select is None`, it initializes the
+policy with the active deck and returns that deck. Otherwise:
 
-1. `ObservationParser` preserves the raw input and creates a factual `GameState`.
-2. `CandidateBuilder` transforms each `Option` into a candidate without changing its index.
-3. `SelectionGenerator` produces valid combinations according to cardinality, energy and damage.
-4. `HeuristicScorer` ranks the combinations.
-5. `ShortSearch` re-evaluates at most the top three when the search gate opens.
-6. `AgentPolicy` returns the indices of the best `Selection`.
-7. Any failure after step 3 immediately returns the first legal fallback.
+1. `DefaultParser` preserves the raw input, creates factual `GameState`, and
+   creates one `Candidate` per option without changing its index.
+2. `DefaultSelectionGenerator` produces combinations according to cardinality,
+   energy, and damage constraints.
+3. `HeuristicAgent` may require a legal board-development play before a
+   terminal attack or end-turn choice.
+4. `SimpleHeuristicScorer` ranks the remaining selections with traceable
+   reasons.
+5. `HybridAgent` is currently a heuristic pass-through. `BoundedShortSearch`
+   is unit-tested separately but is not connected to policy decisions.
+6. `main.py` validates the selected indices and returns them.
+7. Any policy or validation failure returns the minimal deterministic
+   cardinality fallback.
 
 ## Components and dependencies
 
 | Component | Input | Output | Allowed dependency |
 |---|---|---|---|
-| `ObservationParser` | `Observation` | `GameState`, candidates | `cabt` API, card catalog |
+| `DefaultParser` | `Observation` | `ParsedDecision` with state and candidates | card catalog |
 | `SelectionGenerator` | `SelectData`, candidates | `list[Selection]` | core contracts |
 | `BeliefBuilder` | facts, logs, reference decks | consistent `BeliefState` | core |
 | `HeuristicScorer` | state, selection | score + reasons | core |
 | `StateEvaluator` | search state | scalar value | core |
-| `ShortSearch` | raw observation, belief, top candidates | selection or typed failure | Search API |
+| `BoundedShortSearch` | opaque search input, belief, ranked candidates | selection or heuristic fallback | injected adapter; not integrated |
 | `AgentPolicy` | `Observation` | `list[int]` | preceding components |
 | runner | agents, seeds, matchup | traces and results | SDK |
 
@@ -29,7 +36,8 @@
 
 - `GameState` contains only observed facts.
 - `BeliefState` contains hypotheses about hand, deck, prizes and hidden active.
-- The raw observation is passed without reconstruction to `search_begin`.
+- The opaque `search_begin_input` is passed to the vendored adapter without
+  reconstruction; model-safe persisted data excludes it.
 - Option indices belong to the simulator; normalization never renumbers them.
 - Scoring does not perform I/O or alter state.
 - Runner measures policies without knowing their logic.

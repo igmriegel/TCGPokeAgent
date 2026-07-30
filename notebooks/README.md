@@ -16,6 +16,8 @@ production pipeline nor are they the single source of a decision.
   newest-first view of recently downloaded Kaggle episodes.
 - [`04_heuristic_score_lab.py`](04_heuristic_score_lab.py) — inspects score
   reasons and compares heuristic weight/feature ablations on controlled cases.
+- [`05_rfl_annotation.py`](05_rfl_annotation.py) — records decision-level
+  expert annotations against legal trace options.
 
 Run locally from the project root:
 
@@ -24,6 +26,7 @@ uv run --frozen marimo edit notebooks/01_card_catalog_overview.py
 uv run --frozen marimo edit notebooks/02_dataset_comparison.py
 uv run --frozen marimo edit notebooks/03_run_results_dashboard.py
 uv run --frozen marimo edit notebooks/04_heuristic_score_lab.py
+uv run --frozen marimo edit notebooks/05_rfl_annotation.py
 ```
 
 Set `KAGGLE_OWNER_NAME` or enter the owner agent name in the run-results

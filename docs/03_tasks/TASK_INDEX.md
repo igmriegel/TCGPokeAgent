@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-07-29
+**Last reviewed:** 2026-07-30
 
 ## How to read this backlog
 
@@ -28,16 +28,31 @@ documents to these totals.
 
 | ID | Priority | Status | Outcome | Closes | Next action |
 |---|---:|---|---|---|---|
-| T-001 | P0 | `IN_PROGRESS` | Complete factual board-development and evolution features | FB001-A1, S4, H2A | Add backup-attacker and evolution readiness features |
-| T-002 | P0 | `READY` | Complete repeated-play, evolution, full-Bench, and immediate-win fixtures | FB001-A4, S2, S4 | Add real and synthetic golden cases |
-| T-003 | P0 | `READY` | Report skipped development, board width, conversion, and replacement readiness | FB001-A5, S5 | Extend decision and aggregate metrics |
-| T-004 | P0 | `READY` | Run the frozen four-opponent, both-side comparison with correct metadata | FB001-A6, H0, S6 | Freeze matrix and acceptance expression before execution |
+| T-001 | P0 | `IN_PROGRESS` | Complete factual board-development and evolution features | FB-2026-001, S4, H2A | Add backup-attacker and evolution readiness features |
+| T-002 | P0 | `READY` | Complete repeated-play, evolution, full-Bench, and immediate-win fixtures | FB-2026-001, S2, S4 | Add real and synthetic golden cases |
+| T-003 | P0 | `READY` | Report skipped development, board width, conversion, and replacement readiness | FB-2026-001, S5 | Extend decision and aggregate metrics |
+| T-004 | P0 | `READY` | Run the frozen four-opponent, both-side comparison with correct metadata | FB-2026-001, H0, S6 | Freeze matrix and acceptance expression before execution |
 | T-005 | P0 | `READY` | Validate Rule Box and PrizeMap tactics | FB-2026-002 | Add tactical fixtures, then run the paired matrix |
 | T-006 | P0 | `READY` | Validate PrizeCheck across zone transitions | FB-2026-003 | Add search/draw/discard/attach/evolve/prize golden sequence |
 | T-007 | P1 | `READY` | Rebuild the derived dataset from all 85 raw replays | Replay foundation | Version a new dataset; do not overwrite `v1` |
 | T-008 | P1 | `READY` | Revalidate parser, selection, and fallback against current real observations | S2, S3 | Add current replay-derived fixtures and run focused gates |
 | T-009 | P1 | `READY` | Revalidate belief and evaluator against corrected factual state | S7 | Add real-observation invariant cases |
 | T-011 | P1 | `IN_PROGRESS` | Close the heuristic-only package and handoff checklist | S9 | Resolve unchecked evidence and rebuild after promoted changes |
+
+## Active-track coverage
+
+This table prevents roadmap work from existing without an executable owner.
+
+| Track | Owning tasks |
+|---|---|
+| S2 | T-002, T-008 |
+| S3 | T-008 |
+| S4 | T-001, T-002, T-005, T-006 |
+| S5 | T-003 |
+| S6 and H0 | T-004 |
+| S7 | T-009 |
+| S9 | T-011 |
+| H2A | T-001–T-004 |
 
 ## Deferred queue
 

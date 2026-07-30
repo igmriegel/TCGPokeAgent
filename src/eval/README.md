@@ -1,5 +1,7 @@
 # Evaluation
 
-Implement preflight, runner, metrics, paired comparison, and reporting. Smoke uses 20 matches; full uses at least 200; both cover both sides and require zero failures.
+This package implements preflight, runner, metrics, paired comparison,
+gameplay observability, and reporting. The release protocol requires both
+sides, at least 20 smoke matches or 200 full seeds, and zero failures.
 
 Contract: [`docs/08_eval_contracts.md`](../../docs/08_eval_contracts.md).
