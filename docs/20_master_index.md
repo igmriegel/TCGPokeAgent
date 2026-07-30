@@ -13,6 +13,7 @@ other documents link to it instead of copying it.
 | Which tracks and gates exist? | [`04_sprint_plan.md`](04_sprint_plan.md) |
 | Is the release acceptable? | [`19_final_harness_checklist.md`](19_final_harness_checklist.md) |
 | Which gameplay rules are active? | [`27_gameplay_rules.md`](27_gameplay_rules.md) |
+| What human decision process is desired? | [`33_human_decision_index.md`](33_human_decision_index.md) |
 | What feedback was received? | [`29_gameplay_feedback.md`](29_gameplay_feedback.md) |
 | What evidence supports a decision? | [`strategy_notes.md`](strategy_notes.md) |
 
@@ -26,6 +27,7 @@ other documents link to it instead of copying it.
 | Track dependencies and gates | `04_sprint_plan.md` | Update only when planning changes |
 | Acceptance criteria | `19_final_harness_checklist.md` and `24_handoff_spec.md` | Check only with evidence |
 | Gameplay policy | `27_gameplay_rules.md` | Update with rule implementation |
+| Desired human playbook | `33_human_decision_index.md` | Update one interview phase at a time; implementation requires separate approval |
 | Human feedback lifecycle | `29_gameplay_feedback.md` | Append or explicitly supersede |
 | Experiment history | `strategy_notes.md` | Append-only evidence; never current status |
 | External and internal contracts | Layer contract documents | Update from authoritative source |
@@ -63,6 +65,8 @@ Read these before changing runtime behavior:
 - [`30_replay_learning_and_deck_agnostic_engine.md`](30_replay_learning_and_deck_agnostic_engine.md) — replay-learning foundation.
 - [`31_competitive_replay_annotations.md`](31_competitive_replay_annotations.md) — post-hoc agent replay reviews.
 - [`32_learning_to_rank.md`](32_learning_to_rank.md) — grouped datasets, native rankers, packages, and promotion gates.
+- [`33_human_decision_index.md`](33_human_decision_index.md) — phased human
+  reasoning interview, CABT context map, and independent coverage gaps.
 - [`25_rfl_experiments.md`](25_rfl_experiments.md) — learned-policy experiment runbook.
 
 ## Planning detail
