@@ -27,3 +27,6 @@ episode-*-agent-*-logs.json
 
 # Marimo session state
 notebooks/__marimo__/
+
+# Performance reports
+perf_reports/
