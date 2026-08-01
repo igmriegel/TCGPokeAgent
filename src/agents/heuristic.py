@@ -293,7 +293,26 @@ class SimpleHeuristicScorer(HeuristicScorer):
         score = 200.0 + max(0, damage)
         if damage <= 0:
             score -= 80.0
-        return score, ["attack_for_damage"]
+        reasons = ["attack_for_damage"]
+        if self._own_deck_count(state) < 15 and "shuffle" in text:
+            energy_type = self._attack_energy_type(candidate)
+            returned = self._discard_basic_energy_count(state, energy_type)
+            score += min(80.0, returned * 5.0)
+            reasons.append("deck_refill")
+        return score, reasons
+
+    def _guaranteed_attack_damage(self, state: GameState, candidate: Candidate) -> int:
+        """Return the deterministic part of an attack's damage.
+
+        Discard-pile based damage is public information; top-of-deck based
+        damage is probabilistic and therefore excluded.
+        """
+        text = str((candidate.attack or {}).get("text", "")).casefold()
+        if "damage for each basic" in text and "discard pile" in text:
+            energy_type = self._attack_energy_type(candidate)
+            multiplier = self._leading_damage_multiplier(text)
+            return multiplier * self._discard_basic_energy_count(state, energy_type)
+        return int(max(0, self._number(candidate.option, "guaranteedDamage", "damage")))
 
     def _card_selection_score(
         self,
