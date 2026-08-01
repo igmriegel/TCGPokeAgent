@@ -244,22 +244,36 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_type = self._metadata_int(candidate.card, "cardType")
         target_id = self._feature_int(candidate, "target_card_id")
         energy_count = self._feature_int(candidate, "target_energy_count")
+        if card_type == 2:
+            return 300.0, ["attach_useful_tool"]
         if card_type in {5, 6}:
             target_goal = self._attack_energy_target(target_id)
             deficit = max(0, target_goal - energy_count)
             active_bonus = 30.0 if bool(candidate.features.get("target_is_active", False)) else 0.0
+            if active_bonus and energy_count + 1 >= target_goal:
+                active_bonus += 80.0
             return 350.0 + deficit * 25.0 + active_bonus, ["develop_attacker_energy"]
-        return 300.0, ["attach_useful_tool"]
+        return 100.0, ["attach_unrecognized_card"]
 
     def _play_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
-            bonus = 30.0 if self._has_role(card_id, "evolution_basic") else 20.0
+            if self._has_role(card_id, "development_priority"):
+                bonus = 100.0
+            elif self._has_role(card_id, "evolution_basic"):
+                bonus = 30.0
+            else:
+                bonus = 20.0
             return 300.0 + bonus, [
                 "develop_bench",
                 "play_available_pokemon_before_attack",
             ]
+        if card_type == 1 and self._has_search_role(card_id):
+            return 340.0, ["play_search_card"]
+        if card_type == 3 and self._has_search_role(card_id):
+            hand_count = self._own_hand_count(state)
+            return 350.0 + max(0, 8 - hand_count) * 10.0, ["play_search_card"]
         if card_type == 1:
             return 240.0, ["play_item"]
         if card_type == 2:
@@ -270,6 +284,18 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if card_type == 4:
             return 180.0, ["play_stadium"]
         return 150.0, ["play_known_legal_card"]
+
+    def _has_search_role(self, card_id: int) -> bool:
+        return any(
+            self._has_role(card_id, role)
+            for role in (
+                "evolution_search",
+                "general_search",
+                "trainer_search",
+                "hand_refresh",
+                "pokemon_search",
+            )
+        )
 
     def _attack_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         active_target = next(
@@ -341,11 +367,17 @@ class SimpleHeuristicScorer(HeuristicScorer):
                 availability = self.prize_check.availability(card_id)
                 if availability and availability.searchable_exact == 0:
                     return -1000.0, ["confirmed_prized_unsearchable"]
-            return self._card_resource_value(card_id, card_type), ["search_useful_card"]
+            value = self._card_resource_value(card_id, card_type)
+            if self._has_role(card_id, "trainer_search"):
+                value -= 200.0
+                return value, ["avoid_redundant_supporter_search"]
+            return value, ["search_useful_card"]
         if context in {
             SelectContext.DISCARD,
             SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
         }:
+            if self._has_role(card_id, "development_priority"):
+                return -1000.0, ["preserve_development_pokemon"]
             if card_type in {5, 6}:
                 return 120.0, ["discard_energy_for_synergy"]
             if card_type == 0:
