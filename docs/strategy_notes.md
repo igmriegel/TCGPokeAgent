@@ -501,3 +501,23 @@ evidence:
 status: implemented
 ```
 
+## Attacker-target development gate
+
+```yaml
+observed_at: "2026-08-01T12:00:00Z"
+deck_id: mega_abomasnow_kyogre
+deck_sha256: "0880554d3f0704f706ec4b2ff2bc7c40e91329dd700be05cfd2f1d8e4d57cf7c"
+root_causes:
+  - "the guaranteed-KO attack was a priority action in _has_priority_action, so with a near-empty Bench and a Snover or Ultra Ball in hand the agent attacked instead of developing"
+  - "board_targets.minimum_attackers (2) was declared in deck_profile.json but no code used it"
+decisions:
+  - "while the board is below the attacker target, development (PLAY, EVOLVE, ATTACH) supersedes every attack including guaranteed KO; attacks are deferred, never discarded, because MAIN re-presents after each action"
+  - "count attacker-role Pokémon (721, 722, 723); generic profiles without the role count all Pokémon in play"
+  - "target defaults to 2 when board_targets is absent"
+evidence:
+  - "replay scenarios C1-C6: Ultra Ball / Snover in hand before guaranteed-KO and Hammer-lanche attacks"
+  - "tests/test_heuristic_strategy.py (9 new gate scenarios)"
+  - "158 unit tests pass"
+status: implemented
+```
+

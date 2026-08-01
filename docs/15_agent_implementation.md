@@ -53,19 +53,19 @@ score =
 ## MAIN action priority ladder
 
 `_main_action_score` orders legal `MAIN` actions by a fixed ladder that
-implements GR-001 to GR-017:
+implements GR-001 to GR-018:
 
 ```text
 EVOLVE                           500 (+ energy on target)
 ABILITY                          450
 attach completing Active attack  ~460–485
-guaranteed-KO attack             ≥530 (200 base + damage + 200 bonus)
 development-priority play        400
 Item search                      340
 generic Pokémon play             320
 Item                             240
 Supporter search                 230
 Supporter                        210
+guaranteed-KO attack             ≥530 (200 base + damage + 200 bonus)
 weak attack                      210
 END                            -1000 (only when nothing better)
 ```
@@ -73,7 +73,20 @@ END                            -1000 (only when nothing better)
 The conditional Bench filter restricts a decision to Pokémon `PLAY`
 selections only when no priority action is legal. Priority actions are
 Evolution, Ability, search/Trainer `PLAY`, an attach that completes the Active
-attack, and an attack with a guaranteed Knock Out.
+attack, and an attack with a guaranteed Knock Out once the attacker target is
+met.
+
+## Attacker-target gate
+
+`_gate_attacks_behind_development` runs before the Bench filter and defers
+every pure-attack selection while `_board_under_attacker_target` is true and a
+development action (`PLAY`, `EVOLVE`, `ATTACH`) is legal. `_board_attacker_count`
+counts `attacker`-role Pokémon (721, 722, 723) on the board and falls back to
+all Pokémon in play for profiles without that role; the target comes from
+`board_targets.minimum_attackers` (default 2). This moves the guaranteed-KO
+attack below development on the ladder until the board reaches the target
+(GR-018), implementing FB-2026-010. Attacks are deferred, not discarded: the
+simulator re-presents `MAIN` after the development action.
 
 ## Deterministic attack damage
 
@@ -81,9 +94,10 @@ attack, and an attack with a guaranteed Knock Out.
 `deck_profile` `attack_plans` guaranteed damage first (including discard-pile
 based damage from the public discard count), then option and catalog metadata;
 top-of-deck based damage stays probabilistic and returns zero. Guaranteed-KO
-attacks exempt the decision from the Bench filter, gain `GUARANTEED_KO_BONUS`
-when their damage reaches the opponent Active HP, and prefer refill attacks
-near deck-out via the `deck_refill` reason.
+attacks gain `GUARANTEED_KO_BONUS` when their damage reaches the opponent
+Active HP, exempt the decision from the Bench filter once the attacker target
+is met (GR-018), and prefer refill attacks near deck-out via the `deck_refill`
+reason.
 
 ## Resource and attachment scoring
 

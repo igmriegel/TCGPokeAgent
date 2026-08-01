@@ -20,9 +20,9 @@ documents to these totals.
 | Queue | Count |
 |---|---:|
 | In progress | 3 |
-| Ready | 15 |
+| Ready | 16 |
 | Deferred | 7 |
-| Total open | 25 |
+| Total open | 26 |
 
 ## Active release queue
 
@@ -46,6 +46,7 @@ documents to these totals.
 | T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
 | T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the paired comparison |
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
+| T-022 | P1 | `READY` | Validate attacker-target development gate | FB-2026-010, H2A | Run attacker-target fixtures and the paired comparison |
 
 ## Active-track coverage
 
@@ -60,7 +61,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021 |
+| H2A | T-001–T-004, T-015–T-022 |
 
 ## Deferred queue
 

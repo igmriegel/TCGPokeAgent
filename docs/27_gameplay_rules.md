@@ -33,6 +33,7 @@
 | GR-015 | Near deck-out, prefer attacks that shuffle discarded Basic Energy back into the deck | `ACTIVE / UNVALIDATED` | FB-2026-007, T-018 |
 | GR-016 | Play all legal Items before any Supporter; Supporters are a last-resort search | `ACTIVE / UNVALIDATED` | FB-2026-008, T-020 |
 | GR-017 | Prefer an attack with guaranteed Knock Out over probabilistic or non-KO attacks | `ACTIVE / UNVALIDATED` | FB-2026-009, T-021 |
+| GR-018 | Develop to the attacker target before any attack, including guaranteed Knock Outs | `ACTIVE / UNVALIDATED` | FB-2026-010, T-022 |
 
 ## Turn order
 
@@ -47,7 +48,7 @@ For a normal `MAIN` decision:
 7. develop the secondary/backup attacker;
 8. play Items, Tools, Stadiums, and Abilities, search roles first; every Item precedes any Supporter;
 9. play a Supporter only when no Item is playable, preferring search Supporters;
-10. attack, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+10. attack only after the board reaches the declared attacker target; below it, development precedes every attack including guaranteed Knock Outs, and among attacks prefer guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
 11. choose `END` only when no higher-value legal action remains.
 
 Steps not represented by an active rule remain heuristic preferences, not
@@ -64,9 +65,11 @@ positive score. Any pass must carry a reason that can be audited.
 
 In `MAIN`, with open Bench capacity, a legal Pokémon `PLAY` is preferred over
 `ATTACK` or `END`, but only when no priority action is legal. Priority actions
-are Evolution, Ability, search/Trainer `PLAY`, an attach that completes the
-Active attack, and an attack with a guaranteed Knock Out. Parse the resulting
-observation and repeat. Full Bench and illegal plays are safe exits.
+are Evolution, Ability, search/Trainer `PLAY`, and an attach that completes the
+Active attack. An attack with a guaranteed Knock Out is priority only once the
+board meets its attacker target (GR-018); below that target, development
+precedes the attack. Parse the resulting observation and repeat. Full Bench and
+illegal plays are safe exits.
 
 ### GR-003 — Evolution before Energy and Bench decisions
 
@@ -133,6 +136,17 @@ When an attack's deterministic damage (the `deck_profile` `attack_plans`
 guaranteed damage, or public discard-pile based damage) reaches the opponent
 Active's HP, that attack gains a bonus and is preferred over probabilistic
 attacks such as Hammer-lanche and over non-KO attacks.
+
+### GR-018 — Develop to the attacker target before attacking
+
+While the board is below its declared attacker target
+(`board_targets.minimum_attackers`, default 2), every development action —
+playing a Pokémon, Item, Tool, Supporter, or Stadium, evolving, or attaching
+Energy — precedes every attack, including attacks with a guaranteed Knock Out.
+Attacks are deferred, never lost: the simulator re-presents `MAIN` after the
+development action, and the agent attacks once the target is met. A generic
+profile without an `attacker` role counts every Pokémon in play toward the
+target.
 
 ## Required evaluation metrics
 
