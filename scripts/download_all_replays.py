@@ -7,9 +7,7 @@ import io
 import json
 import shutil
 import subprocess
-import sys
 from pathlib import Path
-
 
 COMPETITION = "pokemon-tcg-ai-battle"
 REPLAY_DIR = Path("replays/remote")
@@ -20,7 +18,9 @@ SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 def _list_submissions() -> list[dict[str, str]]:
     result = subprocess.run(
         ["kaggle", "competitions", "submissions", COMPETITION, "-v"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return list(csv.DictReader(io.StringIO(result.stdout)))
 
@@ -28,13 +28,15 @@ def _list_submissions() -> list[dict[str, str]]:
 def _list_episodes(submission_id: str) -> list[dict[str, str]]:
     result = subprocess.run(
         ["kaggle", "competitions", "episodes", submission_id, "--format", "json"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     output = result.stdout
     bracket_end = output.rfind("]")
     if bracket_end == -1:
         return []
-    return json.loads(output[:bracket_end + 1])
+    return json.loads(output[: bracket_end + 1])
 
 
 def main() -> int:
@@ -79,7 +81,8 @@ def main() -> int:
                 try:
                     subprocess.run(
                         ["kaggle", "competitions", "replay", ep_id, "-p", str(sub_dir), "-q"],
-                        check=True, capture_output=True,
+                        check=True,
+                        capture_output=True,
                     )
                 except subprocess.CalledProcessError:
                     print(f"    FAILED: {ep_id}")
@@ -95,7 +98,7 @@ def main() -> int:
         print(f"  New: {downloaded}, Cached: {skipped}")
 
     SUBMISSION_MAP_PATH.write_text(json.dumps(submission_map, indent=2) + "\n")
-    print(f"\n=== Summary ===")
+    print("\n=== Summary ===")
     print(f"Downloaded: {total_downloaded}")
     print(f"Cached: {total_skipped}")
     print(f"Mapping: {len(submission_map)} episodes")

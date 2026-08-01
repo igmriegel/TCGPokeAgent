@@ -6,7 +6,6 @@ import json
 import shutil
 from pathlib import Path
 
-
 REPLAY_SOURCE = Path("replays/remote")
 REPLAY_DEST = Path("data/raw/kaggle/kaggle_gameplay_runs")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
