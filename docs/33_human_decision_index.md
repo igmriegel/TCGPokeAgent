@@ -573,9 +573,9 @@ All 91 JSON files in the local raw replay snapshot were screened. Eighty-nine
 expose the standard initial deck payload; they contain 95 player sides using
 the exact Mega Abomasnow/Kyogre list and 2,391 parseable decisions for those
 sides. Episodes
-[`88823545`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88823545-replay.json)
+[`88823545`](../data/raw/kaggle/kaggle_gameplay_runs/88823545.json)
 and
-[`88825809`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88825809-replay.json)
+[`88825809`](../data/raw/kaggle/kaggle_gameplay_runs/88825809.json)
 contain only two initialization steps and no deck payload, so they are
 non-adjudicable for this phase.
 
@@ -583,8 +583,8 @@ These are behavior examples, not demonstrations of optimal play:
 
 | Decision family | Decision-linked evidence | Interpretation |
 |---|---|---|
-| Snover-first repeated development | Episode [`88882619`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88882619-replay.json), side 1, decisions `8`, `9`, and `10`, plays three Snover successively on turn 2 | Supports the executable shape of `HDI-1-03` and `HDI-1-06`; it does not prove every available Snover was found |
-| Repeated search Items | Episode [`88836243`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88836243-replay.json), side 1, decisions `12` and `14`, plays two Mega Signal on turn 2 | Supports repeated Item resolution; no repeated-Ultra-Ball example was found |
+| Snover-first repeated development | Episode [`88882619`](../data/raw/kaggle/kaggle_gameplay_runs/88882619.json), side 1, decisions `8`, `9`, and `10`, plays three Snover successively on turn 2 | Supports the executable shape of `HDI-1-03` and `HDI-1-06`; it does not prove every available Snover was found |
+| Repeated search Items | Episode [`88836243`](../data/raw/kaggle/kaggle_gameplay_runs/88836243.json), side 1, decisions `12` and `14`, plays two Mega Signal on turn 2 | Supports repeated Item resolution; no repeated-Ultra-Ball example was found |
 | Rule Box-prevention branch | Episode [`88836301`](../data/raw/kaggle/kaggle_gameplay_runs/88836301.json), side 0, decision `20`, uses Kyogre's `Riptide` against Active Crustle with visible prevention against attacks from Pokémon ex | Supports using non-Rule-Box Kyogre rather than Mega Abomasnow ex in that factual branch |
 | Kyogre second-attack transition | Episode [`88840528`](../data/raw/kaggle/kaggle_gameplay_runs/88840528.json), side 0, decision `45`, uses `Swirling Waves` after the previous `Riptide` against an opposing Pokémon at 50 HP | Matches the confirmed transition and certain-KO condition |
 | Mega Abomasnow attack exception | Episode [`88879568`](../data/raw/kaggle/kaggle_gameplay_runs/88879568.json), side 0, decision `100`, uses `Frost Barrier` against an opposing Pokémon at 70 HP | The attack satisfies the damage condition, but the accepted annotation still marks the preceding failure to develop Kyogre as a sequencing mistake |
@@ -793,9 +793,9 @@ the human rule:
 | `HDI-2-02` always play first | 43 of 43 `IS_FIRST` decisions selected `YES` | Episode [`88836301`](../data/raw/kaggle/kaggle_gameplay_runs/88836301.json), side 0, decision `1` | Supports the desired outcome across every attributable prompt |
 | `HDI-2-03` prefer Snover when both are legal | Snover selected in 13 of 16 prompts offering both Snover and Kyogre | Episode [`88838414`](../data/raw/kaggle/kaggle_gameplay_runs/88838414.json), side 1, decision `2`, selects Snover at index 1 over Kyogre at index 0 | Shows the declared role can override lower-index fallback behavior |
 | `HDI-2-03` forced Kyogre fallback | 27 prompts offered only Kyogre | Episode `88836301`, side 0, decision `2` | Supports the legal fallback shape but does not test a choice |
-| `HDI-2-03` historical counterexamples | Kyogre selected in 3 of 16 prompts offering both | Episode [`88829569`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88829569-replay.json), side 0, decision `3`, selects Kyogre at index 0 over Snover at index 1 | Direct counterexample; desired Active policy is not completely implemented |
+| `HDI-2-03` historical counterexamples | Kyogre selected in 3 of 16 prompts offering both | Episode [`88829569`](../data/raw/kaggle/kaggle_gameplay_runs/88829569.json), side 0, decision `3`, selects Kyogre at index 0 over Snover at index 1 | Direct counterexample; desired Active policy is not completely implemented |
 | `HDI-2-04` Bench every offered Basic | Every offered option selected in 24 of 29 Bench prompts | Episode [`88837361`](../data/raw/kaggle/kaggle_gameplay_runs/88837361.json), side 0, decision `4`, Benches the offered Kyogre | Supports normal placement and anti-donk board width |
-| `HDI-2-04` historical counterexamples | No offered option selected in 5 of 29 Bench prompts | Episode [`88832361`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88832361-replay.json), side 1, decision `5`, declines two Snover and one Kyogre despite three legal slots | Direct counterexample to both maximum Snover development and Kyogre anti-donk protection |
+| `HDI-2-04` historical counterexamples | No offered option selected in 5 of 29 Bench prompts | Episode [`88832361`](../data/raw/kaggle/kaggle_gameplay_runs/88832361.json), side 1, decision `5`, declines two Snover and one Kyogre despite three legal slots | Direct counterexample to both maximum Snover development and Kyogre anti-donk protection |
 
 For `SETUP_ACTIVE_POKEMON`, the remaining inventory consists of 52
 Snover-only prompts and 27 Kyogre-only prompts. For
@@ -1035,7 +1035,7 @@ attack damage; it does not assume hidden modifiers or future draws.
 | `HDI-3-03` no ready attacker | 33 `MAIN` prompts met the conservative automated screen for no ready, current-turn, or one-Energy-supported next attacker | Episode `88841554`, side 0, decisions `20` and `22`, attaches Water Energy to the only Mega Abomasnow ex and then plays Kyogre | Supports rebuilding Energy and board width after the forced promotion; exact next-turn readiness still needs a fixture |
 | `HDI-3-03` preventive deck band | 64 `MAIN` prompts occurred with 14 through seven cards in the deck | Episode [`88848795`](../data/raw/kaggle/kaggle_gameplay_runs/88848795.json), side 0, decisions `47` and `50`, chooses Frost Barrier over the deck-discarding Hammer-lanche at deck counts nine and eight | Supports preserving the deck when a non-milling attack is legal |
 | `HDI-3-03` deck-band counterexample | A target action used Hammer-lanche with 11 cards remaining while Kyogre was already in play | Episode [`88862505`](../data/raw/kaggle/kaggle_gameplay_runs/88862505.json), side 1, decision `27` | Counterexample to achieved preventive behavior; the immediate prompt offered no switch, so earlier pivot timing remains unlocated |
-| `HDI-3-01` empty-deck terminal state | Nine `MAIN` prompts showed an empty deck; several belong to degenerate long-run sequences | Episode [`88881422`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88881422-replay.json), side 1, decisions `51` and `52`, attaches Energy and uses zero-output Hammer-lanche with an empty deck before losing | Demonstrates the terminal state but offers no legal rescue in the final prompt |
+| `HDI-3-01` empty-deck terminal state | Nine `MAIN` prompts showed an empty deck; several belong to degenerate long-run sequences | Episode [`88881422`](../data/raw/kaggle/kaggle_gameplay_runs/88881422.json), side 1, decisions `51` and `52`, attaches Energy and uses zero-output Hammer-lanche with an empty deck before losing | Demonstrates the terminal state but offers no legal rescue in the final prompt |
 | `HDI-3-04` public-only response projection | Public Energy, discard, and revealed-card state is present, but internal reasoning is not observable | No adjudicable decision-linked example | Remains a fixture or instrumentation gap, not evidence that hidden-card beliefs were used |
 
 No prompt offered a choice between Mega Abomasnow ex and Kyogre while the
@@ -1340,7 +1340,7 @@ behavior evidence, not a new policy definition.
 | Confirmed decision | Representative evidence | Interpretation |
 |---|---|---|
 | Secret Box and category search | Episode [`88836827`](../data/raw/kaggle/kaggle_gameplay_runs/88836827.json), side 1, decisions `18`–`22`, takes Ultra Ball, Powerglass, Lillie's Determination, and Surfing Beach from Secret Box | Supports resolving all available Secret Box categories; discard preservation is not fully observable |
-| Repeated search Items | Episode [`88836243`](../data/raw/kaggle/kaggle_gameplay_runs/episode-88836243-replay.json), side 1, decisions `12` and `14`, plays two Mega Signal | Supports repeated search resolution; no direct repeated-Ultra-Ball cost example was found |
+| Repeated search Items | Episode [`88836243`](../data/raw/kaggle/kaggle_gameplay_runs/88836243.json), side 1, decisions `12` and `14`, plays two Mega Signal | Supports repeated search resolution; no direct repeated-Ultra-Ball cost example was found |
 | Snover development | Episode [`88840528`](../data/raw/kaggle/kaggle_gameplay_runs/88840528.json), side 0, decision `12`, plays Snover while Kyogre is the only Pokémon in play | Supports Snover over a normal single-slot Kyogre choice |
 | Search before development counterexample | Episode [`88839991`](../data/raw/kaggle/kaggle_gameplay_runs/88839991.json), side 1, decision `10`, attacks while Snover, Secret Box, and multiple Energy attachments remain legal | Shows that current implementation does not enforce the confirmed development gate |
 | Kyogre fallback | Episode [`88879568`](../data/raw/kaggle/kaggle_gameplay_runs/88879568.json), side 0, decision `42`, uses Frost Barrier while Kyogre plays remain legal and the deck has 12 cards | Supports the previously annotated failure to develop Kyogre; it does not prove Kyogre was strategically required at that exact prompt |
