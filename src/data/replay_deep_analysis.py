@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -192,7 +192,8 @@ def _optional_int(value: Any) -> int | None:
 def _get_visualization(replay: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     """Extract the visualization timeline from a replay."""
     try:
-        return replay["steps"][0][0]["visualize"]
+        visualize = replay["steps"][0][0]["visualize"]
+        return visualize if isinstance(visualize, list) else []
     except (KeyError, IndexError, TypeError):
         return []
 
@@ -272,9 +273,7 @@ def extract_deep_analysis(
         energy_attached = bool(current.get("energyAttached", False))
         supporter_played = bool(current.get("supporterPlayed", False))
 
-        owner_state = _parse_player_state(
-            players[owner_index], energy_attached, supporter_played
-        )
+        owner_state = _parse_player_state(players[owner_index], energy_attached, supporter_played)
         opponent_state = _parse_player_state(
             players[opponent_index], energy_attached, supporter_played
         )
@@ -295,11 +294,7 @@ def extract_deep_analysis(
         )
 
     owner_outcome = (
-        "draw"
-        if winner_index is None
-        else "win"
-        if winner_index == owner_index
-        else "loss"
+        "draw" if winner_index is None else "win" if winner_index == owner_index else "loss"
     )
 
     # Resolve archetypes from deck cards
