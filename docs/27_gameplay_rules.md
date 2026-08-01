@@ -3,7 +3,7 @@
 > Canonical policy-level rules. Feedback explains why a rule exists; this file
 > states what the agent should do.
 
-**Last reviewed:** 2026-07-29
+**Last reviewed:** 2026-08-01
 
 ## Status vocabulary
 
@@ -17,8 +17,8 @@
 | ID | Rule | Status | Evidence or task |
 |---|---|---|---|
 | GR-001 | Prefer productive legal actions over unexplained `END` | `ACTIVE` | Gameplay recovery smoke |
-| GR-002 | Play available Pokémon before non-winning terminal actions | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004 |
-| GR-003 | Continue required Evolution before terminal actions | `PROPOSED` | T-001–T-002 |
+| GR-002 | Prioritize Bench development only when no priority action exists | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004, T-015–T-019 |
+| GR-003 | Continue required Evolution before Energy and Bench decisions | `ACTIVE / UNVALIDATED` | FB-2026-005, T-001–T-002, T-016 |
 | GR-004 | Apply Rule Box damage prevention and Prize value | `ACTIVE / UNVALIDATED` | FB-2026-002, T-005 |
 | GR-005 | Respect exact and probabilistic searchable-card availability | `ACTIVE / UNVALIDATED` | FB-2026-003, T-006 |
 | GR-006 | Complete nested costs without renumbering options | `ACTIVE` | Selection/fallback tests |
@@ -26,6 +26,11 @@
 | GR-008 | Preserve a turn plan across nested selections | `PROPOSED` | Future H2 work |
 | GR-009 | Pass only with an explicit strategic reason | `PROPOSED` | Future H2 work |
 | GR-010 | Estimate all relevant attack effects reliably | `PROPOSED` | Future H3 work |
+| GR-011 | Place the `development_priority` Pokémon before generic development; never discard it | `ACTIVE / UNVALIDATED` | FB-2026-004, T-015 |
+| GR-012 | Prefer search/draw cards over generic Bench filling | `ACTIVE / UNVALIDATED` | FB-2026-006, T-017 |
+| GR-013 | Never tutor a `trainer_search` card (Petrel) | `ACTIVE / UNVALIDATED` | FB-2026-006, T-017 |
+| GR-014 | Attach the Energy that completes the Active attack before Bench development | `ACTIVE / UNVALIDATED` | FB-2026-005, T-016 |
+| GR-015 | Near deck-out, prefer attacks that shuffle discarded Basic Energy back into the deck | `ACTIVE / UNVALIDATED` | FB-2026-007, T-018 |
 
 ## Turn order
 
@@ -34,11 +39,13 @@ For a normal `MAIN` decision:
 1. take forced or nested selections legally;
 2. evaluate an immediate game-winning action;
 3. use required draw/search when its need is known;
-4. develop required Pokémon and Evolutions;
-5. sequence non-terminal Items, Tools, Stadiums, and Abilities;
-6. attach Energy according to attack and backup needs;
-7. attack;
-8. choose `END` only when no higher-value legal action remains.
+4. Evolve; Evolution precedes Energy and Bench decisions;
+5. attach Energy that completes the Active attacker's required attack;
+6. place the declared `development_priority` Pokémon (Snover) on the Bench;
+7. develop the secondary/backup attacker;
+8. sequence non-terminal Items, Tools, Stadiums, and Abilities, search roles first;
+9. attack, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+10. choose `END` only when no higher-value legal action remains.
 
 Steps not represented by an active rule remain heuristic preferences, not
 guaranteed behavior.
@@ -50,15 +57,19 @@ guaranteed behavior.
 When legal productive actions exist, `END` must not win solely from a fixed
 positive score. Any pass must carry a reason that can be audited.
 
-### GR-002 — Play available Pokémon before attacking
+### GR-002 — Bench development when no priority action exists
 
-In `MAIN`, with open Bench capacity, any legal Pokémon `PLAY` is required
-before `ATTACK` or `END`. Parse the resulting observation and repeat. Full
-Bench and illegal plays are safe exits.
+In `MAIN`, with open Bench capacity, a legal Pokémon `PLAY` is preferred over
+`ATTACK` or `END`, but only when no priority action is legal. Priority actions
+are Evolution, Ability, search/Trainer `PLAY`, an attach that completes the
+Active attack, and an attack with a guaranteed Knock Out. Parse the resulting
+observation and repeat. Full Bench and illegal plays are safe exits.
 
-Current limitations: the generic rule does not yet model target count, reserved
-slots, liability, complete Evolution ordering, or every immediate-win
-exception.
+### GR-003 — Evolution before Energy and Bench decisions
+
+When a legal `EVOLVE` exists, it precedes Energy attachment and Bench
+development. Post-Evolution energy needs drive the attachment decision, so the
+agent resolves Evolution before deciding where Energy goes.
 
 ### GR-004 — Rule Box and Prize value
 
@@ -76,6 +87,36 @@ strategic context or belief, never factual public state.
 
 Preserve simulator option indices and declared cardinality. Repeated Energy or
 damage-cost prompts select only the required legal amount for that SDK call.
+
+### GR-011 — Development-priority Pokémon placement
+
+The declared `development_priority` Pokémon (Snover) is placed on the Bench
+before any other Pokémon and must never be discarded or left in hand when a
+legal `PLAY` exists. Discarding it is legal only when it is the sole option.
+
+### GR-012 — Search before generic Bench filling
+
+Search, draw, and hand-refresh cards (Items, Supporters, Poké Pad) are played
+before filling the Bench with a generic Pokémon. `Pokémon Search`, `evolution
+search`, `general search`, `trainer search`, and `hand refresh` roles all
+qualify.
+
+### GR-013 — No redundant Supporter search
+
+A `trainer_search` target (Petrel) is never fetched by a tutor; the tutor
+prefers Items and `hand_refresh` Supporters instead.
+
+### GR-014 — Attach that completes the Active attack
+
+An Energy attachment that brings the Active attacker to its required attack
+cost precedes Bench development and generic attachment. The `deck_profile`
+`attack_energy_targets` defines the required count.
+
+### GR-015 — Shuffle-refill near deck-out
+
+When the own deck is below the refill threshold, attacks that shuffle discarded
+Basic Energy back into the deck (Riptide) gain a bonus proportional to the
+discarded Energy count, in addition to their damage value.
 
 ## Required evaluation metrics
 

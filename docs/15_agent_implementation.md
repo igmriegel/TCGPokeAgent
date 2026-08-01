@@ -50,6 +50,47 @@ score =
 
 `win_now` dominates any non-winning combination. Beyond that, weights do not replace legality rules. Efficient attack considers effective damage, KO, prizes, observed weakness/resistance, cost, and counter-attack exposure.
 
+## MAIN action priority ladder
+
+`_main_action_score` orders legal `MAIN` actions by a fixed ladder that
+implements GR-001 to GR-015:
+
+```text
+EVOLVE                           500 (+ energy on target)
+ABILITY                          450
+attach completing Active attack  ~460–485
+development-priority play        400
+bench energy attach              375
+search/supporter play            ~340–360
+generic Pokémon play             320
+weak attack                      210
+END                            -1000 (only when nothing better)
+```
+
+The conditional Bench filter restricts a decision to Pokémon `PLAY`
+selections only when no priority action is legal. Priority actions are
+Evolution, Ability, search/Trainer `PLAY`, an attach that completes the Active
+attack, and an attack with a guaranteed Knock Out.
+
+## Deterministic attack damage
+
+`_guaranteed_attack_damage` computes the deterministic part of an attack:
+discard-pile based damage uses the public discard count, while top-of-deck
+based damage is treated as probabilistic and returns zero. Guaranteed-KO
+attacks exempt the decision from the Bench filter and prefer refill attacks
+near deck-out via the `deck_refill` reason.
+
+## Resource and attachment scoring
+
+- `_card_selection_score` `TO_HAND` follows the profile `resource_values` and
+  penalizes `trainer_search` targets (`avoid_redundant_supporter_search`).
+- `_card_selection_score` `DISCARD` penalizes `development_priority` Pokémon
+  (`preserve_development_pokemon`), then favors Energy, then non-Pokémon.
+- `_attachment_score` classifies by metadata `cardType`: Tool (2) scores
+  `attach_useful_tool`; Energy (5/6) scores by deficit with an Active-attack
+  completion bonus; anything else emits `attach_unrecognized_card` and never
+  pretends to be a useful tool.
+
 ## Short search
 
 ### Determinization

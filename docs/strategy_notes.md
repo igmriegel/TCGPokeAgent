@@ -450,3 +450,32 @@ score_delta_experimental_minus_reference: -48.8
 decision: "Do not promote HDI v1; retain the submission as experimental evidence and require the frozen local comparison before further policy changes."
 limitation: "Kaggle recalculated the public score after the first COMPLETE listing, so the later listing is the canonical current value."
 ```
+
+## Heuristic priority-fix reproduction batch
+
+```yaml
+observed_at: "2026-08-01T00:00:00Z"
+deck_id: mega_abomasnow_kyogre
+deck_sha256: "0880554d3f0704f706ec4b2ff2bc7c40e91329dd700be05cfd2f1d8e4d57cf7c"
+root_causes:
+  - "deck_profile.json deck_sha256 was stale (3882cfbb...), so start_match discarded the configured profile and used GenericDeckProfileBuilder"
+  - "generic profile lost development_priority (Snover), pokemon_search (Poké Pad), trainer_search (Petrel), hand_refresh (Lillie), secondary_attacker (Kyogre), Riptide damage_per_basic_energy_in_discard, and ordered resource_values"
+  - "bench filter dropped attach-active and guaranteed-KO attack options"
+  - "_attachment_score else-branch reported attach_useful_tool for unresolved/non-tool cards"
+reproductions:
+  - "deck-out: Riptide KO+refill 640 > bench Snover 400 after fix (was 330 < 360)"
+  - "post-evolution: attach active 485 > attach bench 375 > play Kyogre 320"
+  - "Poké Pad TO_HAND now picks Snover (155) over Kyogre (145)"
+  - "Petrel TO_HAND no longer self-tutors (trainer_search penalty)"
+decisions:
+  - "conditional Bench filter: restrict to Pokémon PLAY only when no priority action is legal"
+  - "EVOLVE precedes Energy; completion attach is a priority action"
+  - "heuristic-only scope; HDI intentionally unchanged"
+  - "default calibrations: attach completion +80, search +100, bench attach 375"
+evidence:
+  - "tests/test_heuristic_strategy.py (10 scenarios)"
+  - "tests/test_profile.py (profile integrity)"
+  - "tests/test_cabt_golden_gameplay.py (6 golden cases)"
+status: implemented
+```
+

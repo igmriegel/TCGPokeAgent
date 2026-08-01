@@ -4,17 +4,17 @@
 > and lifecycle; [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md) owns work
 > status; [`27_gameplay_rules.md`](27_gameplay_rules.md) owns active policy.
 
-**Last reviewed:** 2026-07-29
+**Last reviewed:** 2026-08-01
 
 ## Summary
 
 | State | Count |
 |---|---:|
-| Recorded | 3 |
-| Implemented | 3 |
+| Recorded | 7 |
+| Implemented | 7 |
 | Validated | 0 |
 | Rejected | 0 |
-| Open implementation/validation actions | 6 |
+| Open implementation/validation actions | 10 |
 
 `IMPLEMENTED` means code and focused tests exist. `VALIDATED` additionally
 requires the frozen gameplay gate. No feedback item below is eligible for a
@@ -32,9 +32,13 @@ Raw feedback remains immutable. A correction appends a new review with a
 
 | ID | Finding | Implementation | Validation | Open tasks |
 |---|---|---|---|---|
-| FB-2026-001 | Develop the Bench before a terminal attack | Core generic play ordering implemented | Pending | T-001–T-004 |
+| FB-2026-001 | Develop the Bench before a terminal attack | Conditional board-development ordering implemented | Pending | T-001–T-004 |
 | FB-2026-002 | Respect Rule Box damage and Prize value | Catalog traits and `PrizeMap` implemented | Pending | T-005 |
 | FB-2026-003 | Distinguish prized from searchable cards | Probabilistic/exact `PrizeCheck` implemented | Pending | T-006 |
+| FB-2026-004 | Snover must reach the Bench and never be discarded | `development_priority` scoring implemented | Pending | T-015 |
+| FB-2026-005 | Evolve before deciding Energy placement | `EVOLVE` precedes attachment scoring | Pending | T-016 |
+| FB-2026-006 | Search before generic Bench; never tutor Petrel | Search-role scoring and `trainer_search` penalty implemented | Pending | T-017 |
+| FB-2026-007 | Kyogre must shuffle-refill near deck-out | `deck_refill` attack bonus implemented | Pending | T-018 |
 
 ## FB-2026-001 — Continuous board development
 
@@ -133,6 +137,127 @@ through known zone transitions. Belief never becomes factual `GameState`.
 
 T-006: golden search, draw, discard, attachment, Evolution, and Prize-taking
 transitions.
+
+## FB-2026-004 — Snover goes to the Bench and is never discarded
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+**Source:** post-submission human review of automated Kaggle matches
+
+### Original feedback
+
+"Confirmo sim, se Snover tiver na mão ele tem que ir no banco, não pode ser
+descartado ou só ficar na mão." Snover is the `development_priority` Pokémon;
+a hand Snover must be played and must survive discard selection.
+
+### Accepted rule
+
+A `development_priority` Pokémon scores above generic Bench development and is
+heavily penalized in `DISCARD` selection (`preserve_development_pokemon`),
+legal only when it is the sole discardable option.
+
+### Implemented foundation
+
+- `_play_score` gives the role a 400-point Bench score (GR-011);
+- `_card_selection_score` applies `-1000` in discard contexts;
+- `tests/test_heuristic_strategy.py::test_bench_development_prefers_snover`
+  and `test_snover_not_discarded`.
+
+### Gate
+
+T-015: focused fixtures over the real deck and no regression in the frozen
+paired comparison.
+
+## FB-2026-005 — Evolution before Energy placement
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+### Original feedback
+
+After Snover evolved into Abomasnow ex, the Energy attachment used the
+pre-evolution target and underfed the Active attacker. Evolution must resolve
+before the Energy decision.
+
+### Accepted rule
+
+A legal `EVOLVE` precedes Energy attachment and Bench development, and the
+attachment that completes the Active attacker's required post-evolution attack
+cost wins over Bench development (GR-003, GR-014).
+
+### Implemented foundation
+
+- `EVOLVE` keeps the top `MAIN` score (500);
+- the conditional filter treats completion attaches as priority actions;
+- `_attachment_score` adds a completion bonus for the Active attacker;
+- `tests/test_heuristic_strategy.py::test_evolve_precedes_energy_attachment`
+  and `test_post_evolution_energy_completes_active_attack`.
+
+### Gate
+
+T-016: post-evolution fixtures and no regression in the frozen paired
+comparison.
+
+## FB-2026-006 — Search before generic Bench; never tutor Petrel
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+### Original feedback
+
+Poké Pad fetched Kyogre instead of Snover, and Petrel fetched Petrel. Search
+must prefer the declared resource order and must not re-fetch a redundant
+Supporter.
+
+### Accepted rule
+
+Search, draw, and hand-refresh cards are played before generic Bench filling
+(GR-012), and `trainer_search` targets are penalized in `TO_HAND` selection
+(GR-013).
+
+### Implemented foundation
+
+- `_play_score` adds a search bonus for the five search roles;
+- `_card_selection_score` applies a `-200` penalty to `trainer_search` targets;
+- `tests/test_heuristic_strategy.py::test_pokepad_search_prefers_snover` and
+  `test_petrel_search_prefers_item_or_lillie`.
+
+### Gate
+
+T-017: search-order fixtures and no regression in the frozen paired comparison.
+
+## FB-2026-007 — Kyogre shuffle-refill near deck-out
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+### Original feedback
+
+With the deck about to empty and 18 Basic {W} Energy in the discard, the agent
+benched Snover instead of using Riptide, which would have confirmed a Knock Out
+and shuffled the Energy back.
+
+### Accepted rule
+
+Attacks with guaranteed Knock Out are priority actions, and near deck-out a
+shuffle-refill attack gains a bonus proportional to the discarded Energy count
+(GR-015).
+
+### Implemented foundation
+
+- `_guaranteed_attack_damage` computes deterministic discard-pile damage;
+- the conditional filter exempts guaranteed-KO attacks;
+- `_attack_score` emits `deck_refill`;
+- `tests/test_heuristic_strategy.py::test_heuristic_deck_out`.
+
+### Gate
+
+T-018: deck-out fixtures and no regression in the frozen paired comparison.
 
 ## Adding feedback
 

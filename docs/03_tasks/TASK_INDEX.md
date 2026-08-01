@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-07-30
+**Last reviewed:** 2026-08-01
 
 ## How to read this backlog
 
@@ -20,9 +20,9 @@ documents to these totals.
 | Queue | Count |
 |---|---:|
 | In progress | 3 |
-| Ready | 8 |
+| Ready | 13 |
 | Deferred | 7 |
-| Total open | 18 |
+| Total open | 23 |
 
 ## Active release queue
 
@@ -39,6 +39,11 @@ documents to these totals.
 | T-009 | P1 | `READY` | Revalidate belief and evaluator against corrected factual state | S7 | Add real-observation invariant cases |
 | T-011 | P1 | `IN_PROGRESS` | Close the heuristic-only package and handoff checklist | S9 | Resolve unchecked evidence and rebuild after promoted changes |
 | T-013 | P1 | `IN_PROGRESS` | Qualify XGBoost and LightGBM ranker candidates | Learned-policy gates | Capture 250 human groups, freeze holdout, and run paired matrix |
+| T-015 | P1 | `READY` | Validate development-priority placement and discard protection | FB-2026-004, H2A | Run Snover bench/discard fixtures and the paired comparison |
+| T-016 | P1 | `READY` | Validate Evolution-before-Energy and completion attach | FB-2026-005, H2A | Run post-evolution fixtures and the paired comparison |
+| T-017 | P1 | `READY` | Validate search ordering and no Petrel tutoring | FB-2026-006, H2A | Run search-order fixtures and the paired comparison |
+| T-018 | P1 | `READY` | Validate deck-out shuffle-refill attack | FB-2026-007, H2A | Run deck-out fixtures and the paired comparison |
+| T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
 
 ## Active-track coverage
 
@@ -53,7 +58,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004 |
+| H2A | T-001–T-004, T-015–T-019 |
 
 ## Deferred queue
 

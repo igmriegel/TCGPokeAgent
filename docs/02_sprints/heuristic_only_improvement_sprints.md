@@ -38,14 +38,18 @@ stable reasons and legal fallback for unknown contexts.
 ## H2A — Continuous deck-agnostic board development
 
 **Outcome:** required Pokémon plays and Evolutions occur before non-winning
-attacks or `END`, with re-evaluation after every `MAIN` action.
+attacks or `END`, with re-evaluation after every `MAIN` action, and Bench
+development is restricted only when no priority action exists.
 
 **Required coverage:** open/full Bench, repeated plays, eligible Evolution,
-backup attacker, target reached, reserved slot, liability, and immediate-win
-override.
+backup attacker, target reached, reserved slot, liability, immediate-win
+override, development-priority placement, search ordering, and deck-out
+refill.
 
 **Gate:** zero skipped required development in focused fixtures and no
-regression in the frozen matrix. Open actions are tracked as T-001–T-004.
+regression in the frozen matrix. The conditional Bench filter and the
+priority ladder are implemented; open validation actions are tracked as
+T-001–T-004 and T-015–T-019.
 
 ## H3 — Local tactical feature evaluator
 
