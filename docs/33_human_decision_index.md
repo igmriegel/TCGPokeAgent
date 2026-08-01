@@ -199,9 +199,6 @@ The first review pass established the following desired behavior for
   plus deck count is at most six. At a combined count of seven it leaves
   deck-out on the following turn, so use it only when the same turn will use
   `Riptide` to restore Basic Water Energy to the deck or will win immediately.
-- Use Surfing Beach when the damaged Active Water Pokémon can be replaced by a
-  Benched Water Pokémon that is already energized to attack. Its primary
-  purpose is a free switch that denies the opponent an expected Knock Out.
 - Attach Powerglass to Kyogre only for a `Swirling Waves` line. After that
   attack discards two Energy, Powerglass may return one Basic Water Energy from
   the discard to Kyogre at the end of the turn. Powerglass is useless
@@ -212,11 +209,9 @@ The first review pass established the following desired behavior for
   Secret Box is already in hand, use Secret Box rather than Petrel. If Secret
   Box is unavailable, Petrel searches for Mega Signal when an in-play Pokémon
   still needs to evolve; Ultra Ball when any Pokémon is needed, including
-  another Snover, Mega Abomasnow ex, or Kyogre; Surfing Beach when a switch is
-  needed; or Lillie's Determination for the following turn when the hand is
+  another Snover, Mega Abomasnow ex, or Kyogre; or Lillie's Determination for the following turn when the hand is
   small, contains too many Basic Water Energy, or has too few playable cards.
-  When several fallback needs coexist, the order is Surfing Beach to prevent a
-  Knock Out, Mega Signal to evolve, Ultra Ball to find any Pokémon, then
+  When several fallback needs coexist, the order is Mega Signal to evolve, Ultra Ball to find any Pokémon, then
   Lillie's Determination for next-turn refresh.
 - For Secret Box and Ultra Ball costs, discard in this order: Basic Water
   Energy, an unneeded Powerglass, then a redundant Supporter that cannot
@@ -458,15 +453,12 @@ across two or more Item uses.
   Snover, Mega Signal when it needs Mega Abomasnow ex, Lillie's Determination
   as the normal Supporter, and Team Rocket's Petrel as the alternative
   Supporter. If Secret Box is unavailable, Petrel chooses Mega Signal for an
-  unevolved in-play Pokémon, Ultra Ball for any needed Pokémon, Surfing Beach
-  for a needed switch, or Lillie's Determination as next-turn hand refresh.
-  When several needs coexist, choose Surfing Beach to prevent a Knock Out,
+  unevolved in-play Pokémon, Ultra Ball for any needed Pokémon, or Lillie's Determination as next-turn hand refresh.
+  When several needs coexist, choose
   then Mega Signal, then Ultra Ball, then Lillie's Determination.
   Attach Powerglass to Kyogre only as part of a `Swirling Waves` line;
   otherwise treat it as a preferred discard-cost candidate. Use Lillie's
-  Determination for an unproductive hand or excess Basic Water Energy. Use
-  Surfing Beach to move a damaged Active into safety when an attack-ready
-  Benched Water Pokémon can replace it.
+  Determination for an unproductive hand or excess Basic Water Energy.
 - **Vetoes and exceptions:** Do not use Lillie's Determination when current
   hand count plus deck count is at most six. A combined count of seven creates
   known next-turn deck-out risk; use Lillie at seven only if the same turn
@@ -481,7 +473,7 @@ across two or more Item uses.
 - **Tie-breakers:** For Secret Box's Item, current board need decides between
   Ultra Ball for Snover and Mega Signal for Mega Abomasnow ex. The confirmed
   discard order is Basic Water Energy, unneeded Powerglass, then unusable
-  duplicate Supporters. Petrel's fallback order is defensive Surfing Beach,
+  duplicate Supporters. Petrel's fallback order is defensive
   Mega Signal, Ultra Ball, then next-turn Lillie's Determination.
 - **Horizon:** Current turn through the next attack and draw.
 - **Deck-profile dependency:** Requires explicit search targets, discard-cost
@@ -1279,8 +1271,6 @@ order, `HDI-5-03` board development, and `HDI-5-04` slot management.
 - With one remaining Bench slot, prefer Snover in the normal line. Choose
   Kyogre instead only when a confirmed Kyogre condition is active: deck-out
   prevention, replacement-attacker need, or Rule Box protection.
-- Surfing Beach precedes normal search when it can move a damaged Active to a
-  ready, energized Bench Pokémon and deny a Knock Out.
 - Powerglass is useful only on a Kyogre that used Swirling Waves; otherwise it
   is a strong discard candidate. Lillie comes after useful hand actions and
   obeys the confirmed hand-plus-deck deck-out boundary.
@@ -1304,8 +1294,7 @@ The four confirmed records are:
    Box-protection condition. Evolve every eligible Snover except the confirmed
    all-opposing-Pokémon protection branch. Mapping: TO_BENCH, TO_FIELD, EVOLVE,
    EVOLVES_FROM, and EVOLVES_TO.
-4. **Stadium/Tool and slot management:** Put Surfing Beach ahead of ordinary
-   search when it prevents an imminent KO. Put Powerglass on Kyogre only after
+4. **Stadium/Tool and slot management:** Put Powerglass on Kyogre only after
    Swirling Waves; otherwise preserve it as a discard candidate. Do not reserve
    a Bench slot at the expense of a legal Snover. Mapping: MAIN, ATTACH_TOOL,
    TO_FIELD, TO_BENCH, and DISCARD_TOOL.
@@ -1324,7 +1313,7 @@ Search and development follow the confirmed profile: Secret Box first when
 playable, Petrel when it remains in deck, repeated searches resolved without
 discarding newly fetched requirements, Snover favored over Kyogre for a single
 slot unless a Kyogre condition is active, and Lillie late in the sequence.
-Surfing Beach is urgent KO prevention; Powerglass is conditional on the
+Powerglass is conditional on the
 preceding Swirling Waves attack. No policy change is authorized.
 
 **Reviewer confirmation:** Accepted on 2026-07-30. Later evidence may annotate
@@ -1463,10 +1452,8 @@ attach to it regardless of the lack of an immediate attack.
 - **Beliefs:** Unrevealed opposing responses remain hypotheses and cannot by
   themselves force a switch.
 - **Priority conditions:** (1) switch when another attacker is ready and the
-  Active is at risk of being Knocked Out; (2) use a free switch such as
-  Surfing Beach to avoid a Knock Out, enable a situational Kyogre `Riptide`
-  line, or change the Prize trade; (3) when paying retreat, prefer lines that
-  place additional Energy in the discard for `Riptide`; (4) otherwise keep the
+  Active is at risk of being Knocked Out; (2) when paying retreat, prefer lines that
+  place additional Energy in the discard for `Riptide`; (3) otherwise keep the
   Active if it can continue attacking and no ready replacement improves the
   position.
 - **Promotion choice:** Promote the Pokémon that is ready to attack; if none
@@ -1474,9 +1461,7 @@ attach to it regardless of the lack of an immediate attack.
   gain.
 - **Vetoes and exceptions:** Do not switch merely because the Active can be
   replaced. Accept the exposed Active when retreat is not legal or no useful
-  continuation is available. There is no additional exception for an
-  immediate Knock Out or Prize-race result beyond the free-switch conditions
-  above.
+  continuation is available.
 - **Tie-breaker:** Among equally ready candidates, prefer the one conceding
   fewer Prizes and then the lower original CABT option index.
 - **Horizon:** Current turn through the opponent's next attack and the next
@@ -1501,9 +1486,8 @@ attach to it regardless of the lack of an immediate attack.
   condition as though it were certain future value.
 - **Priority conditions:** (1) remove the condition whenever possible when a
   ready alternative attacker exists or the recovery is a low-cost sacrifice;
-  (2) prefer Surfing Beach when it can remove the condition through a free
-  switch; (3) switch to the Bench to remove the condition, avoid a Knock Out,
-  or enable a situational Knock Out; (4) accept the condition only as a last
+  (2) switch to the Bench to remove the condition, avoid a Knock Out,
+  or enable a situational Knock Out; (3) accept the condition only as a last
   resort.
 - **Recovery costs:** It is correct to spend a card, Energy, or switch effect
   to cure the condition when the resulting line is lower cost than remaining
@@ -1514,8 +1498,7 @@ attach to it regardless of the lack of an immediate attack.
   exploit, and their specific type does not change the priority order. Remain
   with the affected Active only when no legal switch is available or every
   available sacrifice has a higher cost.
-- **Tie-breaker:** Among equivalent recovery lines, prefer the free switch,
-  then the lower original CABT option index.
+- **Tie-breaker:** Among equivalent recovery lines, prefer the lower original CABT option index.
 - **Horizon:** Current turn through the next attack and expected opponent
   response.
 - **Deck dependency:** Uses declared attacker readiness, retreat and switch
@@ -1541,7 +1524,7 @@ only for a certain `Riptide` Knock Out. Recovery comes only from the discard
 when the hand lacks an Energy for that attachment. Retreat and switching serve
 ready-attacker promotion, Knock Out prevention, situational `Riptide`, and
 Prize-trade improvement. Special Conditions are removed whenever a ready
-alternative or low-cost recovery exists, with Surfing Beach preferred; they
+alternative or low-cost recovery exists; they
 are never exploited and are accepted only as a last resort.
 
 **Reviewer confirmation:** Accepted on 2026-07-30. Later evidence may annotate
