@@ -371,9 +371,9 @@ def _(Counter, defaultdict, filtered):
 @app.cell
 def _():
     SUBMISSIONS = [
-        {"label": "Sub 1", "id": "55088176", "kaggle": 539.2, "episodes": 48, "w": 27, "l": 21, "best": True},
-        {"label": "Sub 2", "id": "55093119", "kaggle": 478.6, "episodes": 50, "w": 20, "l": 30, "best": False},
-        {"label": "Sub 3", "id": "55119505", "kaggle": 484.3, "episodes": 43, "w": 22, "l": 21, "best": False},
+        {"label": "Sub 1", "id": "55088176", "kaggle": 539.2, "episodes": 48, "w": 21, "l": 27, "best": True},
+        {"label": "Sub 2", "id": "55093119", "kaggle": 478.6, "episodes": 54, "w": 24, "l": 30, "best": False},
+        {"label": "Sub 3", "id": "55119505", "kaggle": 490.4, "episodes": 46, "w": 27, "l": 19, "best": False},
     ]
     return (SUBMISSIONS,)
 
