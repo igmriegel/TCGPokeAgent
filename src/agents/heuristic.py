@@ -572,7 +572,9 @@ class HeuristicAgent(AgentPolicy):
         required_development = self._required_board_development_indices(
             parsed.state, parsed.candidates, parsed.select_context
         )
-        if required_development:
+        if required_development and not self._has_priority_action(
+            parsed.state, selections, parsed.candidates
+        ):
             development_selections = [
                 selection
                 for selection in selections
@@ -666,3 +668,75 @@ class HeuristicAgent(AgentPolicy):
             return int(candidate.card.get("cardType", -1)) == 0
         except (TypeError, ValueError):
             return False
+
+    def _has_priority_action(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> bool:
+        """Return True when a legal selection contains an action that must not
+        be deferred for bench development.
+
+        Evolution, Abilities, search/Trainer plays, and guaranteed Knock Outs
+        all precede filling the Bench in the declared play order.
+        """
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+        for selection in selections:
+            for index in selection.indices:
+                candidate = by_index.get(index)
+                if candidate is None:
+                    continue
+                if candidate.option_type in {OptionType.EVOLVE, OptionType.ABILITY}:
+                    return True
+                if candidate.option_type is OptionType.PLAY and self._is_priority_play(candidate):
+                    return True
+                if (
+                    candidate.option_type is OptionType.ATTACH
+                    and self._attach_completes_active_attack(candidate)
+                ):
+                    return True
+                if candidate.option_type is OptionType.ATTACK and self._attack_is_guaranteed_ko(
+                    state, candidate
+                ):
+                    return True
+        return False
+
+    def _attach_completes_active_attack(self, candidate: Candidate) -> bool:
+        """True when attaching an energy to the Active Pokémon enables its
+        required attack, which takes priority over bench development.
+        """
+        if not bool(candidate.features.get("target_is_active", False)):
+            return False
+        target_id = self._scorer._feature_int(candidate, "target_card_id")
+        energy_count = self._scorer._feature_int(candidate, "target_energy_count")
+        return energy_count + 1 >= self._scorer._attack_energy_target(target_id)
+
+    def _is_priority_play(self, candidate: Candidate) -> bool:
+        card_type = self._scorer._metadata_int(candidate.card, "cardType")
+        if card_type != 0:
+            return True
+        card_id = self._scorer._feature_int(candidate, "card_id")
+        search_roles = (
+            "evolution_search",
+            "general_search",
+            "trainer_search",
+            "hand_refresh",
+            "pokemon_search",
+        )
+        return any(self._scorer._has_role(card_id, role) for role in search_roles)
+
+    def _attack_is_guaranteed_ko(self, state: GameState, candidate: Candidate) -> bool:
+        damage = self._scorer._guaranteed_attack_damage(state, candidate)
+        return damage > 0 and damage >= self._opponent_active_hp(state)
+
+    @staticmethod
+    def _opponent_active_hp(state: GameState) -> int:
+        players = state.players
+        if len(players) < 2:
+            return 0
+        your_index = state.your_index if 0 <= state.your_index < len(players) else 0
+        opponent = players[1 - your_index]
+        if opponent.active is None:
+            return 0
+        return max(0, opponent.active.hp)
