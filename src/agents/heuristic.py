@@ -274,16 +274,14 @@ class SimpleHeuristicScorer(HeuristicScorer):
             ]
         if card_type == 1 and self._has_search_role(card_id):
             return 340.0, ["play_search_card"]
-        if card_type == 3 and self._has_search_role(card_id):
-            hand_count = self._own_hand_count(state)
-            return 350.0 + max(0, 8 - hand_count) * 10.0, ["play_search_card"]
         if card_type == 1:
             return 240.0, ["play_item"]
         if card_type == 2:
             return 280.0, ["attach_tool"]
+        if card_type == 3 and self._has_search_role(card_id):
+            return 230.0, ["play_supporter_search"]
         if card_type == 3:
-            hand_count = self._own_hand_count(state)
-            return 250.0 + max(0, 8 - hand_count) * 10.0, ["play_supporter"]
+            return 210.0, ["play_supporter"]
         if card_type == 4:
             return 180.0, ["play_stadium"]
         return 150.0, ["play_known_legal_card"]
@@ -501,10 +499,6 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if 0 <= state.your_index < len(state.players):
             return state.players[state.your_index]
         return None
-
-    def _own_hand_count(self, state: GameState) -> int:
-        player = self._own_player(state)
-        return player.hand_count if player is not None else 0
 
     def _own_deck_count(self, state: GameState) -> int:
         player = self._own_player(state)

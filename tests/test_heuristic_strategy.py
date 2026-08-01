@@ -337,6 +337,44 @@ def test_swirling_waves_ko_preferred_over_hammerlanche() -> None:
     assert agent.select(observation) == [0]
 
 
+def test_all_items_played_before_supporter() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 1121, "area": 2},
+            {"type": "PLAY", "cardId": 1227, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[
+            _pokemon(1121, 0, serial=3, area=2),
+            _pokemon(1227, 0, serial=4, area=2),
+        ],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_supporter_played_when_no_items_available() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 1227, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(1227, 0, serial=3, area=2)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
 def test_guaranteed_attack_damage_uses_profile_plans() -> None:
     agent = _built_agent()
     candidates = [
