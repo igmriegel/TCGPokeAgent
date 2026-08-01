@@ -83,8 +83,10 @@ src/
     └── deck_profile.json        # Declarative deck roles
 configs/                         # YAML profiles (default, agent_*, eval_*)
 tests/                           # pytest fixtures + tests
-scripts/                         # run_smoke, run_full, build_package
+scripts/                         # run_smoke, run_full, build_package, replay tools
 docs/                            # Canonical status, code map, contracts, evidence
+perf_reports/                    # HTML investigation reports (generated)
+replays/                         # Raw Kaggle replay downloads by submission ID
 ```
 
 ---

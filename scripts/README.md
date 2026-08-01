@@ -56,3 +56,35 @@ The JSON is written under `replays/YYYYMMDD/`. Open `visualizer.html`, select
 the JSON file, and allow the page to submit it to the competition visualizer.
 The visualizer is an external service; do not upload private observations or
 credentials.
+
+## Download Kaggle replays
+
+Download replay files from all completed Kaggle submissions:
+
+```bash
+uv run --frozen python -m scripts.download_all_replays
+```
+
+This downloads replays to `replays/remote/{submission_id}/` and copies them to
+`data/raw/kaggle/kaggle_gameplay_runs/`. It also creates/updates
+`data/raw/kaggle/episode_to_submission.json` mapping episodes to submissions.
+
+## Generate investigation report
+
+Generate the HTML investigation report from downloaded replays:
+
+```bash
+uv run --frozen python -m scripts.generate_investigation_report
+```
+
+This reads replays from `data/raw/kaggle/kaggle_gameplay_runs/`, analyzes
+them using the CG SDK for card metadata, and generates
+`perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html`.
+
+The report includes:
+- Executive summary (W/L, win rate, avg turns)
+- Submission history comparison
+- First vs second player analysis
+- Attack usage and damage distribution
+- Matchup analysis with threat bars (52+ archetypes)
+- Worst and best matchups with confidence labels

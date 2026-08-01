@@ -30,6 +30,9 @@
 |---|---|
 | `scripts/download_data.sh --check` | Verify official dataset manifest |
 | `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
+| `scripts/download_all_replays.py` | Download replays from all Kaggle submissions |
+| `scripts/sync_replays.py` | Sync downloaded replays to dashboard directory |
+| `scripts/generate_investigation_report.py` | Generate HTML investigation report from replays |
 | `scripts/build_package.sh submission.tar.gz` | Build the explicit submission allowlist |
 | `scripts/build_package.sh submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
 | `scripts/build_package.sh submission-xgboost.tar.gz xgboost_ranker MODEL_DIR` | Build one backend-exclusive ranker archive |
