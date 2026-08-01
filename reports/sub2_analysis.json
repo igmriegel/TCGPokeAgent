@@ -1,0 +1,53 @@
+{
+  "total_matches": 54,
+  "wins": 24,
+  "losses": 30,
+  "draws": 0,
+  "win_rate": 0.4444444444444444,
+  "avg_turns_win": 72.70833333333333,
+  "avg_turns_loss": 72.76666666666667,
+  "first_player": {
+    "wins": 15,
+    "total": 36,
+    "win_rate": 0.4166666666666667
+  },
+  "second_player": {
+    "wins": 9,
+    "total": 18,
+    "win_rate": 0.5
+  },
+  "player0_actions": {
+    "TYPE_3": 782,
+    "ATTACH": 150,
+    "PLAY": 372,
+    "END": 255,
+    "ATTACK": 183,
+    "TYPE_2": 65,
+    "EVOLVE": 30,
+    "TYPE_1": 36,
+    "RETREAT": 43,
+    "ABILITY": 34,
+    "TYPE_6": 72,
+    "TYPE_0": 2,
+    "TYPE_15": 15
+  },
+  "player1_actions": {
+    "TYPE_3": 720,
+    "PLAY": 355,
+    "END": 166,
+    "ATTACK": 178,
+    "ABILITY": 41,
+    "ATTACH": 133,
+    "TYPE_0": 9,
+    "TYPE_6": 43,
+    "EVOLVE": 39,
+    "TYPE_15": 14,
+    "TYPE_1": 6,
+    "RETREAT": 17,
+    "TYPE_2": 2
+  },
+  "attacks_used": 183,
+  "opponent_decks": {
+    "unknown": 54
+  }
+}
