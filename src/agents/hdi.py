@@ -645,8 +645,6 @@ class HdiOrdinalEngine:
             return 7
         if self._has_role(card_id, "general_search"):
             return 6
-        if self._has_role(card_id, "free_switch"):
-            return 5
         if self._card_type(candidate) == 0:
             return 4
         return 1
@@ -663,8 +661,6 @@ class HdiOrdinalEngine:
             return 70
         if self._has_role(card_id, "general_search"):
             return 60
-        if self._has_role(card_id, "free_switch") and self._active_ko_risk(state):
-            return 85
         if self.deck_profile:
             return int(self.deck_profile.resource_values.get(card_id, 0))
         return 0
