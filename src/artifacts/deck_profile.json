@@ -59,7 +59,7 @@
     "reserved_bench_slots": 0
   },
   "deck_id": "mega_abomasnow_kyogre",
-  "deck_sha256": "3882cfbbfe84f0bb88d114890b6de1f42cc1c86f1c793b2062c8b9daa0aa936a",
+  "deck_sha256": "0880554d3f0704f706ec4b2ff2bc7c40e91329dd700be05cfd2f1d8e4d57cf7c",
   "discard_priority": [
     "basic_energy",
     "powerglass",
@@ -96,6 +96,7 @@
     "1092": 200.0,
     "1121": 130.0,
     "1145": 135.0,
+    "1152": 140.0,
     "1163": 30.0,
     "1219": 105.0,
     "1227": 110.0
@@ -132,6 +133,9 @@
     ],
     "primary_attacker": [
       723
+    ],
+    "pokemon_search": [
+      1152
     ],
     "secondary_attacker": [
       721
