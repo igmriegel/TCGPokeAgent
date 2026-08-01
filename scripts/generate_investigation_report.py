@@ -250,7 +250,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
         else:
             return '<td style="color:var(--yellow)">Low</td>'
 
-    sorted_matchups = sorted(matchup_data.items(), key=lambda x: x[1]["w"] + x[1]["l"], reverse=True)
+    sorted_matchups = sorted(matchup_data.items(), key=lambda x: x[1]["w"], reverse=True)
 
     opp_rows = ""
     for _arch, _data in sorted_matchups:
@@ -264,11 +264,10 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
         opp_rows += f'<tr><td>{_arch}</td><td class="win">{_w}</td><td class="loss">{_l}</td><td class="{_cls}">{_wr:.1f}%</td><td>{_avg_loss:.1f}</td><td>{_avg_win:.1f}</td><td>{_total}</td></tr>\n'
 
     worst_matchups = [(k, v) for k, v in sorted_matchups if (v["w"] + v["l"]) >= 5]
-    worst_matchups = [(k, v) for k, v in worst_matchups if (v["w"] / (v["w"] + v["l"]) * 100 if (v["w"] + v["l"]) else 0) < 50]
     worst_matchups = sorted(worst_matchups, key=lambda x: x[1]["w"] / (x[1]["w"] + x[1]["l"]) if (x[1]["w"] + x[1]["l"]) else 0)
 
     worst_rows = ""
-    for _arch, _data in worst_matchups[:6]:
+    for _arch, _data in worst_matchups[:10]:
         _w = _data["w"]
         _l = _data["l"]
         _total = _w + _l
@@ -277,11 +276,10 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
         worst_rows += f'<tr><td>{_arch}</td><td class="loss">{_w}</td><td class="loss">{_l}</td><td class="loss">{_wr:.1f}%</td><td>{_avg_loss:.1f}</td><td>{_total}</td>{threat_bar(_wr)}</tr>\n'
 
     best_matchups = [(k, v) for k, v in sorted_matchups if (v["w"] + v["l"]) >= 5]
-    best_matchups = [(k, v) for k, v in best_matchups if (v["w"] / (v["w"] + v["l"]) * 100 if (v["w"] + v["l"]) else 0) >= 50]
     best_matchups = sorted(best_matchups, key=lambda x: x[1]["w"] / (x[1]["w"] + x[1]["l"]) if (x[1]["w"] + x[1]["l"]) else 0, reverse=True)
 
     best_rows = ""
-    for _arch, _data in best_matchups[:7]:
+    for _arch, _data in best_matchups[:10]:
         _w = _data["w"]
         _l = _data["l"]
         _total = _w + _l
@@ -426,7 +424,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
 
 <div class="highlight"><strong>{len(matchup_data)} unique opponent archetypes</strong> faced across {total} games. Focus on archetypes with 5+ total games for reliable signal.</div>
 
-<h3>6.1 &mdash; Worst Matchups (5+ games, sorted by win rate)</h3>
+<h3>6.1 &mdash; Worst Matchups (Top 10 by win rate)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -438,7 +436,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
 </table>
 </div>
 
-<h3>6.2 &mdash; Best Matchups (5+ games)</h3>
+<h3>6.2 &mdash; Best Matchups (Top 10 by win rate)</h3>
 <div class="table-scroll">
 <table>
   <thead>
