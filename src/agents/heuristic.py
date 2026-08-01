@@ -7,6 +7,7 @@ from typing import Any
 
 from src.core import (
     AgentPolicy,
+    AttackPlan,
     Candidate,
     CardCatalog,
     DeckDefinition,
@@ -45,6 +46,8 @@ WEIGHTS: dict[str, float] = {
     "blocked_bench": -4.0,
     "premature_end": -10.0,
 }
+
+GUARANTEED_KO_BONUS = 200.0
 
 FEATURE_FLAGS = {
     "use_attack_signals",
@@ -320,6 +323,11 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if damage <= 0:
             score -= 80.0
         reasons = ["attack_for_damage"]
+        guaranteed = self._guaranteed_attack_damage(state, candidate)
+        opponent_hp = self._opponent_active_hp(state)
+        if opponent_hp > 0 and guaranteed >= opponent_hp:
+            score += GUARANTEED_KO_BONUS
+            reasons.append("guaranteed_ko")
         if self._own_deck_count(state) < 15 and "shuffle" in text:
             energy_type = self._attack_energy_type(candidate)
             returned = self._discard_basic_energy_count(state, energy_type)
@@ -331,14 +339,44 @@ class SimpleHeuristicScorer(HeuristicScorer):
         """Return the deterministic part of an attack's damage.
 
         Discard-pile based damage is public information; top-of-deck based
-        damage is probabilistic and therefore excluded.
+        damage is probabilistic and therefore excluded. Fixed-damage attacks
+        fall back to the deck profile's ``attack_plans`` and then to the
+        catalog attack metadata.
         """
+        explicit = self._number(candidate.option, "guaranteedDamage", "damage")
+        if explicit:
+            return int(max(0, explicit))
+        plan = self._attack_plan(candidate)
+        if plan is not None:
+            if plan.damage_per_basic_energy_in_discard:
+                return plan.damage_per_basic_energy_in_discard * self._discard_basic_energy_count(
+                    state, self._attack_energy_type(candidate)
+                )
+            return plan.guaranteed_damage
         text = str((candidate.attack or {}).get("text", "")).casefold()
         if "damage for each basic" in text and "discard pile" in text:
             energy_type = self._attack_energy_type(candidate)
             multiplier = self._leading_damage_multiplier(text)
             return multiplier * self._discard_basic_energy_count(state, energy_type)
-        return int(max(0, self._number(candidate.option, "guaranteedDamage", "damage")))
+        return int(max(0, self._number(candidate.attack or {}, "damage")))
+
+    def _attack_plan(self, candidate: Candidate) -> AttackPlan | None:
+        attack_id = candidate.option.get("attackId")
+        if isinstance(attack_id, str) and attack_id.isdigit():
+            attack_id = int(attack_id)
+        if isinstance(attack_id, int) and self.deck_profile:
+            return self.deck_profile.attack_plans.get(attack_id)
+        return None
+
+    def _opponent_active_hp(self, state: GameState) -> int:
+        players = state.players
+        if len(players) < 2:
+            return 0
+        your_index = state.your_index if 0 <= state.your_index < len(players) else 0
+        opponent = players[1 - your_index]
+        if opponent.active is None:
+            return 0
+        return max(0, opponent.active.hp)
 
     def _card_selection_score(
         self,

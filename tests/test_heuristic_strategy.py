@@ -4,7 +4,7 @@ from pathlib import Path
 
 from src.agents.factory import load_deck_profile
 from src.agents.heuristic import HeuristicAgent
-from src.core import DeckDefinition
+from src.core import Candidate, DeckDefinition, GameState, OptionType
 
 _ROOT = Path(__file__).resolve().parents[1]
 
@@ -278,3 +278,77 @@ def test_attachment_enables_active_attack() -> None:
     )
 
     assert agent.select(observation) == [0]
+
+
+def test_second_attack_preferred_over_first_when_guaranteed_ko() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1043, "inPlayArea": 4},
+            {"type": "ATTACK", "attackId": 1042, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(721, 150, serial=11, energies=3),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=130,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_guaranteed_ko_attack_preferred_over_hammerlanche() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_swirling_waves_ko_preferred_over_hammerlanche() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1043, "inPlayArea": 4},
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(721, 150, serial=11, energies=3),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=130,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_guaranteed_attack_damage_uses_profile_plans() -> None:
+    agent = _built_agent()
+    candidates = [
+        Candidate(0, {"type": "ATTACK", "attackId": 1043}, OptionType.ATTACK),
+        Candidate(1, {"type": "ATTACK", "attackId": 1047}, OptionType.ATTACK),
+        Candidate(2, {"type": "ATTACK", "attackId": 1046}, OptionType.ATTACK),
+        Candidate(3, {"type": "ATTACK", "attackId": 1042}, OptionType.ATTACK),
+    ]
+    state = GameState()
+
+    damages = [
+        agent._scorer._guaranteed_attack_damage(state, candidate) for candidate in candidates
+    ]
+
+    assert damages == [130, 200, 0, 0]
