@@ -17,7 +17,7 @@
 | ID | Rule | Status | Evidence or task |
 |---|---|---|---|
 | GR-001 | Prefer productive legal actions over unexplained `END` | `ACTIVE` | Gameplay recovery smoke |
-| GR-002 | Prioritize Bench development only when no priority action exists | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004, T-015–T-019 |
+| GR-002 | Prioritize Bench development only when no priority action exists | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004, T-015–T-021 |
 | GR-003 | Continue required Evolution before Energy and Bench decisions | `ACTIVE / UNVALIDATED` | FB-2026-005, T-001–T-002, T-016 |
 | GR-004 | Apply Rule Box damage prevention and Prize value | `ACTIVE / UNVALIDATED` | FB-2026-002, T-005 |
 | GR-005 | Respect exact and probabilistic searchable-card availability | `ACTIVE / UNVALIDATED` | FB-2026-003, T-006 |
@@ -27,10 +27,12 @@
 | GR-009 | Pass only with an explicit strategic reason | `PROPOSED` | Future H2 work |
 | GR-010 | Estimate all relevant attack effects reliably | `PROPOSED` | Future H3 work |
 | GR-011 | Place the `development_priority` Pokémon before generic development; never discard it | `ACTIVE / UNVALIDATED` | FB-2026-004, T-015 |
-| GR-012 | Prefer search/draw cards over generic Bench filling | `ACTIVE / UNVALIDATED` | FB-2026-006, T-017 |
+| GR-012 | Prefer Item search/draw over generic Bench filling | `ACTIVE / UNVALIDATED` | FB-2026-006, T-017 |
 | GR-013 | Never tutor a `trainer_search` card (Petrel) | `ACTIVE / UNVALIDATED` | FB-2026-006, T-017 |
 | GR-014 | Attach the Energy that completes the Active attack before Bench development | `ACTIVE / UNVALIDATED` | FB-2026-005, T-016 |
 | GR-015 | Near deck-out, prefer attacks that shuffle discarded Basic Energy back into the deck | `ACTIVE / UNVALIDATED` | FB-2026-007, T-018 |
+| GR-016 | Play all legal Items before any Supporter; Supporters are a last-resort search | `ACTIVE / UNVALIDATED` | FB-2026-008, T-020 |
+| GR-017 | Prefer an attack with guaranteed Knock Out over probabilistic or non-KO attacks | `ACTIVE / UNVALIDATED` | FB-2026-009, T-021 |
 
 ## Turn order
 
@@ -43,9 +45,10 @@ For a normal `MAIN` decision:
 5. attach Energy that completes the Active attacker's required attack;
 6. place the declared `development_priority` Pokémon (Snover) on the Bench;
 7. develop the secondary/backup attacker;
-8. sequence non-terminal Items, Tools, Stadiums, and Abilities, search roles first;
-9. attack, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
-10. choose `END` only when no higher-value legal action remains.
+8. play Items, Tools, Stadiums, and Abilities, search roles first; every Item precedes any Supporter;
+9. play a Supporter only when no Item is playable, preferring search Supporters;
+10. attack, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+11. choose `END` only when no higher-value legal action remains.
 
 Steps not represented by an active rule remain heuristic preferences, not
 guaranteed behavior.
@@ -94,12 +97,12 @@ The declared `development_priority` Pokémon (Snover) is placed on the Bench
 before any other Pokémon and must never be discarded or left in hand when a
 legal `PLAY` exists. Discarding it is legal only when it is the sole option.
 
-### GR-012 — Search before generic Bench filling
+### GR-012 — Item search before generic Bench filling
 
-Search, draw, and hand-refresh cards (Items, Supporters, Poké Pad) are played
-before filling the Bench with a generic Pokémon. `Pokémon Search`, `evolution
-search`, `general search`, `trainer search`, and `hand refresh` roles all
-qualify.
+Search, draw, and hand-refresh Items (Ultra Ball, Poké Pad, Mega Signal) are
+played before filling the Bench with a generic Pokémon. `Pokémon Search`,
+`evolution search`, and `general search` Item roles qualify. Supporter search is
+ordered separately by GR-016.
 
 ### GR-013 — No redundant Supporter search
 
@@ -117,6 +120,19 @@ cost precedes Bench development and generic attachment. The `deck_profile`
 When the own deck is below the refill threshold, attacks that shuffle discarded
 Basic Energy back into the deck (Riptide) gain a bonus proportional to the
 discarded Energy count, in addition to their damage value.
+
+### GR-016 — Items before Supporters
+
+Every legal Item is played before any Supporter. A Supporter is played only when
+no Item is playable, as a last-resort search; search Supporters (Lillie,
+Petrel) are preferred over non-search Supporters.
+
+### GR-017 — Guaranteed Knock Out attacks
+
+When an attack's deterministic damage (the `deck_profile` `attack_plans`
+guaranteed damage, or public discard-pile based damage) reaches the opponent
+Active's HP, that attack gains a bonus and is preferred over probabilistic
+attacks such as Hammer-lanche and over non-KO attacks.
 
 ## Required evaluation metrics
 

@@ -49,7 +49,7 @@ refill.
 **Gate:** zero skipped required development in focused fixtures and no
 regression in the frozen matrix. The conditional Bench filter and the
 priority ladder are implemented; open validation actions are tracked as
-T-001–T-004 and T-015–T-019.
+T-001–T-004 and T-015–T-021.
 
 ## H3 — Local tactical feature evaluator
 

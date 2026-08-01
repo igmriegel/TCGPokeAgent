@@ -479,3 +479,25 @@ evidence:
 status: implemented
 ```
 
+## Heuristic turn-order and guaranteed-KO fixes
+
+```yaml
+observed_at: "2026-08-01T00:00:00Z"
+deck_id: mega_abomasnow_kyogre
+deck_sha256: "0880554d3f0704f706ec4b2ff2bc7c40e91329dd700be05cfd2f1d8e4d57cf7c"
+root_causes:
+  - "_guaranteed_attack_damage ignored deck_profile attack_plans, so Swirling Waves (130) and Frost Barrier (200) returned zero and were never recognized as guaranteed KO"
+  - "_attack_score lacked a guaranteed-KO bonus, so probabilistic Hammer-lanche (500) and discard-based Riptide outranked the guaranteed-KO attack (330)"
+  - "_play_score ordered Supporter search (350 + hand-size bonus) and Supporter (250) above Items, so Lillie was played before legal Items"
+decisions:
+  - "resolve guaranteed damage from attack_plans (and public discard-pile damage) before option/catalog metadata"
+  - "apply GUARANTEED_KO_BONUS (200) only when deterministic damage reaches the opponent Active HP; never treat top-of-deck damage as guaranteed"
+  - "play Items before any Supporter: Item search 340, Item 240, Supporter search 230, Supporter 210"
+  - "no requires_guaranteed_ko penalty; scope kept minimal"
+evidence:
+  - "tests/test_heuristic_strategy.py (6 new scenarios)"
+  - "tests/test_cabt_golden_gameplay.py (6 golden cases)"
+  - "149 unit tests pass"
+status: implemented
+```
+

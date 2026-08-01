@@ -53,16 +53,19 @@ score =
 ## MAIN action priority ladder
 
 `_main_action_score` orders legal `MAIN` actions by a fixed ladder that
-implements GR-001 to GR-015:
+implements GR-001 to GR-017:
 
 ```text
 EVOLVE                           500 (+ energy on target)
 ABILITY                          450
 attach completing Active attack  ~460–485
+guaranteed-KO attack             ≥530 (200 base + damage + 200 bonus)
 development-priority play        400
-bench energy attach              375
-search/supporter play            ~340–360
+Item search                      340
 generic Pokémon play             320
+Item                             240
+Supporter search                 230
+Supporter                        210
 weak attack                      210
 END                            -1000 (only when nothing better)
 ```
@@ -74,10 +77,12 @@ attack, and an attack with a guaranteed Knock Out.
 
 ## Deterministic attack damage
 
-`_guaranteed_attack_damage` computes the deterministic part of an attack:
-discard-pile based damage uses the public discard count, while top-of-deck
-based damage is treated as probabilistic and returns zero. Guaranteed-KO
-attacks exempt the decision from the Bench filter and prefer refill attacks
+`_guaranteed_attack_damage` computes the deterministic part of an attack: the
+`deck_profile` `attack_plans` guaranteed damage first (including discard-pile
+based damage from the public discard count), then option and catalog metadata;
+top-of-deck based damage stays probabilistic and returns zero. Guaranteed-KO
+attacks exempt the decision from the Bench filter, gain `GUARANTEED_KO_BONUS`
+when their damage reaches the opponent Active HP, and prefer refill attacks
 near deck-out via the `deck_refill` reason.
 
 ## Resource and attachment scoring

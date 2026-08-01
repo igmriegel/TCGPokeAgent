@@ -39,6 +39,8 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-005 | Evolve before deciding Energy placement | `EVOLVE` precedes attachment scoring | Pending | T-016 |
 | FB-2026-006 | Search before generic Bench; never tutor Petrel | Search-role scoring and `trainer_search` penalty implemented | Pending | T-017 |
 | FB-2026-007 | Kyogre must shuffle-refill near deck-out | `deck_refill` attack bonus implemented | Pending | T-018 |
+| FB-2026-008 | Play every legal Item before any Supporter; Supporters are a last-resort search | Item-first play ordering implemented | Pending | T-020 |
+| FB-2026-009 | Prefer the attack with guaranteed Knock Out over probabilistic or non-KO attacks | `guaranteed_ko` attack bonus implemented | Pending | T-021 |
 
 ## FB-2026-001 — Continuous board development
 
@@ -215,9 +217,9 @@ Supporter.
 
 ### Accepted rule
 
-Search, draw, and hand-refresh cards are played before generic Bench filling
-(GR-012), and `trainer_search` targets are penalized in `TO_HAND` selection
-(GR-013).
+Search, draw, and hand-refresh Items are played before generic Bench filling
+(GR-012), Supporters are played only after Items (GR-016), and `trainer_search`
+targets are penalized in `TO_HAND` selection (GR-013).
 
 ### Implemented foundation
 
@@ -258,6 +260,71 @@ shuffle-refill attack gains a bonus proportional to the discarded Energy count
 ### Gate
 
 T-018: deck-out fixtures and no regression in the frozen paired comparison.
+
+## FB-2026-008 — Every legal Item before any Supporter
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+### Original feedback
+
+The agent played a Supporter (Lillie) while legal Items were still in hand.
+All Items must be played before any Supporter; a Supporter is used only when no
+Item is playable, to search for more Items.
+
+### Accepted rule
+
+Play all legal Items before any Supporter; Supporters are a last-resort search
+(GR-016).
+
+### Implemented foundation
+
+- `_play_score` scores Item search (340), Item (240), Supporter search (230),
+  and Supporter (210), removing the Supporter hand-size draw bonus;
+- `tests/test_heuristic_strategy.py::test_all_items_played_before_supporter` and
+  `test_supporter_played_when_no_items_available`.
+
+### Gate
+
+T-020: item/supporter ordering fixtures and no regression in the frozen paired
+comparison.
+
+## FB-2026-009 — Prefer the attack with guaranteed Knock Out
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+### Original feedback
+
+With enough Energy for the second attack (Swirling Waves, 130 guaranteed) whose
+damage reached the opponent Active's HP, the agent used the first attack
+(Riptide) or Hammer-lanche instead. Guaranteed Knock Outs must be preferred
+over probabilistic or non-KO attacks.
+
+### Accepted rule
+
+Prefer an attack whose deterministic damage reaches the opponent Active's HP;
+apply the guaranteed-KO bonus and never treat probabilistic top-of-deck damage
+as guaranteed (GR-017).
+
+### Implemented foundation
+
+- `_guaranteed_attack_damage` resolves the `deck_profile` `attack_plans`
+  guaranteed damage (and public discard-pile damage) instead of only option
+  metadata;
+- `_attack_score` adds `GUARANTEED_KO_BONUS` when guaranteed damage reaches the
+  opponent Active HP, emitting `guaranteed_ko`;
+- `tests/test_heuristic_strategy.py`:
+  `test_second_attack_preferred_over_first_when_guaranteed_ko`,
+  `test_guaranteed_ko_attack_preferred_over_hammerlanche`,
+  `test_swirling_waves_ko_preferred_over_hammerlanche`, and
+  `test_guaranteed_attack_damage_uses_profile_plans`.
+
+### Gate
+
+T-021: guaranteed-KO fixtures and no regression in the frozen paired comparison.
 
 ## Adding feedback
 

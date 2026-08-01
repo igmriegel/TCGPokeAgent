@@ -18,7 +18,7 @@
 | Package isolation and safety | `PASS` | Root files, size, traversal checks, extracted-content smoke |
 | Full local evaluation | `PARTIAL` | 400 matches exist, but only against `random`; report metadata needs reconciliation |
 | Gameplay behavior | `PARTIAL` | Productive play recovered; full development and gameplay metrics remain open |
-| Feedback validation | `PARTIAL` | FB-2026-001–003 implemented but not frozen-gate validated |
+| Feedback validation | `PARTIAL` | FB-2026-001–009 implemented but not frozen-gate validated |
 | Search | `N/A` | Disabled because no verified project Python adapter exists |
 | Learned policy | `N/A` | No model is proposed for this release |
 | Remote promotion | `PARTIAL` | `55093119` scores below stable reference `55088176` |
