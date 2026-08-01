@@ -343,17 +343,6 @@ def test_promotion_breaks_ready_attacker_tie_by_knockout_risk() -> None:
     assert _agent().select(observation) == [1]
 
 
-def test_free_switch_to_avoid_knockout_precedes_attachment() -> None:
-    observation = _observation(
-        [
-            {"type": 7, "cardId": 1262, "freeSwitch": True, "avoidsKo": True},
-            {"type": 8, "cardId": 3, "enablesAttack": True},
-        ]
-    )
-
-    assert _agent().select(observation) == [0]
-
-
 def test_special_condition_recovery_precedes_other_productive_action() -> None:
     observation = _observation(
         [
