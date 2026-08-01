@@ -1,0 +1,280 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from src.agents.factory import load_deck_profile
+from src.agents.heuristic import HeuristicAgent
+from src.core import DeckDefinition
+
+_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _built_agent() -> HeuristicAgent:
+    agent = HeuristicAgent(deck_profile=load_deck_profile(_ROOT))
+    deck = DeckDefinition.from_path(
+        _ROOT / "src" / "artifacts" / "deck.csv", "mega_abomasnow_kyogre"
+    )
+    agent.start_match(deck)
+    return agent
+
+
+def _pokemon(card_id: int, hp: int, *, serial: int, energies: int = 0, area: int = 4) -> dict:
+    return {
+        "id": card_id,
+        "serial": serial,
+        "playerIndex": 0,
+        "hp": hp,
+        "maxHp": hp,
+        "energies": [3] * energies,
+        "energyCards": [],
+        "tools": [],
+        "preEvolution": [],
+        "area": area,
+    }
+
+
+def _observation(
+    *,
+    select_type: str,
+    select_context: str,
+    options: list[dict],
+    your_active: dict,
+    your_bench: list[dict],
+    your_hand: list[dict] | None,
+    opponent_active_hp: int = 150,
+    your_discard_energy: int = 0,
+    your_deck_count: int = 30,
+) -> dict:
+    players = [
+        {
+            "active": [your_active],
+            "bench": your_bench,
+            "benchMax": 5,
+            "deckCount": your_deck_count,
+            "discard": [
+                {"id": 3, "serial": 100 + index, "playerIndex": 0}
+                for index in range(your_discard_energy)
+            ],
+            "hand": your_hand,
+            "handCount": len(your_hand) if your_hand is not None else 0,
+            "prize": [None] * 6,
+        },
+        {
+            "active": [_pokemon(721, opponent_active_hp, serial=50)],
+            "bench": [],
+            "benchMax": 5,
+            "deckCount": 10,
+            "discard": [],
+            "hand": None,
+            "handCount": 5,
+            "prize": [None] * 6,
+        },
+    ]
+    return {
+        "current": {
+            "turn": 5,
+            "turnActionCount": 0,
+            "yourIndex": 0,
+            "firstPlayer": 0,
+            "supporterPlayed": False,
+            "stadiumPlayed": False,
+            "energyAttached": False,
+            "retreated": False,
+            "players": players,
+        },
+        "select": {
+            "type": select_type,
+            "context": select_context,
+            "minCount": 1,
+            "maxCount": 1,
+            "remainEnergyCost": 0,
+            "remainDamageCounter": 0,
+            "option": options,
+        },
+        "logs": [],
+    }
+
+
+def test_bench_development_prefers_snover() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "PLAY", "cardId": 721, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[
+            _pokemon(722, 90, serial=1, area=2),
+            _pokemon(721, 150, serial=2, area=2),
+        ],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_snover_not_discarded() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="DISCARD",
+        options=[
+            {"type": "CARD", "cardId": 722},
+            {"type": "CARD", "cardId": 3},
+            {"type": "CARD", "cardId": 1121},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) != [0]
+
+
+def test_pokepad_search_prefers_snover() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 722},
+            {"type": "CARD", "cardId": 721},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_petrel_search_prefers_item_or_lillie() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 1219},
+            {"type": "CARD", "cardId": 1227},
+            {"type": "CARD", "cardId": 1121},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) != [0]
+
+
+def test_heuristic_evolve_priority() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(722, 90, serial=11, energies=1),
+        your_bench=[],
+        your_hand=[_pokemon(723, 300, serial=2, area=2)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_heuristic_deck_out() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1042, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(721, 150, serial=11, energies=1),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(722, 90, serial=3, area=2)],
+        your_discard_energy=18,
+        your_deck_count=4,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_evolve_precedes_energy_attachment() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+        ],
+        your_active=_pokemon(722, 90, serial=11, energies=0),
+        your_bench=[],
+        your_hand=[_pokemon(723, 300, serial=2, area=2), _pokemon(3, 0, serial=3)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_post_evolution_energy_completes_active_attack() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=1),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(3, 0, serial=3)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_attach_useful_tool_only_for_tools() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 1163, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 1121, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(1163, 0, serial=3), _pokemon(1121, 0, serial=4)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_attachment_enables_active_attack() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "PLAY", "cardId": 721, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=1),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(721, 150, serial=5, area=2), _pokemon(3, 0, serial=6)],
+    )
+
+    assert agent.select(observation) == [0]
