@@ -633,6 +633,9 @@ class HeuristicAgent(AgentPolicy):
         )
         if not selections:
             return self._record_empty_decision(started)
+        selections = self._gate_attacks_behind_development(
+            parsed.state, parsed.select_context, selections, parsed.candidates
+        )
         required_development = self._required_board_development_indices(
             parsed.state, parsed.candidates, parsed.select_context
         )
@@ -732,6 +735,89 @@ class HeuristicAgent(AgentPolicy):
             return int(candidate.card.get("cardType", -1)) == 0
         except (TypeError, ValueError):
             return False
+
+    def _gate_attacks_behind_development(
+        self,
+        state: GameState,
+        context: SelectContext | None,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> list[Selection]:
+        """Defer pure-attack selections while the board is below its attacker
+        target and a development action is available this turn.
+
+        Development (play, evolve, attach) is sequenced before attacking so the
+        bench reaches its declared attacker count. Attacks are postponed, never
+        lost: the simulator re-presents MAIN after the development action.
+        """
+        if context is not SelectContext.MAIN or not state.players:
+            return list(selections)
+        if not self._board_under_attacker_target(state):
+            return list(selections)
+        development_indices = HeuristicAgent._development_action_indices(candidates)
+        if not development_indices or not any(
+            any(index in development_indices for index in selection.indices)
+            for selection in selections
+        ):
+            return list(selections)
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+        gated = [
+            selection
+            for selection in selections
+            if not HeuristicAgent._is_pure_attack(selection, by_index)
+        ]
+        return gated if gated else list(selections)
+
+    @staticmethod
+    def _development_action_indices(candidates: Sequence[Candidate]) -> set[int]:
+        """Return option indices that grow or prepare the board."""
+        return {
+            candidate.option_index
+            for candidate in candidates
+            if candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE, OptionType.ATTACH}
+        }
+
+    @staticmethod
+    def _is_pure_attack(selection: Selection, by_index: Mapping[int, Candidate]) -> bool:
+        """Return True when every option in a selection is an attack."""
+        if not selection.indices:
+            return False
+        return all(
+            candidate is not None and candidate.option_type is OptionType.ATTACK
+            for candidate in (by_index.get(index) for index in selection.indices)
+        )
+
+    def _board_under_attacker_target(self, state: GameState) -> bool:
+        """True while the board has fewer attackers than the declared target."""
+        profile = self._active_deck_profile
+        target = 2
+        if profile is not None:
+            target = int(profile.board_targets.get("minimum_attackers", 2))
+        return self._board_attacker_count(state) < target
+
+    def _board_attacker_count(self, state: GameState) -> int:
+        """Count attackers on our board, falling back to all Pokémon in play
+        for profiles without an ``attacker`` role."""
+        profile = self._active_deck_profile
+        attacker_ids = set(profile.cards_for_role("attacker")) if profile else set()
+        player_index = state.your_index if 0 <= state.your_index < len(state.players) else 0
+        player = state.players[player_index]
+        pokemon = [player.active] if player.active is not None else []
+        pokemon.extend(p for p in player.bench if p is not None)
+        if not attacker_ids:
+            return len(pokemon)
+        count = 0
+        for pokemon_state in pokemon:
+            card_id = pokemon_state.card_id
+            if isinstance(card_id, int):
+                normalized = card_id
+            elif isinstance(card_id, str) and card_id.isdigit():
+                normalized = int(card_id)
+            else:
+                continue
+            if normalized in attacker_ids:
+                count += 1
+        return count
 
     def _has_priority_action(
         self,
