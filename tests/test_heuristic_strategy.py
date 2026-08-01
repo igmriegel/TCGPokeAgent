@@ -4,7 +4,15 @@ from pathlib import Path
 
 from src.agents.factory import load_deck_profile
 from src.agents.heuristic import HeuristicAgent
-from src.core import Candidate, DeckDefinition, GameState, OptionType
+from src.core import (
+    Candidate,
+    DeckDefinition,
+    DeckProfile,
+    GameState,
+    OptionType,
+    PlayerState,
+    PokemonState,
+)
 
 _ROOT = Path(__file__).resolve().parents[1]
 
@@ -390,3 +398,179 @@ def test_guaranteed_attack_damage_uses_profile_plans() -> None:
     ]
 
     assert damages == [130, 200, 0, 0]
+
+
+def test_ultra_ball_played_before_guaranteed_ko_when_under_attacker_target() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 1121, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=[_pokemon(1121, 0, serial=3, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_snover_played_before_guaranteed_ko_when_under_attacker_target() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=1, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_snover_preferred_over_ultra_ball_when_developing_bench() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "PLAY", "cardId": 1121, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=1, area=2), _pokemon(1121, 0, serial=3, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_ultra_ball_played_when_under_target_without_attack() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 1121, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(1121, 0, serial=3, area=2)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_snover_played_before_hammerlanche_when_under_attacker_target() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=1, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_attack_resumes_when_attacker_target_met() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(722, 90, serial=2, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_evolve_precedes_attack_when_under_attacker_target() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "ATTACK", "attackId": 1044, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(722, 90, serial=11, energies=1),
+        your_bench=[],
+        your_hand=[_pokemon(723, 300, serial=2, area=2)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_attacker_target_counts_only_role_attackers() -> None:
+    agent = _built_agent()
+    agent._active_deck_profile = DeckProfile(
+        deck_id="unit",
+        deck_sha256="unit",
+        roles={"attacker": (721,)},
+        board_targets={"minimum_attackers": 2},
+    )
+    state = GameState(
+        your_index=0,
+        players=[
+            PlayerState(
+                active=PokemonState(card_id=721, hp=150, max_hp=150),
+                bench=[PokemonState(card_id=998, hp=80, max_hp=80)],
+            )
+        ],
+    )
+
+    assert agent._board_attacker_count(state) == 1
+    assert agent._board_under_attacker_target(state) is True
+
+
+def test_generic_profile_counts_all_pokemon_for_attacker_target() -> None:
+    agent = _built_agent()
+    agent._active_deck_profile = DeckProfile(
+        deck_id="unit",
+        deck_sha256="unit",
+        roles={},
+        board_targets={"minimum_attackers": 2},
+    )
+    state = GameState(
+        your_index=0,
+        players=[
+            PlayerState(
+                active=PokemonState(card_id=999, hp=100, max_hp=100),
+                bench=[PokemonState(card_id=998, hp=80, max_hp=80)],
+            )
+        ],
+    )
+
+    assert agent._board_attacker_count(state) == 2
+    assert agent._board_under_attacker_target(state) is False
