@@ -18,8 +18,8 @@
 |---|---|
 | `scripts/run_smoke.sh heuristic` | Tests plus 20-seed both-side CABT smoke |
 | `scripts/run_full.sh heuristic configs/eval_full.yaml` | Immutable full run and reports |
-| `uv run --frozen python scripts/compare_agents.py --matches 10` | Baseline/heuristic comparison against random |
-| `uv run --frozen python scripts/gameplay_smoke.py --matches 10 --agent-mode heuristic` | Observable-gameplay gate |
+| `uv run --frozen python scripts/compare_agents.py --matches 10` | Baseline/heuristic win-loss comparison against `random` only |
+| `uv run --frozen python scripts/gameplay_smoke.py --matches 10 --agent-mode heuristic` | Observable-gameplay gate from runner decision traces |
 | `uv run --frozen python scripts/run_replay.py --agent-one heuristic --agent-two random` | Local visualizer replay |
 | `uv run --frozen python -m src.data.replay_ingestor --input DIR --output NEW_DIR --owner-name NAME` | Versioned replay dataset |
 | `uv run --frozen python -m src.data.gameplay_annotations --help` | Post-hoc replay inspection and annotation |
@@ -32,7 +32,7 @@
 | `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
 | `scripts/download_all_replays.py` | Download replays from all Kaggle submissions |
 | `scripts/sync_replays.py` | Sync downloaded replays to dashboard directory |
-| `scripts/generate_investigation_report.py` | Generate HTML investigation report from replays |
+| `scripts/generate_investigation_report.py` | Generate HTML investigation report from replay JSON files |
 | `scripts/build_package.sh submission.tar.gz` | Build the explicit submission allowlist |
 | `scripts/build_package.sh submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
 | `scripts/build_package.sh submission-xgboost.tar.gz xgboost_ranker MODEL_DIR` | Build one backend-exclusive ranker archive |

@@ -81,7 +81,7 @@ The roadmap owns status. These documents only define detailed scope and gates:
 
 - [`00_harness_overview.md`](00_harness_overview.md) — product summary.
 - [`02_experiment_protocol.md`](02_experiment_protocol.md) — comparison protocol.
-- [`03_metrics.md`](03_metrics.md) — metric definitions.
+- [`03_metrics.md`](03_metrics.md) — metric and report pipeline contract.
 - [`05_writeup_outline.md`](05_writeup_outline.md) — final writeup structure.
 - [`21_persistence_contracts.md`](21_persistence_contracts.md) — data provenance.
 - [`26_sdk_fallback_plan.md`](26_sdk_fallback_plan.md) — capability fallbacks.

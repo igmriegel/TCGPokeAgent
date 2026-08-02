@@ -21,11 +21,16 @@ runs/<experiment_id>/<run_id>/
 - `manifest.json`: resolved input, versions, hashes, seeds and matrix.
 - `matches.jsonl`: one `MatchRecord` per line.
 - `decisions.jsonl`: one `DecisionRecord` per line.
-- `metrics.json`: full values for machines.
+- `metrics.json`: full values for machines, serialized from the canonical
+  evaluation metrics contract.
 - `metrics.csv`: flattened table for analysis.
 - `summary.md`: interpretation and decision, without recomputing metrics.
 - `replays/`: sufficient payload for replay/audit.
 - `errors/`: stack trace and sanitized context.
+
+The metric fields and rounding rules are defined in
+[`03_metrics.md`](03_metrics.md). Reporting must not invent additional summary
+keys outside that contract.
 
 ## Immutability
 

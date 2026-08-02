@@ -1,3 +1,10 @@
+"""Match execution and decision tracing for CABT evaluation runs.
+
+The runner is responsible for executing seeded SDK matches, capturing every
+policy call, and preserving the stable records consumed by evaluation reports
+and replay analysis. It does not score decisions or aggregate statistics.
+"""
+
 from __future__ import annotations
 
 import random
@@ -18,7 +25,12 @@ EnvironmentFactory = Callable[[], Any]
 
 @dataclass(slots=True)
 class DecisionRecord:
-    """Record one policy call made during a match."""
+    """Capture one policy invocation and the legal decision it produced.
+
+    The record stores the decision context, the available options, the chosen
+    indices, timing, error category, and the ranking/feature metadata emitted
+    by the policy owner. It is the atomic unit for decision-level observability.
+    """
 
     decision_index: int
     turn: int | None
@@ -79,7 +91,12 @@ class DecisionRecord:
 
 @dataclass(slots=True)
 class MatchRecord:
-    """Serializable result and diagnostics for one SDK match."""
+    """Capture the executable result of one seeded SDK match.
+
+    Match records keep the player side, final result, runtime, decision traces,
+    final SDK statuses, and run metadata required by serialized reports and
+    downstream audit tooling.
+    """
 
     match_id: str
     seed: int
@@ -104,7 +121,12 @@ class MatchRecord:
 
 @dataclass(slots=True)
 class RunReport:
-    """Collection of match records produced by one batch."""
+    """Group the match records produced by one batch execution.
+
+    The report preserves the batch name, the agent mode, timestamps, and the
+    ordered list of per-match records. Aggregation and serialization read from
+    this object without mutating it.
+    """
 
     config_name: str
     agent_mode: str

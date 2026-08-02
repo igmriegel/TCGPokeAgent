@@ -1,3 +1,10 @@
+"""Serialize evaluation reports without recomputing any metrics.
+
+The report serializer is intentionally thin: it converts dataclasses into JSON
+safe values, rounds only the exported presentation fields, and writes atomic
+artifacts for machine and human consumption.
+"""
+
 from __future__ import annotations
 
 import json
@@ -26,10 +33,18 @@ def _json_value(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     return str(value)
-    return value
 
 
 def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, Any]:
+    """Build the stable JSON payload for a completed evaluation batch.
+
+    Args:
+        report: Batch execution metadata and raw match records.
+        metrics: Aggregate metrics computed from the same match records.
+
+    Returns:
+        A JSON-serializable dictionary with the canonical report schema.
+    """
     return {
         "config": report.config_name,
         "agent_mode": report.agent_mode,
@@ -59,6 +74,7 @@ def serialize_report(report: RunReport, metrics: AggregateMetrics) -> dict[str, 
 
 
 def write_json(report: dict[str, Any], path: str | Path) -> None:
+    """Atomically write a serialized report to disk as UTF-8 JSON."""
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=f".{destination.name}.", dir=destination.parent)
@@ -73,6 +89,7 @@ def write_json(report: dict[str, Any], path: str | Path) -> None:
 
 
 def write_markdown(report: dict[str, Any], path: str | Path) -> None:
+    """Write a human-readable summary that mirrors the JSON metrics contract."""
     m = report.get("metrics", {})
     lines = [
         f"# Report: {report['config']}",

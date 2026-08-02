@@ -60,6 +60,13 @@ data/raw/kaggle/
 
 Files remain separated by competition. Do not create symlinks or deduplicate before comparing SHA-256 and licenses.
 
+## Metric provenance
+
+Evaluation summaries are derived from `RunReport` and `MatchRecord` objects
+produced by `src/eval/runner.py`. The batch-level metric contract, including
+rounding rules and confidence intervals, is defined in
+[`03_metrics.md`](03_metrics.md).
+
 ## Inspection completed
 
 - both CSVs have 2022 logical records, 17 columns and 1267 distinct `Card ID`;

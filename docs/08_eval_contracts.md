@@ -2,19 +2,12 @@
 
 ## Runner
 
-The runner receives immutable versions of two agents, decks, seed, and profile. It executes the SDK without knowing scoring, records every call, and returns a `MatchRecord`.
+The runner executes seeded CABT matches, records every policy call, and returns
+`MatchRecord` objects without scoring decisions or aggregating statistics.
 
-Minimum fields of `MatchRecord`:
-
-- `run_id`, `match_id`, seed, and side;
-- agent, deck, and SDK versions;
-- start, end, and duration;
-- result, reason, and turns;
-- final status of both agents;
-- list of `DecisionRecord`;
-- replay and error paths.
-
-`DecisionRecord` records turn, context, cardinality, chosen indices, scores/reasons, duration, overage balance, and search data.
+The stable field-level contract for `MatchRecord`, `DecisionRecord`, and
+`RunReport` lives in [`03_metrics.md`](03_metrics.md) and the dataclasses in
+[`src/eval/runner.py`](../src/eval/runner.py).
 
 ## Gate matrix
 
@@ -41,7 +34,11 @@ Any `INVALID`, `ERROR`, or `TIMEOUT` fails the candidate, even if the win rate i
 
 ## Statistics
 
-Calculate metrics per [`03_metrics.md`](03_metrics.md). Wilson uses 95%, with number of wins as successes and total valid matches as `n`. Paired comparisons keep results by evaluation case identifier and side, not just aggregates. For `cabt`, the identifier is metadata rather than a promise that native RNG outcomes repeat.
+Calculate metrics per [`03_metrics.md`](03_metrics.md). Wilson uses 95%, with
+the number of wins as successes and the full batch size as `n`. Paired
+comparisons keep results by evaluation case identifier and side, not just
+aggregates. For `cabt`, the identifier is metadata rather than a promise that
+native RNG outcomes repeat.
 
 ## Search gate
 

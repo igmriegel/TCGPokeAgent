@@ -1,4 +1,10 @@
-"""Compare baseline and heuristic agents with a reproducible cabt protocol."""
+"""Compare policy outcomes against the SDK random baseline only.
+
+This script measures win/draw/loss counts for the local ``baseline`` and
+``heuristic`` agents against the CABT ``random`` opponent on both sides. It
+does not compute aggregate metrics, decision latency, or gameplay quality
+beyond final match outcomes and execution errors.
+"""
 
 from __future__ import annotations
 
@@ -34,7 +40,14 @@ def _outcome(reward: Any) -> str:
 
 
 def compare(matches: int) -> dict[str, Counter[str]]:
-    """Run each policy on both sides against random and return outcome counts."""
+    """Run each policy on both sides against random and return outcome counts.
+
+    Args:
+        matches: Number of runs per side and per agent mode.
+
+    Returns:
+        Outcome counters keyed by agent mode.
+    """
     with _quiet_native_output():
         from kaggle_environments import make
         from kaggle_environments.envs.cabt.cabt import random_agent

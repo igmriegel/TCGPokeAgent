@@ -1,4 +1,9 @@
-"""Run CABT matches and enforce a minimum observable-gameplay gate."""
+"""Run CABT matches and enforce the observable-gameplay smoke gate.
+
+The gate consumes decision traces from ``MatchRunner`` and checks that the
+candidate produces visible main-turn actions, including attacks, instead of
+only ending turns or failing execution.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +34,7 @@ def _quiet_native_output():
 
 
 def main() -> None:
-    """Run the balanced gameplay smoke matrix and print aggregate action metrics."""
+    """Run the gameplay smoke matrix and print aggregate action metrics."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--matches", type=int, default=10)
     parser.add_argument("--agent-mode", default="heuristic")

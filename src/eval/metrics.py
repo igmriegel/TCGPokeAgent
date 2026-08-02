@@ -1,3 +1,11 @@
+"""Aggregate match- and decision-level evaluation metrics.
+
+This module computes the canonical numeric summary used by evaluation reports.
+Match outcomes, runtime duration, and decision latency are derived from
+``MatchRecord`` instances produced by the runner. The values here are the
+source of truth for JSON and Markdown report serialization.
+"""
+
 from __future__ import annotations
 
 import math
@@ -9,6 +17,17 @@ from .runner import MatchRecord
 
 @dataclass(slots=True)
 class AggregateMetrics:
+    """Computed summary values for a batch of SDK matches.
+
+    The fields are intentionally output-oriented:
+
+    - outcome counts and ``win_rate`` summarize the match results;
+    - Wilson bounds capture uncertainty around win rate;
+    - duration percentiles summarize whole-match runtime;
+    - decision percentiles summarize per-call policy latency;
+    - ``invalid`` and ``timeouts`` count operational failures separately.
+    """
+
     total: int = 0
     wins: int = 0
     draws: int = 0
@@ -29,6 +48,14 @@ class AggregateMetrics:
 
 
 def aggregate(matches: Sequence[MatchRecord]) -> AggregateMetrics:
+    """Compute the canonical batch metrics from completed match records.
+
+    Args:
+        matches: SDK match records gathered by ``MatchRunner``.
+
+    Returns:
+        Aggregate metrics computed from the provided records.
+    """
     total = len(matches)
     if total == 0:
         return AggregateMetrics()

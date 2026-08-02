@@ -1,4 +1,10 @@
-"""Behavioral gameplay metrics for CABT evaluation reports."""
+"""Behavioral gameplay metrics derived from runner decision traces.
+
+These metrics answer a narrower question than match outcomes: did the agent
+actually play the game in observable main-turn contexts, or did it mostly end
+turns and avoid attacks? The values are used by the gameplay smoke gate and by
+investigation reports.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +28,12 @@ _PRODUCTIVE_MAIN_TYPES = {"PLAY", "ATTACH", "EVOLVE", "ABILITY", "RETREAT", "ATT
 
 @dataclass(frozen=True, slots=True)
 class GameplayMetrics:
-    """Aggregate observable gameplay actions selected by an agent."""
+    """Aggregate observable gameplay actions selected by an agent.
+
+    The fields are counts and derived rates computed from ``RunReport``
+    decision traces. They intentionally ignore hidden belief state and only
+    consider actions that are visible in the runner output.
+    """
 
     matches: int
     operational_failures: int
@@ -73,7 +84,14 @@ class GameplayMetrics:
 
     @classmethod
     def from_report(cls, report: RunReport) -> GameplayMetrics:
-        """Build gameplay metrics from decision-level runner traces."""
+        """Build gameplay metrics from decision-level runner traces.
+
+        Args:
+            report: Batch run containing per-match decision records.
+
+        Returns:
+            Behavioral metrics summarizing observable main-turn actions.
+        """
         action_counts: dict[str, int] = {}
         main_decisions = 0
         productive = 0

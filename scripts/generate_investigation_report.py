@@ -1,4 +1,10 @@
-"""Generate Investigation Report from CABT replays. Based on v2_checkpoint format."""
+"""Generate an HTML investigation report from archived CABT replay JSON files.
+
+The report is an analysis artifact, not an evaluation gate. It scans replay
+files from a directory, filters out malformed or unrelated episodes, derives a
+deck label from the opening visualization, and aggregates attack, damage, turn,
+and matchup summaries into a standalone HTML page.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +24,15 @@ for _c in all_card_data():
 
 
 def resolve_deck_name(vis, owner_idx):
-    """Extract deck archetype from initial visualization."""
+    """Extract a deck archetype label from the opening visualization.
+
+    Args:
+        vis: Replay visualization frames.
+        owner_idx: Player index whose deck should be summarized.
+
+    Returns:
+        A heuristic archetype label, or ``"unknown"`` when it cannot be derived.
+    """
     try:
         action = vis[0]["action"]
         deck_ids = [int(_cid) for _cid in action[owner_idx]]
@@ -37,7 +51,19 @@ def resolve_deck_name(vis, owner_idx):
 
 
 def parse_replay(fpath, owner_name):
-    """Parse a single replay file."""
+    """Parse one replay file and return the derived analysis payload.
+
+    The parser ignores malformed replays, files that do not mention the
+    requested owner, and episodes without a result record.
+
+    Args:
+        fpath: Path to a replay JSON file.
+        owner_name: Kaggle agent name used to locate the controlled player.
+
+    Returns:
+        A dictionary with match outcome, archetype labels, and action summaries,
+        or ``None`` if the replay should be skipped.
+    """
     data = json.loads(pathlib.Path(fpath).read_text())
     try:
         vis = data["steps"][0][0]["visualize"]
@@ -131,7 +157,13 @@ def parse_replay(fpath, owner_name):
 
 
 def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: pathlib.Path) -> None:
-    """Generate the investigation report HTML."""
+    """Generate the HTML investigation report from a replay directory.
+
+    Args:
+        replay_dir: Directory containing replay JSON files.
+        owner_name: Kaggle agent name used to identify the target player.
+        output_path: Destination HTML file.
+    """
     raw_results = []
     for _fp in sorted(replay_dir.glob("*.json")):
         _res = parse_replay(_fp, owner_name)
