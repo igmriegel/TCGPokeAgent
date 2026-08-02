@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from enum import StrEnum
 from typing import Any
 
 from src.core import (
@@ -48,6 +49,38 @@ WEIGHTS: dict[str, float] = {
 }
 
 GUARANTEED_KO_BONUS = 200.0
+
+
+class DecisionPhase(StrEnum):
+    """Priority phase used to sequence MAIN-turn decisions."""
+
+    EVOLVE = "EVOLVE"
+    ATTACH_PRIORITY = "ATTACH_PRIORITY"
+    ATTACK_PRIORITY = "ATTACK_PRIORITY"
+    PLAY_POKEMON = "PLAY_POKEMON"
+    ATTACH_OPEN = "ATTACH_OPEN"
+    PLAY_ITEMS = "PLAY_ITEMS"
+    PLAY_SUPPORTER = "PLAY_SUPPORTER"
+    ATTACK = "ATTACK"
+    ATTACH_FULL = "ATTACH_FULL"
+    UTILITY = "UTILITY"
+    END = "END"
+
+
+_MAIN_PHASE_ORDER = (
+    DecisionPhase.EVOLVE,
+    DecisionPhase.ATTACH_PRIORITY,
+    DecisionPhase.PLAY_POKEMON,
+    DecisionPhase.ATTACH_OPEN,
+    DecisionPhase.PLAY_ITEMS,
+    DecisionPhase.PLAY_SUPPORTER,
+    DecisionPhase.ATTACH_FULL,
+    DecisionPhase.UTILITY,
+    DecisionPhase.ATTACK_PRIORITY,
+    DecisionPhase.ATTACK,
+    DecisionPhase.END,
+)
+_MAIN_PHASE_RANK = {phase: index for index, phase in enumerate(_MAIN_PHASE_ORDER)}
 
 FEATURE_FLAGS = {
     "use_attack_signals",
@@ -636,19 +669,12 @@ class HeuristicAgent(AgentPolicy):
         selections = self._filter_dangerous_shuffle_supporters(
             parsed.state, selections, parsed.candidates
         )
-        required_development = self._required_board_development_indices(
-            parsed.state, parsed.candidates, parsed.select_context
-        )
-        if required_development and not self._has_priority_action(
-            parsed.state, selections, parsed.candidates
-        ):
-            development_selections = [
-                selection
-                for selection in selections
-                if any(index in required_development for index in selection.indices)
-            ]
-            if development_selections:
-                selections = development_selections
+        decision_phase = ""
+        decision_phase_reason = ""
+        if parsed.select_context is SelectContext.MAIN:
+            decision_phase, decision_phase_reason, selections = self._main_phase_selections(
+                parsed.state, selections, parsed.candidates
+            )
         contextualized = [
             Selection(
                 indices=selection.indices,
@@ -675,10 +701,19 @@ class HeuristicAgent(AgentPolicy):
             fallback_used = True
             ranker = self._heuristic_ranker
             ranked = ranker.rank(parsed, contextualized, features)
+        if ranked:
+            winning_phase, winning_phase_reason = self._selection_phase(
+                parsed.state, ranked[0].selection, parsed.candidates
+            )
+            if not decision_phase:
+                decision_phase = winning_phase.value
+            decision_phase_reason = winning_phase_reason
         result = PolicyDecision(
             selection=ranked[0].selection,
             ranked=tuple(ranked),
             features=tuple(features),
+            decision_phase=decision_phase,
+            decision_phase_reason=decision_phase_reason,
             fallback_used=fallback_used,
             model_backend=str(getattr(ranker, "backend", "heuristic")),
             model_version=str(getattr(ranker, "model_version", "heuristic-v1")),
@@ -693,6 +728,8 @@ class HeuristicAgent(AgentPolicy):
             selection=selection,
             ranked=(),
             features=(),
+            decision_phase="",
+            decision_phase_reason="",
             fallback_used=False,
             model_backend=str(getattr(self._ranker, "backend", "heuristic")),
             model_version=str(getattr(self._ranker, "model_version", "heuristic-v1")),
@@ -701,40 +738,109 @@ class HeuristicAgent(AgentPolicy):
         self._last_decision = result
         return result
 
+    def _main_phase_selections(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> tuple[str, str, list[Selection]]:
+        """Return the earliest MAIN phase and the selections that match it."""
+        by_phase: dict[DecisionPhase, list[Selection]] = {phase: [] for phase in _MAIN_PHASE_ORDER}
+        reason_by_phase: dict[DecisionPhase, str] = {}
+        for selection in selections:
+            phase, reason = self._selection_phase(state, selection, candidates)
+            by_phase.setdefault(phase, []).append(selection)
+            reason_by_phase.setdefault(phase, reason)
+        for phase in _MAIN_PHASE_ORDER:
+            if by_phase.get(phase):
+                return (
+                    phase.value,
+                    reason_by_phase.get(phase, phase.value.casefold()),
+                    by_phase[phase],
+                )
+        return DecisionPhase.END.value, "no_signal", list(selections)
+
+    def _selection_phase(
+        self,
+        state: GameState,
+        selection: Selection,
+        candidates: Sequence[Candidate],
+    ) -> tuple[DecisionPhase, str]:
+        """Classify a selection by its highest-priority MAIN phase."""
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+        phase = DecisionPhase.END
+        reason = "end"
+        for index in selection.indices:
+            candidate = by_index.get(index)
+            if candidate is None:
+                continue
+            candidate_phase, candidate_reason = self._candidate_phase(state, candidate)
+            if _MAIN_PHASE_RANK[candidate_phase] < _MAIN_PHASE_RANK[phase]:
+                phase = candidate_phase
+                reason = candidate_reason
+        return phase, reason
+
+    def _candidate_phase(self, state: GameState, candidate: Candidate) -> tuple[DecisionPhase, str]:
+        """Classify one legal option into the deterministic MAIN sequencing order."""
+        option_type = candidate.option_type
+        if option_type is OptionType.EVOLVE:
+            return DecisionPhase.EVOLVE, "evolve"
+        if option_type is OptionType.ATTACH:
+            if self._attach_completes_active_attack(candidate):
+                return DecisionPhase.ATTACH_PRIORITY, "attach_completes_active_attack"
+            if self._bench_has_space(state):
+                return DecisionPhase.ATTACH_OPEN, "attach_energy"
+            return DecisionPhase.ATTACH_FULL, "attach_energy"
+        if option_type is OptionType.PLAY:
+            card_type = self._scorer._metadata_int(candidate.card, "cardType")
+            card_id = self._scorer._feature_int(candidate, "card_id")
+            if card_type == 0:
+                if not self._bench_has_space(state):
+                    return DecisionPhase.UTILITY, "bench_full"
+                if self._scorer._has_role(card_id, "development_priority"):
+                    return DecisionPhase.PLAY_POKEMON, "develop_priority_pokemon"
+                return DecisionPhase.PLAY_POKEMON, "develop_bench_pokemon"
+            if card_type == 1:
+                if self._scorer._has_search_role(card_id):
+                    return DecisionPhase.PLAY_ITEMS, "play_search_item"
+                return DecisionPhase.PLAY_ITEMS, "play_item"
+            if card_type == 3:
+                if self._scorer._has_search_role(card_id):
+                    return DecisionPhase.PLAY_SUPPORTER, "play_search_supporter"
+                return DecisionPhase.PLAY_SUPPORTER, "play_supporter"
+            return DecisionPhase.UTILITY, "play_utility_card"
+        if option_type is OptionType.ATTACK:
+            if self._attack_is_priority(state, candidate):
+                return DecisionPhase.ATTACK_PRIORITY, "priority_attack"
+            return DecisionPhase.ATTACK, "attack"
+        if option_type in {OptionType.ABILITY, OptionType.RETREAT, OptionType.DISCARD}:
+            return DecisionPhase.UTILITY, option_type.value.casefold()
+        if option_type is OptionType.END:
+            return DecisionPhase.END, "end"
+        return DecisionPhase.UTILITY, option_type.value.casefold()
+
+    def _bench_has_space(self, state: GameState) -> bool:
+        """Return True when the own Bench can still accept a Pokémon."""
+        player = self._own_player_state(state)
+        if player is None:
+            return False
+        occupied = sum(pokemon is not None for pokemon in player.bench)
+        return occupied < player.bench_max
+
+    def _attack_is_priority(self, state: GameState, candidate: Candidate) -> bool:
+        """Return True when an attack should preempt later development phases."""
+        if self._attack_is_guaranteed_ko(state, candidate):
+            return True
+        text = str((candidate.attack or {}).get("text", "")).casefold()
+        player = self._own_player_state(state)
+        return bool(player and player.deck_count < 15 and "shuffle" in text)
+
     @staticmethod
     def _validate_ranking(selections: Sequence[Selection], ranked: Sequence[Any]) -> None:
         expected = {selection.indices for selection in selections}
         actual = {item.selection.indices for item in ranked}
         if not ranked or expected != actual or len(ranked) != len(selections):
             raise RuntimeError("ranker did not return every legal selection exactly once")
-
-    @staticmethod
-    def _required_board_development_indices(
-        state: GameState,
-        candidates: Sequence[Candidate],
-        context: SelectContext | None,
-    ) -> set[int]:
-        if context is not SelectContext.MAIN or not state.players:
-            return set()
-        player_index = state.your_index if 0 <= state.your_index < len(state.players) else 0
-        player = state.players[player_index]
-        occupied_bench = sum(pokemon is not None for pokemon in player.bench)
-        if occupied_bench >= player.bench_max:
-            return set()
-        return {
-            candidate.option_index
-            for candidate in candidates
-            if HeuristicAgent._is_pokemon_play(candidate)
-        }
-
-    @staticmethod
-    def _is_pokemon_play(candidate: Candidate) -> bool:
-        if candidate.option_type is not OptionType.PLAY or not isinstance(candidate.card, Mapping):
-            return False
-        try:
-            return int(candidate.card.get("cardType", -1)) == 0
-        except (TypeError, ValueError):
-            return False
 
     def _filter_dangerous_shuffle_supporters(
         self,

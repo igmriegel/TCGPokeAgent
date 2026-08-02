@@ -124,8 +124,7 @@ def test_main_rechecks_development_when_another_pokemon_is_available() -> None:
     assert HeuristicAgent().select(observation) in ([1], [2])
 
 
-def test_main_can_attack_after_the_bench_is_full() -> None:
+def test_main_prefers_attach_when_the_bench_is_full() -> None:
     observation = _board_development_observation(bench_count=5)
-    attack_index = len(observation["select"]["option"]) - 2
 
-    assert HeuristicAgent().select(observation) == [attack_index]
+    assert HeuristicAgent().select(observation) == [0]

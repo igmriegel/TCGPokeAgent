@@ -39,6 +39,8 @@ class DecisionTrace:
     action_sequence: list[dict[str, Any]] = field(default_factory=list)
     feature_schema: str = "v1"
     schema_version: str = "v1"
+    decision_phase: str = ""
+    decision_phase_reason: str = ""
     ranked: list[dict[str, Any]] = field(default_factory=list)
     features: list[dict[str, Any]] = field(default_factory=list)
     fallback_used: bool = False

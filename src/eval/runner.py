@@ -46,6 +46,8 @@ class DecisionRecord:
     overage_balance_ms: float
     score: float | None = None
     reasons: list[str] = field(default_factory=list)
+    decision_phase: str = ""
+    decision_phase_reason: str = ""
     search: dict[str, Any] | None = None
     error_category: str = ErrorCategory.NONE.value
     error_message: str = ""
@@ -78,6 +80,8 @@ class DecisionRecord:
             teacher_decision=self.teacher_decision,
             score=self.score,
             reasons=self.reasons,
+            decision_phase=self.decision_phase,
+            decision_phase_reason=self.decision_phase_reason,
             duration_ms=self.duration_ms,
             state_after=self.state_after,
             action_sequence=self.action_sequence,
@@ -327,6 +331,12 @@ class MatchRunner:
                         list(policy_decision.ranked[0].reasons)
                         if policy_decision and policy_decision.ranked
                         else []
+                    ),
+                    decision_phase=(
+                        policy_decision.decision_phase if policy_decision else ""
+                    ),
+                    decision_phase_reason=(
+                        policy_decision.decision_phase_reason if policy_decision else ""
                     ),
                     ranked=self._serialize_ranking(policy_decision),
                     features=self._serialize_features(policy_decision),

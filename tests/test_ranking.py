@@ -49,6 +49,8 @@ def test_policy_decision_records_ranking_features_margin_and_fallback(sample_obs
     assert len(decision.ranked) == len(decision.features) == 3
     assert [item.rank for item in decision.ranked] == [1, 2, 3]
     assert decision.ranked[0].margin_to_next >= 0.0
+    assert decision.decision_phase == "ATTACK"
+    assert decision.decision_phase_reason == "attack"
     assert decision.model_backend == "heuristic"
     assert not decision.fallback_used
 

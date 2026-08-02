@@ -195,7 +195,7 @@ def test_heuristic_evolve_priority() -> None:
     assert agent.select(observation) == [0]
 
 
-def test_heuristic_deck_out() -> None:
+def test_heuristic_deck_out_defers_attack_for_available_development() -> None:
     agent = _built_agent()
     observation = _observation(
         select_type="MAIN",
@@ -212,7 +212,7 @@ def test_heuristic_deck_out() -> None:
         your_deck_count=4,
     )
 
-    assert agent.select(observation) == [0]
+    assert agent.select(observation) == [1]
 
 
 def test_evolve_precedes_energy_attachment() -> None:
@@ -231,6 +231,38 @@ def test_evolve_precedes_energy_attachment() -> None:
     )
 
     assert agent.select(observation) == [0]
+
+
+def test_main_turn_re_evaluates_sequential_phases_across_prompts() -> None:
+    agent = _built_agent()
+    first_observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACK", "attackId": 1042, "inPlayArea": 4},
+        ],
+        your_active=_pokemon(722, 90, serial=11, energies=0),
+        your_bench=[],
+        your_hand=[_pokemon(723, 300, serial=2, area=2), _pokemon(3, 0, serial=3)],
+        opponent_active_hp=150,
+    )
+    second_observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACK", "attackId": 1042, "inPlayArea": 4},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=1),
+        your_bench=[],
+        your_hand=[_pokemon(3, 0, serial=3)],
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(first_observation) == [0]
+    assert agent.select(second_observation) == [0]
 
 
 def test_post_evolution_energy_completes_active_attack() -> None:
@@ -457,7 +489,7 @@ def test_guaranteed_attack_damage_uses_profile_plans() -> None:
     assert damages == [130, 200, 0, 0]
 
 
-def test_guaranteed_ko_attack_is_not_blocked_by_ultra_ball() -> None:
+def test_guaranteed_ko_attack_waits_for_ultra_ball() -> None:
     agent = _built_agent()
     observation = _observation(
         select_type="MAIN",
@@ -473,10 +505,10 @@ def test_guaranteed_ko_attack_is_not_blocked_by_ultra_ball() -> None:
         opponent_active_hp=150,
     )
 
-    assert agent.select(observation) == [0]
+    assert agent.select(observation) == [1]
 
 
-def test_guaranteed_ko_attack_is_not_blocked_by_snover() -> None:
+def test_guaranteed_ko_attack_waits_for_available_snover() -> None:
     agent = _built_agent()
     observation = _observation(
         select_type="MAIN",
@@ -492,7 +524,7 @@ def test_guaranteed_ko_attack_is_not_blocked_by_snover() -> None:
         opponent_active_hp=150,
     )
 
-    assert agent.select(observation) == [0]
+    assert agent.select(observation) == [1]
 
 
 def test_snover_preferred_over_ultra_ball_when_developing_bench() -> None:
@@ -549,7 +581,7 @@ def test_snover_played_before_hammerlanche_when_attack_is_weaker() -> None:
     assert agent.select(observation) == [1]
 
 
-def test_attack_still_wins_once_the_board_is_developed() -> None:
+def test_attack_waits_until_the_board_is_fully_developed() -> None:
     agent = _built_agent()
     observation = _observation(
         select_type="MAIN",
@@ -565,7 +597,7 @@ def test_attack_still_wins_once_the_board_is_developed() -> None:
         opponent_active_hp=150,
     )
 
-    assert agent.select(observation) == [0]
+    assert agent.select(observation) == [1]
 
 
 def test_evolve_still_precedes_a_weaker_attack() -> None:

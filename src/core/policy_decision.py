@@ -38,6 +38,8 @@ class PolicyDecision:
         selection: Selection returned to the simulator.
         ranked: Ordered alternatives produced by the active or fallback ranker.
         features: Feature vectors supplied to the ranker.
+        decision_phase: Sequencing phase that won the final decision.
+        decision_phase_reason: Stable audit reason for the winning phase.
         fallback_used: Whether learned inference failed and heuristic ranking ran.
         model_backend: Backend that produced the final ranking.
         model_version: Immutable model identifier or heuristic version.
@@ -47,6 +49,8 @@ class PolicyDecision:
     selection: Selection
     ranked: tuple[RankedSelection, ...]
     features: tuple[SelectionFeatures, ...]
+    decision_phase: str
+    decision_phase_reason: str
     fallback_used: bool
     model_backend: str
     model_version: str
