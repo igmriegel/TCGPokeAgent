@@ -4,7 +4,7 @@
 > and lifecycle; [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md) owns work
 > status; [`27_gameplay_rules.md`](27_gameplay_rules.md) owns active policy.
 
-**Last reviewed:** 2026-08-01
+**Last reviewed:** 2026-08-02
 
 ## Summary
 
@@ -14,7 +14,7 @@
 | Implemented | 7 |
 | Validated | 0 |
 | Rejected | 0 |
-| Open implementation/validation actions | 10 |
+| Open implementation/validation actions | 9 |
 
 `IMPLEMENTED` means code and focused tests exist. `VALIDATED` additionally
 requires the frozen gameplay gate. No feedback item below is eligible for a
@@ -41,7 +41,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-007 | Kyogre must shuffle-refill near deck-out | `deck_refill` attack bonus implemented | Pending | T-018 |
 | FB-2026-008 | Play every legal Item before any Supporter; Supporters are a last-resort search | Item-first play ordering implemented | Pending | T-020 |
 | FB-2026-009 | Prefer the attack with guaranteed Knock Out over probabilistic or non-KO attacks | `guaranteed_ko` attack bonus implemented | Pending | T-021 |
-| FB-2026-010 | Develop to the attacker target before any attack, including guaranteed Knock Outs | Attacker-target gate implemented | Pending | T-022 |
+| FB-2026-010 | Legal attacks should not be blocked by attacker-target development | Attacker-target gate retired; legal attacks now score directly | Reinterpreted | None |
 
 ## FB-2026-001 — Continuous board development
 
@@ -327,46 +327,37 @@ as guaranteed (GR-017).
 
 T-021: guaranteed-KO fixtures and no regression in the frozen paired comparison.
 
-## FB-2026-010 — Develop to the attacker target before attacking
+## FB-2026-010 — Legal attacks are not blocked by attacker target
 
 **Priority:** P0
 
-**Status:** `IMPLEMENTED`, not validated
+**Status:** `REINTERPRETED`, not validated
 
 ### Original feedback
 
 With a near-empty Bench and a Snover or Ultra Ball in hand, the agent attacked
 with a guaranteed Knock Out (or Hammer-lanche) instead of developing the board.
-The Bench never reached its declared attacker target, so development (and item
-search for it) must precede every attack until the target is met; attacks are
-deferred, not lost, because the simulator re-presents `MAIN` after each action.
+The attacker-target gate was too restrictive; legal attacks should remain
+available and be scored directly rather than blocked until the board target is
+met.
 
 ### Accepted rule
 
-While the board has fewer attackers than `board_targets.minimum_attackers`
-(default 2), every development action — `PLAY` of a Pokémon, Item, Tool,
-Supporter, or Stadium, `EVOLVE`, or `ATTACH` — supersedes every attack,
-including guaranteed Knock Outs (GR-018). Attack once the target is met. A
-profile without an `attacker` role counts every Pokémon in play toward the
-target.
+Legal attacks are no longer blocked by `board_targets.minimum_attackers`.
+Development, evolution, and attachment priorities remain in their own rules,
+and guaranteed-KO or refill attacks keep their own bonuses.
 
 ### Implemented foundation
 
-- `_gate_attacks_behind_development` filters pure-attack selections out of
-  `MAIN` while `_board_under_attacker_target` is true and a development
-  selection exists; an empty result restores the original selections;
-- `_board_attacker_count` counts `attacker`-role Pokémon on the board, falling
-  back to all Pokémon in play for generic profiles;
-- `_development_action_indices` and `_is_pure_attack` classify development and
-  pure-attack selections;
-- `tests/test_heuristic_strategy.py`: C1–C6 fixtures covering Ultra Ball and
-  Snover before guaranteed KO and Hammer-lanche, target-met attack resumption,
-  Evolution before attack, and role/generic attacker counting.
+- legal attacks remain available even when development actions exist;
+- guaranteed-KO attacks still outrank weaker attacks via scoring;
+- `tests/test_heuristic_strategy.py`: fixtures covering Ultra Ball and Snover
+  before guaranteed KO, weak-attack preservation, and Evolution/attachment
+  ordering.
 
 ### Gate
 
-T-022: attacker-target fixtures and no regression in the frozen paired
-comparison.
+Policy revision only; no active validation task remains for this gate.
 
 ## Adding feedback
 

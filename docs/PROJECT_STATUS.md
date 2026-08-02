@@ -4,7 +4,7 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-08-01
+**Last verified:** 2026-08-02
 
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
@@ -38,7 +38,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
 | Human gameplay capture | No live human match captured | HD0–HD5 remain deferred |
-| Heuristic priority fixes | Conditional Bench filter, Snover/search/attachment/refill scoring, guaranteed-KO attack bonus, Item-first play ordering, attacker-target development gate, and deck v2 profile integrity fix | Implemented with focused tests; validation pending |
+| Heuristic priority fixes | Conditional Bench filter, Snover/search/attachment/refill scoring, guaranteed-KO attack bonus, Item-first play ordering, and deck v2 profile integrity fix | Implemented with focused tests; validation pending |
 | Documentation integrity | All `src` modules inventoried; internal links, task IDs, counts, and stale claims checked automatically | Living gate |
 
 The local 400-match artifact reports `agent_mode: baseline` although its path
@@ -80,7 +80,7 @@ The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
 1. run the frozen HDI v1 versus heuristic comparison and correct report metadata;
-2. validate the heuristic priority fixes (T-015–T-022) and finish board-development scenarios;
+2. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 3. validate Rule Box/PrizeMap and PrizeCheck transitions;
 4. rebuild the replay dataset;
 5. close the release checklist.

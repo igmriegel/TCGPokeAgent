@@ -501,7 +501,7 @@ evidence:
 status: implemented
 ```
 
-## Attacker-target development gate
+## Attacker-target gate retired
 
 ```yaml
 observed_at: "2026-08-01T12:00:00Z"
@@ -511,13 +511,11 @@ root_causes:
   - "the guaranteed-KO attack was a priority action in _has_priority_action, so with a near-empty Bench and a Snover or Ultra Ball in hand the agent attacked instead of developing"
   - "board_targets.minimum_attackers (2) was declared in deck_profile.json but no code used it"
 decisions:
-  - "while the board is below the attacker target, development (PLAY, EVOLVE, ATTACH) supersedes every attack including guaranteed KO; attacks are deferred, never discarded, because MAIN re-presents after each action"
-  - "count attacker-role Pokémon (721, 722, 723); generic profiles without the role count all Pokémon in play"
-  - "target defaults to 2 when board_targets is absent"
+  - "legal attacks are no longer blocked by attacker-target development; development, evolution, and attachment priorities continue through their own scores"
+  - "guaranteed-KO attacks and shuffle-refill attacks keep their own bonuses"
 evidence:
   - "replay scenarios C1-C6: Ultra Ball / Snover in hand before guaranteed-KO and Hammer-lanche attacks"
-  - "tests/test_heuristic_strategy.py (9 new gate scenarios)"
+  - "tests/test_heuristic_strategy.py updated to remove the gate and keep weak-attack regression coverage"
   - "158 unit tests pass"
-status: implemented
+status: revised
 ```
-

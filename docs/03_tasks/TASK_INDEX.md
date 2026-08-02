@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-08-01
+**Last reviewed:** 2026-08-02
 
 ## How to read this backlog
 
@@ -20,9 +20,9 @@ documents to these totals.
 | Queue | Count |
 |---|---:|
 | In progress | 3 |
-| Ready | 16 |
+| Ready | 15 |
 | Deferred | 7 |
-| Total open | 26 |
+| Total open | 25 |
 
 ## Active release queue
 
@@ -46,7 +46,6 @@ documents to these totals.
 | T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
 | T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the paired comparison |
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
-| T-022 | P1 | `READY` | Validate attacker-target development gate | FB-2026-010, H2A | Run attacker-target fixtures and the paired comparison |
 
 ## Active-track coverage
 
@@ -61,7 +60,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-022 |
+| H2A | T-001–T-004, T-015–T-021 |
 
 ## Deferred queue
 
@@ -81,6 +80,7 @@ This table prevents roadmap work from existing without an executable owner.
 |---|---|---|
 | T-000 | Reproducible environment, deck, wrapper, and package smoke | S0–S1 evidence and release manifest |
 | T-010 | Reconcile remote scores and retain `55088176` as reference | Score correction in `strategy_notes.md` |
+| T-022 | Reinterpreted attacker-target gate; legal attacks are no longer blocked by board target | Policy revision in `docs/27_gameplay_rules.md` and `docs/29_gameplay_feedback.md` |
 | FB001-A2 | Pre-terminal ordering layer | `e268c96`, focused gameplay tests |
 | FB001-A3 | Generic Pokémon play before attack with open Bench | `e268c96`, replay regression |
 | RF-001 | Replay ingestion and leakage-safe dataset foundation | `gameplay_replays/v1` manifest |

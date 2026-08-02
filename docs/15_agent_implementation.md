@@ -73,20 +73,15 @@ END                            -1000 (only when nothing better)
 The conditional Bench filter restricts a decision to Pokémon `PLAY`
 selections only when no priority action is legal. Priority actions are
 Evolution, Ability, search/Trainer `PLAY`, an attach that completes the Active
-attack, and an attack with a guaranteed Knock Out once the attacker target is
-met.
+attack, and an attack with a guaranteed Knock Out.
 
-## Attacker-target gate
+## Attack selection
 
-`_gate_attacks_behind_development` runs before the Bench filter and defers
-every pure-attack selection while `_board_under_attacker_target` is true and a
-development action (`PLAY`, `EVOLVE`, `ATTACH`) is legal. `_board_attacker_count`
-counts `attacker`-role Pokémon (721, 722, 723) on the board and falls back to
-all Pokémon in play for profiles without that role; the target comes from
-`board_targets.minimum_attackers` (default 2). This moves the guaranteed-KO
-attack below development on the ladder until the board reaches the target
-(GR-018), implementing FB-2026-010. Attacks are deferred, not discarded: the
-simulator re-presents `MAIN` after the development action.
+`_attack_score` scores legal attacks directly. Guaranteed damage reaches
+`GUARANTEED_KO_BONUS` when it matches the opponent Active HP, and near deck-out
+shuffle-refill attacks gain `deck_refill`. Legal attacks are no longer blocked
+behind attacker-target development; that board-development preference is handled
+by separate play, evolution, and attachment scoring.
 
 ## Deterministic attack damage
 
@@ -95,8 +90,7 @@ simulator re-presents `MAIN` after the development action.
 based damage from the public discard count), then option and catalog metadata;
 top-of-deck based damage stays probabilistic and returns zero. Guaranteed-KO
 attacks gain `GUARANTEED_KO_BONUS` when their damage reaches the opponent
-Active HP, exempt the decision from the Bench filter once the attacker target
-is met (GR-018), and prefer refill attacks near deck-out via the `deck_refill`
+Active HP, and prefer refill attacks near deck-out via the `deck_refill`
 reason.
 
 ## Resource and attachment scoring
