@@ -633,6 +633,9 @@ class HeuristicAgent(AgentPolicy):
         )
         if not selections:
             return self._record_empty_decision(started)
+        selections = self._filter_dangerous_shuffle_supporters(
+            parsed.state, selections, parsed.candidates
+        )
         selections = self._gate_attacks_behind_development(
             parsed.state, parsed.select_context, selections, parsed.candidates
         )
@@ -797,11 +800,13 @@ class HeuristicAgent(AgentPolicy):
 
     def _board_attacker_count(self, state: GameState) -> int:
         """Count attackers on our board, falling back to all Pokémon in play
-        for profiles without an ``attacker`` role."""
+        for profiles without an ``attacker`` role.
+        """
         profile = self._active_deck_profile
         attacker_ids = set(profile.cards_for_role("attacker")) if profile else set()
-        player_index = state.your_index if 0 <= state.your_index < len(state.players) else 0
-        player = state.players[player_index]
+        player = self._own_player_state(state)
+        if player is None:
+            return 0
         pokemon = [player.active] if player.active is not None else []
         pokemon.extend(p for p in player.bench if p is not None)
         if not attacker_ids:
@@ -818,6 +823,73 @@ class HeuristicAgent(AgentPolicy):
             if normalized in attacker_ids:
                 count += 1
         return count
+
+    def _filter_dangerous_shuffle_supporters(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> list[Selection]:
+        """Drop plays of hand-shuffle supporters that would deck us out.
+
+        A supporter that shuffles the hand into the deck and draws (for
+        example Lillie) is only safe when the reshuffled total (deck plus hand)
+        covers the draw. Otherwise playing it loses the game instantly; skip it
+        so an attack, or END when no attack is legal, is chosen instead.
+        """
+        if not state.players:
+            return list(selections)
+        player = self._own_player_state(state)
+        if player is None:
+            return list(selections)
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+        kept = [
+            selection
+            for selection in selections
+            if not any(
+                self._shuffle_supporter_deck_out(player, by_index.get(index))
+                for index in selection.indices
+            )
+        ]
+        return kept if kept else list(selections)
+
+    @staticmethod
+    def _shuffle_supporter_deck_out(player: Any, candidate: Candidate | None) -> bool:
+        """True when playing this shuffle supporter would deck us out."""
+        draw = HeuristicAgent._shuffle_supporter_draw(player, candidate)
+        if draw is None:
+            return False
+        return player.deck_count + player.hand_count - 1 < draw
+
+    @staticmethod
+    def _shuffle_supporter_draw(player: Any, candidate: Candidate | None) -> int | None:
+        """Draw size of a hand-shuffle supporter play, or None otherwise.
+
+        Detects supporter cards whose skill shuffles the hand into the deck
+        before drawing, and returns the number of cards drawn (6, or 8 while
+        exactly 6 Prize cards remain).
+        """
+        if candidate is None or candidate.option_type is not OptionType.PLAY:
+            return None
+        card = candidate.card if isinstance(candidate.card, Mapping) else None
+        if card is None:
+            return None
+        card_type = card.get("cardType")
+        if not isinstance(card_type, int) or card_type != 3:
+            return None
+        texts = [
+            str(skill.get("text", "")).casefold()
+            for skill in card.get("skills", [])
+            if isinstance(skill, Mapping)
+        ]
+        if not texts or not any("shuffle your hand" in text for text in texts):
+            return None
+        return 8 if len(player.prize) == 6 and any("8 cards" in text for text in texts) else 6
+
+    def _own_player_state(self, state: GameState) -> Any:
+        if 0 <= state.your_index < len(state.players):
+            return state.players[state.your_index]
+        return None
 
     def _has_priority_action(
         self,

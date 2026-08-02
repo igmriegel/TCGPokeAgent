@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from src.agents.factory import load_deck_profile
 from src.agents.heuristic import HeuristicAgent
@@ -12,6 +13,7 @@ from src.core import (
     OptionType,
     PlayerState,
     PokemonState,
+    Selection,
 )
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -381,6 +383,63 @@ def test_supporter_played_when_no_items_available() -> None:
     )
 
     assert agent.select(observation) == [0]
+
+
+def test_shuffle_supporter_deck_out_accounts_for_the_played_card() -> None:
+    player = SimpleNamespace(deck_count=3, hand_count=3, prize=[None] * 6)
+    candidate = Candidate(
+        0,
+        {
+            "type": "PLAY",
+        },
+        OptionType.PLAY,
+        card={
+            "cardType": 3,
+            "skills": [
+                {"text": "Shuffle your hand into your deck. Then draw 6 cards."},
+            ],
+        },
+    )
+    assert HeuristicAgent._shuffle_supporter_deck_out(player, candidate) is True
+
+    safe_player = SimpleNamespace(deck_count=4, hand_count=3, prize=[None] * 6)
+    assert HeuristicAgent._shuffle_supporter_deck_out(safe_player, candidate) is False
+
+
+def test_dangerous_shuffle_supporter_is_filtered_before_attack() -> None:
+    agent = _built_agent()
+    state = GameState(
+        your_index=0,
+        players=[
+            PlayerState(deck_count=3, hand_count=3, prize=[None] * 6),
+        ],
+    )
+    dangerous_supporter = Candidate(
+        0,
+        {
+            "type": "PLAY",
+        },
+        OptionType.PLAY,
+        card={
+            "cardType": 3,
+            "skills": [
+                {"text": "Shuffle your hand into your deck. Then draw 6 cards."},
+            ],
+        },
+    )
+    end_candidate = Candidate(1, {"type": "END"}, OptionType.END)
+    selections = [
+        Selection((0,), (OptionType.PLAY,)),
+        Selection((1,), (OptionType.END,)),
+    ]
+
+    filtered = agent._filter_dangerous_shuffle_supporters(
+        state,
+        selections,
+        [dangerous_supporter, end_candidate],
+    )
+
+    assert filtered == [Selection((1,), (OptionType.END,))]
 
 
 def test_guaranteed_attack_damage_uses_profile_plans() -> None:
