@@ -8,12 +8,25 @@ and matchup summaries into a standalone HTML page.
 
 from __future__ import annotations
 
+import argparse
+import csv
+import io
 import json
 import pathlib
+import subprocess
+import sys
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from cg.api import all_attack, all_card_data
+
+COMPETITION = "pokemon-tcg-ai-battle"
+SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 
 attacks_sdk = {a.attackId: a for a in all_attack()}
 cards_sdk = {c.cardId: c for c in all_card_data()}
@@ -21,6 +34,116 @@ attack_to_card = {}
 for _c in all_card_data():
     for _aid in _c.attacks:
         attack_to_card[_aid] = _c.name
+
+
+def _load_submission_map() -> dict[str, str]:
+    """Load the episode-to-submission mapping if it exists."""
+    if not SUBMISSION_MAP_PATH.exists():
+        return {}
+    raw_map = json.loads(SUBMISSION_MAP_PATH.read_text())
+    return {str(key): str(value) for key, value in raw_map.items()}
+
+
+def _list_completed_submissions() -> list[dict[str, str]]:
+    """Fetch completed Kaggle submissions for the current competition.
+
+    Returns:
+        A CSV-derived list of submission rows. If the Kaggle CLI is unavailable
+        or the request fails, returns an empty list and lets the report fall
+        back to local episode counts.
+    """
+    try:
+        result = subprocess.run(
+            ["kaggle", "competitions", "submissions", COMPETITION, "-v"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+
+    rows = list(csv.DictReader(io.StringIO(result.stdout)))
+    return [row for row in rows if row.get("status") == "SubmissionStatus.COMPLETE"]
+
+
+def _parse_submission_date(value: str) -> datetime:
+    """Parse a Kaggle submission timestamp.
+
+    Args:
+        value: Submission date string from the Kaggle CLI.
+
+    Returns:
+        A datetime value that can be used for sorting.
+    """
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return datetime.min
+
+
+def _build_submission_rows(raw_results: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Build the submission history table from local and Kaggle sources."""
+    submission_map = _load_submission_map()
+    episode_counts = Counter(
+        submission_id
+        for submission_id in submission_map.values()
+        if submission_id.isdigit()
+    )
+    outcome_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
+
+    for result in raw_results:
+        episode_id = str(result["episode_id"])
+        submission_id = submission_map.get(episode_id)
+        if not submission_id or not submission_id.isdigit():
+            continue
+        if result["outcome"] == "win":
+            outcome_counts[submission_id]["w"] += 1
+        else:
+            outcome_counts[submission_id]["l"] += 1
+
+    submission_rows: list[dict[str, object]] = []
+    for row in _list_completed_submissions():
+        submission_id = row.get("ref", "")
+        if not submission_id:
+            continue
+        submission_rows.append(
+            {
+                "id": submission_id,
+                "date": row.get("date", ""),
+                "desc": row.get("description", "") or row.get("fileName", ""),
+                "kaggle": float(row["publicScore"]) if row.get("publicScore") else None,
+                "episodes": episode_counts.get(submission_id, 0),
+                "w": outcome_counts[submission_id]["w"],
+                "l": outcome_counts[submission_id]["l"],
+            }
+        )
+
+    if not submission_rows:
+        for submission_id, episodes in sorted(episode_counts.items(), reverse=True):
+            submission_rows.append(
+                {
+                    "id": submission_id,
+                    "date": "",
+                    "desc": "unknown",
+                    "kaggle": None,
+                    "episodes": episodes,
+                    "w": outcome_counts[submission_id]["w"],
+                    "l": outcome_counts[submission_id]["l"],
+                }
+            )
+
+    submission_rows.sort(key=lambda row: _parse_submission_date(str(row["date"])), reverse=True)
+    if submission_rows:
+        best_score = max(
+            (row["kaggle"] for row in submission_rows if row["kaggle"] is not None),
+            default=None,
+        )
+        latest_id = str(submission_rows[0]["id"])
+        for row in submission_rows:
+            row["best"] = row["kaggle"] is not None and row["kaggle"] == best_score
+            row["latest"] = str(row["id"]) == latest_id
+
+    return submission_rows
 
 
 def resolve_deck_name(vis, owner_idx):
@@ -333,56 +456,26 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
             f"<td>{_total}</td>{confidence_label(_total)}</tr>\n"
         )
 
-    submissions = [
-        {
-            "label": "Sub 1",
-            "id": "55088176",
-            "kaggle": 539.2,
-            "episodes": 48,
-            "w": 21,
-            "l": 27,
-            "best": True,
-            "desc": "v2_Mega_Abomasnow",
-        },
-        {
-            "label": "Sub 2",
-            "id": "55093119",
-            "kaggle": 478.6,
-            "episodes": 54,
-            "w": 24,
-            "l": 30,
-            "best": False,
-            "desc": "heuristic current-deck rulebox-prizecheck",
-        },
-        {
-            "label": "Sub 3",
-            "id": "55119505",
-            "kaggle": 490.4,
-            "episodes": 46,
-            "w": 27,
-            "l": 19,
-            "best": False,
-            "desc": "v3_Mega_Abomasnow hdi_v1",
-        },
-    ]
+    submissions = _build_submission_rows(raw_results)
 
     sub_rows = ""
     for _s in submissions:
-        _badge = (
-            '<span class="badge badge-w">BEST</span>'
-            if _s["best"]
-            else ('<span class="badge badge-l">LATEST</span>' if _s == submissions[-1] else "")
-        )
+        _badges = []
+        if _s.get("best"):
+            _badges.append('<span class="badge badge-w">BEST</span>')
+        if _s.get("latest"):
+            _badges.append('<span class="badge badge-l">LATEST</span>')
+        _badge = " ".join(_badges)
         _swr = _s["w"] / (_s["w"] + _s["l"]) * 100 if (_s["w"] + _s["l"]) else 0
         _scls = "win" if _swr >= 50 else "loss"
         _kcls = (
             "var(--accent)"
-            if _s["kaggle"] >= 500
-            else ("var(--orange)" if _s["kaggle"] >= 480 else "var(--green)")
+            if (_s["kaggle"] or 0) >= 500
+            else ("var(--orange)" if (_s["kaggle"] or 0) >= 480 else "var(--green)")
         )
         sub_rows += (
-            f"<tr><td>{_s['label']} {_badge}</td><td>{_s['id']}</td><td>{_s['desc']}</td>"
-            f'<td style="font-weight:700;color:{_kcls}">{_s["kaggle"]}</td>'
+            f"<tr><td>{_s['id']} {_badge or '&mdash;'}</td><td>{_s['id']}</td><td>{_s['desc']}</td>"
+            f'<td style="font-weight:700;color:{_kcls}">{_s["kaggle"] if _s["kaggle"] is not None else "N/A"}</td>'
             f'<td>{_s["episodes"]}</td><td class="win">{_s["w"]}</td>'
             f'<td class="loss">{_s["l"]}</td><td class="{_scls}">{_swr:.1f}%</td></tr>\n'
         )
@@ -643,18 +736,38 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
     print(f"Unique archetypes: {len(matchup_data)}")
 
 
+def _parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for the report generator."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "replay_dir",
+        nargs="?",
+        type=pathlib.Path,
+        default=pathlib.Path("data/raw/kaggle/kaggle_gameplay_runs"),
+        help="Directory containing the replay JSON files.",
+    )
+    parser.add_argument(
+        "output_path",
+        nargs="?",
+        type=pathlib.Path,
+        default=pathlib.Path("perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html"),
+        help="Destination HTML report path.",
+    )
+    parser.add_argument(
+        "owner_name",
+        nargs="?",
+        default="Igor Riegel",
+        help="Kaggle agent name used to identify the controlled player.",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the replay analysis CLI."""
+    args = _parser().parse_args(argv)
+    generate_report(args.replay_dir, args.owner_name, args.output_path)
+    return 0
+
+
 if __name__ == "__main__":
-    import sys
-
-    replay_dir = pathlib.Path("data/raw/kaggle/kaggle_gameplay_runs")
-    output_path = pathlib.Path("perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html")
-    owner_name = "Igor Riegel"
-
-    if len(sys.argv) > 1:
-        replay_dir = pathlib.Path(sys.argv[1])
-    if len(sys.argv) > 2:
-        output_path = pathlib.Path(sys.argv[2])
-    if len(sys.argv) > 3:
-        owner_name = sys.argv[3]
-
-    generate_report(replay_dir, owner_name, output_path)
+    raise SystemExit(main())
