@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -57,9 +58,14 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run(command: Sequence[str], *, cwd: Path = PROJECT_ROOT) -> None:
+def _run(
+    command: Sequence[str],
+    *,
+    cwd: Path = PROJECT_ROOT,
+    env: dict[str, str] | None = None,
+) -> None:
     print(f"\n$ {' '.join(command)}", flush=True)
-    completed = subprocess.run(command, cwd=cwd, check=False)
+    completed = subprocess.run(command, cwd=cwd, env=env, check=False)
     if completed.returncode != 0:
         raise RuntimeError(
             f"command failed with exit code {completed.returncode}: {' '.join(command)}"
@@ -89,6 +95,37 @@ def _submission_command(kaggle: str, archive: Path, message: str) -> list[str]:
 
 def _confirmed(answer: str) -> bool:
     return answer.strip().lower() in {"y", "yes"}
+
+
+def _submission_env() -> dict[str, str]:
+    """Return the environment used for the Kaggle CLI submission step.
+
+    The submission command should use the Kaggle credentials already configured
+    in the user's home directory. If a local shell session exported
+    ``KAGGLE_CONFIG_DIR`` to the repository root, remove it so the CLI does not
+    prefer the repo-local token file over the logged-in home credentials.
+
+    Returns:
+        A copy of the current environment suitable for the Kaggle CLI.
+    """
+    env = os.environ.copy()
+    config_dir = env.get("KAGGLE_CONFIG_DIR")
+    if config_dir is None:
+        return env
+
+    try:
+        resolved = Path(config_dir).expanduser().resolve()
+    except OSError:
+        return env
+
+    if resolved == PROJECT_ROOT:
+        env.pop("KAGGLE_CONFIG_DIR", None)
+        print(
+            "\nIgnoring KAGGLE_CONFIG_DIR=repo-root for Kaggle submission; "
+            "using the authenticated ~/.kaggle credentials instead.",
+            flush=True,
+        )
+    return env
 
 
 def _write_receipt(archive: Path, digest: str, message: str) -> Path:
@@ -204,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     try:
-        _run(command)
+        _run(command, env=_submission_env())
     except (OSError, RuntimeError) as error:
         print(f"\nKAGGLE SUBMISSION FAILED: {error}", file=sys.stderr)
         return 4

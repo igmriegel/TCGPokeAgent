@@ -195,7 +195,9 @@ scripts/submit_simulation.sh --dry-run
 ```
 
 The script submits to `pokemon-tcg-ai-battle` through the official Kaggle CLI
-only after explicit confirmation.
+only after explicit confirmation. It uses the Kaggle CLI credentials already
+configured in `~/.kaggle` and does not need `KAGGLE_CONFIG_DIR` pointed at the
+repository root.
 
 ## Data
 
@@ -219,10 +221,10 @@ The `data/raw/` directory is in `.gitignore` — data is not versioned.
 ### Kaggle API setup
 
 ```bash
-cp kaggle.json.example ~/.kaggle/kaggle.json
-# Edit ~/.kaggle/kaggle.json with username and key from
-# https://www.kaggle.com/settings -> API -> Create New Token
-chmod 600 ~/.kaggle/kaggle.json
+kaggle auth login
+# Or copy an API token to ~/.kaggle/kaggle.json and restrict its permissions:
+# cp kaggle.json.example ~/.kaggle/kaggle.json
+# chmod 600 ~/.kaggle/kaggle.json
 ```
 
 ### Data download

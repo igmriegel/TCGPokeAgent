@@ -39,7 +39,7 @@
 | `uv run --frozen --group ranker-xgboost python scripts/train_rankers.py --help` | Train grouped native ranker studies (`scripts/train_rankers.py`) |
 | `uv run --frozen python -m src.eval.validation --package submission.tar.gz` | Validate an extracted archive |
 | `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
-| `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit |
+| `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit using the configured `~/.kaggle` login |
 
 ## Internal helpers
 
@@ -55,6 +55,8 @@ commands.
 - generated run directories and reports do not overwrite an existing run ID;
 - policy logic remains in `src/`, not in shell wrappers;
 - submission never uploads without `--yes` or an affirmative prompt;
+- submission uses the authenticated Kaggle CLI state in `~/.kaggle` and does
+  not depend on a repo-local `KAGGLE_CONFIG_DIR`;
 - successful uploads write a credential-free receipt;
 - generated data and reports follow the persistence contracts.
 

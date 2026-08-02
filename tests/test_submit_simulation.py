@@ -1,11 +1,15 @@
 from pathlib import Path
 
+import pytest
+
 from scripts.submit_simulation import (
     COMPETITION,
+    PROJECT_ROOT,
     _confirmed,
     _parser,
     _sha256,
     _submission_command,
+    _submission_env,
 )
 
 
@@ -44,3 +48,25 @@ def test_hdi_mode_is_available_to_guarded_submission_pipeline() -> None:
     args = _parser().parse_args(["--agent-mode", "hdi_v1", "--dry-run"])
 
     assert args.agent_mode == "hdi_v1"
+
+
+def test_submission_env_ignores_repo_root_kaggle_config_dir(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("KAGGLE_CONFIG_DIR", str(PROJECT_ROOT))
+
+    env = _submission_env()
+
+    assert "KAGGLE_CONFIG_DIR" not in env
+
+
+def test_submission_env_keeps_non_repo_kaggle_config_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    custom_config_dir = tmp_path / "kaggle-config"
+    monkeypatch.setenv("KAGGLE_CONFIG_DIR", str(custom_config_dir))
+
+    env = _submission_env()
+
+    assert env["KAGGLE_CONFIG_DIR"] == str(custom_config_dir)
