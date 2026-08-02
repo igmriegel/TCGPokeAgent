@@ -9,8 +9,9 @@ policy with the active deck and returns that deck. Otherwise:
    creates one `Candidate` per option without changing its index.
 2. `DefaultSelectionGenerator` produces combinations according to cardinality,
    energy, and damage constraints.
-3. `HeuristicAgent` may require a legal board-development play before a
-   terminal attack or end-turn choice.
+3. `HeuristicAgent` sequences `MAIN` by fixed phases, then ranks only the
+   legal selections inside the earliest available phase. `ATTACK` is terminal
+   for the turn, so no later action is considered after it.
 4. `SelectionFeatureExtractor` creates the immutable
    `selection-ranking-v1` vector for every remaining legal selection.
 5. `HeuristicSelectionRanker`, `XGBoostSelectionRanker`, or

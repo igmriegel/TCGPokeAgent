@@ -1043,7 +1043,7 @@ validation gaps.
 |---|---|---|
 | Primary objective | State the one result the turn must achieve | No persistent explicit turn objective |
 | Success condition | Define an observable test for success | No general representation |
-| Mandatory actions | Identify actions that must precede attack or end | Pokémon play before terminal action is enforced in one broad scenario |
+| Mandatory actions | Identify actions that must precede terminal attack or end | Pokémon play before terminal action is enforced in one broad scenario |
 | Alternatives | Preserve a second legal line when the first fails | No persistent alternative plan |
 | General order | Order information gain, development, commitments, and terminal actions | Fixed scoring approximates an order; nested prompts do not carry a confirmed plan |
 
@@ -1110,7 +1110,7 @@ dependencies remain for Phase 5.
 
 ### Candidate record HDI-4-02 — Complete mandatory actions before termination
 
-- **Question:** Which applicable actions must be completed before attacking or
+- **Question:** Which applicable actions must be completed before the terminal attack or
   passing?
 - **Objective:** Avoid ending a turn while legal setup, Evolution, attachment,
   or replacement actions still advance the selected plan.
@@ -1691,7 +1691,7 @@ Required records: `HDI-8-01` discard/cost, `HDI-8-02` counter allocation,
   attacker, or concedes the most Prizes.
 - Resolve multi-effect cards in the established order: obtain information,
   search before discarding when legal, discard before drawing when required,
-  evolve before attaching Energy, attach before attacking, and resolve
+  evolve before attaching Energy, attach before the terminal attack, and resolve
   mandatory effects before optional ones. Preserve a legal exit before making
   irreversible choices.
 - Accept beneficial optional effects and choose the largest beneficial count.
@@ -1744,7 +1744,7 @@ Required records: `HDI-8-01` discard/cost, `HDI-8-02` counter allocation,
   committing irreversible resources.
 - **Priority conditions:** Information first; search before discard when legal;
   discard before draw when required; evolve before attaching Energy; attach
-  before attack; mandatory effects before optional effects.
+  before the terminal attack; mandatory effects before optional effects.
 - **Vetoes:** Do not choose an irreversible effect while it would remove every
   legal continuation.
 - **Mapping:** `SKILL_ORDER`, `FIRST_EFFECT`, `LOOK`, `TO_HAND`, `DISCARD`,

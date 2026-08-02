@@ -32,15 +32,15 @@ Raw feedback remains immutable. A correction appends a new review with a
 
 | ID | Finding | Implementation | Validation | Open tasks |
 |---|---|---|---|---|
-| FB-2026-001 | Develop the Bench before a terminal attack | Conditional board-development ordering implemented | Pending | T-001–T-004 |
+| FB-2026-001 | Develop the Bench before a terminal attack | MAIN-phase sequencer with board-development priority implemented | Pending | T-001–T-004 |
 | FB-2026-002 | Respect Rule Box damage and Prize value | Catalog traits and `PrizeMap` implemented | Pending | T-005 |
 | FB-2026-003 | Distinguish prized from searchable cards | Probabilistic/exact `PrizeCheck` implemented | Pending | T-006 |
 | FB-2026-004 | Snover must reach the Bench and never be discarded | `development_priority` scoring implemented | Pending | T-015 |
-| FB-2026-005 | Evolve before deciding Energy placement | `EVOLVE` precedes attachment scoring | Pending | T-016 |
+| FB-2026-005 | Evolve before deciding Energy placement | `EVOLVE` now wins the earliest MAIN phase | Pending | T-016 |
 | FB-2026-006 | Search before generic Bench; never tutor Petrel | Search-role scoring and `trainer_search` penalty implemented | Pending | T-017 |
 | FB-2026-007 | Kyogre must shuffle-refill near deck-out | `deck_refill` attack bonus implemented | Pending | T-018 |
-| FB-2026-008 | Play every legal Item before any Supporter; Supporters are a last-resort search | Item-first play ordering implemented | Pending | T-020 |
-| FB-2026-009 | Prefer the attack with guaranteed Knock Out over probabilistic or non-KO attacks | `guaranteed_ko` attack bonus implemented | Pending | T-021 |
+| FB-2026-008 | Play every legal Item before any Supporter; Supporters are a last-resort search | Item-before-Supporter phase ordering implemented | Pending | T-020 |
+| FB-2026-009 | Prefer the attack with guaranteed Knock Out over probabilistic or non-KO attacks | Guaranteed-KO attack scoring remains active inside the ATTACK phase | Pending | T-021 |
 | FB-2026-010 | Legal attacks should not be blocked by attacker-target development | Attacker-target gate retired; legal attacks now score directly | Reinterpreted | None |
 
 ## FB-2026-001 — Continuous board development
@@ -59,9 +59,10 @@ non-winning terminal action.
 
 ### Accepted rule
 
-With open Bench capacity, select a legal Pokémon `PLAY` before `ATTACK` or
-`END`, then parse the next `MAIN` observation and re-evaluate. Attack after
-required development is exhausted or blocked.
+With open Bench capacity, select a legal Pokémon `PLAY` during the Bench
+development phase before `ATTACK` or `END`, then parse the next `MAIN`
+observation and re-evaluate. Attack is terminal and only happens after required
+development is exhausted or blocked.
 
 The implemented foundation covers generic Pokémon plays and full-Bench
 legality. Evolution ordering, backup readiness, target counts, reserved slots,
@@ -157,13 +158,15 @@ a hand Snover must be played and must survive discard selection.
 
 ### Accepted rule
 
-A `development_priority` Pokémon scores above generic Bench development and is
-heavily penalized in `DISCARD` selection (`preserve_development_pokemon`),
+A `development_priority` Pokémon still scores above generic Bench development
+and is heavily penalized in `DISCARD` selection (`preserve_development_pokemon`),
 legal only when it is the sole discardable option.
 
 ### Implemented foundation
 
-- `_play_score` gives the role a 400-point Bench score (GR-011);
+- `_main_phase_selections` keeps Pokémon plays in the Bench-development phase;
+- `_play_score` still gives the role a 400-point Bench score (GR-011) inside
+  that phase;
 - `_card_selection_score` applies `-1000` in discard contexts;
 - `tests/test_heuristic_strategy.py::test_bench_development_prefers_snover`
   and `test_snover_not_discarded`.
@@ -189,13 +192,12 @@ before the Energy decision.
 
 A legal `EVOLVE` precedes Energy attachment and Bench development, and the
 attachment that completes the Active attacker's required post-evolution attack
-cost wins over Bench development (GR-003, GR-014).
+cost wins inside the ATTACH phase over later development (GR-003, GR-014).
 
 ### Implemented foundation
 
-- `EVOLVE` keeps the top `MAIN` score (500);
-- the conditional filter treats completion attaches as priority actions;
-- `_attachment_score` adds a completion bonus for the Active attacker;
+- `_main_phase_selections` puts `EVOLVE` in the earliest `MAIN` phase;
+- `_attachment_score` still adds a completion bonus for the Active attacker;
 - `tests/test_heuristic_strategy.py::test_evolve_precedes_energy_attachment`
   and `test_post_evolution_energy_completes_active_attack`.
 
@@ -218,13 +220,15 @@ Supporter.
 
 ### Accepted rule
 
-Search, draw, and hand-refresh Items are played before generic Bench filling
-(GR-012), Supporters are played only after Items (GR-016), and `trainer_search`
-targets are penalized in `TO_HAND` selection (GR-013).
+Search, draw, and hand-refresh Items are played before Supporters in the MAIN
+phase order (GR-012), and `trainer_search` targets are penalized in `TO_HAND`
+selection (GR-013).
 
 ### Implemented foundation
 
-- `_play_score` adds a search bonus for the five search roles;
+- `_main_phase_selections` keeps search and draw Items ahead of Supporters;
+- `_play_score` adds a search bonus for the five search roles inside that
+  phase;
 - `_card_selection_score` applies a `-200` penalty to `trainer_search` targets;
 - `tests/test_heuristic_strategy.py::test_pokepad_search_prefers_snover` and
   `test_petrel_search_prefers_item_or_lillie`.
@@ -247,9 +251,9 @@ and shuffled the Energy back.
 
 ### Accepted rule
 
-Attacks with guaranteed Knock Out are priority actions, and near deck-out a
-shuffle-refill attack gains a bonus proportional to the discarded Energy count
-(GR-015).
+Attacks with guaranteed Knock Out remain preferred inside the ATTACK phase, and
+near deck-out a shuffle-refill attack gains a bonus proportional to the
+discarded Energy count (GR-015).
 
 ### Implemented foundation
 
@@ -312,6 +316,7 @@ as guaranteed (GR-017).
 
 ### Implemented foundation
 
+- `_main_phase_selections` still leaves `ATTACK` as the offensive phase;
 - `_guaranteed_attack_damage` resolves the `deck_profile` `attack_plans`
   guaranteed damage (and public discard-pile damage) instead of only option
   metadata;

@@ -17,7 +17,7 @@
 | ID | Rule | Status | Evidence or task |
 |---|---|---|---|
 | GR-001 | Prefer productive legal actions over unexplained `END` | `ACTIVE` | Gameplay recovery smoke |
-| GR-002 | Prioritize Bench development only when no priority action exists | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004, T-015–T-021 |
+| GR-002 | Sequence `MAIN` by phase: evolve, attach, bench, items, supporter, attack, end | `ACTIVE / UNVALIDATED` | FB-2026-001, T-001–T-004, T-015–T-021 |
 | GR-003 | Continue required Evolution before Energy and Bench decisions | `ACTIVE / UNVALIDATED` | FB-2026-005, T-001–T-002, T-016 |
 | GR-004 | Apply Rule Box damage prevention and Prize value | `ACTIVE / UNVALIDATED` | FB-2026-002, T-005 |
 | GR-005 | Respect exact and probabilistic searchable-card availability | `ACTIVE / UNVALIDATED` | FB-2026-003, T-006 |
@@ -41,15 +41,14 @@ For a normal `MAIN` decision:
 
 1. take forced or nested selections legally;
 2. evaluate an immediate game-winning action;
-3. use required draw/search when its need is known;
-4. Evolve; Evolution precedes Energy and Bench decisions;
-5. attach Energy that completes the Active attacker's required attack;
+3. sequence legal `MAIN` actions by phase instead of comparing them globally;
+4. evolve first;
+5. attach Energy, especially when it completes the Active attack;
 6. place the declared `development_priority` Pokémon (Snover) on the Bench;
-7. develop the secondary/backup attacker;
-8. play Items, Tools, Stadiums, and Abilities, search roles first; every Item precedes any Supporter;
-9. play a Supporter only when no Item is playable, preferring search Supporters;
-10. attack when it is the best legal offensive option; do not block a legal attack behind attacker-target development, and among attacks prefer guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
-11. choose `END` only when no higher-value legal action remains.
+7. play search and draw Items before any Supporter;
+8. play a Supporter only when no Item is playable, preferring search Supporters;
+9. attack as the terminal action of the turn, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+10. choose `END` only when no attack or higher-value pre-attack action remains.
 
 Steps not represented by an active rule remain heuristic preferences, not
 guaranteed behavior.
@@ -63,12 +62,14 @@ positive score. Any pass must carry a reason that can be audited.
 
 ### GR-002 — Bench development when no priority action exists
 
-In `MAIN`, with open Bench capacity, a legal Pokémon `PLAY` is preferred over
-`ATTACK` or `END`, but only when no priority action is legal. Priority actions
-are Evolution, Ability, search/Trainer `PLAY`, and an attach that completes the
-Active attack. A guaranteed Knock Out is prioritized by its own score, but the
-attacker target does not block a legal attack. Parse the resulting observation
-and repeat. Full Bench and illegal plays are safe exits.
+In `MAIN`, legal selections are sequenced by phase. Earlier phases do not
+compete with later ones. A legal Pokémon `PLAY` is only prioritized while the
+Bench has open capacity. Priority actions are Evolution, attach actions that
+complete the Active attack, search/draw Items, and Supporters in that order. An
+attack is terminal: once selected, the turn ends and no later action is taken.
+A guaranteed Knock Out is prioritized by its own score, but the attacker target
+does not block a legal attack. Parse the resulting observation and repeat.
+Full Bench and illegal plays are safe exits.
 
 ### GR-003 — Evolution before Energy and Bench decisions
 

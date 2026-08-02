@@ -282,7 +282,7 @@ evidence:
 implementation:
   annotation_commit: c16a960
   policy_commit: e268c96
-  rule: "With open Bench capacity, choose any legal Pokemon PLAY before ATTACK or END."
+  rule: "With open Bench capacity, choose any legal Pokemon PLAY before the terminal ATTACK or END fallback."
   card_specific_runtime_ids: []
 replay_regression:
   "88879568:72:0": {recorded: [3], corrected_policy: [1]}
