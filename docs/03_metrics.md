@@ -22,7 +22,7 @@ RunReport
        -> gameplay_smoke gate
 
 Replay JSON files
-  -> scripts/generate_investigation_report.py
+  -> scripts/generate_investigation_report.sh
        -> standalone HTML investigation report
 ```
 
@@ -198,7 +198,7 @@ recomputation.
 
 ### HTML
 
-`scripts/generate_investigation_report.py` generates a standalone HTML report
+`scripts/generate_investigation_report.sh` generates a standalone HTML report
 from replay JSON files. It is an investigation artifact, not an evaluation
 gate.
 
@@ -230,4 +230,4 @@ The report:
 - `src/eval/reporting.py`
 - `src/eval/gameplay.py`
 - `scripts/gameplay_smoke.py`
-- `scripts/generate_investigation_report.py`
+- `scripts/generate_investigation_report.sh`

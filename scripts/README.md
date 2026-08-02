@@ -62,7 +62,7 @@ credentials.
 Download replay files from all completed Kaggle submissions:
 
 ```bash
-uv run --frozen python -m scripts.download_all_replays
+scripts/download_all_replays.sh
 ```
 
 This downloads replays to `replays/remote/{submission_id}/` and copies them to
@@ -74,7 +74,7 @@ This downloads replays to `replays/remote/{submission_id}/` and copies them to
 Generate the HTML investigation report from downloaded replays:
 
 ```bash
-uv run --frozen python -m scripts.generate_investigation_report
+scripts/generate_investigation_report.sh
 ```
 
 This reads replays from `data/raw/kaggle/kaggle_gameplay_runs/`, analyzes
