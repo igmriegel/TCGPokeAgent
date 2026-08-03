@@ -31,8 +31,8 @@
 | `scripts/download_data.sh --check` | Verify official dataset manifest |
 | `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions |
-| `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replay JSON files |
+| `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
 | `scripts/build_package.sh submission.tar.gz` | Build the explicit submission allowlist |
 | `scripts/build_package.sh submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
 | `scripts/build_package.sh submission-xgboost.tar.gz xgboost_ranker MODEL_DIR` | Build one backend-exclusive ranker archive |
@@ -40,6 +40,14 @@
 | `uv run --frozen python -m src.eval.validation --package submission.tar.gz` | Validate an extracted archive |
 | `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
 | `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit using the configured `~/.kaggle` login |
+
+## Operational Python scripts
+
+| Command | Purpose |
+|---|---|
+| `uv run --frozen python scripts/download_all_replays.py` | Download all available Kaggle replays into the local mirror |
+| `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
+| `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
 
 ## Internal helpers
 

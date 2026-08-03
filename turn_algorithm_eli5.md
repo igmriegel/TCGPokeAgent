@@ -14,7 +14,7 @@ phase.
 2. If there is an immediate winning action, take it.
 3. In `MAIN`, check phases in order:
    - evolve
-   - attach Energy that matters most
+   - attach Energy that matters most, except when opening Articuno should stay sacrificial
    - play Pokemon for board development
    - play Items
    - play Supporters
@@ -26,6 +26,8 @@ phase.
 ## Simple Rules
 
 - Evolution comes before Energy when both are legal.
+- If Team Rocket's Articuno starts Active, keep it sacrificial and attach Energy
+  to the rest of the board instead.
 - Useful board setup comes before generic pass-like actions.
 - Items come before Supporters.
 - A terminal attack ends the turn.
@@ -62,7 +64,10 @@ flowchart TD
     N -- No --> P{Earliest useful MAIN phase}
 
     P --> P1[Evolve]
-    P1 --> P2[Attach Energy]
+    P1 --> P1A{Opening Articuno Active?}
+    P1A -- Yes --> P1B[Skip Energy on opening Articuno and attach elsewhere]
+    P1A -- No --> P2[Attach Energy]
+    P1B --> P2
     P2 --> P3[Play Pokemon]
     P3 --> P4[Play Items]
     P4 --> P5[Play Supporters]

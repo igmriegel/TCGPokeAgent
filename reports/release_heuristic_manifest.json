@@ -1,5 +1,5 @@
 {
-  "release": "heuristic-only-2026-07-29",
+  "release": "heuristic-only-2026-08-03",
   "status": "accepted",
   "agent_mode": "heuristic",
   "search": {
@@ -11,8 +11,8 @@
   "deck_sha256": "1156379af39e71bc83eecb50d1e04c5cc480501d293621fcc89c2d355d99be78",
   "package": {
     "path": "submission.tar.gz",
-    "bytes": 38394,
-    "sha256": "5802d0a29d1c4b43a81477997d66948447ebc32270a14438d6434690ee8428eb",
+    "bytes": 543397,
+    "sha256": "c5cc4ca3976e73f309f892f8267ce4eb7142712a4ddb02a7b648b1229dbe0411",
     "isolated_validation": "pass"
   },
   "evaluation": {
@@ -25,5 +25,5 @@
     "errors": 0,
     "timeouts": 0
   },
-  "next_step": "Verify the native ABI, implement the project Python adapter, and execute the S8 lifecycle and comparison gates."
+  "next_step": "Monitor the new heuristic submission and keep the release checklist aligned with the remote receipt."
 }

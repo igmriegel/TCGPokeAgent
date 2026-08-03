@@ -4,7 +4,7 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-08-02
+**Last verified:** 2026-08-03
 
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
@@ -13,11 +13,13 @@ manifests rather than copied into this self-changing status page
 
 ## Executive summary
 
-The agent is operational, packaged, and remotely accepted by Kaggle. The
-heuristic plays productive actions and completes evaluation without operational
-failures. The project is not ready to claim a fully closed MVP because the
-four-opponent matrix, decision-level gameplay metrics, several feedback
-validation gates, and the final checklist remain open.
+The agent is operational, packaged, and remotely accepted by Kaggle. A fresh
+heuristic submission was rebuilt, validated, and uploaded on 2026-08-03
+(`reports/submissions/20260803T204404Z-c5cc4ca3976e.json`). The heuristic plays
+productive actions and completes evaluation without operational failures. The
+project is not ready to claim a fully closed MVP because the four-opponent
+matrix, decision-level gameplay metrics, several feedback validation gates, and
+the final checklist remain open.
 
 The independent HDI v1 candidate was accepted as submission `55119505` and
 scored 490.4, compared with 539.2 for reference submission `55088176`. This is
@@ -28,12 +30,12 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 158 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
+| Quality | 168 tests pass; Ruff, formatting, mypy, and documentation drift audit pass | Green |
 | Local evaluation | 400 matches vs `random`: 239W/0D/161L, 59.75% win rate, zero operational failures | Operational baseline only |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
 | Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
-| Package | Isolated heuristic and HDI v1 package validation passed | Usable artifacts |
+| Package | Heuristic submission package validated and uploaded; isolated package validation passed | Usable artifacts |
 | Search | Native lifecycle lacks a verified project Python adapter | Disabled and deferred |
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
@@ -53,7 +55,7 @@ operational evidence until that metadata discrepancy is resolved.
 | MVP S2–S7 | In progress | Core implementation and focused tests exist | Revalidate real observations, gameplay metrics, opponent matrix, and belief evidence |
 | Search S8 | Deferred | Gate, limits, fallback, and cleanup logic exist | Verified native adapter plus latency/non-regression gate |
 | Release S9 | In progress | Heuristic-only package and remote submissions exist | Final checklist and stable promotion evidence |
-| Feedback FB-2026-001–010 | Implemented, not validated | Core rules and focused tests exist | Thirteen open validation/measurement actions |
+| Feedback FB-2026-001–012 | Implemented, not validated | Core rules and focused tests exist | Eleven open validation/measurement actions |
 | Human capture HD0–HD5 | Deferred | Design only; post-hoc agent replay review is separate | First live human trace and staged delivery gates |
 | Learned policies | Runtime implemented, not promoted | Shared schema, grouped datasets, XGBoost/LightGBM native runtime, fallback, and separate extracted-package smoke | Required human data, temporal holdout, paired CABT matrix, and promotion gates |
 | HDI v1 | Experimental, not promoted | Ordinal runtime, declarative profile, 40-episode smoke, extracted package, and remote score | Full reproducible local comparison and formal promotion decision |
@@ -71,8 +73,8 @@ operational evidence until that metadata discrepancy is resolved.
    documentation change.
 8. Keep heuristic as the release policy until an alternative passes its full
    promotion gate.
-9. Build and validate a new heuristic package from the conditional Bench and
-   priority fixes; do not submit it automatically.
+9. Keep the validated heuristic submission as the current release candidate and
+   replace it only after a new validated package is ready.
 
 ## Next work
 

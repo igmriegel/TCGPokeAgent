@@ -455,7 +455,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         opponent = self._opponent_player(state)
         if opponent is None or opponent.active is None or opponent.active.card_id is None:
             return False
-        return self._public_attack_damage(state, opponent.active) >= own_active.hp
+        return bool(self._public_attack_damage(state, opponent.active) >= own_active.hp)
 
     def _public_attack_damage(self, state: GameState, pokemon: Any) -> int:
         card_id = pokemon.card_id if pokemon is not None else None
@@ -742,7 +742,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if player is None:
             return False
         occupied = sum(pokemon is not None for pokemon in player.bench)
-        return occupied < player.bench_max
+        return bool(occupied < player.bench_max)
 
     def _attack_energy_target(self, card_id: int) -> int:
         if self.deck_profile and card_id in self.deck_profile.attack_energy_targets:
@@ -1111,7 +1111,7 @@ class HeuristicAgent(AgentPolicy):
         if player is None:
             return False
         occupied = sum(pokemon is not None for pokemon in player.bench)
-        return occupied < player.bench_max
+        return bool(occupied < player.bench_max)
 
     def _attack_is_priority(self, state: GameState, candidate: Candidate) -> bool:
         """Return True when an attack should preempt later development phases."""
@@ -1161,7 +1161,7 @@ class HeuristicAgent(AgentPolicy):
         draw = HeuristicAgent._shuffle_supporter_draw(player, candidate)
         if draw is None:
             return False
-        return player.deck_count + player.hand_count - 1 < draw
+        return bool(player.deck_count + player.hand_count - 1 < draw)
 
     @staticmethod
     def _shuffle_supporter_draw(player: Any, candidate: Candidate | None) -> int | None:

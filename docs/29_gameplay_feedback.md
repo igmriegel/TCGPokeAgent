@@ -10,8 +10,8 @@
 
 | State | Count |
 |---|---:|
-| Recorded | 9 |
-| Implemented | 9 |
+| Recorded | 12 |
+| Implemented | 11 |
 | Validated | 0 |
 | Rejected | 0 |
 | Open implementation/validation actions | 11 |
