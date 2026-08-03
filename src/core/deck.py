@@ -128,6 +128,7 @@ class DeckProfile:
     board_targets: Mapping[str, int] = field(default_factory=dict)
     resource_values: Mapping[int, float] = field(default_factory=dict)
     prize_values: Mapping[int, int] = field(default_factory=dict)
+    basic_energy_count: int = 0
     discard_priority: tuple[str, ...] = ()
     promotion_priority: tuple[str, ...] = ()
     bench_priority: tuple[str, ...] = ()
@@ -182,6 +183,7 @@ class DeckProfile:
             prize_values={
                 int(card): int(value) for card, value in dict(data.get("prize_values", {})).items()
             },
+            basic_energy_count=max(0, int(data.get("basic_energy_count", 0))),
             discard_priority=tuple(str(value) for value in data.get("discard_priority", ())),
             promotion_priority=tuple(str(value) for value in data.get("promotion_priority", ())),
             bench_priority=tuple(str(value) for value in data.get("bench_priority", ())),
@@ -223,9 +225,12 @@ class GenericDeckProfileBuilder:
         attack_plans: dict[int, AttackPlan] = {}
         resource_values: dict[int, float] = {}
         prize_values: dict[int, int] = {}
+        basic_energy_count = 0
 
         for card_id in sorted(deck.counts):
             card = self._catalog.get_card(str(card_id)) or {}
+            if int(card.get("cardType", -1)) == 5 and int(card.get("energyType", 0)) == 3:
+                basic_energy_count += deck.counts[card_id]
             if int(card.get("cardType", -1)) != 0:
                 resource_values[card_id] = 80.0
                 continue
@@ -289,6 +294,7 @@ class GenericDeckProfileBuilder:
             board_targets={"minimum_attackers": 2, "reserved_bench_slots": 1},
             resource_values=resource_values,
             prize_values=prize_values,
+            basic_energy_count=basic_energy_count,
             discard_priority=(
                 "basic_energy",
                 "redundant_resource",

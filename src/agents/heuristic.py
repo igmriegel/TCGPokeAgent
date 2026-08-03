@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -51,12 +52,16 @@ WEIGHTS: dict[str, float] = {
 GUARANTEED_KO_BONUS = 200.0
 ARTICUNO_CARD_ID = 414
 ABRA_CARD_ID = 741
+KADABRA_CARD_ID = 742
+ALAKAZAM_CARD_ID = 743
 KYOGRE_CARD_ID = 721
 SNOVER_CARD_ID = 722
+ABOMASNOW_CARD_ID = 723
 LILLIE_CARD_ID = 1227
 ULTRA_BALL_CARD_ID = 1121
 MEGA_SIGNAL_CARD_ID = 1145
 PETREL_CARD_ID = 1219
+HAMMERLANCHE_ATTACK_ID = 1046
 
 
 class DecisionPhase(StrEnum):
@@ -295,12 +300,14 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if card_type == 2:
             return 300.0, ["attach_useful_tool"]
         if card_type in {5, 6}:
+            if energy_count >= self._attack_energy_target(target_id):
+                return -1500.0, ["energy_above_attack_cost"]
             if (
                 bool(candidate.features.get("target_is_active", False))
                 and self._own_active_card_id(state) == ARTICUNO_CARD_ID
-                and self._articuno_is_opening_sacrifice(state)
+                and not self._opponent_visible_alakazam_line(state)
             ):
-                return 40.0, ["sacrificial_articuno"]
+                return -2000.0, ["sacrificial_articuno"]
             target_goal = self._attack_energy_target(target_id)
             deficit = max(0, target_goal - energy_count)
             active_bonus = 30.0 if bool(candidate.features.get("target_is_active", False)) else 0.0
@@ -319,9 +326,9 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
-            if card_id == ARTICUNO_CARD_ID and self._articuno_is_opening_sacrifice(state):
-                return 260.0, ["sacrificial_articuno"]
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+                return -2000.0, ["avoid_articuno_without_matchup_evidence"]
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
                 return 520.0, ["tech_matchup_articuno"]
             if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
                 return 480.0, ["sacrificial_kyogre"]
@@ -349,6 +356,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return 280.0, ["attach_tool"]
         if card_type == 3 and self._has_search_role(card_id):
             if card_id == PETREL_CARD_ID:
+                if self._lillie_is_useful(state) and self._card_in_hand(state, LILLIE_CARD_ID):
+                    return -1500.0, ["play_lillie_before_redundant_petrel"]
                 bonus = 90.0 if self._needs_evolution_search(state) else 35.0
                 if self._needs_pokemon_search(state):
                     bonus += 35.0
@@ -388,14 +397,14 @@ class SimpleHeuristicScorer(HeuristicScorer):
         )
         if active_target and active_target.damage_prevented:
             return -1000.0, ["attack_damage_prevented"]
-        damage = self._metadata_int(candidate.attack, "damage")
+        damage = float(self._metadata_int(candidate.attack, "damage"))
         text = str((candidate.attack or {}).get("text", "")).casefold()
         if "damage for each basic" in text and "discard pile" in text:
             energy_type = self._attack_energy_type(candidate)
             multiplier = self._leading_damage_multiplier(text)
             damage = multiplier * self._discard_basic_energy_count(state, energy_type)
         elif "discard the top 6 cards" in text and "100 damage for each basic" in text:
-            damage = 300 if self._own_deck_count(state) > 12 else 50
+            damage = self._hammerlanche_assessment(state, candidate)["expected_damage"]
         score = 200.0 + max(0, damage)
         if damage <= 0:
             score -= 80.0
@@ -405,6 +414,15 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if opponent_hp > 0 and guaranteed >= opponent_hp:
             score += GUARANTEED_KO_BONUS
             reasons.append("guaranteed_ko")
+        if self._is_hammerlanche(candidate):
+            assessment = self._hammerlanche_assessment(state, candidate)
+            score += GUARANTEED_KO_BONUS * assessment["ko_probability"]
+            reasons.extend(["hammerlanche_expected_damage", "hammerlanche_energy_probability"])
+            if assessment["ko_probability"] > 0:
+                reasons.append("hammerlanche_ko_probability")
+            if self._active_can_guaranteed_ko(state):
+                score -= GUARANTEED_KO_BONUS * 3.0
+                reasons.append("probabilistic_attack_behind_guaranteed_ko")
         if self._own_deck_count(state) < 15 and "shuffle" in text:
             energy_type = self._attack_energy_type(candidate)
             returned = self._discard_basic_energy_count(state, energy_type)
@@ -424,6 +442,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
         active = player.active
         if active is None or active.card_id is None:
             return False
+        if active.card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            return self._bench_has_ready_evolved_replacement(state)
         if not self._active_is_publicly_threatened(state):
             return False
         if active.card_id == KYOGRE_CARD_ID and self._kyogre_riptide_line_ready(state):
@@ -440,6 +460,19 @@ class SimpleHeuristicScorer(HeuristicScorer):
             if self._pokemon_can_attack_next_turn(pokemon):
                 return True
         return False
+
+    def _bench_has_ready_evolved_replacement(self, state: GameState) -> bool:
+        """Return whether an evolved, energized attacker is ready on the Bench."""
+        player = self._own_player(state)
+        if player is None:
+            return False
+        return any(
+            pokemon is not None
+            and self._has_role(int(pokemon.card_id), "primary_attacker")
+            and self._pokemon_can_attack_next_turn(pokemon)
+            for pokemon in player.bench
+            if pokemon is not None and isinstance(pokemon.card_id, int)
+        )
 
     def _pokemon_can_attack_next_turn(self, pokemon: Any) -> bool:
         card_id = pokemon.card_id if pokemon is not None else None
@@ -509,12 +542,20 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return 0
         return active.card_id if isinstance(active.card_id, int) else 0
 
-    def _opponent_visible_abra(self, state: GameState) -> bool:
+    def _opponent_visible_alakazam_line(self, state: GameState) -> bool:
         opponent = self._opponent_player(state)
         if opponent is None:
             return False
         visible = [opponent.active, *opponent.bench]
-        return any(pokemon is not None and pokemon.card_id == ABRA_CARD_ID for pokemon in visible)
+        return any(
+            pokemon is not None
+            and pokemon.card_id in {ABRA_CARD_ID, KADABRA_CARD_ID, ALAKAZAM_CARD_ID}
+            for pokemon in visible
+        )
+
+    def _opponent_visible_abra(self, state: GameState) -> bool:
+        """Return whether the opponent exposes any card in the Alakazam line."""
+        return self._opponent_visible_alakazam_line(state)
 
     def _opponent_active_prevents_ex(self, state: GameState) -> bool:
         opponent = self._opponent_player(state)
@@ -545,6 +586,17 @@ class SimpleHeuristicScorer(HeuristicScorer):
             or self._own_active_card_id(state) == SNOVER_CARD_ID
         )
 
+    def _has_bench_snover(self, state: GameState) -> bool:
+        """Return whether Snover is currently available on the own Bench."""
+        player = self._own_player(state)
+        return bool(
+            player
+            and any(
+                pokemon is not None and pokemon.card_id == SNOVER_CARD_ID
+                for pokemon in player.bench
+            )
+        )
+
     def _needs_pokemon_search(self, state: GameState) -> bool:
         player = self._own_player(state)
         if player is None:
@@ -554,7 +606,11 @@ class SimpleHeuristicScorer(HeuristicScorer):
             and self._own_active_card_id(state) != ARTICUNO_CARD_ID
         ):
             return True
-        return self._bench_has_space(state) and not self._bench_has_ready_replacement(state)
+        return (
+            self._bench_has_space(state)
+            and not self._bench_has_ready_replacement(state)
+            and not self._card_in_hand(state, SNOVER_CARD_ID)
+        )
 
     def _lillie_is_useful(self, state: GameState) -> bool:
         player = self._own_player(state)
@@ -568,6 +624,17 @@ class SimpleHeuristicScorer(HeuristicScorer):
         ):
             return False
         return player.hand_count <= 4 or not self._needs_pokemon_search(state)
+
+    def _card_in_hand(self, state: GameState, card_id: int) -> bool:
+        """Return whether the visible own hand contains a card identifier."""
+        player = self._own_player(state)
+        if player is None or player.hand is None:
+            return False
+        return any(
+            isinstance(card, Mapping)
+            and (card.get("id") == card_id or card.get("cardId") == card_id)
+            for card in player.hand
+        )
 
     def _petrel_is_useful(self, state: GameState) -> bool:
         player = self._own_player(state)
@@ -630,6 +697,131 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return self.deck_profile.attack_plans.get(attack_id)
         return None
 
+    def _is_hammerlanche(self, candidate: Candidate) -> bool:
+        """Return whether a candidate represents the Hammer-lanche attack."""
+        attack_id = candidate.option.get("attackId")
+        if isinstance(attack_id, str) and attack_id.isdigit():
+            attack_id = int(attack_id)
+        return attack_id == HAMMERLANCHE_ATTACK_ID
+
+    def _hammerlanche_assessment(self, state: GameState, candidate: Candidate) -> dict[str, float]:
+        """Estimate Hammer-lanche damage from the visible Energy distribution."""
+        energy = self._energy_distribution(state)
+        deck_count = max(0, int(energy["deck_count"]))
+        energy_in_deck = min(deck_count, max(0, round(energy["deck_energy"])))
+        draws = min(6, deck_count)
+        if deck_count == 0 or draws == 0:
+            return {
+                "total_energy": energy["total_energy"],
+                "hand_energy": energy["hand_energy"],
+                "deck_energy": float(energy_in_deck),
+                "prize_energy": energy["prize_energy"],
+                "discard_energy": energy["discard_energy"],
+                "attached_energy": energy["attached_energy"],
+                "deck_count": float(deck_count),
+                "probability_hit": 0.0,
+                "expected_hits": 0.0,
+                "expected_damage": 0.0,
+                "ko_probability": 0.0,
+            }
+        expected_hits = draws * energy_in_deck / deck_count
+        probability_hit = self._hypergeometric_at_least(deck_count, energy_in_deck, draws, 1)
+        required_hits = max(1, math.ceil(self._opponent_active_hp(state) / 100))
+        ko_probability = self._hypergeometric_at_least(
+            deck_count, energy_in_deck, draws, required_hits
+        )
+        return {
+            "total_energy": energy["total_energy"],
+            "hand_energy": energy["hand_energy"],
+            "deck_energy": float(energy_in_deck),
+            "prize_energy": energy["prize_energy"],
+            "discard_energy": energy["discard_energy"],
+            "attached_energy": energy["attached_energy"],
+            "deck_count": float(deck_count),
+            "probability_hit": probability_hit,
+            "expected_hits": expected_hits,
+            "expected_damage": expected_hits * 100.0,
+            "ko_probability": ko_probability,
+        }
+
+    def _energy_distribution(self, state: GameState) -> dict[str, float]:
+        """Return visible and inferred counts of Basic {W} Energy by zone."""
+        player = self._own_player(state)
+        if player is None:
+            return {
+                "total_energy": 0.0,
+                "hand_energy": 0.0,
+                "deck_energy": 0.0,
+                "prize_energy": 0.0,
+                "discard_energy": 0.0,
+                "attached_energy": 0.0,
+                "deck_count": 0.0,
+            }
+        total = self._total_basic_energy_count()
+        hand_energy = self._count_basic_energy_cards(player.hand)
+        discard_energy = self._count_basic_energy_cards(player.discard)
+        attached_energy = sum(
+            len(pokemon.energies)
+            for pokemon in [player.active, *player.bench]
+            if pokemon is not None
+        )
+        availability = self.prize_check.availability(3) if self.prize_check else None
+        if availability is not None:
+            prize_energy = availability.prized_expected
+            deck_energy = availability.searchable_expected
+        else:
+            prize_energy = float(self._count_basic_energy_cards(player.prize))
+            deck_energy = max(
+                0.0,
+                float(total - hand_energy - discard_energy - attached_energy - prize_energy),
+            )
+        return {
+            "total_energy": float(total),
+            "hand_energy": float(hand_energy),
+            "deck_energy": deck_energy,
+            "prize_energy": float(prize_energy),
+            "discard_energy": float(discard_energy),
+            "attached_energy": float(attached_energy),
+            "deck_count": float(player.deck_count),
+        }
+
+    def _total_basic_energy_count(self) -> int:
+        """Return the deck's declared Basic {W} Energy count."""
+        return self.deck_profile.basic_energy_count if self.deck_profile else 0
+
+    @staticmethod
+    def _count_basic_energy_cards(cards: Any) -> int:
+        """Count Basic {W} Energy card objects in a visible zone."""
+        if not isinstance(cards, list):
+            return 0
+        return sum(
+            1
+            for card in cards
+            if isinstance(card, Mapping) and (card.get("id") == 3 or card.get("cardId") == 3)
+        )
+
+    @staticmethod
+    def _hypergeometric_at_least(
+        population: int, successes: int, draws: int, minimum: int
+    ) -> float:
+        """Return the chance of at least ``minimum`` successes without replacement."""
+        if minimum <= 0:
+            return 1.0
+        if population <= 0 or successes <= 0 or draws <= 0 or minimum > draws:
+            return 0.0
+        successes = min(successes, population)
+        draws = min(draws, population)
+        denominator = math.comb(population, draws)
+        lower = max(minimum, draws - (population - successes))
+        upper = min(draws, successes)
+        return (
+            sum(
+                math.comb(successes, hits) * math.comb(population - successes, draws - hits)
+                for hits in range(lower, upper + 1)
+            )
+            / denominator
+        )
+
     def _opponent_active_hp(self, state: GameState) -> int:
         players = state.players
         if len(players) < 2:
@@ -654,6 +846,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
             score = 120.0 if self._has_role(card_id, "evolution_basic") else 110.0
             return score, ["setup_active_attacker"]
         if context is SelectContext.SETUP_BENCH_POKEMON:
+            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+                return -2000.0, ["avoid_articuno_without_matchup_evidence"]
             score = 100.0 if card_type == 0 else -100.0
             return score, ["setup_bench"]
         if context in {
@@ -662,7 +856,9 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.TO_FIELD,
         }:
             score = hp + energy_count * 100.0
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+                return -2000.0, ["avoid_articuno_without_matchup_evidence"]
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
                 score += 120.0
                 return score, ["promote_tech_attacker"]
             if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
@@ -675,7 +871,11 @@ class SimpleHeuristicScorer(HeuristicScorer):
                 if availability and availability.searchable_exact == 0:
                     return -1000.0, ["confirmed_prized_unsearchable"]
             value = self._card_resource_value(card_id, card_type)
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+            if card_id == ABOMASNOW_CARD_ID and not self._has_bench_snover(state):
+                return -2000.0, ["avoid_abomasnow_without_bench_snover"]
+            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+                return -2000.0, ["avoid_articuno_without_matchup_evidence"]
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
                 value += 120.0
             elif card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
                 value += 90.0
@@ -684,6 +884,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
             elif card_id == ULTRA_BALL_CARD_ID:
                 value += 70.0 if self._needs_pokemon_search(state) else -10.0
             elif card_id == LILLIE_CARD_ID:
+                if self._card_in_hand(state, LILLIE_CARD_ID):
+                    return -2000.0, ["avoid_duplicate_lillie_search"]
                 value += 90.0 if self._lillie_is_useful(state) else -70.0
             elif card_id == PETREL_CARD_ID:
                 value += 40.0 if self._petrel_is_useful(state) else -80.0
@@ -695,7 +897,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.DISCARD,
             SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
         }:
-            if card_id == ARTICUNO_CARD_ID and self._articuno_is_opening_sacrifice(state):
+            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
                 return 130.0, ["discard_sacrificial_articuno"]
             if self._has_role(card_id, "development_priority"):
                 return -1000.0, ["preserve_development_pokemon"]
@@ -730,9 +932,6 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if self._has_role(card_id, "attacker"):
             return 140.0
         return {0: 120.0, 1: 100.0, 2: 90.0, 3: 100.0, 4: 70.0}.get(card_type, 10.0)
-
-    def _articuno_is_opening_sacrifice(self, state: GameState) -> bool:
-        return self._own_active_card_id(state) == ARTICUNO_CARD_ID and state.turn <= 1
 
     def _has_role(self, card_id: int, role: str) -> bool:
         return bool(self.deck_profile and self.deck_profile.has_role(card_id, role))
@@ -951,6 +1150,9 @@ class HeuristicAgent(AgentPolicy):
         selections = self._filter_dangerous_shuffle_supporters(
             parsed.state, selections, parsed.candidates
         )
+        selections = self._filter_forbidden_selections(
+            parsed.state, selections, parsed.candidates, parsed.select_context
+        )
         decision_phase = ""
         decision_phase_reason = ""
         if parsed.select_context is SelectContext.MAIN:
@@ -1027,9 +1229,12 @@ class HeuristicAgent(AgentPolicy):
         candidates: Sequence[Candidate],
     ) -> tuple[str, str, list[Selection]]:
         """Return the earliest MAIN phase and the selections that match it."""
+        safe_selections = self._filter_forbidden_selections(
+            state, selections, candidates, SelectContext.MAIN
+        )
         by_phase: dict[DecisionPhase, list[Selection]] = {phase: [] for phase in _MAIN_PHASE_ORDER}
         reason_by_phase: dict[DecisionPhase, str] = {}
-        for selection in selections:
+        for selection in safe_selections:
             phase, reason = self._selection_phase(state, selection, candidates)
             by_phase.setdefault(phase, []).append(selection)
             reason_by_phase.setdefault(phase, reason)
@@ -1040,7 +1245,75 @@ class HeuristicAgent(AgentPolicy):
                     reason_by_phase.get(phase, phase.value.casefold()),
                     by_phase[phase],
                 )
-        return DecisionPhase.END.value, "no_signal", list(selections)
+        return DecisionPhase.END.value, "no_signal", list(safe_selections)
+
+    def _filter_forbidden_selections(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+        context: SelectContext | None,
+    ) -> list[Selection]:
+        """Remove strategically forbidden actions when another legal choice exists."""
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+        safe = [
+            selection
+            for selection in selections
+            if not any(
+                self._candidate_is_forbidden(state, by_index.get(index), context)
+                for index in selection.indices
+            )
+        ]
+        return safe if safe else list(selections)
+
+    def _candidate_is_forbidden(
+        self,
+        state: GameState,
+        candidate: Candidate | None,
+        context: SelectContext | None,
+    ) -> bool:
+        """Return whether a candidate violates a hard resource-preservation rule."""
+        if candidate is None:
+            return False
+        card_id = self._scorer._feature_int(candidate, "card_id")
+        no_matchup = not self._scorer._opponent_visible_alakazam_line(state)
+        if candidate.option_type is OptionType.ATTACH:
+            card_type = self._scorer._metadata_int(candidate.card, "cardType")
+            target_id = self._scorer._feature_int(candidate, "target_card_id")
+            target_energy_count = self._scorer._feature_int(candidate, "target_energy_count")
+            if card_type in {5, 6} and target_energy_count >= self._scorer._attack_energy_target(
+                target_id
+            ):
+                return True
+        if card_id == ARTICUNO_CARD_ID and no_matchup:
+            if candidate.option_type is OptionType.PLAY:
+                return True
+            if candidate.option_type is OptionType.ATTACH:
+                card_type = self._scorer._metadata_int(candidate.card, "cardType")
+                if card_type in {5, 6}:
+                    return True
+            if candidate.option_type is OptionType.CARD and context in {
+                SelectContext.SETUP_BENCH_POKEMON,
+                SelectContext.TO_ACTIVE,
+                SelectContext.TO_FIELD,
+                SelectContext.TO_HAND,
+            }:
+                return True
+        if (
+            candidate.option_type is OptionType.CARD
+            and context is SelectContext.TO_HAND
+            and card_id == LILLIE_CARD_ID
+            and self._scorer._card_in_hand(state, LILLIE_CARD_ID)
+        ):
+            return True
+        if (
+            candidate.option_type is OptionType.RETREAT
+            and self._scorer._own_active_card_id(state) == ARTICUNO_CARD_ID
+            and no_matchup
+            and not self._scorer._bench_has_ready_evolved_replacement(state)
+        ):
+            return True
+        return False
 
     def _selection_phase(
         self,

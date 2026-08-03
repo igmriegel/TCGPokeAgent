@@ -52,6 +52,8 @@ def _observation(
     opponent_active_hp: int = 150,
     your_discard_energy: int = 0,
     your_deck_count: int = 30,
+    opponent_active_id: int = 721,
+    opponent_bench: list[dict] | None = None,
 ) -> dict:
     players = [
         {
@@ -68,8 +70,8 @@ def _observation(
             "prize": [None] * 6,
         },
         {
-            "active": [_pokemon(721, opponent_active_hp, serial=50)],
-            "bench": [],
+            "active": [_pokemon(opponent_active_id, opponent_active_hp, serial=50)],
+            "bench": opponent_bench or [],
             "benchMax": 5,
             "deckCount": 10,
             "discard": [],
@@ -157,6 +159,155 @@ def test_pokepad_search_prefers_snover() -> None:
     )
 
     assert agent.select(observation) == [0]
+
+
+def test_pokepad_does_not_fetch_articuno_without_matchup_evidence() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 414},
+            {"type": "CARD", "cardId": 722},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_alakazam_line_evidence_includes_kadabra() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 414, "area": 2},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+        opponent_active_id=742,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_articuno_is_not_benched_without_matchup_evidence() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 414, "area": 2},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_articuno_does_not_receive_energy_without_matchup_evidence() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(414, 120, serial=11, energies=1),
+        your_bench=[_pokemon(723, 300, serial=1, area=2, energies=2)],
+        your_hand=[_pokemon(3, 0, serial=3)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_articuno_retires_only_to_ready_evolved_attacker() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[{"type": "RETREAT"}, {"type": "END"}],
+        your_active=_pokemon(414, 120, serial=11),
+        your_bench=[_pokemon(723, 300, serial=1, area=2, energies=3)],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_articuno_accepts_sacrifice_without_ready_evolved_attacker() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[{"type": "RETREAT"}, {"type": "END"}],
+        your_active=_pokemon(414, 120, serial=11),
+        your_bench=[_pokemon(721, 150, serial=1, area=2, energies=3)],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_abomasnow_does_not_receive_energy_above_attack_cost() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=[_pokemon(3, 0, serial=3)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_petrel_does_not_fetch_lillie_already_in_hand() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 1227},
+            {"type": "CARD", "cardId": 722},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(1227, 0, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_lillie_in_hand_is_played_before_redundant_petrel() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 1219, "area": 2},
+            {"type": "PLAY", "cardId": 1227, "area": 2},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(1219, 0, serial=3, area=2), _pokemon(1227, 0, serial=4, area=2)],
+    )
+
+    assert agent.select(observation) == [1]
 
 
 def test_petrel_search_prefers_item_or_lillie() -> None:
@@ -273,7 +424,7 @@ def test_main_turn_re_evaluates_sequential_phases_across_prompts() -> None:
             {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
             {"type": "ATTACK", "attackId": 1042, "inPlayArea": 4},
         ],
-        your_active=_pokemon(723, 300, serial=11, energies=1),
+        your_active=_pokemon(723, 300, serial=11, energies=2),
         your_bench=[],
         your_hand=[_pokemon(3, 0, serial=3)],
         opponent_active_hp=150,
@@ -330,7 +481,7 @@ def test_attachment_enables_active_attack() -> None:
             {"type": "PLAY", "cardId": 721, "area": 2},
             {"type": "END"},
         ],
-        your_active=_pokemon(723, 300, serial=11, energies=1),
+        your_active=_pokemon(723, 300, serial=11, energies=2),
         your_bench=[_pokemon(722, 90, serial=1, area=2)],
         your_hand=[_pokemon(721, 150, serial=5, area=2), _pokemon(3, 0, serial=6)],
     )
@@ -499,6 +650,84 @@ def test_guaranteed_ko_attack_preferred_over_hammerlanche() -> None:
         your_bench=[],
         your_hand=None,
         opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_hammerlanche_probability_prefers_it_over_frost_barrier_at_320_hp() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=320,
+    )
+
+    assert agent.select(observation) == [0]
+    parsed = agent._parser.parse(observation)
+    assessment = agent._scorer._hammerlanche_assessment(parsed.state, parsed.candidates[0])
+    assert assessment["total_energy"] == 30.0
+    assert assessment["attached_energy"] == 3.0
+    assert assessment["expected_damage"] > 200.0
+    assert assessment["probability_hit"] > 0.0
+
+
+def test_hammerlanche_probability_does_not_override_guaranteed_ko() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "ATTACK", "attackId": 1047, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=3),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=150,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_ultra_ball_does_not_fetch_abomasnow_without_bench_snover() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 723},
+            {"type": "CARD", "cardId": 721},
+        ],
+        your_active=_pokemon(721, 150, serial=11, energies=1),
+        your_bench=[],
+        your_hand=None,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_ultra_ball_can_fetch_abomasnow_for_bench_snover() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 723},
+            {"type": "CARD", "cardId": 721},
+        ],
+        your_active=_pokemon(721, 150, serial=11, energies=1),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=None,
     )
 
     assert agent.select(observation) == [0]
