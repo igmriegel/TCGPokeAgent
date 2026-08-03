@@ -49,6 +49,14 @@ WEIGHTS: dict[str, float] = {
 }
 
 GUARANTEED_KO_BONUS = 200.0
+ARTICUNO_CARD_ID = 414
+ABRA_CARD_ID = 741
+KYOGRE_CARD_ID = 721
+SNOVER_CARD_ID = 722
+LILLIE_CARD_ID = 1227
+ULTRA_BALL_CARD_ID = 1121
+MEGA_SIGNAL_CARD_ID = 1145
+PETREL_CARD_ID = 1219
 
 
 class DecisionPhase(StrEnum):
@@ -64,19 +72,21 @@ class DecisionPhase(StrEnum):
     ATTACK = "ATTACK"
     ATTACH_FULL = "ATTACH_FULL"
     UTILITY = "UTILITY"
+    RETREAT = "RETREAT"
     END = "END"
 
 
 _MAIN_PHASE_ORDER = (
     DecisionPhase.EVOLVE,
     DecisionPhase.ATTACH_PRIORITY,
+    DecisionPhase.ATTACK_PRIORITY,
     DecisionPhase.PLAY_POKEMON,
     DecisionPhase.ATTACH_OPEN,
     DecisionPhase.PLAY_ITEMS,
     DecisionPhase.PLAY_SUPPORTER,
     DecisionPhase.ATTACH_FULL,
     DecisionPhase.UTILITY,
-    DecisionPhase.ATTACK_PRIORITY,
+    DecisionPhase.RETREAT,
     DecisionPhase.ATTACK,
     DecisionPhase.END,
 )
@@ -248,6 +258,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return self._card_selection_score(state, candidate, context)
         if option_type is OptionType.ATTACK:
             return self._attack_score(state, candidate)
+        if option_type is OptionType.RETREAT:
+            return self._retreat_score(state, candidate)
         if option_type in {OptionType.ENERGY, OptionType.ENERGY_CARD}:
             if context is None:
                 return 0.0, []
@@ -265,29 +277,41 @@ class SimpleHeuristicScorer(HeuristicScorer):
         if option_type is OptionType.ABILITY:
             return 450.0, ["use_available_ability"]
         if option_type is OptionType.ATTACH:
-            return self._attachment_score(candidate)
+            return self._attachment_score(state, candidate)
         if option_type is OptionType.PLAY:
             return self._play_score(state, candidate)
         if option_type is OptionType.ATTACK:
             return self._attack_score(state, candidate)
         if option_type is OptionType.RETREAT:
-            return 60.0, ["legal_retreat"]
+            return self._retreat_score(state, candidate)
         if option_type is OptionType.DISCARD:
             return 20.0, ["resolve_discard_action"]
         return 1.0, ["productive_legal_action"]
 
-    def _attachment_score(self, candidate: Candidate) -> tuple[float, list[str]]:
+    def _attachment_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         card_type = self._metadata_int(candidate.card, "cardType")
         target_id = self._feature_int(candidate, "target_card_id")
         energy_count = self._feature_int(candidate, "target_energy_count")
         if card_type == 2:
             return 300.0, ["attach_useful_tool"]
         if card_type in {5, 6}:
+            if (
+                bool(candidate.features.get("target_is_active", False))
+                and self._own_active_card_id(state) == ARTICUNO_CARD_ID
+                and self._articuno_is_opening_sacrifice(state)
+            ):
+                return 40.0, ["sacrificial_articuno"]
             target_goal = self._attack_energy_target(target_id)
             deficit = max(0, target_goal - energy_count)
             active_bonus = 30.0 if bool(candidate.features.get("target_is_active", False)) else 0.0
             if active_bonus and energy_count + 1 >= target_goal:
                 active_bonus += 80.0
+            if bool(candidate.features.get("target_is_active", False)):
+                active_card_id = self._own_active_card_id(state)
+                if active_card_id == KYOGRE_CARD_ID and self._kyogre_riptide_line_ready(state):
+                    active_bonus -= 40.0
+                if active_card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+                    active_bonus += 80.0
             return 350.0 + deficit * 25.0 + active_bonus, ["develop_attacker_energy"]
         return 100.0, ["attach_unrecognized_card"]
 
@@ -295,6 +319,12 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
+            if card_id == ARTICUNO_CARD_ID and self._articuno_is_opening_sacrifice(state):
+                return 260.0, ["sacrificial_articuno"]
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+                return 520.0, ["tech_matchup_articuno"]
+            if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
+                return 480.0, ["sacrificial_kyogre"]
             if self._has_role(card_id, "development_priority"):
                 bonus = 100.0
             elif self._has_role(card_id, "evolution_basic"):
@@ -306,12 +336,28 @@ class SimpleHeuristicScorer(HeuristicScorer):
                 "play_available_pokemon_before_attack",
             ]
         if card_type == 1 and self._has_search_role(card_id):
-            return 340.0, ["play_search_card"]
+            if card_id == MEGA_SIGNAL_CARD_ID:
+                bonus = 120.0 if self._needs_evolution_search(state) else -20.0
+                return 340.0 + bonus, ["play_search_card", "search_evolution_line"]
+            if card_id == ULTRA_BALL_CARD_ID:
+                bonus = 90.0 if self._needs_pokemon_search(state) else 0.0
+                return 340.0 + bonus, ["play_search_card", "search_pokemon_line"]
+            return 320.0, ["play_search_card"]
         if card_type == 1:
             return 240.0, ["play_item"]
         if card_type == 2:
             return 280.0, ["attach_tool"]
         if card_type == 3 and self._has_search_role(card_id):
+            if card_id == PETREL_CARD_ID:
+                bonus = 90.0 if self._needs_evolution_search(state) else 35.0
+                if self._needs_pokemon_search(state):
+                    bonus += 35.0
+                if self._lillie_is_useful(state):
+                    bonus -= 50.0
+                return 220.0 + bonus, ["play_supporter_search"]
+            if card_id == LILLIE_CARD_ID:
+                bonus = 90.0 if self._lillie_is_useful(state) else -60.0
+                return 220.0 + bonus, ["play_supporter_search"]
             return 230.0, ["play_supporter_search"]
         if card_type == 3:
             return 210.0, ["play_supporter"]
@@ -365,6 +411,191 @@ class SimpleHeuristicScorer(HeuristicScorer):
             score += min(80.0, returned * 5.0)
             reasons.append("deck_refill")
         return score, reasons
+
+    def _retreat_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
+        if not self._retreat_is_priority(state, candidate):
+            return -2000.0, ["legal_retreat"]
+        return 260.0, ["retreat_from_public_risk"]
+
+    def _retreat_is_priority(self, state: GameState, candidate: Candidate) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        active = player.active
+        if active is None or active.card_id is None:
+            return False
+        if not self._active_is_publicly_threatened(state):
+            return False
+        if active.card_id == KYOGRE_CARD_ID and self._kyogre_riptide_line_ready(state):
+            return False
+        return self._bench_has_ready_replacement(state)
+
+    def _bench_has_ready_replacement(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        for pokemon in player.bench:
+            if pokemon is None or pokemon.card_id is None:
+                continue
+            if self._pokemon_can_attack_next_turn(pokemon):
+                return True
+        return False
+
+    def _pokemon_can_attack_next_turn(self, pokemon: Any) -> bool:
+        card_id = pokemon.card_id if pokemon is not None else None
+        if not isinstance(card_id, int) or card_id <= 0:
+            return False
+        energy_count = len(getattr(pokemon, "energies", ()))
+        return energy_count >= self._attack_energy_target(card_id)
+
+    def _active_is_publicly_threatened(self, state: GameState) -> bool:
+        own_active = self._own_active(state)
+        if own_active is None or own_active.hp <= 0:
+            return False
+        opponent = self._opponent_player(state)
+        if opponent is None or opponent.active is None or opponent.active.card_id is None:
+            return False
+        return self._public_attack_damage(state, opponent.active) >= own_active.hp
+
+    def _public_attack_damage(self, state: GameState, pokemon: Any) -> int:
+        card_id = pokemon.card_id if pokemon is not None else None
+        if not isinstance(card_id, int) or card_id <= 0:
+            return 0
+        energy_count = len(getattr(pokemon, "energies", ()))
+        card = self.catalog.get_card(str(card_id)) or {}
+        best = 0
+        for attack_id in card.get("attacks", []):
+            attack = self.catalog.get_attack(str(attack_id)) or {}
+            energies = attack.get("energies", [])
+            if not isinstance(energies, list) or len(energies) > energy_count:
+                continue
+            damage = self._public_attack_damage_for_attack(state, attack, pokemon)
+            if damage > best:
+                best = damage
+        return best
+
+    def _public_attack_damage_for_attack(
+        self,
+        state: GameState,
+        attack: Mapping[str, Any],
+        pokemon: Any,
+    ) -> int:
+        text = str(attack.get("text", "")).casefold()
+        if "damage for each basic" in text and "discard pile" in text:
+            energy_type = self._metadata_int(
+                self.catalog.get_card(str(pokemon.card_id)) or {}, "energyType"
+            )
+            multiplier = self._leading_damage_multiplier(text)
+            return multiplier * self._discard_basic_energy_count_for_player(
+                self._opponent_player(state),
+                energy_type,
+            )
+        return max(0, self._metadata_int(attack, "damage"))
+
+    def _own_active(self, state: GameState) -> Any:
+        player = self._own_player(state)
+        return player.active if player is not None else None
+
+    def _opponent_player(self, state: GameState) -> Any:
+        players = state.players
+        if len(players) < 2:
+            return None
+        your_index = state.your_index if 0 <= state.your_index < len(players) else 0
+        return players[1 - your_index]
+
+    def _own_active_card_id(self, state: GameState) -> int:
+        active = self._own_active(state)
+        if active is None or active.card_id is None:
+            return 0
+        return active.card_id if isinstance(active.card_id, int) else 0
+
+    def _opponent_visible_abra(self, state: GameState) -> bool:
+        opponent = self._opponent_player(state)
+        if opponent is None:
+            return False
+        visible = [opponent.active, *opponent.bench]
+        return any(pokemon is not None and pokemon.card_id == ABRA_CARD_ID for pokemon in visible)
+
+    def _opponent_active_prevents_ex(self, state: GameState) -> bool:
+        opponent = self._opponent_player(state)
+        if opponent is None or opponent.active is None or opponent.active.card_id is None:
+            return False
+        traits = self.catalog.get_traits(str(opponent.active.card_id))
+        return traits.prevents_damage_from_ex
+
+    def _kyogre_riptide_line_ready(self, state: GameState) -> bool:
+        return (
+            self._own_active_card_id(state) == KYOGRE_CARD_ID
+            and self._own_deck_count(state) < 15
+            and self._discard_basic_energy_count(state, 3) > 0
+        )
+
+    def _kyogre_is_valuable(self, state: GameState) -> bool:
+        return self._kyogre_riptide_line_ready(state) or self._opponent_active_prevents_ex(state)
+
+    def _needs_evolution_search(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        return (
+            any(
+                pokemon is not None and pokemon.card_id == SNOVER_CARD_ID
+                for pokemon in player.bench
+            )
+            or self._own_active_card_id(state) == SNOVER_CARD_ID
+        )
+
+    def _needs_pokemon_search(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        if (
+            self._opponent_visible_abra(state)
+            and self._own_active_card_id(state) != ARTICUNO_CARD_ID
+        ):
+            return True
+        return self._bench_has_space(state) and not self._bench_has_ready_replacement(state)
+
+    def _lillie_is_useful(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        total = player.deck_count + player.hand_count
+        if total <= 6:
+            return False
+        if total == 7 and not (
+            self._kyogre_riptide_line_ready(state) or self._active_can_guaranteed_ko(state)
+        ):
+            return False
+        return player.hand_count <= 4 or not self._needs_pokemon_search(state)
+
+    def _petrel_is_useful(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        if self._needs_evolution_search(state):
+            return True
+        if self._needs_pokemon_search(state):
+            return True
+        return self._lillie_is_useful(state)
+
+    def _active_can_guaranteed_ko(self, state: GameState) -> bool:
+        active = self._own_active(state)
+        if active is None or active.card_id is None:
+            return False
+        opponent = self._opponent_player(state)
+        if opponent is None or opponent.active is None:
+            return False
+        energy_count = len(active.energies)
+        card = self.catalog.get_card(str(active.card_id)) or {}
+        for attack_id in card.get("attacks", []):
+            attack = self.catalog.get_attack(str(attack_id)) or {}
+            energies = attack.get("energies", [])
+            if not isinstance(energies, list) or len(energies) > energy_count:
+                continue
+            if self._public_attack_damage_for_attack(state, attack, active) >= opponent.active.hp:
+                return True
+        return False
 
     def _guaranteed_attack_damage(self, state: GameState, candidate: Candidate) -> int:
         """Return the deterministic part of an attack's damage.
@@ -430,13 +661,32 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.TO_ACTIVE,
             SelectContext.TO_FIELD,
         }:
-            return hp + energy_count * 100.0, ["promote_prepared_attacker"]
+            score = hp + energy_count * 100.0
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+                score += 120.0
+                return score, ["promote_tech_attacker"]
+            if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
+                score += 80.0
+                return score, ["promote_sacrificial_attacker"]
+            return score, ["promote_prepared_attacker"]
         if context is SelectContext.TO_HAND:
             if self.prize_check and self.prize_check.mode is PrizeCheckMode.EXACT:
                 availability = self.prize_check.availability(card_id)
                 if availability and availability.searchable_exact == 0:
                     return -1000.0, ["confirmed_prized_unsearchable"]
             value = self._card_resource_value(card_id, card_type)
+            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
+                value += 120.0
+            elif card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
+                value += 90.0
+            elif card_id == MEGA_SIGNAL_CARD_ID:
+                value += 90.0 if self._needs_evolution_search(state) else -30.0
+            elif card_id == ULTRA_BALL_CARD_ID:
+                value += 70.0 if self._needs_pokemon_search(state) else -10.0
+            elif card_id == LILLIE_CARD_ID:
+                value += 90.0 if self._lillie_is_useful(state) else -70.0
+            elif card_id == PETREL_CARD_ID:
+                value += 40.0 if self._petrel_is_useful(state) else -80.0
             if self._has_role(card_id, "trainer_search"):
                 value -= 200.0
                 return value, ["avoid_redundant_supporter_search"]
@@ -445,6 +695,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.DISCARD,
             SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
         }:
+            if card_id == ARTICUNO_CARD_ID and self._articuno_is_opening_sacrifice(state):
+                return 130.0, ["discard_sacrificial_articuno"]
             if self._has_role(card_id, "development_priority"):
                 return -1000.0, ["preserve_development_pokemon"]
             if card_type in {5, 6}:
@@ -479,8 +731,18 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return 140.0
         return {0: 120.0, 1: 100.0, 2: 90.0, 3: 100.0, 4: 70.0}.get(card_type, 10.0)
 
+    def _articuno_is_opening_sacrifice(self, state: GameState) -> bool:
+        return self._own_active_card_id(state) == ARTICUNO_CARD_ID and state.turn <= 1
+
     def _has_role(self, card_id: int, role: str) -> bool:
         return bool(self.deck_profile and self.deck_profile.has_role(card_id, role))
+
+    def _bench_has_space(self, state: GameState) -> bool:
+        player = self._own_player(state)
+        if player is None:
+            return False
+        occupied = sum(pokemon is not None for pokemon in player.bench)
+        return occupied < player.bench_max
 
     def _attack_energy_target(self, card_id: int) -> int:
         if self.deck_profile and card_id in self.deck_profile.attack_energy_targets:
@@ -507,6 +769,26 @@ class SimpleHeuristicScorer(HeuristicScorer):
             return 0
         count = 0
         for card in player.discard:
+            if not isinstance(card, Mapping):
+                continue
+            card_id = card.get("id", card.get("cardId"))
+            metadata = self.catalog.get_card(str(card_id)) or {}
+            if (
+                self._metadata_int(metadata, "cardType") == 5
+                and self._metadata_int(metadata, "energyType") == energy_type
+            ):
+                count += 1
+        return count
+
+    def _discard_basic_energy_count_for_player(
+        self,
+        player: Any,
+        energy_type: int,
+    ) -> int:
+        if player is None:
+            return 0
+        count = 0
+        for card in getattr(player, "discard", ()):
             if not isinstance(card, Mapping):
                 continue
             card_id = card.get("id", card.get("cardId"))
@@ -813,7 +1095,11 @@ class HeuristicAgent(AgentPolicy):
             if self._attack_is_priority(state, candidate):
                 return DecisionPhase.ATTACK_PRIORITY, "priority_attack"
             return DecisionPhase.ATTACK, "attack"
-        if option_type in {OptionType.ABILITY, OptionType.RETREAT, OptionType.DISCARD}:
+        if option_type is OptionType.RETREAT:
+            if self._scorer._retreat_is_priority(state, candidate):
+                return DecisionPhase.RETREAT, "retreat_from_public_risk"
+            return DecisionPhase.END, "retreat"
+        if option_type in {OptionType.ABILITY, OptionType.DISCARD}:
             return DecisionPhase.UTILITY, option_type.value.casefold()
         if option_type is OptionType.END:
             return DecisionPhase.END, "end"
@@ -829,8 +1115,6 @@ class HeuristicAgent(AgentPolicy):
 
     def _attack_is_priority(self, state: GameState, candidate: Candidate) -> bool:
         """Return True when an attack should preempt later development phases."""
-        if self._attack_is_guaranteed_ko(state, candidate):
-            return True
         text = str((candidate.attack or {}).get("text", "")).casefold()
         player = self._own_player_state(state)
         return bool(player and player.deck_count < 15 and "shuffle" in text)

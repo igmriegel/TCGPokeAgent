@@ -177,6 +177,24 @@ def test_petrel_search_prefers_item_or_lillie() -> None:
     assert agent.select(observation) != [0]
 
 
+def test_lillie_is_avoided_when_hand_plus_deck_is_insecure() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="TO_HAND",
+        options=[
+            {"type": "CARD", "cardId": 1227},
+            {"type": "CARD", "cardId": 1121},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=1, area=2)],
+        your_deck_count=6,
+    )
+
+    assert agent.select(observation) == [1]
+
+
 def test_heuristic_evolve_priority() -> None:
     agent = _built_agent()
     observation = _observation(
@@ -195,7 +213,7 @@ def test_heuristic_evolve_priority() -> None:
     assert agent.select(observation) == [0]
 
 
-def test_heuristic_deck_out_defers_attack_for_available_development() -> None:
+def test_heuristic_deck_out_prefers_riptide_over_bench_development() -> None:
     agent = _built_agent()
     observation = _observation(
         select_type="MAIN",
@@ -212,7 +230,7 @@ def test_heuristic_deck_out_defers_attack_for_available_development() -> None:
         your_deck_count=4,
     )
 
-    assert agent.select(observation) == [1]
+    assert agent.select(observation) == [0]
 
 
 def test_evolve_precedes_energy_attachment() -> None:
@@ -316,6 +334,134 @@ def test_attachment_enables_active_attack() -> None:
         your_bench=[_pokemon(722, 90, serial=1, area=2)],
         your_hand=[_pokemon(721, 150, serial=5, area=2), _pokemon(3, 0, serial=6)],
     )
+
+    assert agent.select(observation) == [0]
+
+
+def test_retreat_prefers_ready_replacement_when_public_risk() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "RETREAT"},
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 120, serial=11, energies=2),
+        your_bench=[_pokemon(721, 150, serial=1, area=2, energies=3)],
+        your_hand=[_pokemon(721, 150, serial=3, area=2)],
+        opponent_active_hp=120,
+    )
+    observation["current"]["players"][1]["active"][0]["id"] = 723
+    observation["current"]["players"][1]["active"][0]["energies"] = [3, 3, 3]
+
+    assert agent.select(observation) == [0]
+
+
+def test_retreat_is_skipped_without_ready_replacement() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "RETREAT"},
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 350, serial=11, energies=2),
+        your_bench=[_pokemon(721, 150, serial=1, area=2, energies=0)],
+        your_hand=[_pokemon(721, 150, serial=3, area=2)],
+        opponent_active_hp=120,
+    )
+    observation["current"]["players"][1]["active"][0]["id"] = 723
+    observation["current"]["players"][1]["active"][0]["energies"] = [3, 3, 3]
+
+    assert agent.select(observation) == [1]
+
+
+def test_articuno_branch_prefers_the_visible_matchup_answer() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 414, "area": 2},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+        opponent_active_hp=50,
+    )
+
+    observation["current"]["players"][1]["active"][0]["id"] = 741
+    observation["current"]["players"][1]["active"][0]["hp"] = 50
+
+    assert agent.select(observation) == [0]
+
+
+def test_articuno_branch_prefers_energy_on_active_articuno() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(414, 120, serial=11, energies=2),
+        your_bench=[_pokemon(722, 90, serial=1, area=2)],
+        your_hand=[_pokemon(3, 0, serial=3)],
+        opponent_active_hp=50,
+    )
+
+    observation["current"]["players"][1]["active"][0]["id"] = 741
+    observation["current"]["players"][1]["active"][0]["hp"] = 50
+
+    assert agent.select(observation) == [0]
+
+
+def test_opening_articuno_prefers_bench_energy_over_self_attachment() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 2, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(414, 120, serial=11, energies=0),
+        your_bench=[_pokemon(721, 150, serial=1, area=2)],
+        your_hand=[_pokemon(3, 0, serial=3)],
+        opponent_active_hp=150,
+    )
+
+    observation["current"]["turn"] = 1
+
+    assert agent.select(observation) == [1]
+
+
+def test_opening_articuno_is_discarded_before_energy() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="CARD",
+        select_context="DISCARD",
+        options=[
+            {"type": "CARD", "cardId": 414},
+            {"type": "CARD", "cardId": 3},
+            {"type": "CARD", "cardId": 1121},
+        ],
+        your_active=_pokemon(414, 120, serial=11, energies=0),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_hp=150,
+    )
+
+    observation["current"]["turn"] = 1
 
     assert agent.select(observation) == [0]
 

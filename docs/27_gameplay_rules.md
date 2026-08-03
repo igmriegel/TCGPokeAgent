@@ -3,7 +3,7 @@
 > Canonical policy-level rules. Feedback explains why a rule exists; this file
 > states what the agent should do.
 
-**Last reviewed:** 2026-08-02
+**Last reviewed:** 2026-08-03
 
 ## Status vocabulary
 
@@ -34,6 +34,9 @@
 | GR-016 | Play all legal Items before any Supporter; Supporters are a last-resort search | `ACTIVE / UNVALIDATED` | FB-2026-008, T-020 |
 | GR-017 | Prefer an attack with guaranteed Knock Out over probabilistic or non-KO attacks | `ACTIVE / UNVALIDATED` | FB-2026-009, T-021 |
 | GR-018 | Do not block a legal attack behind attacker-target development | `ACTIVE / UNVALIDATED` | FB-2026-010 |
+| GR-019 | Retreat only when public Knock Out risk exists and a ready replacement improves the board; keep Kyogre active when Riptide is the better line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
+| GR-020 | Use visible Abra as a tech branch for Team Rocket's Articuno and attach Energy there instead of following the default Snover/Kyogre line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
+| GR-021 | If Team Rocket's Articuno starts the game Active, treat it as a sacrifice: do not spend Energy on it and prefer discarding it over Energy | `ACTIVE / UNVALIDATED` | FB-2026-012, T-024 |
 
 ## Turn order
 
@@ -47,8 +50,9 @@ For a normal `MAIN` decision:
 6. place the declared `development_priority` Pokémon (Snover) on the Bench;
 7. play search and draw Items before any Supporter;
 8. play a Supporter only when no Item is playable, preferring search Supporters;
-9. attack as the terminal action of the turn, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
-10. choose `END` only when no attack or higher-value pre-attack action remains.
+9. retreat only when public Knock Out risk exists and the promoted replacement is ready, keeping Kyogre on board when Riptide is the better line;
+10. attack as the terminal action of the turn, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+11. choose `END` only when no attack or higher-value pre-attack action remains.
 
 Steps not represented by an active rule remain heuristic preferences, not
 guaranteed behavior.
@@ -144,6 +148,26 @@ is legal, the agent may select it on its own score while development, evolution,
 and attachment priorities continue to apply through their separate rules. Near
 deck-out shuffle-refill attacks and guaranteed-KO attacks keep their own score
 bonuses.
+
+### GR-019 — Retreat only under public risk
+
+Retreat and switch are only preferred when the public board shows Knock Out
+risk and the promoted Bench Pokémon is ready to attack or otherwise improve
+the line. Do not retreat just because the Active can be replaced. Keep Kyogre
+active when Riptide or another shuffle-refill line is the clearly better
+public plan.
+
+### GR-020 — Visible Abra tech branch
+
+When Abra is publicly visible, Team Rocket's Articuno becomes the tech branch
+for the turn. Prefer playing Articuno and attaching Energy to it instead of
+continuing the default Snover/Kyogre development line in that branch.
+
+### GR-021 — Opening Articuno as sacrifice
+
+If the game starts with Team Rocket's Articuno Active, treat it as a sacrificial
+opening. Do not invest Energy in that Active Articuno, and when discarding from
+hand prefer Articuno over Energy cards.
 
 ## Required evaluation metrics
 

@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-08-02
+**Last reviewed:** 2026-08-03
 
 ## How to read this backlog
 
@@ -20,9 +20,9 @@ documents to these totals.
 | Queue | Count |
 |---|---:|
 | In progress | 3 |
-| Ready | 15 |
+| Ready | 17 |
 | Deferred | 7 |
-| Total open | 25 |
+| Total open | 27 |
 
 ## Active release queue
 
@@ -46,6 +46,8 @@ documents to these totals.
 | T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
 | T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the paired comparison |
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
+| T-023 | P1 | `READY` | Validate public-risk retreat and visible Abra tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
+| T-024 | P1 | `READY` | Validate opening Articuno sacrifice and discard priority | FB-2026-012, H2A | Run opening-Articuno attachment/discard fixtures |
 
 ## Active-track coverage
 
@@ -60,7 +62,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-024 |
 
 ## Deferred queue
 
