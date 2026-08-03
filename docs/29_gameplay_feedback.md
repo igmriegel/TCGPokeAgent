@@ -42,8 +42,8 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-008 | Play every legal Item before any Supporter; Supporters are a last-resort search | Item-before-Supporter phase ordering implemented | Pending | T-020 |
 | FB-2026-009 | Prefer the attack with guaranteed Knock Out over probabilistic or non-KO attacks | Guaranteed-KO attack scoring remains active inside the ATTACK phase | Pending | T-021 |
 | FB-2026-010 | Legal attacks should not be blocked by attacker-target development | Attacker-target gate retired; legal attacks now score directly | Reinterpreted | None |
-| FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Abra | Retreat gating and Articuno tech branch implemented | Pending | T-023 |
-| FB-2026-012 | Opening Articuno should be sacrificial and discard-favored over Energy | Opening-sacrifice Articuno scoring implemented | Pending | T-024 |
+| FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Alakazam-line evidence | Retreat gating and conditional Articuno tech branch implemented | Pending | T-023 |
+| FB-2026-012 | Articuno without matchup evidence should be sacrificial and discard-favored over Energy | Conditional-sacrifice Articuno scoring implemented | Pending | T-024 |
 
 ## FB-2026-001 — Continuous board development
 
@@ -366,7 +366,7 @@ and guaranteed-KO or refill attacks keep their own bonuses.
 
 Policy revision only; no active validation task remains for this gate.
 
-## FB-2026-011 — Public-risk retreat and visible Abra tech branch
+## FB-2026-011 — Public-risk retreat and visible Alakazam-line tech branch
 
 **Priority:** P0
 
@@ -375,22 +375,24 @@ Policy revision only; no active validation task remains for this gate.
 ### Original feedback
 
 Only retreat when the public board shows real Knock Out risk and a ready
-replacement improves the position. When Abra is visible, pivot into Team
-Rocket's Articuno and attach Energy there instead of continuing the default
-Snover/Kyogre line.
+replacement improves the position. When Abra, Kadabra, or Alakazam is visible,
+pivot into Team Rocket's Articuno and attach Energy there instead of continuing
+the default Snover/Kyogre line.
 
 ### Accepted rule
 
 Retreat now scores only when the public board is under Knock Out risk and the
-Bench replacement is ready. The visible-Abra branch raises Team Rocket's
-Articuno above the default development line and also prefers Energy on that
-branch.
+Bench replacement is ready, except that an un-supported Active Articuno may
+retreat only to a ready evolved attacker. The visible Alakazam-line branch
+raises Team Rocket's Articuno above the default development line and also
+prefers Energy on that branch.
 
 ### Implemented foundation
 
 - retreat scoring uses public risk and replacement readiness;
 - non-strategic retreat falls behind `END`;
-- visible Abra raises Articuno in `PLAY`, `CARD`, and `ATTACH` contexts;
+- visible Abra, Kadabra, or Alakazam raises Articuno in `PLAY`, `CARD`, and
+  `ATTACH` contexts;
 - focused tests cover retreat gating and the Articuno branch.
 
 ### Gate
@@ -398,7 +400,7 @@ branch.
 T-023: retreat/mobility and tech-branch fixtures, plus the frozen paired
 comparison.
 
-## FB-2026-012 — Opening Articuno is sacrificial
+## FB-2026-012 — Articuno without evidence is sacrificial
 
 **Priority:** P0
 
@@ -406,28 +408,29 @@ comparison.
 
 ### Original feedback
 
-If the match starts with Team Rocket's Articuno Active, the opening plan should
-not invest Energy into it. When Articuno is in hand during discard selection, it
-should be discarded before Energy cards.
+When Team Rocket's Articuno is Active or in hand without public Alakazam-line
+evidence, the plan should not invest resources into it. When Articuno is in hand
+during discard selection, it should be discarded before Energy cards.
 
 ### Accepted rule
 
-Treat opening Active Articuno as a sacrificial line. Give it a low attachment
-score, keep the visible-Abra tech branch separate, and score Articuno above
-Energy in discard contexts.
+Treat unsupported Articuno as a sacrificial line regardless of turn. Block its
+search, Bench placement, and Energy attachment, keep the visible Alakazam-line
+tech branch separate, and score Articuno above Energy in discard contexts.
 
 ### Implemented foundation
 
-- `_articuno_is_opening_sacrifice` gates the opening sacrifice line;
-- `_attachment_score` avoids spending Energy on opening Active Articuno;
-- `_play_score` prefers playing opening Articuno as a sacrifice;
-- `_card_selection_score` prefers discarding opening Articuno before Energy;
+- `_opponent_visible_alakazam_line` gates the conditional tech branch;
+- `_attachment_score` avoids spending Energy on unsupported Articuno and above
+  the declared attack cost;
+- `_play_score` and selection filtering block unsupported Articuno plays;
+- `_card_selection_score` prefers discarding unsupported Articuno before Energy;
 - focused fixtures cover both attachment and discard ordering.
 
 ### Gate
 
-T-024: opening-Articuno attachment and discard fixtures, plus the frozen paired
-comparison.
+T-024: conditional-Articuno attachment and discard fixtures, plus the frozen
+paired comparison.
 
 ## Adding feedback
 

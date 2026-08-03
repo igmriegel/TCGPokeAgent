@@ -46,8 +46,8 @@ documents to these totals.
 | T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
 | T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the paired comparison |
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
-| T-023 | P1 | `READY` | Validate public-risk retreat and visible Abra tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
-| T-024 | P1 | `READY` | Validate opening Articuno sacrifice and discard priority | FB-2026-012, H2A | Run opening-Articuno attachment/discard fixtures |
+| T-023 | P1 | `READY` | Validate public-risk retreat and visible Alakazam-line tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
+| T-024 | P1 | `READY` | Validate conditional Articuno sacrifice and discard priority | FB-2026-012, H2A | Run Articuno attachment/discard fixtures |
 
 ## Active-track coverage
 

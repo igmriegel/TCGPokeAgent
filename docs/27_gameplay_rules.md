@@ -35,8 +35,8 @@
 | GR-017 | Prefer an attack with guaranteed Knock Out over probabilistic or non-KO attacks | `ACTIVE / UNVALIDATED` | FB-2026-009, T-021 |
 | GR-018 | Do not block a legal attack behind attacker-target development | `ACTIVE / UNVALIDATED` | FB-2026-010 |
 | GR-019 | Retreat only when public Knock Out risk exists and a ready replacement improves the board; keep Kyogre active when Riptide is the better line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
-| GR-020 | Use visible Abra as a tech branch for Team Rocket's Articuno and attach Energy there instead of following the default Snover/Kyogre line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
-| GR-021 | If Team Rocket's Articuno starts the game Active, treat it as a sacrifice: do not spend Energy on it and prefer discarding it over Energy | `ACTIVE / UNVALIDATED` | FB-2026-012, T-024 |
+| GR-020 | Use visible Abra, Kadabra, or Alakazam as a tech branch for Team Rocket's Articuno and attach Energy there instead of following the default Snover/Kyogre line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
+| GR-021 | Without Alakazam-line evidence, do not search, Bench, energize, or retreat Team Rocket's Articuno unless a ready evolved attacker can replace it; accept the sacrifice | `ACTIVE / UNVALIDATED` | FB-2026-012, T-024 |
 
 ## Turn order
 
@@ -134,12 +134,20 @@ Every legal Item is played before any Supporter. A Supporter is played only when
 no Item is playable, as a last-resort search; search Supporters (Lillie,
 Petrel) are preferred over non-search Supporters.
 
+Ultra Ball may search Mega Abomasnow ex only when a Snover is already on the
+own Bench and can be evolved. Without Bench Snover, prefer another legal
+Pokémon target.
+
 ### GR-017 — Guaranteed Knock Out attacks
 
 When an attack's deterministic damage (the `deck_profile` `attack_plans`
 guaranteed damage, or public discard-pile based damage) reaches the opponent
 Active's HP, that attack gains a bonus and is preferred over probabilistic
-attacks such as Hammer-lanche and over non-KO attacks.
+attacks. When no deterministic KO exists, Hammer-lanche is evaluated with a
+hypergeometric estimate for the six top cards, using the declared Energy count
+and visible/inferred Energy in the deck, Prizes, discard, hand, and attached to
+the board. Its expected damage and KO probability are compared with fixed-damage
+attacks such as Frost Barrier.
 
 ### GR-018 — Do not block legal attacks behind attacker target
 
@@ -157,17 +165,19 @@ the line. Do not retreat just because the Active can be replaced. Keep Kyogre
 active when Riptide or another shuffle-refill line is the clearly better
 public plan.
 
-### GR-020 — Visible Abra tech branch
+### GR-020 — Visible Alakazam-line tech branch
 
-When Abra is publicly visible, Team Rocket's Articuno becomes the tech branch
-for the turn. Prefer playing Articuno and attaching Energy to it instead of
+When Abra, Kadabra, or Alakazam is publicly visible in the opponent's Active or
+Bench, Team Rocket's Articuno becomes the tech branch for the turn. Prefer
+searching, playing, promoting, and attaching Energy to Articuno instead of
 continuing the default Snover/Kyogre development line in that branch.
 
-### GR-021 — Opening Articuno as sacrifice
+### GR-021 — Articuno as a conditional sacrifice
 
-If the game starts with Team Rocket's Articuno Active, treat it as a sacrificial
-opening. Do not invest Energy in that Active Articuno, and when discarding from
-hand prefer Articuno over Energy cards.
+Without public evidence of the Alakazam line, treat Team Rocket's Articuno as a
+sacrifice regardless of turn number. Do not search for it, Bench it, or invest
+Energy in it. Retreat is allowed only when a ready evolved attacker is already
+on the Bench; otherwise accept the Active Articuno being knocked out.
 
 ## Required evaluation metrics
 
