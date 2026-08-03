@@ -40,29 +40,49 @@ after attacking.
 
 ```mermaid
 flowchart TD
-    A[Start MAIN turn] --> B{Forced or nested choice?}
-    B -- Yes --> C[Resolve the forced choice]
-    B -- No --> D{Immediate win available?}
-    C --> D
-    D -- Yes --> E[Take the winning action]
-    D -- No --> F{Evolve legal?}
-    F -- Yes --> G[Choose best Evolution]
-    F -- No --> H{Priority Energy attach legal?}
-    G --> Z[Turn ends after action]
-    H -- Yes --> I[Choose best critical Energy attach]
-    H -- No --> J{Play Pokemon for board setup?}
-    I --> Z
-    J -- Yes --> K[Choose the best board-development Pokemon]
-    J -- No --> L{Play Item?}
-    K --> Z
-    L -- Yes --> M[Choose the best Item]
-    L -- No --> N{Play Supporter?}
-    M --> Z
-    N -- Yes --> O[Choose the best Supporter]
-    N -- No --> P{Attack legal?}
-    O --> Z
-    P -- Yes --> Q[Attack]
-    P -- No --> R[End]
-    Q --> Z
-    R --> Z
+    A[Receive observation] --> B{select is None?}
+    B -- Yes --> C[Initialize deck and stop]
+    B -- No --> D[Parse observation]
+
+    D --> E{Forced or nested choice?}
+    E -- Yes --> F[Resolve the required selection legally]
+    E -- No --> G{maxCount == 0 or no legal selections?}
+
+    G -- Yes --> H[Return deterministic empty fallback]
+    G -- No --> I[Generate legal selections]
+
+    I --> J[Filter dangerous shuffle-supporter options]
+    J --> K{select_context == MAIN?}
+
+    K -- Yes --> L[Apply MAIN phase order]
+    K -- No --> M[Use context-specific fallback / ranking]
+
+    L --> N{Immediate win available?}
+    N -- Yes --> O[Take the winning action]
+    N -- No --> P{Earliest useful MAIN phase}
+
+    P --> P1[Evolve]
+    P1 --> P2[Attach Energy]
+    P2 --> P3[Play Pokemon]
+    P3 --> P4[Play Items]
+    P4 --> P5[Play Supporters]
+    P5 --> P6[Attack]
+    P6 --> P7[End only if nothing better remains]
+
+    M --> Q[Rank the remaining legal selections]
+    O --> Q
+    P7 --> Q
+    F --> Q
+
+    Q --> R[Return the chosen option indices]
+    R --> S[Simulator applies the action]
+    S --> T{New observation available?}
+    T -- Yes --> D
+    T -- No --> U[Turn or match ends in engine]
+
+    subgraph Notes
+        N1[Forced / nested choices are resolved on the current prompt only]
+        N2[Choosing EVOLVE, ATTACH, PLAY, ATTACK, or END does not itself end the turn]
+        N3[The next MAIN prompt is re-evaluated from the new observation]
+    end
 ```
