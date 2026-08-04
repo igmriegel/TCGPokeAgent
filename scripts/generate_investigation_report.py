@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html as html_module
 import io
 import json
 import pathlib
@@ -23,7 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from cg.api import all_attack, all_card_data
+from cg.api import all_attack, all_card_data  # noqa: E402
 
 COMPETITION = "pokemon-tcg-ai-battle"
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
@@ -81,54 +82,112 @@ def _parse_submission_date(value: str) -> datetime:
         return datetime.min
 
 
-def _build_submission_rows(raw_results: list[dict[str, object]]) -> list[dict[str, object]]:
-    """Build the submission history table from local and Kaggle sources."""
+def _episode_id_from_path(replay_path: Path) -> str:
+    """Return the episode ID encoded in a replay filename."""
+    return replay_path.stem.removeprefix("episode-")
+
+
+def _filter_replay_paths(replay_paths: list[Path], submission_id: str | None) -> list[Path]:
+    """Filter replay paths by the local episode-to-submission map.
+
+    Args:
+        replay_paths: Replay files available for analysis.
+        submission_id: Optional Kaggle submission ID to select.
+
+    Returns:
+        Replay paths belonging to the selected submission, or all paths when no
+        submission was selected.
+
+    Raises:
+        ValueError: If the selected submission has no mapped episodes.
+    """
+    if submission_id is None:
+        return replay_paths
+
+    submission_map = _load_submission_map()
+    mapped_episodes = {
+        episode_id
+        for episode_id, mapped_submission_id in submission_map.items()
+        if mapped_submission_id == submission_id
+    }
+    if not mapped_episodes:
+        raise ValueError(
+            f"No episodes found for submission ID {submission_id!r} in {SUBMISSION_MAP_PATH}."
+        )
+
+    return [
+        replay_path
+        for replay_path in replay_paths
+        if _episode_id_from_path(replay_path) in mapped_episodes
+    ]
+
+
+def _build_submission_rows(
+    raw_results: list[dict[str, object]], submission_id: str | None = None
+) -> list[dict[str, object]]:
+    """Build submission summary rows from local and Kaggle sources.
+
+    Args:
+        raw_results: Parsed replay results used to calculate local outcomes.
+        submission_id: Optional ID that limits the returned rows to one submission.
+
+    Returns:
+        Submission rows for the combined report or the selected submission.
+    """
     submission_map = _load_submission_map()
     episode_counts = Counter(
-        submission_id
-        for submission_id in submission_map.values()
-        if submission_id.isdigit()
+        mapped_submission_id
+        for mapped_submission_id in submission_map.values()
+        if mapped_submission_id.isdigit()
     )
     outcome_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
 
     for result in raw_results:
         episode_id = str(result["episode_id"])
-        submission_id = submission_map.get(episode_id)
-        if not submission_id or not submission_id.isdigit():
+        mapped_submission_id = submission_map.get(episode_id)
+        if not mapped_submission_id or not mapped_submission_id.isdigit():
             continue
         if result["outcome"] == "win":
-            outcome_counts[submission_id]["w"] += 1
+            outcome_counts[mapped_submission_id]["w"] += 1
         else:
-            outcome_counts[submission_id]["l"] += 1
+            outcome_counts[mapped_submission_id]["l"] += 1
 
     submission_rows: list[dict[str, object]] = []
     for row in _list_completed_submissions():
-        submission_id = row.get("ref", "")
-        if not submission_id:
+        candidate_id = row.get("ref", "")
+        if not candidate_id:
+            continue
+        if submission_id is not None and candidate_id != submission_id:
             continue
         submission_rows.append(
             {
-                "id": submission_id,
+                "id": candidate_id,
                 "date": row.get("date", ""),
                 "desc": row.get("description", "") or row.get("fileName", ""),
                 "kaggle": float(row["publicScore"]) if row.get("publicScore") else None,
-                "episodes": episode_counts.get(submission_id, 0),
-                "w": outcome_counts[submission_id]["w"],
-                "l": outcome_counts[submission_id]["l"],
+                "episodes": episode_counts.get(candidate_id, 0),
+                "w": outcome_counts[candidate_id]["w"],
+                "l": outcome_counts[candidate_id]["l"],
             }
         )
 
     if not submission_rows:
-        for submission_id, episodes in sorted(episode_counts.items(), reverse=True):
+        fallback_ids = (
+            [submission_id] if submission_id is not None else sorted(episode_counts, reverse=True)
+        )
+        for candidate_id in fallback_ids:
+            episodes = episode_counts.get(candidate_id, 0)
+            if not episodes:
+                continue
             submission_rows.append(
                 {
-                    "id": submission_id,
+                    "id": candidate_id,
                     "date": "",
                     "desc": "unknown",
                     "kaggle": None,
                     "episodes": episodes,
-                    "w": outcome_counts[submission_id]["w"],
-                    "l": outcome_counts[submission_id]["l"],
+                    "w": outcome_counts[candidate_id]["w"],
+                    "l": outcome_counts[candidate_id]["l"],
                 }
             )
 
@@ -279,16 +338,23 @@ def parse_replay(fpath, owner_name):
     }
 
 
-def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: pathlib.Path) -> None:
+def generate_report(
+    replay_dir: pathlib.Path,
+    owner_name: str,
+    output_path: pathlib.Path,
+    submission_id: str | None = None,
+) -> None:
     """Generate the HTML investigation report from a replay directory.
 
     Args:
         replay_dir: Directory containing replay JSON files.
         owner_name: Kaggle agent name used to identify the target player.
         output_path: Destination HTML file.
+        submission_id: Optional Kaggle submission ID used to limit the report.
     """
     raw_results = []
-    for _fp in sorted(replay_dir.glob("*.json")):
+    replay_paths = _filter_replay_paths(sorted(replay_dir.glob("*.json")), submission_id)
+    for _fp in replay_paths:
         _res = parse_replay(_fp, owner_name)
         if _res is not None:
             raw_results.append(_res)
@@ -456,7 +522,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
             f"<td>{_total}</td>{confidence_label(_total)}</tr>\n"
         )
 
-    submissions = _build_submission_rows(raw_results)
+    submissions = _build_submission_rows(raw_results, submission_id)
 
     sub_rows = ""
     for _s in submissions:
@@ -474,20 +540,49 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
             else ("var(--orange)" if (_s["kaggle"] or 0) >= 480 else "var(--green)")
         )
         sub_rows += (
-            f"<tr><td>{_s['id']} {_badge or '&mdash;'}</td><td>{_s['id']}</td><td>{_s['desc']}</td>"
-            f'<td style="font-weight:700;color:{_kcls}">{_s["kaggle"] if _s["kaggle"] is not None else "N/A"}</td>'
+            f"<tr><td>{_s['id']} {_badge or '&mdash;'}</td><td>{_s['id']}</td>"
+            f"<td>{html_module.escape(str(_s['desc']))}</td>"
+            f'<td style="font-weight:700;color:{_kcls}">'
+            f"{_s['kaggle'] if _s['kaggle'] is not None else 'N/A'}</td>"
             f'<td>{_s["episodes"]}</td><td class="win">{_s["w"]}</td>'
             f'<td class="loss">{_s["l"]}</td><td class="{_scls}">{_swr:.1f}%</td></tr>\n'
         )
 
     now = date.today().strftime("%b %d %Y")
+    report_title = (
+        f"Investigation Report — Submission {submission_id} — {deck_label}"
+        if submission_id
+        else f"Investigation Report — {deck_label}"
+    )
+    report_heading = (
+        f"Investigation Report — Submission {submission_id}"
+        if submission_id
+        else "Investigation Report"
+    )
+    report_subtitle = (
+        f"Submission {submission_id} &bull; {deck_label} &bull; {total} replays "
+        f"({games_win}W/{games_loss}L) &bull; {now}"
+        if submission_id
+        else f"{deck_label} &bull; {total} replays ({games_win}W/{games_loss}L) &bull; {now}"
+    )
+    submission_section_title = (
+        "Selected Submission Summary" if submission_id else "Submission History"
+    )
+    matchup_section_title = (
+        f"Matchup Analysis &mdash; Submission {submission_id}"
+        if submission_id
+        else "Matchup Analysis (All Submissions Combined)"
+    )
+    footer_scope = (
+        f"Submission {submission_id} &bull; {deck_label}" if submission_id else deck_label
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Investigation Report — {deck_label}</title>
+<title>{report_title}</title>
 <style>
   :root {{
     --bg:#0f172a; --surface:#1e293b; --surface2:#334155; --border:#475569;
@@ -560,9 +655,9 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
 <body>
 <div class="container">
 
-<h1>Investigation Report</h1>
+<h1>{report_heading}</h1>
 <p class="subtitle">
-  {deck_label} &bull; {total} replays ({games_win}W/{games_loss}L) &bull; {now}
+  {report_subtitle}
 </p>
 
 <h2>1 &mdash; Executive Summary</h2>
@@ -591,7 +686,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
   </div>
 </div>
 
-<h2>2 &mdash; Submission History</h2>
+<h2>2 &mdash; {submission_section_title}</h2>
 <table>
   <thead>
     <tr>
@@ -669,7 +764,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
   </div>
 </div>
 
-<h2>6 &mdash; Matchup Analysis (All Submissions Combined)</h2>
+<h2>6 &mdash; {matchup_section_title}</h2>
 
 <div class="highlight">
   <strong>{len(matchup_data)} unique opponent archetypes</strong> faced across {total} games.
@@ -722,7 +817,7 @@ def generate_report(replay_dir: pathlib.Path, owner_name: str, output_path: path
 </div>
 
 <p style="margin-top:3rem;color:var(--muted);font-size:0.8rem;text-align:center;">
-  Auto-generated &bull; {deck_label} &bull; {total} replays &bull; {now}
+  Auto-generated &bull; {footer_scope} &bull; {total} replays &bull; {now}
 </p>
 
 </div>
@@ -759,13 +854,26 @@ def _parser() -> argparse.ArgumentParser:
         default="Igor Riegel",
         help="Kaggle agent name used to identify the controlled player.",
     )
+    parser.add_argument(
+        "--submission-id",
+        help="Limit the report to episodes mapped to this Kaggle submission ID.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     """Run the replay analysis CLI."""
     args = _parser().parse_args(argv)
-    generate_report(args.replay_dir, args.owner_name, args.output_path)
+    try:
+        generate_report(
+            args.replay_dir,
+            args.owner_name,
+            args.output_path,
+            submission_id=args.submission_id,
+        )
+    except ValueError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 2
     return 0
 
 
