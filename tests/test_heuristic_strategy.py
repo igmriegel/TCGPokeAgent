@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -176,6 +177,7 @@ def test_pokepad_does_not_fetch_articuno_without_matchup_evidence() -> None:
     )
 
     assert agent.select(observation) == [1]
+    assert not agent.alakazam_matchup_confirmed
 
 
 def test_alakazam_line_evidence_includes_kadabra() -> None:
@@ -571,6 +573,191 @@ def test_articuno_branch_prefers_energy_on_active_articuno() -> None:
 
     observation["current"]["players"][1]["active"][0]["id"] = 741
     observation["current"]["players"][1]["active"][0]["hp"] = 50
+
+    assert agent.select(observation) == [0]
+
+
+def test_each_visible_alakazam_line_card_confirms_matchup() -> None:
+    for opponent_card_id in (741, 742, 743):
+        agent = _built_agent()
+        observation = _observation(
+            select_type="MAIN",
+            select_context="MAIN",
+            options=[
+                {"type": "PLAY", "cardId": 414, "area": 2},
+                {"type": "PLAY", "cardId": 722, "area": 2},
+            ],
+            your_active=_pokemon(723, 300, serial=11, energies=2),
+            your_bench=[],
+            your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+            opponent_active_id=opponent_card_id,
+        )
+
+        assert agent.select(observation) == [0]
+        assert agent.alakazam_matchup_confirmed
+
+
+def test_public_mulligan_evidence_confirms_matchup_without_visible_board_card() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 414, "area": 2},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+        opponent_active_id=721,
+    )
+    observation["logs"] = [
+        {
+            "playerIndex": 1,
+            "type": "MULLIGAN_REVEAL",
+            "cards": [{"id": 742, "playerIndex": 1, "serial": 99}],
+        }
+    ]
+
+    assert agent.select(observation) == [0]
+    assert agent.alakazam_matchup_confirmed
+
+
+def test_matchup_confirmation_persists_after_line_leaves_visible_board() -> None:
+    agent = _built_agent()
+    first = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 414, "area": 2},
+            {"type": "PLAY", "cardId": 722, "area": 2},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[_pokemon(414, 120, serial=3, area=2), _pokemon(722, 90, serial=4, area=2)],
+        opponent_active_id=741,
+    )
+    assert agent.select(first) == [0]
+
+    second = deepcopy(first)
+    second["current"]["players"][1]["active"][0]["id"] = 721
+    second["select"]["option"] = [
+        {"type": "PLAY", "cardId": 723, "area": 2},
+        {"type": "END"},
+    ]
+    assert agent.select(second) == [1]
+
+
+def test_matchup_blocks_abomasnow_evolution_and_search() -> None:
+    agent = _built_agent()
+    evolution = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(722, 90, serial=11),
+        your_bench=[],
+        your_hand=[_pokemon(723, 300, serial=3, area=2)],
+        opponent_active_id=741,
+    )
+    assert agent.select(evolution) == [1]
+
+    search = deepcopy(evolution)
+    search["select"]["type"] = "CARD"
+    search["select"]["context"] = "TO_HAND"
+    search["select"]["option"] = [
+        {"type": "CARD", "cardId": 723},
+        {"type": "CARD", "cardId": 722},
+        {"type": "CARD", "cardId": 414},
+    ]
+    assert agent.select(search) == [2]
+
+
+def test_matchup_places_and_energizes_only_articuno() -> None:
+    agent = _built_agent()
+    bench = _observation(
+        select_type="CARD",
+        select_context="TO_BENCH",
+        options=[
+            {"type": "CARD", "cardId": 723},
+            {"type": "CARD", "cardId": 414},
+        ],
+        your_active=_pokemon(721, 150, serial=11),
+        your_bench=[],
+        your_hand=None,
+        opponent_active_id=742,
+    )
+    assert agent.select(bench) == [1]
+
+    energy = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 5, "inPlayIndex": 1},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 5, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(721, 150, serial=11),
+        your_bench=[
+            _pokemon(723, 300, serial=1, area=2),
+            _pokemon(414, 120, serial=2, area=2),
+        ],
+        your_hand=[_pokemon(3, 0, serial=3)],
+        opponent_active_id=743,
+    )
+    assert agent.select(energy) == [0]
+
+
+def test_matchup_avoids_attack_and_energy_on_exposed_abomasnow() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "ATTACK", "attackId": 1046, "inPlayArea": 4},
+            {"type": "ATTACH", "cardId": 3, "inPlayArea": 4, "inPlayIndex": 0},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(414, 120, serial=1, area=2)],
+        your_hand=[_pokemon(3, 0, serial=3)],
+        opponent_active_id=741,
+    )
+
+    assert agent.select(observation) == [2]
+
+
+def test_matchup_does_not_develop_other_pokemon_when_articuno_is_unavailable() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(721, 150, serial=11),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=3, area=2)],
+        opponent_active_id=741,
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_forced_matchup_selection_keeps_original_index_and_legality() -> None:
+    agent = _built_agent()
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=[{"type": "PLAY", "cardId": 722, "area": 2}],
+        your_active=_pokemon(721, 150, serial=11),
+        your_bench=[],
+        your_hand=[_pokemon(722, 90, serial=3, area=2)],
+        opponent_active_id=741,
+    )
 
     assert agent.select(observation) == [0]
 

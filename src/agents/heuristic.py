@@ -146,6 +146,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         self.catalog = catalog or _CG_CATALOG
         self.prize_check: PrizeCheckResult | None = None
         self.prize_map: PrizeMap | None = None
+        self.alakazam_matchup_confirmed = False
 
     def set_deck_profile(self, profile: DeckProfile) -> None:
         """Replace the declarative deck strategy for a new match."""
@@ -159,6 +160,14 @@ class SimpleHeuristicScorer(HeuristicScorer):
         """Set match-scoped Prize knowledge used for the current decision."""
         self.prize_check = prize_check
         self.prize_map = prize_map
+
+    def set_alakazam_matchup_confirmed(self, confirmed: bool = True) -> None:
+        """Persist public confirmation of the Alakazam matchup."""
+        self.alakazam_matchup_confirmed = confirmed
+
+    def _alakazam_matchup_active(self, state: GameState) -> bool:
+        """Return whether the matchup is confirmed now or in an earlier prompt."""
+        return self.alakazam_matchup_confirmed or self._opponent_visible_alakazam_line(state)
 
     def score(
         self,
@@ -305,7 +314,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
             if (
                 bool(candidate.features.get("target_is_active", False))
                 and self._own_active_card_id(state) == ARTICUNO_CARD_ID
-                and not self._opponent_visible_alakazam_line(state)
+                and not self._alakazam_matchup_active(state)
             ):
                 return -2000.0, ["sacrificial_articuno"]
             target_goal = self._attack_energy_target(target_id)
@@ -319,6 +328,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
                     active_bonus -= 40.0
                 if active_card_id == ARTICUNO_CARD_ID and self._opponent_visible_abra(state):
                     active_bonus += 80.0
+            if self._alakazam_matchup_active(state) and target_id == ARTICUNO_CARD_ID:
+                active_bonus += 300.0
             return 350.0 + deficit * 25.0 + active_bonus, ["develop_attacker_energy"]
         return 100.0, ["attach_unrecognized_card"]
 
@@ -326,9 +337,9 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
-            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and self._alakazam_matchup_active(state):
                 return 520.0, ["tech_matchup_articuno"]
             if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
                 return 480.0, ["sacrificial_kyogre"]
@@ -442,7 +453,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
         active = player.active
         if active is None or active.card_id is None:
             return False
-        if active.card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+        if active.card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
             return self._bench_has_ready_evolved_replacement(state)
         if not self._active_is_publicly_threatened(state):
             return False
@@ -555,7 +566,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
 
     def _opponent_visible_abra(self, state: GameState) -> bool:
         """Return whether the opponent exposes any card in the Alakazam line."""
-        return self._opponent_visible_alakazam_line(state)
+        return self._alakazam_matchup_active(state)
 
     def _opponent_active_prevents_ex(self, state: GameState) -> bool:
         opponent = self._opponent_player(state)
@@ -843,11 +854,19 @@ class SimpleHeuristicScorer(HeuristicScorer):
         energy_count = self._feature_int(candidate, "card_energy_count")
         hp = self._feature_int(candidate, "card_hp")
         if context is SelectContext.SETUP_ACTIVE_POKEMON:
+            if self._alakazam_matchup_active(state):
+                if card_id == ARTICUNO_CARD_ID:
+                    return 320.0, ["setup_matchup_articuno"]
+                return -2000.0, ["avoid_non_articuno_matchup_setup"]
             score = 120.0 if self._has_role(card_id, "evolution_basic") else 110.0
             return score, ["setup_active_attacker"]
         if context is SelectContext.SETUP_BENCH_POKEMON:
-            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
+            if self._alakazam_matchup_active(state):
+                if card_id == ARTICUNO_CARD_ID:
+                    return 300.0, ["setup_matchup_articuno"]
+                return -2000.0, ["avoid_non_articuno_matchup_setup"]
             score = 100.0 if card_type == 0 else -100.0
             return score, ["setup_bench"]
         if context in {
@@ -856,9 +875,9 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.TO_FIELD,
         }:
             score = hp + energy_count * 100.0
-            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and self._alakazam_matchup_active(state):
                 score += 120.0
                 return score, ["promote_tech_attacker"]
             if card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
@@ -873,9 +892,9 @@ class SimpleHeuristicScorer(HeuristicScorer):
             value = self._card_resource_value(card_id, card_type)
             if card_id == ABOMASNOW_CARD_ID and not self._has_bench_snover(state):
                 return -2000.0, ["avoid_abomasnow_without_bench_snover"]
-            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
-            if card_id == ARTICUNO_CARD_ID and self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and self._alakazam_matchup_active(state):
                 value += 120.0
             elif card_id == KYOGRE_CARD_ID and self._kyogre_is_valuable(state):
                 value += 90.0
@@ -897,7 +916,7 @@ class SimpleHeuristicScorer(HeuristicScorer):
             SelectContext.DISCARD,
             SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
         }:
-            if card_id == ARTICUNO_CARD_ID and not self._opponent_visible_alakazam_line(state):
+            if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return 130.0, ["discard_sacrificial_articuno"]
             if self._has_role(card_id, "development_priority"):
                 return -1000.0, ["preserve_development_pokemon"]
@@ -1079,9 +1098,12 @@ class HeuristicAgent(AgentPolicy):
         self._ranker = ranker or self._heuristic_ranker
         self._fallback_count = 0
         self._last_decision: PolicyDecision | None = None
+        self.alakazam_matchup_confirmed = False
 
     def start_match(self, deck: DeckDefinition) -> None:
         """Reset the deck strategy without changing generic policy code."""
+        self.alakazam_matchup_confirmed = False
+        self._scorer.set_alakazam_matchup_confirmed(False)
         self._deck = deck
         self._prize_checker = PrizeChecker(deck)
         profile = (
@@ -1133,6 +1155,7 @@ class HeuristicAgent(AgentPolicy):
         """
         started = time.perf_counter()
         parsed = self._parser.parse(observation)
+        self._update_alakazam_matchup(observation, parsed.state)
         prize_check = self._prize_checker.check(observation) if self._prize_checker else None
         prize_map = self._prize_map_builder.build(parsed.state)
         self._scorer.set_strategic_context(prize_check, prize_map)
@@ -1206,6 +1229,57 @@ class HeuristicAgent(AgentPolicy):
         self._last_decision = result
         return result
 
+    def _update_alakazam_matchup(self, observation: Mapping[str, Any], state: GameState) -> None:
+        """Persist only actor-visible evidence for the Alakazam matchup."""
+        if self.alakazam_matchup_confirmed:
+            return
+        if self._scorer._opponent_visible_alakazam_line(state) or self._public_alakazam_evidence(
+            observation, state
+        ):
+            self.alakazam_matchup_confirmed = True
+            self._scorer.set_alakazam_matchup_confirmed()
+
+    @staticmethod
+    def _public_alakazam_evidence(observation: Mapping[str, Any], state: GameState) -> bool:
+        """Return whether public hand or event data exposes the Alakazam line."""
+        opponent_index = 1 - state.your_index if len(state.players) >= 2 else 1
+        current = observation.get("current")
+        if isinstance(current, Mapping):
+            players = current.get("players")
+            if isinstance(players, list) and 0 <= opponent_index < len(players):
+                opponent = players[opponent_index]
+                if isinstance(opponent, Mapping) and HeuristicAgent._contains_alakazam_card(
+                    opponent.get("hand")
+                ):
+                    return True
+        logs = observation.get("logs")
+        if not isinstance(logs, list):
+            return False
+        return any(
+            isinstance(event, Mapping)
+            and event.get("playerIndex") == opponent_index
+            and HeuristicAgent._contains_alakazam_card(event)
+            for event in logs
+        )
+
+    @staticmethod
+    def _contains_alakazam_card(value: Any) -> bool:
+        """Find an explicitly identified Alakazam-line card in public data."""
+        if isinstance(value, Mapping):
+            for key in ("cardId", "card_id", "cardIdActive", "cardIdBench", "cardIdTarget"):
+                if value.get(key) in {ABRA_CARD_ID, KADABRA_CARD_ID, ALAKAZAM_CARD_ID}:
+                    return True
+            if value.get("id") in {ABRA_CARD_ID, KADABRA_CARD_ID, ALAKAZAM_CARD_ID}:
+                return True
+            return any(
+                HeuristicAgent._contains_alakazam_card(item)
+                for key in ("hand", "cards", "revealed", "mulligan", "active", "bench")
+                for item in (value.get(key),)
+            )
+        if isinstance(value, list):
+            return any(HeuristicAgent._contains_alakazam_card(item) for item in value)
+        return False
+
     def _record_empty_decision(self, started: float) -> PolicyDecision:
         selection = Selection(indices=(), option_types=())
         result = PolicyDecision(
@@ -1276,10 +1350,39 @@ class HeuristicAgent(AgentPolicy):
         if candidate is None:
             return False
         card_id = self._scorer._feature_int(candidate, "card_id")
-        no_matchup = not self._scorer._opponent_visible_alakazam_line(state)
+        matchup_confirmed = self._scorer._alakazam_matchup_active(state)
+        no_matchup = not matchup_confirmed
+        card_type = self._scorer._metadata_int(candidate.card, "cardType")
+        target_id = self._scorer._feature_int(candidate, "target_card_id")
+        if matchup_confirmed:
+            if candidate.option_type is OptionType.EVOLVE and (
+                card_id == ABOMASNOW_CARD_ID or target_id == ABOMASNOW_CARD_ID
+            ):
+                return True
+            if candidate.option_type is OptionType.CARD and card_id in {
+                SNOVER_CARD_ID,
+                ABOMASNOW_CARD_ID,
+            }:
+                return True
+            if candidate.option_type is OptionType.PLAY and card_type == 0:
+                return card_id != ARTICUNO_CARD_ID
+            if candidate.option_type is OptionType.CARD and card_type == 0:
+                if context in {
+                    SelectContext.SETUP_ACTIVE_POKEMON,
+                    SelectContext.SETUP_BENCH_POKEMON,
+                    SelectContext.TO_BENCH,
+                    SelectContext.TO_FIELD,
+                    SelectContext.TO_HAND,
+                }:
+                    return card_id != ARTICUNO_CARD_ID
+            if candidate.option_type is OptionType.ATTACH and target_id == ABOMASNOW_CARD_ID:
+                return True
+            if candidate.option_type is OptionType.ATTACK and (
+                self._scorer._own_active_card_id(state) == ABOMASNOW_CARD_ID
+                or target_id == ABOMASNOW_CARD_ID
+            ):
+                return True
         if candidate.option_type is OptionType.ATTACH:
-            card_type = self._scorer._metadata_int(candidate.card, "cardType")
-            target_id = self._scorer._feature_int(candidate, "target_card_id")
             target_energy_count = self._scorer._feature_int(candidate, "target_energy_count")
             if card_type in {5, 6} and target_energy_count >= self._scorer._attack_energy_target(
                 target_id
