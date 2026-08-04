@@ -51,6 +51,7 @@ WEIGHTS: dict[str, float] = {
 
 GUARANTEED_KO_BONUS = 200.0
 ARTICUNO_CARD_ID = 414
+FEZANDIPITI_CARD_ID = 140
 ABRA_CARD_ID = 741
 KADABRA_CARD_ID = 742
 ALAKAZAM_CARD_ID = 743
@@ -147,6 +148,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
         self.prize_check: PrizeCheckResult | None = None
         self.prize_map: PrizeMap | None = None
         self.alakazam_matchup_confirmed = False
+        self._energy_context_state: GameState | None = None
+        self.water_energy_in_discard = 0
 
     def set_deck_profile(self, profile: DeckProfile) -> None:
         """Replace the declarative deck strategy for a new match."""
@@ -165,9 +168,68 @@ class SimpleHeuristicScorer(HeuristicScorer):
         """Persist public confirmation of the Alakazam matchup."""
         self.alakazam_matchup_confirmed = confirmed
 
+    def set_energy_context(self, state: GameState) -> None:
+        """Cache visible Energy resources for the current decision cycle."""
+        self._energy_context_state = state
+        self.water_energy_in_discard = self._count_basic_energy_cards(
+            self._own_player(state).discard if self._own_player(state) else None
+        )
+
     def _alakazam_matchup_active(self, state: GameState) -> bool:
         """Return whether the matchup is confirmed now or in an earlier prompt."""
         return self.alakazam_matchup_confirmed or self._opponent_visible_alakazam_line(state)
+
+    def _fezandipiti_line_active(self, state: GameState) -> bool:
+        """Return whether an Alakazam matchup has exposed an energized Fezandipiti."""
+        if not self._alakazam_matchup_active(state):
+            return False
+        opponent = self._opponent_player(state)
+        if opponent is None:
+            return False
+        return any(
+            pokemon is not None
+            and pokemon.card_id == FEZANDIPITI_CARD_ID
+            and bool(pokemon.energies)
+            for pokemon in [opponent.active, *opponent.bench]
+        )
+
+    def _fezandipiti_active_hp(self, state: GameState) -> int:
+        """Return the remaining HP of the opposing Active Fezandipiti."""
+        opponent = self._opponent_player(state)
+        active = opponent.active if opponent is not None else None
+        if active is None or active.card_id != FEZANDIPITI_CARD_ID:
+            return 0
+        return max(0, int(active.hp))
+
+    def _kyogre_riptide_guarantees_fezandipiti_ko(self, state: GameState) -> bool:
+        """Return whether discarded Water Energy makes Riptide lethal now."""
+        hp = self._fezandipiti_active_hp(state)
+        return hp > 0 and self.water_energy_in_discard * 20 >= hp
+
+    def _special_evolution_allowed(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether the special matchup permits a Snover evolution."""
+        if not self._fezandipiti_line_active(state):
+            return True
+        target_id = self._feature_int(candidate, "target_card_id")
+        if (
+            target_id != SNOVER_CARD_ID
+            and self._feature_int(candidate, "card_id") != ABOMASNOW_CARD_ID
+        ):
+            return True
+        active = self._own_active(state)
+        if active is None or active.card_id != SNOVER_CARD_ID:
+            return False
+        energy_count = len(active.energies)
+        if energy_count >= 2:
+            return True
+        if state.energy_attached:
+            return False
+        return bool(self._can_attach_to_active(state, SNOVER_CARD_ID))
+
+    def _can_attach_to_active(self, state: GameState, card_id: int) -> bool:
+        """Return whether the current state can complete Hammer-lanche setup."""
+        active = self._own_active(state)
+        return bool(active and active.card_id == card_id and len(active.energies) + 1 >= 2)
 
     def score(
         self,
@@ -337,6 +399,11 @@ class SimpleHeuristicScorer(HeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
+            if self._fezandipiti_line_active(state):
+                if card_id == KYOGRE_CARD_ID:
+                    return 620.0, ["fezandipiti_threat", "bench_kyogre_first"]
+                if card_id == SNOVER_CARD_ID:
+                    return 180.0, ["fezandipiti_threat", "hold_snover_until_needed"]
             if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
             if card_id == ARTICUNO_CARD_ID and self._alakazam_matchup_active(state):
@@ -855,6 +922,13 @@ class SimpleHeuristicScorer(HeuristicScorer):
         hp = self._feature_int(candidate, "card_hp")
         if context is SelectContext.SETUP_ACTIVE_POKEMON:
             if self._alakazam_matchup_active(state):
+                if self._fezandipiti_line_active(state) and card_id in {
+                    KYOGRE_CARD_ID,
+                    SNOVER_CARD_ID,
+                }:
+                    return (320.0 if card_id == KYOGRE_CARD_ID else 180.0), [
+                        "setup_fezandipiti_response"
+                    ]
                 if card_id == ARTICUNO_CARD_ID:
                     return 320.0, ["setup_matchup_articuno"]
                 return -2000.0, ["avoid_non_articuno_matchup_setup"]
@@ -864,6 +938,13 @@ class SimpleHeuristicScorer(HeuristicScorer):
             if card_id == ARTICUNO_CARD_ID and not self._alakazam_matchup_active(state):
                 return -2000.0, ["avoid_articuno_without_matchup_evidence"]
             if self._alakazam_matchup_active(state):
+                if self._fezandipiti_line_active(state) and card_id in {
+                    KYOGRE_CARD_ID,
+                    SNOVER_CARD_ID,
+                }:
+                    return (300.0 if card_id == KYOGRE_CARD_ID else 160.0), [
+                        "setup_fezandipiti_response"
+                    ]
                 if card_id == ARTICUNO_CARD_ID:
                     return 300.0, ["setup_matchup_articuno"]
                 return -2000.0, ["avoid_non_articuno_matchup_setup"]
@@ -982,6 +1063,8 @@ class SimpleHeuristicScorer(HeuristicScorer):
         return value if isinstance(value, int) and not isinstance(value, bool) else -1
 
     def _discard_basic_energy_count(self, state: GameState, energy_type: int) -> int:
+        if energy_type == 3 and self._energy_context_state is state:
+            return self.water_energy_in_discard
         player = self._own_player(state)
         if player is None:
             return 0
@@ -1156,6 +1239,7 @@ class HeuristicAgent(AgentPolicy):
         started = time.perf_counter()
         parsed = self._parser.parse(observation)
         self._update_alakazam_matchup(observation, parsed.state)
+        self._scorer.set_energy_context(parsed.state)
         prize_check = self._prize_checker.check(observation) if self._prize_checker else None
         prize_map = self._prize_map_builder.build(parsed.state)
         self._scorer.set_strategic_context(prize_check, prize_map)
@@ -1306,6 +1390,7 @@ class HeuristicAgent(AgentPolicy):
         safe_selections = self._filter_forbidden_selections(
             state, selections, candidates, SelectContext.MAIN
         )
+        safe_selections = self._filter_fezandipiti_bench_line(state, safe_selections, candidates)
         by_phase: dict[DecisionPhase, list[Selection]] = {phase: [] for phase in _MAIN_PHASE_ORDER}
         reason_by_phase: dict[DecisionPhase, str] = {}
         for selection in safe_selections:
@@ -1320,6 +1405,70 @@ class HeuristicAgent(AgentPolicy):
                     by_phase[phase],
                 )
         return DecisionPhase.END.value, "no_signal", list(safe_selections)
+
+    def _filter_fezandipiti_bench_line(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> list[Selection]:
+        """Stage Kyogre before exposing Snover to an energized Fezandipiti."""
+        if not self._scorer._fezandipiti_line_active(state):
+            return list(selections)
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+
+        def pokemon_ids(selection: Selection) -> list[int]:
+            return [
+                self._scorer._feature_int(candidate, "card_id")
+                for index in selection.indices
+                if (candidate := by_index.get(index)) is not None
+                and candidate.option_type is OptionType.PLAY
+                and self._scorer._metadata_int(candidate.card, "cardType") == 0
+            ]
+
+        player = self._scorer._own_player(state)
+        kyogre_benched = any(
+            pokemon is not None and pokemon.card_id == KYOGRE_CARD_ID
+            for pokemon in (player.bench if player else ())
+        )
+        ids_by_selection = [(selection, pokemon_ids(selection)) for selection in selections]
+        if self._scorer._kyogre_riptide_guarantees_fezandipiti_ko(state):
+            kyogre_only = [
+                selection
+                for selection, ids in ids_by_selection
+                if KYOGRE_CARD_ID in ids and SNOVER_CARD_ID not in ids
+            ]
+            if kyogre_only:
+                return kyogre_only
+        if not kyogre_benched:
+            kyogre_first = [
+                selection
+                for selection, ids in ids_by_selection
+                if KYOGRE_CARD_ID in ids and SNOVER_CARD_ID not in ids
+            ]
+            if kyogre_first:
+                return kyogre_first
+        if kyogre_benched:
+            without_snover = [
+                selection for selection, ids in ids_by_selection if SNOVER_CARD_ID not in ids
+            ]
+            if without_snover and not self._snover_is_needed_now(state):
+                return without_snover
+        return list(selections)
+
+    def _snover_is_needed_now(self, state: GameState) -> bool:
+        """Return whether delaying Snover would miss the next attacker window."""
+        player = self._own_player_state(state)
+        if player is None:
+            return True
+        if any(
+            pokemon is not None and self._scorer._pokemon_can_attack_next_turn(pokemon)
+            for pokemon in player.bench
+        ):
+            return False
+        if self._scorer._own_active_card_id(state) == KYOGRE_CARD_ID:
+            return not self._scorer._pokemon_can_attack_next_turn(player.active)
+        return True
 
     def _filter_forbidden_selections(
         self,
@@ -1355,16 +1504,21 @@ class HeuristicAgent(AgentPolicy):
         card_type = self._scorer._metadata_int(candidate.card, "cardType")
         target_id = self._scorer._feature_int(candidate, "target_card_id")
         if matchup_confirmed:
+            special_feza = self._scorer._fezandipiti_line_active(state)
             if candidate.option_type is OptionType.EVOLVE and (
                 card_id == ABOMASNOW_CARD_ID or target_id == ABOMASNOW_CARD_ID
             ):
-                return True
+                return not special_feza or not self._scorer._special_evolution_allowed(
+                    state, candidate
+                )
             if candidate.option_type is OptionType.CARD and card_id in {
                 SNOVER_CARD_ID,
                 ABOMASNOW_CARD_ID,
             }:
-                return True
+                return not special_feza or card_id == ABOMASNOW_CARD_ID
             if candidate.option_type is OptionType.PLAY and card_type == 0:
+                if special_feza and card_id in {KYOGRE_CARD_ID, SNOVER_CARD_ID}:
+                    return False
                 return card_id != ARTICUNO_CARD_ID
             if candidate.option_type is OptionType.CARD and card_type == 0:
                 if context in {
@@ -1374,6 +1528,8 @@ class HeuristicAgent(AgentPolicy):
                     SelectContext.TO_FIELD,
                     SelectContext.TO_HAND,
                 }:
+                    if special_feza and card_id in {KYOGRE_CARD_ID, SNOVER_CARD_ID}:
+                        return False
                     return card_id != ARTICUNO_CARD_ID
             if candidate.option_type is OptionType.ATTACH and target_id == ABOMASNOW_CARD_ID:
                 return True

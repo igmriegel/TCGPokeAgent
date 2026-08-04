@@ -729,6 +729,132 @@ def test_matchup_avoids_attack_and_energy_on_exposed_abomasnow() -> None:
     assert agent.select(observation) == [2]
 
 
+def _fezandipiti_matchup_observation(
+    *,
+    options: list[dict],
+    your_active: dict,
+    your_bench: list[dict],
+    your_hand: list[dict] | None,
+    your_discard_energy: int = 0,
+    opponent_active_hp: int = 150,
+) -> dict:
+    observation = _observation(
+        select_type="MAIN",
+        select_context="MAIN",
+        options=options,
+        your_active=your_active,
+        your_bench=your_bench,
+        your_hand=your_hand,
+        your_discard_energy=your_discard_energy,
+        opponent_active_id=140,
+        opponent_active_hp=opponent_active_hp,
+        opponent_bench=[_pokemon(743, 140, serial=51)],
+    )
+    observation["current"]["players"][1]["active"][0]["energies"] = [3]
+    return observation
+
+
+def test_fezandipiti_threat_benches_kyogre_before_snover() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "PLAY", "cardId": 721, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[
+            _pokemon(722, 90, serial=1, area=2),
+            _pokemon(721, 150, serial=2, area=2),
+        ],
+    )
+
+    assert agent.select(observation) == [1]
+    assert agent._scorer.water_energy_in_discard == 0
+
+
+def test_fezandipiti_riptide_ko_holds_snover() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "PLAY", "cardId": 721, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[],
+        your_hand=[
+            _pokemon(722, 90, serial=1, area=2),
+            _pokemon(721, 150, serial=2, area=2),
+        ],
+        your_discard_energy=8,
+    )
+
+    assert agent.select(observation) == [1]
+    assert agent._scorer.water_energy_in_discard == 8
+
+
+def test_fezandipiti_threat_holds_snover_after_ready_kyogre_is_benched() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(721, 150, serial=2, energies=1)],
+        your_hand=[_pokemon(722, 90, serial=1, area=2)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
+def test_fezandipiti_threat_releases_snover_when_no_ready_attacker_exists() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "PLAY", "cardId": 722, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(721, 150, serial=2)],
+        your_hand=[_pokemon(722, 90, serial=1, area=2)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_fezandipiti_threat_allows_active_snover_evolution_with_energy() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 4},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(722, 90, serial=11, energies=2),
+        your_bench=[_pokemon(721, 150, serial=2, energies=1)],
+        your_hand=[_pokemon(723, 300, serial=1, area=2)],
+    )
+
+    assert agent.select(observation) == [0]
+
+
+def test_fezandipiti_threat_blocks_bench_snover_evolution() -> None:
+    agent = _built_agent()
+    observation = _fezandipiti_matchup_observation(
+        options=[
+            {"type": "EVOLVE", "cardId": 723, "area": 2},
+            {"type": "END"},
+        ],
+        your_active=_pokemon(723, 300, serial=11, energies=2),
+        your_bench=[_pokemon(722, 90, serial=2)],
+        your_hand=[_pokemon(723, 300, serial=1, area=2)],
+    )
+
+    assert agent.select(observation) == [1]
+
+
 def test_matchup_does_not_develop_other_pokemon_when_articuno_is_unavailable() -> None:
     agent = _built_agent()
     observation = _observation(
