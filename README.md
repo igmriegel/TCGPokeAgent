@@ -37,7 +37,6 @@ implementation guides.
 - `configs/`: versioned runtime and evaluation profiles.
 - `scripts/`: operational, evaluation, package, and submission commands.
 - `data/raw/kaggle/`: authorized destination for official downloads, separated by competition.
-- `notebooks/`: exploration; never the sole source of a decision.
 
 ## Docker
 
@@ -49,7 +48,6 @@ servers). Uses multi-stage build to keep the image lean.
 | Service | Command | Port | Usage |
 |---------|---------|------|-------|
 | `agent` | `python main.py` | — | Agent stdin/stdout (Kaggle submission) |
-| `marimo` | `marimo run notebooks/` | 2718 | Interactive notebooks for exploration |
 | `experiment` | `run_experiment()` | — | Full evaluation (batch of matches) |
 | `download` | `src.data.downloader` | — | Lazy download of datasets |
 | `dev` | bash (open stdin) | — | Development with live-mounted code |
@@ -63,12 +61,11 @@ docker compose build
 # Download datasets (lazy)
 docker compose run download
 
-# Open Marimo in browser
-docker compose up marimo
+# Build the submission package
+make build-package
 
-# Or use Makefile shortcuts
-make marimo
-make marimo-edit NOTEBOOK=01_card_catalog_overview.py
+# Run gates and submit to Kaggle
+make submit-kaggle
 
 # Run experiment
 AGENT_MODE=heuristic docker compose run experiment
@@ -106,7 +103,6 @@ AGENT_MODE=heuristic docker compose run experiment
 
 - `./data:/app/data` — dataset and manifest persistence between executions
 - `./kaggle.json:/root/.kaggle/kaggle.json:ro` — API credentials
-- `./notebooks:/app/notebooks` — live-editable notebooks
 - `./reports:/app/reports` — experiment reports accessible from host
 
 ## Quality tools

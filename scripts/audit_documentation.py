@@ -72,7 +72,7 @@ def _check_links() -> list[AuditIssue]:
             *ROOT.glob("*.md"),
             *(
                 path
-                for directory in ("docs", "src", "configs", "scripts", "notebooks")
+                for directory in ("docs", "src", "configs", "scripts")
                 for path in (ROOT / directory).rglob("*.md")
             ),
         }

@@ -16,8 +16,8 @@ COPY configs/ configs/
 COPY main.py .
 
 RUN useradd -m -u 1000 app \
-    && mkdir -p /home/app/.kaggle /app/data /app/notebooks /app/reports \
-    && chown -R app:app /home/app/.kaggle /app/data /app/notebooks /app/reports
+    && mkdir -p /home/app/.kaggle /app/data /app/reports \
+    && chown -R app:app /home/app/.kaggle /app/data /app/reports
 COPY --chown=app:app kaggle.json.example /home/app/.kaggle/kaggle.json.example
 
 USER app
@@ -38,12 +38,3 @@ COPY tests/ tests/
 USER app
 
 CMD ["bash"]
-
-FROM base AS marimo
-
-USER root
-RUN uv sync --frozen --no-dev --group notebooks
-USER app
-
-EXPOSE 2718
-CMD ["marimo", "run", "notebooks/", "--host", "0.0.0.0", "--port", "2718"]

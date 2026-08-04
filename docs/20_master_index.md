@@ -85,7 +85,6 @@ The roadmap owns status. These documents only define detailed scope and gates:
 - [`05_writeup_outline.md`](05_writeup_outline.md) — final writeup structure.
 - [`21_persistence_contracts.md`](21_persistence_contracts.md) — data provenance.
 - [`26_sdk_fallback_plan.md`](26_sdk_fallback_plan.md) — capability fallbacks.
-- [`../notebooks/README.md`](../notebooks/README.md) — Marimo notebooks.
 
 ## Authority
 

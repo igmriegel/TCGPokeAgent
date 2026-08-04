@@ -34,12 +34,14 @@
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replay JSON files |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
 | `scripts/build_package.sh submission.tar.gz` | Build the explicit submission allowlist |
+| `make build-package` | Build the default `submission.tar.gz` archive |
 | `scripts/build_package.sh submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
 | `scripts/build_package.sh submission-xgboost.tar.gz xgboost_ranker MODEL_DIR` | Build one backend-exclusive ranker archive |
 | `uv run --frozen --group ranker-xgboost python scripts/train_rankers.py --help` | Train grouped native ranker studies (`scripts/train_rankers.py`) |
 | `uv run --frozen python -m src.eval.validation --package submission.tar.gz` | Validate an extracted archive |
 | `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
 | `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit using the configured `~/.kaggle` login |
+| `make submit-kaggle` | Run the guarded Kaggle submission workflow for `submission.tar.gz` |
 
 ## Operational Python scripts
 

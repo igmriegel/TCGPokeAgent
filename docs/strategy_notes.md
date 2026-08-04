@@ -369,9 +369,9 @@ ambiguous_validation_replays:
   reason_totals:
     deck_out: 1
     no_pokemon_in_play: 2
-decision: "Monitor explicit Result.reason values in the Marimo dashboard and keep mirror-validation owner outcomes unknown."
+decision: "Monitor explicit Result.reason values in the investigation report and keep mirror-validation owner outcomes unknown."
 evidence:
-  notebook: "notebooks/03_run_results_dashboard.py"
+  report: "perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html"
   extractor: "src/data/replay_outcomes.py"
 limitations:
   - "Both sides use the same owner name in three validation episodes, so perspective W/L cannot be assigned from replay identity."

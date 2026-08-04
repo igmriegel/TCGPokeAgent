@@ -58,7 +58,7 @@ been captured in one frozen report.
 | Modules | Responsibility | Direct evidence |
 |---|---|---|
 | `src/data/__init__.py`, `src/data/downloader.py` | Kaggle dataset download and manifest verification | CLI/preflight usage; network-dependent |
-| `src/data/replay_outcomes.py` | W/D/L and termination classification | `tests/test_replay_outcomes.py`, Marimo dashboard |
+| `src/data/replay_outcomes.py` | W/D/L and termination classification | `tests/test_replay_outcomes.py`, investigation report |
 | `src/data/replay_ingestor.py` | Leakage-safe replay decision datasets | `tests/test_replay_ingestor.py` |
 | `src/data/gameplay_annotations.py` | Decision-linked post-hoc review records | `tests/test_gameplay_annotations.py` |
 | `src/data/replay_deep_analysis.py` | Deep replay analysis with damage/evolution/bench tracking | Used by investigation report generation |
@@ -95,7 +95,6 @@ release evidence. Promotion requires the holdout and package gates in
 | Native CABT bindings | `cg/` | Vendored package runtime |
 | Agent/evaluation profiles | `configs/` | Executable flat schema |
 | Operational commands | `scripts/` | Active; inventory in `scripts/README.md` |
-| Marimo analysis | `notebooks/` | Active, non-production |
 | Investigation reports | `perf_reports/` | Generated HTML; `INVESTIGATION_REPORT_ABOMASNOW.html` is canonical |
 | Raw/derived evidence | `data/`, `reports/`, `replays/`, `runs/` | Generated/versioned according to persistence contracts |
 

@@ -65,7 +65,7 @@ def test_policy_decision_records_ranking_features_margin_and_fallback(sample_obs
 def test_expert_groups_only_label_reviewed_alternatives() -> None:
     event = FeedbackEventV2(
         feedback_id="f-1",
-        origin="marimo",
+        origin="expert_review",
         reviewer="reviewer",
         replay_id="r-1",
         replay_sha256="a" * 64,

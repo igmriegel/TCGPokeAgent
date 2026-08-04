@@ -44,8 +44,8 @@ renumber.
 ## File Map
 
 ```
-Dockerfile                       # Multi-stage build (agent / dev / marimo)
-docker-compose.yml               # Services: agent, marimo, experiment, download, dev
+Dockerfile                       # Multi-stage build (agent / dev)
+docker-compose.yml               # Services: agent, experiment, download, dev
 .dockerignore
 kaggle.json.example              # Template for Kaggle API credentials
 main.py                          # Entry point: stdin → stdout JSON agent
@@ -246,9 +246,6 @@ docker compose run download
 
 # Run agent (stdin)
 echo '{"select":...}' | docker compose run --rm agent
-
-# Marimo notebooks
-docker compose up marimo
 
 # Full experiment
 AGENT_MODE=heuristic docker compose run experiment

@@ -13,8 +13,7 @@ parallel dependency manifest is maintained.
 Local acceptance commands use `uv run --frozen ...` and do not require
 activation. `source .venv/bin/activate` remains optional for an interactive
 shell. Docker stages use the same frozen lock: `agent` installs runtime
-dependencies, `dev` adds the `dev` group, and `marimo` adds the `notebooks`
-group.
+dependencies, while `dev` adds the `dev` group.
 
 ## Agent input
 

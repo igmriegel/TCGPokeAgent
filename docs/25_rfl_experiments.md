@@ -67,12 +67,6 @@ Do not use the small run as promotion evidence.
 
 ## 4. Collect expert annotations
 
-Start the Marimo annotation interface:
-
-```bash
-uv run --frozen marimo edit notebooks/05_rfl_annotation.py
-```
-
 Feed candidate signals from a run-specific JSONL and save immutable feedback,
 for example:
 

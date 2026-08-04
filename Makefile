@@ -1,20 +1,32 @@
 .DEFAULT_GOAL := help
 
-MARIMO_PORT ?= 2718
-NOTEBOOK ?= 01_card_catalog_overview.py
+SUBMISSION_ARCHIVE ?= submission.tar.gz
+PACKAGE_BACKEND ?= heuristic
+MODEL_DIR ?=
+SUBMISSION_ARGS ?=
 
-.PHONY: help marimo marimo-edit
+.PHONY: help build-package submit-kaggle update-replays-reports
 
 help:
 	@echo "Available targets:"
-	@echo "  make marimo                 Run Marimo notebooks"
-	@echo "  make marimo-edit            Open a notebook in edit mode"
-	@echo "  make marimo-edit NOTEBOOK=02_dataset_comparison.py"
+	@echo "  make build-package         Build the submission archive"
+	@echo "  make submit-kaggle         Run gates and submit to Kaggle"
+	@echo "  make update-replays-reports Download replays and refresh reports"
 
-marimo:
-	MARIMO_PORT=$(MARIMO_PORT) docker compose up marimo
+build-package:
+	scripts/build_package.sh "$(SUBMISSION_ARCHIVE)" "$(PACKAGE_BACKEND)" "$(MODEL_DIR)"
 
-marimo-edit:
-	MARIMO_PORT=$(MARIMO_PORT) docker compose run --rm --service-ports marimo \
-		marimo edit /app/notebooks/$(NOTEBOOK) \
-		--host 0.0.0.0 --port 2718
+submit-kaggle:
+	scripts/submit_simulation.sh --archive "$(SUBMISSION_ARCHIVE)" $(SUBMISSION_ARGS)
+
+update-replays-reports:
+	scripts/download_all_replays.sh
+	scripts/generate_investigation_report.sh
+	@for report in perf_reports/INVESTIGATION_REPORT_*.html; do \
+		[ "$$report" = "perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html" ] && continue; \
+		submission_id=$${report##*/INVESTIGATION_REPORT_}; \
+		submission_id=$${submission_id%.html}; \
+		scripts/generate_investigation_report.sh \
+			data/raw/kaggle/kaggle_gameplay_runs "$$report" "Igor Riegel" \
+			--submission-id "$$submission_id"; \
+	done
