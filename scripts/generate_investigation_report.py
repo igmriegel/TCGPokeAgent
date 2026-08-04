@@ -386,12 +386,8 @@ def parse_replay(fpath, owner_name):
         "damage_dealt": damage_dealt,
         "damage_taken": damage_taken,
         "evolution_turns": evolution_turns,
-        "lost_to_no_pokemon_by_turn_2": outcome == "loss"
-        and result_reason == 3
-        and max_turn <= 2,
-        "lost_to_no_pokemon_by_turn_3": outcome == "loss"
-        and result_reason == 3
-        and max_turn <= 3,
+        "lost_to_no_pokemon_by_turn_2": outcome == "loss" and result_reason == 3 and max_turn <= 2,
+        "lost_to_no_pokemon_by_turn_3": outcome == "loss" and result_reason == 3 and max_turn <= 3,
         "opponent_has_weakness_type": opponent_has_weakness_type,
         "lost_to_deck_out": outcome == "loss" and result_reason == 2,
         "owner_prizes_remaining": owner_prizes_remaining,
@@ -423,6 +419,17 @@ def generate_report(
     for _fp in replay_paths:
         _res = parse_replay(_fp, owner_name)
         if _res is not None:
+            _res.setdefault("lost_to_no_pokemon_by_turn_2", False)
+            _res.setdefault("lost_to_no_pokemon_by_turn_3", False)
+            _res.setdefault("opponent_has_weakness_type", False)
+            _res.setdefault("lost_to_deck_out", False)
+            _res.setdefault("owner_prizes_remaining", 0)
+            _res.setdefault("opponent_prizes_remaining", 0)
+            _res.setdefault("owner_active_name", "Unknown")
+            _res.setdefault("owner_active_hp", "N/A")
+            _res.setdefault("opponent_active_name", "Unknown")
+            _res.setdefault("opponent_active_hp", "N/A")
+            _res.setdefault("opponent_deck_remaining", "N/A")
             raw_results.append(_res)
 
     games_win = sum(1 for _x in raw_results if _x["outcome"] == "win")
@@ -465,9 +472,7 @@ def generate_report(
     )
     losses_to_deck_out = sum(_x["lost_to_deck_out"] for _x in raw_results)
 
-    donk_records = [
-        _x for _x in raw_results if _x["lost_to_no_pokemon_by_turn_3"]
-    ]
+    donk_records = [_x for _x in raw_results if _x["lost_to_no_pokemon_by_turn_3"]]
     donk_by_archetype: dict[str, list[dict[str, object]]] = defaultdict(list)
     for _x in donk_records:
         donk_by_archetype[_x["opp_archetype"]].append(_x)
@@ -617,7 +622,7 @@ def generate_report(
     for _arch, _records in sorted(donk_by_archetype.items()):
         _turn_2 = sum(_x["lost_to_no_pokemon_by_turn_2"] for _x in _records)
         _replays = ", ".join(
-            f'{_x["episode_id"]} (T{2 if _x["lost_to_no_pokemon_by_turn_2"] else 3})'
+            f"{_x['episode_id']} (T{2 if _x['lost_to_no_pokemon_by_turn_2'] else 3})"
             for _x in sorted(_records, key=lambda item: int(item["episode_id"]))
         )
         donk_rows += (
@@ -639,14 +644,14 @@ def generate_report(
     deck_out_rows = ""
     for _x in sorted(deck_out_records, key=lambda item: int(item["episode_id"])):
         deck_out_rows += (
-            f'<tr><td>{_x["episode_id"]}</td><td>{_x["owner_prizes_remaining"]}</td>'
-            f'<td>{_x["opponent_prizes_remaining"]}</td>'
-            f'<td>{html_module.escape(str(_x["owner_active_name"]))}</td>'
-            f'<td>{html_module.escape(str(_x["owner_active_hp"]))}</td>'
-            f'<td>{html_module.escape(str(_x["opponent_active_name"]))}</td>'
-            f'<td>{html_module.escape(str(_x["opponent_active_hp"]))}</td>'
-            f'<td>{_x["opponent_deck_remaining"]}</td>'
-            f'<td>{html_module.escape(str(_x["opp_archetype"]))}</td></tr>\n'
+            f"<tr><td>{_x['episode_id']}</td><td>{_x['owner_prizes_remaining']}</td>"
+            f"<td>{_x['opponent_prizes_remaining']}</td>"
+            f"<td>{html_module.escape(str(_x['owner_active_name']))}</td>"
+            f"<td>{html_module.escape(str(_x['owner_active_hp']))}</td>"
+            f"<td>{html_module.escape(str(_x['opponent_active_name']))}</td>"
+            f"<td>{html_module.escape(str(_x['opponent_active_hp']))}</td>"
+            f"<td>{_x['opponent_deck_remaining']}</td>"
+            f"<td>{html_module.escape(str(_x['opp_archetype']))}</td></tr>\n"
         )
 
     submissions = _build_submission_rows(raw_results, submission_id)
