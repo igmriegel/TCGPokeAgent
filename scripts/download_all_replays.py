@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,6 +14,7 @@ COMPETITION = "pokemon-tcg-ai-battle"
 REPLAY_DIR = Path("replays/remote")
 DATA_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
+KAGGLE_COMMAND_TIMEOUT = int(os.environ.get("KAGGLE_COMMAND_TIMEOUT", "60"))
 
 
 def _list_submissions() -> list[dict[str, str]]:
@@ -21,17 +23,28 @@ def _list_submissions() -> list[dict[str, str]]:
         capture_output=True,
         text=True,
         check=True,
+        timeout=KAGGLE_COMMAND_TIMEOUT,
     )
     return list(csv.DictReader(io.StringIO(result.stdout)))
 
 
-def _list_episodes(submission_id: str) -> list[dict[str, str]]:
-    result = subprocess.run(
-        ["kaggle", "competitions", "episodes", submission_id, "--format", "json"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+def _list_episodes(submission_id: str) -> list[dict[str, str]] | None:
+    try:
+        result = subprocess.run(
+            ["kaggle", "competitions", "episodes", submission_id, "--format", "json"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=KAGGLE_COMMAND_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"  SKIPPED: episode listing timed out after {KAGGLE_COMMAND_TIMEOUT}s")
+        return None
+    except subprocess.CalledProcessError as error:
+        detail = error.stderr.strip() if error.stderr else "unknown Kaggle CLI error"
+        print(f"  SKIPPED: could not list episodes: {detail}")
+        return None
+
     output = result.stdout
     bracket_end = output.rfind("]")
     if bracket_end == -1:
@@ -59,6 +72,8 @@ def main() -> int:
         print(f"\n=== Sub {sub_id} (score: {score}) ===")
 
         episodes = _list_episodes(sub_id)
+        if episodes is None:
+            continue
         completed_eps = [e for e in episodes if e.get("state") == "EpisodeState.COMPLETED"]
         print(f"  Episodes: {len(completed_eps)}")
 
@@ -83,7 +98,11 @@ def main() -> int:
                         ["kaggle", "competitions", "replay", ep_id, "-p", str(sub_dir), "-q"],
                         check=True,
                         capture_output=True,
+                        timeout=KAGGLE_COMMAND_TIMEOUT,
                     )
+                except subprocess.TimeoutExpired:
+                    print(f"    FAILED: {ep_id} (download timed out)")
+                    continue
                 except subprocess.CalledProcessError:
                     print(f"    FAILED: {ep_id}")
                     continue
