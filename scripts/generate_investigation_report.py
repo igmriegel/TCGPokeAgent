@@ -36,6 +36,9 @@ for _c in all_card_data():
     for _aid in _c.attacks:
         attack_to_card[_aid] = _c.name
 
+ABOMASNOW_WEAKNESS_TYPE = 8
+ABOMASNOW_WEAKNESS_NAME = "Metal"
+
 
 def _load_submission_map() -> dict[str, str]:
     """Load the episode-to-submission mapping if it exists."""
@@ -263,10 +266,12 @@ def parse_replay(fpath, owner_name):
         return None
 
     winner = None
+    result_reason = None
     for _frame in vis:
         for _log in _frame.get("logs", []):
             if _log.get("type") == "Result":
                 winner = _log.get("result")
+                result_reason = _log.get("reason")
     if winner is None:
         return None
 
@@ -283,6 +288,52 @@ def parse_replay(fpath, owner_name):
     for _frame in vis:
         _tv = _frame.get("current", {}).get("turn", 0)
         max_turn = max(max_turn, _tv)
+
+    terminal_current = next(
+        (
+            _frame.get("current", {})
+            for _frame in reversed(vis)
+            if isinstance(_frame.get("current", {}), dict)
+        ),
+        {},
+    )
+    terminal_players = terminal_current.get("players", [])
+    owner_terminal_state = (
+        terminal_players[owner_idx]
+        if isinstance(terminal_players, list) and owner_idx < len(terminal_players)
+        else {}
+    )
+    opponent_idx = 1 - owner_idx
+    opponent_terminal_state = (
+        terminal_players[opponent_idx]
+        if isinstance(terminal_players, list) and opponent_idx < len(terminal_players)
+        else {}
+    )
+
+    def terminal_active(state):
+        """Return the terminal Active Pokémon name and HP."""
+        active = state.get("active", []) if isinstance(state, dict) else []
+        pokemon = active[0] if active else {}
+        return pokemon.get("name", "None"), pokemon.get("hp", "N/A")
+
+    owner_active_name, owner_active_hp = terminal_active(owner_terminal_state)
+    opponent_active_name, opponent_active_hp = terminal_active(opponent_terminal_state)
+    owner_prizes_remaining = len(owner_terminal_state.get("prize", []))
+    opponent_prizes_remaining = len(opponent_terminal_state.get("prize", []))
+    opponent_deck_remaining = opponent_terminal_state.get("deckCount", "N/A")
+
+    opponent_has_weakness_type = False
+    try:
+        opening_action = vis[0]["action"]
+        opponent_card_ids = opening_action[opponent_idx]
+        opponent_has_weakness_type = any(
+            cards_sdk.get(int(_card_id), None) is not None
+            and cards_sdk[int(_card_id)].cardType == 0
+            and cards_sdk[int(_card_id)].energyType == ABOMASNOW_WEAKNESS_TYPE
+            for _card_id in opponent_card_ids
+        )
+    except (KeyError, IndexError, TypeError, ValueError):
+        pass
 
     last_frame_per_turn = {}
     for _fi, _frame in enumerate(vis):
@@ -335,6 +386,21 @@ def parse_replay(fpath, owner_name):
         "damage_dealt": damage_dealt,
         "damage_taken": damage_taken,
         "evolution_turns": evolution_turns,
+        "lost_to_no_pokemon_by_turn_2": outcome == "loss"
+        and result_reason == 3
+        and max_turn <= 2,
+        "lost_to_no_pokemon_by_turn_3": outcome == "loss"
+        and result_reason == 3
+        and max_turn <= 3,
+        "opponent_has_weakness_type": opponent_has_weakness_type,
+        "lost_to_deck_out": outcome == "loss" and result_reason == 2,
+        "owner_prizes_remaining": owner_prizes_remaining,
+        "opponent_prizes_remaining": opponent_prizes_remaining,
+        "owner_active_name": owner_active_name,
+        "owner_active_hp": owner_active_hp,
+        "opponent_active_name": opponent_active_name,
+        "opponent_active_hp": opponent_active_hp,
+        "opponent_deck_remaining": opponent_deck_remaining,
     }
 
 
@@ -387,6 +453,31 @@ def generate_report(
     second_total = second_wins + second_losses
     first_wr = first_wins / first_total * 100 if first_total else 0
     second_wr = second_wins / second_total * 100 if second_total else 0
+
+    losses_without_field_through_turn_2 = sum(
+        _x["lost_to_no_pokemon_by_turn_2"] for _x in raw_results
+    )
+    losses_without_field_through_turn_3 = sum(
+        _x["lost_to_no_pokemon_by_turn_3"] for _x in raw_results
+    )
+    losses_to_weakness_type = sum(
+        _x["outcome"] == "loss" and _x["opponent_has_weakness_type"] for _x in raw_results
+    )
+    losses_to_deck_out = sum(_x["lost_to_deck_out"] for _x in raw_results)
+
+    donk_records = [
+        _x for _x in raw_results if _x["lost_to_no_pokemon_by_turn_3"]
+    ]
+    donk_by_archetype: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for _x in donk_records:
+        donk_by_archetype[_x["opp_archetype"]].append(_x)
+
+    metal_matchups: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
+    for _x in raw_results:
+        if _x["opponent_has_weakness_type"]:
+            metal_matchups[_x["opp_archetype"]][_x["outcome"][0]] += 1
+
+    deck_out_records = [_x for _x in raw_results if _x["lost_to_deck_out"]]
 
     atk_win = Counter()
     atk_loss = Counter()
@@ -522,6 +613,42 @@ def generate_report(
             f"<td>{_total}</td>{confidence_label(_total)}</tr>\n"
         )
 
+    donk_rows = ""
+    for _arch, _records in sorted(donk_by_archetype.items()):
+        _turn_2 = sum(_x["lost_to_no_pokemon_by_turn_2"] for _x in _records)
+        _replays = ", ".join(
+            f'{_x["episode_id"]} (T{2 if _x["lost_to_no_pokemon_by_turn_2"] else 3})'
+            for _x in sorted(_records, key=lambda item: int(item["episode_id"]))
+        )
+        donk_rows += (
+            f"<tr><td>{html_module.escape(str(_arch))}</td><td>{len(_records)}</td>"
+            f"<td>{_turn_2}</td><td>{len(_records) - _turn_2}</td><td>{_replays}</td></tr>\n"
+        )
+
+    metal_rows = ""
+    for _arch, _data in sorted(metal_matchups.items()):
+        _total = _data["w"] + _data["l"]
+        _wr = _data["w"] / _total * 100 if _total else 0
+        metal_rows += (
+            f"<tr><td>{html_module.escape(str(_arch))}</td>"
+            f'<td class="win">{_data["w"]}</td><td class="loss">{_data["l"]}</td>'
+            f'<td class="{"win" if _wr >= 50 else "loss"}">{_wr:.1f}%</td>'
+            f"<td>{_total}</td></tr>\n"
+        )
+
+    deck_out_rows = ""
+    for _x in sorted(deck_out_records, key=lambda item: int(item["episode_id"])):
+        deck_out_rows += (
+            f'<tr><td>{_x["episode_id"]}</td><td>{_x["owner_prizes_remaining"]}</td>'
+            f'<td>{_x["opponent_prizes_remaining"]}</td>'
+            f'<td>{html_module.escape(str(_x["owner_active_name"]))}</td>'
+            f'<td>{html_module.escape(str(_x["owner_active_hp"]))}</td>'
+            f'<td>{html_module.escape(str(_x["opponent_active_name"]))}</td>'
+            f'<td>{html_module.escape(str(_x["opponent_active_hp"]))}</td>'
+            f'<td>{_x["opponent_deck_remaining"]}</td>'
+            f'<td>{html_module.escape(str(_x["opp_archetype"]))}</td></tr>\n'
+        )
+
     submissions = _build_submission_rows(raw_results, submission_id)
 
     sub_rows = ""
@@ -547,6 +674,10 @@ def generate_report(
             f'<td>{_s["episodes"]}</td><td class="win">{_s["w"]}</td>'
             f'<td class="loss">{_s["l"]}</td><td class="{_scls}">{_swr:.1f}%</td></tr>\n'
         )
+
+    donk_empty = '<tr><td colspan="5">No donk losses in this scope.</td></tr>'
+    metal_empty = '<tr><td colspan="5">No Metal-type opponent decks in this scope.</td></tr>'
+    deck_out_empty = '<tr><td colspan="9">No deck-out losses in this scope.</td></tr>'
 
     now = date.today().strftime("%b %d %Y")
     report_title = (
@@ -724,7 +855,61 @@ def generate_report(
   </div>
 </div>
 
-<h2>4 &mdash; Attack Usage</h2>
+<h2>4 &mdash; Early Losses and Weakness Matchups</h2>
+<div class="metric-row">
+  <div class="metric">
+    <div class="metric-label">Donk: no Pokémon through turn 2</div>
+    <div class="metric-value loss">{losses_without_field_through_turn_2}</div>
+    <div style="font-size:0.8rem;color:var(--muted)">losses only</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Donk: no Pokémon through turn 3</div>
+    <div class="metric-value loss">{losses_without_field_through_turn_3}</div>
+    <div style="font-size:0.8rem;color:var(--muted)">losses only</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Losses to {ABOMASNOW_WEAKNESS_NAME} Pokémon</div>
+    <div class="metric-value loss">{losses_to_weakness_type}</div>
+    <div style="font-size:0.8rem;color:var(--muted)">
+      opponent deck contained at least one {ABOMASNOW_WEAKNESS_NAME}-type Pokémon
+    </div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Losses by deck-out</div>
+    <div class="metric-value loss">{losses_to_deck_out}</div>
+    <div style="font-size:0.8rem;color:var(--muted)">explicit replay termination reason</div>
+  </div>
+</div>
+<div class="highlight">
+  Donk is counted when the replay explicitly ends because we have no Pokémon in
+  play (termination reason 3) by the specified global turn. The weakness count uses the opening
+  opponent deck list and counts a match once if it contains a {ABOMASNOW_WEAKNESS_NAME}
+  Pokémon; it does not claim that Pokémon was the attacker.
+</div>
+
+<h3>4.1 &mdash; Donk Details</h3>
+<table>
+  <thead><tr><th>Opponent Archetype</th><th>Total</th><th>By Turn 2</th>
+    <th>By Turn 3</th><th>Replay IDs</th></tr></thead>
+  <tbody>{donk_rows or donk_empty}</tbody>
+</table>
+
+<h3>4.2 &mdash; Metal Matchups</h3>
+<table>
+  <thead><tr><th>Opponent Archetype</th><th>Wins</th><th>Losses</th>
+    <th>Win Rate</th><th>Total</th></tr></thead>
+  <tbody>{metal_rows or metal_empty}</tbody>
+</table>
+
+<h3>4.3 &mdash; Individual Deck-out Losses</h3>
+<table>
+  <thead><tr><th>Replay</th><th>Our Prizes Left</th><th>Opponent Prizes Left</th>
+    <th>Our Active</th><th>Our HP</th><th>Opponent Active</th><th>Opponent HP</th>
+    <th>Opponent Deck Cards</th><th>Opponent Archetype</th></tr></thead>
+  <tbody>{deck_out_rows or deck_out_empty}</tbody>
+</table>
+
+<h2>5 &mdash; Attack Usage</h2>
 <div class="table-scroll">
 <table>
   <thead><tr><th>Attack</th><th>Card</th><th>Win</th><th>Loss</th><th>Total</th></tr></thead>
@@ -732,7 +917,7 @@ def generate_report(
 </table>
 </div>
 
-<h2>5 &mdash; Damage Distribution</h2>
+<h2>6 &mdash; Damage Distribution</h2>
 <div class="metric-row">
   <div class="metric">
     <div class="metric-label">Win: Dealt</div>
@@ -764,14 +949,14 @@ def generate_report(
   </div>
 </div>
 
-<h2>6 &mdash; {matchup_section_title}</h2>
+<h2>7 &mdash; {matchup_section_title}</h2>
 
 <div class="highlight">
   <strong>{len(matchup_data)} unique opponent archetypes</strong> faced across {total} games.
   Focus on archetypes with 5+ total games for reliable signal.
 </div>
 
-<h3>6.1 &mdash; Worst Matchups (Top 10 by win rate)</h3>
+<h3>7.1 &mdash; Worst Matchups (Top 10 by win rate)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -786,7 +971,7 @@ def generate_report(
 </table>
 </div>
 
-<h3>6.2 &mdash; Best Matchups (Top 10 by win rate)</h3>
+<h3>7.2 &mdash; Best Matchups (Top 10 by win rate)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -801,7 +986,7 @@ def generate_report(
 </table>
 </div>
 
-<h3>6.3 &mdash; All Matchups (Full Table)</h3>
+<h3>7.3 &mdash; All Matchups (Full Table)</h3>
 <div class="table-scroll">
 <table>
   <thead>
