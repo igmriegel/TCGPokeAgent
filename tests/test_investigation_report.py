@@ -145,6 +145,9 @@ def test_selected_report_has_one_submission_summary(
     assert "Selected Submission Summary" in content
     assert "Submission History" not in content
     assert "Matchup Analysis &mdash; Submission 55222565" in content
+    assert "7.1 &mdash; Worst Matchups (Top 5)" in content
+    assert "minimum 5 games" not in content.split("7.1", 1)[1].split("7.2", 1)[0]
+    assert "7.2 &mdash; Best Matchups (Top 5, minimum 5 games)" in content
     assert "614.4" in content
     assert "1W/0L" in content
     assert "other submission" not in content

@@ -621,14 +621,15 @@ def generate_report(
             f"<td>{fmt_avg(_avg_win)}</td><td>{_total}</td></tr>\n"
         )
 
-    worst_matchups = [(k, v) for k, v in sorted_matchups if (v["w"] + v["l"]) >= 5]
+    matchup_top_n = 5 if submission_id else 10
+    worst_matchups = list(sorted_matchups)
     worst_matchups = sorted(
         worst_matchups,
         key=lambda x: x[1]["w"] / (x[1]["w"] + x[1]["l"]) if (x[1]["w"] + x[1]["l"]) else 0,
     )
 
     worst_rows = ""
-    for _arch, _data in worst_matchups[:10]:
+    for _arch, _data in worst_matchups[:matchup_top_n]:
         _w = _data["w"]
         _l = _data["l"]
         _total = _w + _l
@@ -649,7 +650,7 @@ def generate_report(
     )
 
     best_rows = ""
-    for _arch, _data in best_matchups[:10]:
+    for _arch, _data in best_matchups[:matchup_top_n]:
         _w = _data["w"]
         _l = _data["l"]
         _total = _w + _l
@@ -1037,10 +1038,10 @@ def generate_report(
 
 <div class="highlight">
   <strong>{len(matchup_data)} unique opponent archetypes</strong> faced across {total} games.
-  Focus on archetypes with 5+ total games for reliable signal.
+  Worst matchups include all sample sizes; best matchups require 5+ total games.
 </div>
 
-<h3>7.1 &mdash; Worst Matchups (Top 10, minimum 5 games)</h3>
+<h3>7.1 &mdash; Worst Matchups (Top {matchup_top_n})</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -1055,7 +1056,7 @@ def generate_report(
 </table>
 </div>
 
-<h3>7.2 &mdash; Best Matchups (Top 10, minimum 5 games)</h3>
+<h3>7.2 &mdash; Best Matchups (Top {matchup_top_n}, minimum 5 games)</h3>
 <div class="table-scroll">
 <table>
   <thead>
