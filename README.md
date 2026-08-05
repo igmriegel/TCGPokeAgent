@@ -62,7 +62,7 @@ docker compose build
 docker compose run download
 
 # Build the submission package
-make build-package
+make build-abomasnow-package
 
 # Run gates and submit to Kaggle
 make submit-kaggle

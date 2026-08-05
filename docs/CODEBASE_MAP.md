@@ -27,6 +27,7 @@
 | `src/agents/baseline.py` | Deterministic context fallback | `tests/test_baseline_agent.py` |
 | `src/agents/hdi.py` | HDI v1 ordinal policy, factual combat context, and deterministic tie-breaking | `tests/test_hdi_agent.py`, HDI package smoke |
 | `src/agents/heuristic.py` | Scoring, priority ladder, and conditional board-development ordering | `tests/test_heuristic_agent.py`, `tests/test_heuristic_strategy.py`, `tests/test_profile.py`, CABT golden gameplay |
+| `src/agents/honchkrow_porygon.py` | Isolated Honchkrow/Porygon deck scorer and policy | `tests/test_honchkrow_porygon.py`; dedicated package smoke |
 | `src/agents/search.py` | Bounded adapter scaffold and heuristic pass-through wrapper | `tests/test_search.py`; not integrated into decisions |
 | `src/core/candidate.py`, `src/core/parsed_decision.py`, `src/core/policy_decision.py` | Parsed and auditable policy decision vocabulary | Parser, heuristic, and ranking tests |
 | `src/core/parser.py`, `src/core/catalog.py` | Observation normalization and card metadata | `tests/test_parser.py`, CABT golden gameplay |
@@ -36,9 +37,9 @@
 | `src/core/archetype.py` | Evolution-line deck archetypes and dominant terminal energy types | investigation report tests |
 | `src/core/types.py`, `src/core/exceptions.py`, `src/core/interfaces.py`, `src/core/feature_schema.py`, `src/core/__init__.py` | Shared enums, typed failures, feature contract, interfaces, exports | Imported throughout tests and runtime |
 
-`main.py` is the only competition entry point. It returns the deck for the
-initial request, delegates decisions to the selected policy, validates output,
-and catches all policy failures with a minimal cardinality-safe fallback.
+`main.py` remains the Abomasnow competition entry point. The isolated
+`main_honchkrow_porygon.py` entry point performs the same contract for the
+Honchkrow/Porygon deck without changing the default package.
 
 ## Evaluation and release
 
