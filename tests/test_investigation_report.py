@@ -5,7 +5,23 @@ from pathlib import Path
 
 import pytest
 
+from scripts import download_all_replays as downloader
 from scripts import generate_investigation_report as report
+
+
+def test_active_submissions_returns_two_latest_completed() -> None:
+    """Limit replay synchronization to the two latest completed submissions."""
+    submissions = [
+        {"ref": "old", "date": "2026-08-01 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+        {"ref": "new", "date": "2026-08-05 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+        {"ref": "error", "date": "2026-08-06 00:00:00", "status": "SubmissionStatus.ERROR"},
+        {"ref": "mid", "date": "2026-08-04 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+    ]
+
+    assert [row["ref"] for row in downloader._active_submissions(submissions)] == [
+        "new",
+        "mid",
+    ]
 
 
 def test_filter_replay_paths_uses_submission_map(

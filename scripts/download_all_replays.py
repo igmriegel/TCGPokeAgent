@@ -1,4 +1,4 @@
-"""Download all missing replays from all submissions."""
+"""Download missing replays from the active Kaggle submissions."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 COMPETITION = "pokemon-tcg-ai-battle"
@@ -15,6 +16,7 @@ REPLAY_DIR = Path("replays/remote")
 DATA_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 KAGGLE_COMMAND_TIMEOUT = int(os.environ.get("KAGGLE_COMMAND_TIMEOUT", "60"))
+ACTIVE_SUBMISSION_LIMIT = 2
 
 
 def _list_submissions() -> list[dict[str, str]]:
@@ -26,6 +28,28 @@ def _list_submissions() -> list[dict[str, str]]:
         timeout=KAGGLE_COMMAND_TIMEOUT,
     )
     return list(csv.DictReader(io.StringIO(result.stdout)))
+
+
+def _parse_submission_date(value: str) -> datetime:
+    """Parse a Kaggle submission date, using the minimum on malformed input."""
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return datetime.min
+
+
+def _active_submissions(submissions: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Return the most recent completed submissions with replay availability."""
+    completed = [
+        submission
+        for submission in submissions
+        if submission.get("status") == "SubmissionStatus.COMPLETE"
+    ]
+    return sorted(
+        completed,
+        key=lambda submission: _parse_submission_date(submission.get("date", "")),
+        reverse=True,
+    )[:ACTIVE_SUBMISSION_LIMIT]
 
 
 def _list_episodes(submission_id: str) -> list[dict[str, str]] | None:
@@ -60,13 +84,16 @@ def main() -> int:
         submission_map = json.loads(SUBMISSION_MAP_PATH.read_text())
 
     submissions = _list_submissions()
-    completed = [s for s in submissions if s.get("status") == "SubmissionStatus.COMPLETE"]
-    print(f"Found {len(completed)} completed submissions")
+    active = _active_submissions(submissions)
+    print(
+        "Active replay window: "
+        + ", ".join(submission.get("ref", "unknown") for submission in active)
+    )
 
     total_downloaded = 0
     total_skipped = 0
 
-    for sub in completed:
+    for sub in active:
         sub_id = sub["ref"]
         score = sub.get("publicScore", "N/A")
         print(f"\n=== Sub {sub_id} (score: {score}) ===")
