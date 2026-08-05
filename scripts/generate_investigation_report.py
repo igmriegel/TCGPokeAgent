@@ -419,6 +419,7 @@ def generate_report(
     owner_name: str,
     output_path: pathlib.Path,
     submission_id: str | None = None,
+    deck_filter: str | None = None,
 ) -> None:
     """Generate the HTML investigation report from a replay directory.
 
@@ -427,6 +428,8 @@ def generate_report(
         owner_name: Kaggle agent name used to identify the target player.
         output_path: Destination HTML file.
         submission_id: Optional Kaggle submission ID used to limit the report.
+        deck_filter: Optional case-insensitive substring matched against the
+            controlled player's derived deck label.
     """
     raw_results = []
     mapped_episode_count = Counter()
@@ -437,13 +440,19 @@ def generate_report(
     for _fp in replay_paths:
         episode_id = _episode_id_from_path(_fp)
         mapped_submission_id = submission_map.get(episode_id)
-        if mapped_submission_id:
-            mapped_episode_count[mapped_submission_id] += 1
         try:
             _res = parse_replay(_fp, owner_name)
         except (OSError, TypeError, ValueError, json.JSONDecodeError):
             _res = None
         if _res is not None:
+            if (
+                deck_filter
+                and deck_filter.casefold() not in str(_res.get("owner_deck", "")).casefold()
+            ):
+                continue
+            mapped_submission_id = submission_map.get(episode_id)
+            if mapped_submission_id:
+                mapped_episode_count[mapped_submission_id] += 1
             _res.setdefault("lost_to_no_pokemon_by_turn_2", False)
             _res.setdefault("lost_to_no_pokemon_by_turn_3", False)
             _res.setdefault("opponent_has_weakness_type", False)
@@ -627,9 +636,7 @@ def generate_report(
         worst_matchups,
         key=lambda x: (
             -x[1]["l"],
-            x[1]["w"] / (x[1]["w"] + x[1]["l"])
-            if (x[1]["w"] + x[1]["l"])
-            else 0,
+            x[1]["w"] / (x[1]["w"] + x[1]["l"]) if (x[1]["w"] + x[1]["l"]) else 0,
         ),
     )
 
@@ -746,6 +753,7 @@ def generate_report(
     now = date.today().strftime("%b %d %Y")
     escaped_deck_label = html_module.escape(str(deck_label))
     escaped_submission_id = html_module.escape(str(submission_id)) if submission_id else ""
+    escaped_deck_filter = html_module.escape(str(deck_filter)) if deck_filter else ""
     report_title = (
         f"Investigation Report — Submission {escaped_submission_id} — {escaped_deck_label}"
         if submission_id
@@ -757,11 +765,14 @@ def generate_report(
         else "Investigation Report"
     )
     report_subtitle = (
-        f"Submission {escaped_submission_id} &bull; {escaped_deck_label} &bull; "
+        f"Submission {escaped_submission_id} &bull; {escaped_deck_label}"
+        f"{f' &bull; Filter: {escaped_deck_filter}' if escaped_deck_filter else ''} &bull; "
         f"{analyzed} parsed matches "
         f"({games_win}W/{games_loss}L/{draws}D) &bull; {now}"
         if submission_id
-        else f"{escaped_deck_label} &bull; {analyzed} parsed matches "
+        else f"{escaped_deck_label}"
+        f"{f' &bull; Filter: {escaped_deck_filter}' if escaped_deck_filter else ''} &bull; "
+        f"{analyzed} parsed matches "
         f"({games_win}W/{games_loss}L/{draws}D) &bull; {now}"
     )
     submission_section_title = (
@@ -1133,6 +1144,10 @@ def _parser() -> argparse.ArgumentParser:
         "--submission-id",
         help="Limit the report to episodes mapped to this Kaggle submission ID.",
     )
+    parser.add_argument(
+        "--deck-filter",
+        help="Keep only replays whose controlled-player deck label contains this text.",
+    )
     return parser
 
 
@@ -1145,6 +1160,7 @@ def main(argv: list[str] | None = None) -> int:
             args.owner_name,
             args.output_path,
             submission_id=args.submission_id,
+            deck_filter=args.deck_filter,
         )
     except ValueError as error:
         print(f"Error: {error}", file=sys.stderr)

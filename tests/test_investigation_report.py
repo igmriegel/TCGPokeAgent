@@ -151,3 +151,51 @@ def test_selected_report_has_one_submission_summary(
     assert "614.4" in content
     assert "1W/0L" in content
     assert "other submission" not in content
+
+
+def test_deck_filter_excludes_other_controlled_decks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Restrict aggregate metrics and submission rows to the requested deck."""
+    mapping_path = tmp_path / "episode_to_submission.json"
+    mapping_path.write_text(json.dumps({"100": "55222565", "200": "55222565"}))
+    monkeypatch.setattr(report, "SUBMISSION_MAP_PATH", mapping_path)
+    (tmp_path / "100.json").touch()
+    (tmp_path / "200.json").touch()
+    monkeypatch.setattr(
+        report,
+        "_list_completed_submissions",
+        lambda: [
+            {
+                "ref": "55222565",
+                "date": "2026-08-03T22:25:49",
+                "description": "mixed deck test",
+                "publicScore": "614.4",
+            }
+        ],
+    )
+
+    def fake_parse_replay(path: Path, owner_name: str) -> dict[str, object]:
+        del owner_name
+        return {
+            "episode_id": path.stem,
+            "outcome": "win" if path.stem == "100" else "loss",
+            "first_player": 0,
+            "max_turn": 8,
+            "opp_archetype": "test opponent",
+            "owner_deck": "Mega Abomasnow / Kyogre" if path.stem == "100" else "Honchkrow",
+            "attack_usage": {},
+            "damage_dealt": [],
+            "damage_taken": [],
+            "evolution_turns": [],
+        }
+
+    monkeypatch.setattr(report, "parse_replay", fake_parse_replay)
+    output_path = tmp_path / "report.html"
+
+    report.generate_report(tmp_path, "Igor Riegel", output_path, deck_filter="Abomasnow")
+
+    content = output_path.read_text()
+    assert "Total Replays</div>" in content
+    assert "1</div>" in content
+    assert "Filter: Abomasnow" in content
