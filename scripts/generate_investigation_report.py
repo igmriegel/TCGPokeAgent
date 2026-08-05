@@ -25,10 +25,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from cg.api import all_attack, all_card_data  # noqa: E402
-from src.core.archetype import resolve_deck_archetype  # noqa: E402
+from src.core.archetype import (  # noqa: E402
+    resolve_deck_archetype,
+    resolve_deck_archetype_lines,
+)
 
 COMPETITION = "pokemon-tcg-ai-battle"
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
+SUBMISSION_METADATA_CACHE_PATH = Path("data/raw/kaggle/submission_metadata.json")
 
 attacks_sdk = {a.attackId: a for a in all_attack()}
 cards_sdk = {c.cardId: c for c in all_card_data()}
@@ -53,9 +57,11 @@ def _list_completed_submissions() -> list[dict[str, str]]:
     """Fetch completed Kaggle submissions for the current competition.
 
     Returns:
-        A CSV-derived list of submission rows. If the Kaggle CLI is unavailable
-        or the request fails, returns an empty list and lets the report fall
-        back to local episode counts.
+        Completed submission rows from Kaggle or the local metadata cache.
+
+    Raises:
+        RuntimeError: If neither the Kaggle API nor a metadata cache is
+            available. Generating a report with fabricated metadata is unsafe.
     """
     try:
         result = subprocess.run(
@@ -64,11 +70,21 @@ def _list_completed_submissions() -> list[dict[str, str]]:
             text=True,
             check=True,
         )
-    except (OSError, subprocess.CalledProcessError):
-        return []
+    except (OSError, subprocess.CalledProcessError) as error:
+        if SUBMISSION_METADATA_CACHE_PATH.exists():
+            cached = json.loads(SUBMISSION_METADATA_CACHE_PATH.read_text(encoding="utf-8"))
+            if isinstance(cached, list):
+                return [row for row in cached if row.get("status") == "SubmissionStatus.COMPLETE"]
+        raise RuntimeError(
+            "Kaggle submission metadata unavailable: API request failed and cache "
+            f"{SUBMISSION_METADATA_CACHE_PATH} is missing or invalid."
+        ) from error
 
     rows = list(csv.DictReader(io.StringIO(result.stdout)))
-    return [row for row in rows if row.get("status") == "SubmissionStatus.COMPLETE"]
+    completed = [row for row in rows if row.get("status") == "SubmissionStatus.COMPLETE"]
+    SUBMISSION_METADATA_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUBMISSION_METADATA_CACHE_PATH.write_text(json.dumps(completed, indent=2) + "\n")
+    return completed
 
 
 def _parse_submission_date(value: str) -> datetime:
@@ -127,7 +143,11 @@ def _filter_replay_paths(replay_paths: list[Path], submission_id: str | None) ->
 
 
 def _build_submission_rows(
-    raw_results: list[dict[str, object]], submission_id: str | None = None
+    raw_results: list[dict[str, object]],
+    submission_id: str | None = None,
+    mapped_episode_count: Counter[str] | None = None,
+    parsed_episode_count: Counter[str] | None = None,
+    unprocessed_episode_count: Counter[str] | None = None,
 ) -> list[dict[str, object]]:
     """Build submission summary rows from local and Kaggle sources.
 
@@ -139,12 +159,14 @@ def _build_submission_rows(
         Submission rows for the combined report or the selected submission.
     """
     submission_map = _load_submission_map()
-    episode_counts = Counter(
+    episode_counts = mapped_episode_count or Counter(
         mapped_submission_id
         for mapped_submission_id in submission_map.values()
         if mapped_submission_id.isdigit()
     )
-    outcome_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
+    parsed_counts = parsed_episode_count or Counter()
+    unprocessed_counts = unprocessed_episode_count or Counter()
+    outcome_counts: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0, "draw": 0})
 
     for result in raw_results:
         episode_id = str(result["episode_id"])
@@ -153,8 +175,10 @@ def _build_submission_rows(
             continue
         if result["outcome"] == "win":
             outcome_counts[mapped_submission_id]["w"] += 1
-        else:
+        elif result["outcome"] == "loss":
             outcome_counts[mapped_submission_id]["l"] += 1
+        else:
+            outcome_counts[mapped_submission_id]["draw"] += 1
 
     submission_rows: list[dict[str, object]] = []
     for row in _list_completed_submissions():
@@ -170,30 +194,13 @@ def _build_submission_rows(
                 "desc": row.get("description", "") or row.get("fileName", ""),
                 "kaggle": float(row["publicScore"]) if row.get("publicScore") else None,
                 "episodes": episode_counts.get(candidate_id, 0),
+                "parsed": parsed_counts.get(candidate_id, 0),
+                "unprocessed": unprocessed_counts.get(candidate_id, 0),
                 "w": outcome_counts[candidate_id]["w"],
                 "l": outcome_counts[candidate_id]["l"],
+                "draw": outcome_counts[candidate_id]["draw"],
             }
         )
-
-    if not submission_rows:
-        fallback_ids = (
-            [submission_id] if submission_id is not None else sorted(episode_counts, reverse=True)
-        )
-        for candidate_id in fallback_ids:
-            episodes = episode_counts.get(candidate_id, 0)
-            if not episodes:
-                continue
-            submission_rows.append(
-                {
-                    "id": candidate_id,
-                    "date": "",
-                    "desc": "unknown",
-                    "kaggle": None,
-                    "episodes": episodes,
-                    "w": outcome_counts[candidate_id]["w"],
-                    "l": outcome_counts[candidate_id]["l"],
-                }
-            )
 
     submission_rows.sort(key=lambda row: _parse_submission_date(str(row["date"])), reverse=True)
     if submission_rows:
@@ -226,6 +233,14 @@ def resolve_deck_name(vis, owner_idx):
     except (KeyError, IndexError, TypeError):
         pass
     return "unknown"
+
+
+def _dominant_metal_deck(deck_ids: list[int]) -> bool:
+    """Return whether either of the two dominant Pokémon lines is Metal."""
+    return any(
+        energy_type == ABOMASNOW_WEAKNESS_TYPE
+        for _, _, energy_type in resolve_deck_archetype_lines(deck_ids, cards_sdk.get)
+    )
 
 
 def parse_replay(fpath, owner_name):
@@ -268,7 +283,7 @@ def parse_replay(fpath, owner_name):
     if winner is None:
         return None
 
-    outcome = "win" if winner == owner_idx else "loss"
+    outcome = "win" if winner == owner_idx else "loss" if winner in {0, 1} else "draw"
 
     first_player = None
     for _frame in vis:
@@ -316,9 +331,13 @@ def parse_replay(fpath, owner_name):
     opponent_deck_remaining = opponent_terminal_state.get("deckCount", "N/A")
 
     opponent_has_weakness_type = False
+    opponent_dominant_metal = False
     try:
         opening_action = vis[0]["action"]
         opponent_card_ids = opening_action[opponent_idx]
+        opponent_dominant_metal = _dominant_metal_deck(
+            [int(card_id) for card_id in opponent_card_ids]
+        )
         opponent_has_weakness_type = any(
             cards_sdk.get(int(_card_id), None) is not None
             and cards_sdk[int(_card_id)].cardType == 0
@@ -370,6 +389,7 @@ def parse_replay(fpath, owner_name):
     episode_id = pathlib.Path(fpath).stem.replace("episode-", "")
     return {
         "episode_id": episode_id,
+        "owner_index": owner_idx,
         "outcome": outcome,
         "first_player": first_player,
         "max_turn": max_turn,
@@ -382,6 +402,7 @@ def parse_replay(fpath, owner_name):
         "lost_to_no_pokemon_by_turn_2": outcome == "loss" and result_reason == 3 and max_turn <= 2,
         "lost_to_no_pokemon_by_turn_3": outcome == "loss" and result_reason == 3 and max_turn <= 3,
         "opponent_has_weakness_type": opponent_has_weakness_type,
+        "opponent_dominant_metal": opponent_dominant_metal,
         "lost_to_deck_out": outcome == "loss" and result_reason == 2,
         "owner_prizes_remaining": owner_prizes_remaining,
         "opponent_prizes_remaining": opponent_prizes_remaining,
@@ -408,9 +429,20 @@ def generate_report(
         submission_id: Optional Kaggle submission ID used to limit the report.
     """
     raw_results = []
+    mapped_episode_count = Counter()
+    parsed_episode_count = Counter()
+    unprocessed_episode_count = Counter()
+    submission_map = _load_submission_map()
     replay_paths = _filter_replay_paths(sorted(replay_dir.glob("*.json")), submission_id)
     for _fp in replay_paths:
-        _res = parse_replay(_fp, owner_name)
+        episode_id = _episode_id_from_path(_fp)
+        mapped_submission_id = submission_map.get(episode_id)
+        if mapped_submission_id:
+            mapped_episode_count[mapped_submission_id] += 1
+        try:
+            _res = parse_replay(_fp, owner_name)
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            _res = None
         if _res is not None:
             _res.setdefault("lost_to_no_pokemon_by_turn_2", False)
             _res.setdefault("lost_to_no_pokemon_by_turn_3", False)
@@ -423,12 +455,17 @@ def generate_report(
             _res.setdefault("opponent_active_name", "Unknown")
             _res.setdefault("opponent_active_hp", "N/A")
             _res.setdefault("opponent_deck_remaining", "N/A")
+            _res.setdefault("opponent_dominant_metal", False)
             raw_results.append(_res)
+            if mapped_submission_id:
+                parsed_episode_count[mapped_submission_id] += 1
+        elif mapped_submission_id:
+            unprocessed_episode_count[mapped_submission_id] += 1
 
     games_win = sum(1 for _x in raw_results if _x["outcome"] == "win")
     games_loss = sum(1 for _x in raw_results if _x["outcome"] == "loss")
     total = games_win + games_loss
-    wr = games_win / total * 100 if total else 0
+    wr = games_win / total * 100 if total else None
 
     first_wins = 0
     first_losses = 0
@@ -438,7 +475,7 @@ def generate_report(
         _fp = _x["first_player"]
         if _fp is None:
             continue
-        if _fp == 0:
+        if _fp == _x.get("owner_index", 0):
             if _x["outcome"] == "win":
                 first_wins += 1
             else:
@@ -451,8 +488,8 @@ def generate_report(
 
     first_total = first_wins + first_losses
     second_total = second_wins + second_losses
-    first_wr = first_wins / first_total * 100 if first_total else 0
-    second_wr = second_wins / second_total * 100 if second_total else 0
+    first_wr = first_wins / first_total * 100 if first_total else None
+    second_wr = second_wins / second_total * 100 if second_total else None
 
     losses_without_field_through_turn_2 = sum(
         _x["lost_to_no_pokemon_by_turn_2"] for _x in raw_results
@@ -472,7 +509,7 @@ def generate_report(
 
     metal_matchups: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
     for _x in raw_results:
-        if _x["opponent_has_weakness_type"]:
+        if _x["opponent_dominant_metal"]:
             metal_matchups[_x["opp_archetype"]][_x["outcome"][0]] += 1
 
     deck_out_records = [_x for _x in raw_results if _x["lost_to_deck_out"]]
@@ -493,6 +530,8 @@ def generate_report(
 
     for _x in raw_results:
         _o = _x["outcome"]
+        if _o not in {"win", "loss"}:
+            continue
         (atk_win if _o == "win" else atk_loss).update(_x["attack_usage"])
         (dmg_dealt_win if _o == "win" else dmg_dealt_loss).extend(_x["damage_dealt"])
         (dmg_taken_win if _o == "win" else dmg_taken_loss).extend(_x["damage_taken"])
@@ -510,7 +549,13 @@ def generate_report(
             matchup_data[_arch]["loss_turns"].append(_x["max_turn"])
 
     def avg(lst):
-        return sum(lst) / len(lst) if lst else 0
+        return sum(lst) / len(lst) if lst else None
+
+    def fmt_avg(value):
+        return f"{value:.1f}" if value is not None else "N/A"
+
+    def fmt_wr(value):
+        return f"{value:.1f}%" if value is not None else "N/A"
 
     avg_turns_win = avg(turn_lengths_win)
     avg_turns_loss = avg(turn_lengths_loss)
@@ -523,6 +568,8 @@ def generate_report(
     t_l_total = sum(dmg_taken_loss)
     t_l_hits = len(dmg_taken_loss) or 1
     deck_label = deck_names.most_common(1)[0][0] if deck_names else "Unknown"
+    analyzed = len(raw_results)
+    draws = sum(1 for result in raw_results if result["outcome"] == "draw")
 
     def fmt(n):
         return f"{n:,}"
@@ -537,7 +584,8 @@ def generate_report(
         _card_name = _parts[0] if len(_parts) == 2 else _k
         _atk_name = _parts[1] if len(_parts) == 2 else _k
         atk_rows += (
-            f"<tr><td>{_atk_name}</td><td>{_card_name}</td>"
+            f"<tr><td>{html_module.escape(str(_atk_name))}</td>"
+            f"<td>{html_module.escape(str(_card_name))}</td>"
             f'<td class="win">{_w}</td><td class="loss">{_l}</td><td>{_t}</td></tr>\n'
         )
 
@@ -567,9 +615,10 @@ def generate_report(
         _avg_win = avg(_data["win_turns"])
         _cls = "win" if _wr >= 50 else "loss"
         opp_rows += (
-            f'<tr><td>{_arch}</td><td class="win">{_w}</td><td class="loss">{_l}</td>'
-            f'<td class="{_cls}">{_wr:.1f}%</td><td>{_avg_loss:.1f}</td>'
-            f"<td>{_avg_win:.1f}</td><td>{_total}</td></tr>\n"
+            f"<tr><td>{html_module.escape(str(_arch))}</td>"
+            f'<td class="win">{_w}</td><td class="loss">{_l}</td>'
+            f'<td class="{_cls}">{fmt_wr(_wr)}</td><td>{fmt_avg(_avg_loss)}</td>'
+            f"<td>{fmt_avg(_avg_win)}</td><td>{_total}</td></tr>\n"
         )
 
     worst_matchups = [(k, v) for k, v in sorted_matchups if (v["w"] + v["l"]) >= 5]
@@ -586,8 +635,9 @@ def generate_report(
         _wr = _w / _total * 100 if _total else 0
         _avg_loss = avg(_data["loss_turns"])
         worst_rows += (
-            f'<tr><td>{_arch}</td><td class="loss">{_w}</td><td class="loss">{_l}</td>'
-            f'<td class="loss">{_wr:.1f}%</td><td>{_avg_loss:.1f}</td>'
+            f"<tr><td>{html_module.escape(str(_arch))}</td>"
+            f'<td class="loss">{_w}</td><td class="loss">{_l}</td>'
+            f'<td class="loss">{fmt_wr(_wr)}</td><td>{fmt_avg(_avg_loss)}</td>'
             f"<td>{_total}</td>{threat_bar(_wr)}</tr>\n"
         )
 
@@ -606,8 +656,9 @@ def generate_report(
         _wr = _w / _total * 100 if _total else 0
         _avg_win = avg(_data["win_turns"])
         best_rows += (
-            f'<tr><td>{_arch}</td><td class="win">{_w}</td><td class="loss">{_l}</td>'
-            f'<td class="win">{_wr:.1f}%</td><td>{_avg_win:.1f}</td>'
+            f"<tr><td>{html_module.escape(str(_arch))}</td>"
+            f'<td class="win">{_w}</td><td class="loss">{_l}</td>'
+            f'<td class="win">{fmt_wr(_wr)}</td><td>{fmt_avg(_avg_win)}</td>'
             f"<td>{_total}</td>{confidence_label(_total)}</tr>\n"
         )
 
@@ -647,7 +698,13 @@ def generate_report(
             f"<td>{html_module.escape(str(_x['opp_archetype']))}</td></tr>\n"
         )
 
-    submissions = _build_submission_rows(raw_results, submission_id)
+    submissions = _build_submission_rows(
+        raw_results,
+        submission_id,
+        mapped_episode_count,
+        parsed_episode_count,
+        unprocessed_episode_count,
+    )
 
     sub_rows = ""
     for _s in submissions:
@@ -657,20 +714,23 @@ def generate_report(
         if _s.get("latest"):
             _badges.append('<span class="badge badge-l">LATEST</span>')
         _badge = " ".join(_badges)
-        _swr = _s["w"] / (_s["w"] + _s["l"]) * 100 if (_s["w"] + _s["l"]) else 0
-        _scls = "win" if _swr >= 50 else "loss"
+        _swr = _s["w"] / (_s["w"] + _s["l"]) * 100 if (_s["w"] + _s["l"]) else None
+        _scls = "win" if _swr is not None and _swr >= 50 else "loss"
         _kcls = (
             "var(--accent)"
             if (_s["kaggle"] or 0) >= 500
             else ("var(--orange)" if (_s["kaggle"] or 0) >= 480 else "var(--green)")
         )
         sub_rows += (
-            f"<tr><td>{_s['id']} {_badge or '&mdash;'}</td><td>{_s['id']}</td>"
+            f"<tr><td>{html_module.escape(str(_s['id']))} {_badge or '&mdash;'}</td>"
+            f"<td>{html_module.escape(str(_s['id']))}</td>"
             f"<td>{html_module.escape(str(_s['desc']))}</td>"
             f'<td style="font-weight:700;color:{_kcls}">'
             f"{_s['kaggle'] if _s['kaggle'] is not None else 'N/A'}</td>"
-            f'<td>{_s["episodes"]}</td><td class="win">{_s["w"]}</td>'
-            f'<td class="loss">{_s["l"]}</td><td class="{_scls}">{_swr:.1f}%</td></tr>\n'
+            f"<td>{_s['episodes']}</td><td>{_s['parsed']}</td>"
+            f'<td class="win">{_s["w"]}</td><td class="loss">{_s["l"]}</td>'
+            f'<td class="draw">{_s["draw"]}</td><td>{_s["unprocessed"]}</td>'
+            f'<td class="{_scls}">{fmt_wr(_swr)}</td></tr>\n'
         )
 
     donk_empty = '<tr><td colspan="5">No donk losses in this scope.</td></tr>'
@@ -678,32 +738,53 @@ def generate_report(
     deck_out_empty = '<tr><td colspan="9">No deck-out losses in this scope.</td></tr>'
 
     now = date.today().strftime("%b %d %Y")
+    escaped_deck_label = html_module.escape(str(deck_label))
+    escaped_submission_id = html_module.escape(str(submission_id)) if submission_id else ""
     report_title = (
-        f"Investigation Report — Submission {submission_id} — {deck_label}"
+        f"Investigation Report — Submission {escaped_submission_id} — {escaped_deck_label}"
         if submission_id
-        else f"Investigation Report — {deck_label}"
+        else f"Investigation Report — {escaped_deck_label}"
     )
     report_heading = (
-        f"Investigation Report — Submission {submission_id}"
+        f"Investigation Report — Submission {escaped_submission_id}"
         if submission_id
         else "Investigation Report"
     )
     report_subtitle = (
-        f"Submission {submission_id} &bull; {deck_label} &bull; {total} replays "
-        f"({games_win}W/{games_loss}L) &bull; {now}"
+        f"Submission {escaped_submission_id} &bull; {escaped_deck_label} &bull; "
+        f"{analyzed} parsed matches "
+        f"({games_win}W/{games_loss}L/{draws}D) &bull; {now}"
         if submission_id
-        else f"{deck_label} &bull; {total} replays ({games_win}W/{games_loss}L) &bull; {now}"
+        else f"{escaped_deck_label} &bull; {analyzed} parsed matches "
+        f"({games_win}W/{games_loss}L/{draws}D) &bull; {now}"
     )
     submission_section_title = (
         "Selected Submission Summary" if submission_id else "Submission History"
     )
     matchup_section_title = (
-        f"Matchup Analysis &mdash; Submission {submission_id}"
+        f"Matchup Analysis &mdash; Submission {escaped_submission_id}"
         if submission_id
         else "Matchup Analysis (All Submissions Combined)"
     )
     footer_scope = (
-        f"Submission {submission_id} &bull; {deck_label}" if submission_id else deck_label
+        f"Submission {escaped_submission_id} &bull; {escaped_deck_label}"
+        if submission_id
+        else escaped_deck_label
+    )
+    first_wr_class = "loss" if first_wr is not None and first_wr < 50 else "win"
+    second_wr_class = "win" if second_wr is not None and second_wr >= 50 else "loss"
+    advantage_class = (
+        "win" if second_wr is not None and first_wr is not None and second_wr > first_wr else "loss"
+    )
+    advantage_label = (
+        "2nd"
+        if second_wr is not None and first_wr is not None and second_wr > first_wr
+        else "1st"
+        if second_wr is not None and first_wr is not None and second_wr < first_wr
+        else "Even"
+    )
+    advantage_value = (
+        second_wr - first_wr if second_wr is not None and first_wr is not None else None
     )
 
     html = f"""<!DOCTYPE html>
@@ -803,15 +884,15 @@ def generate_report(
   </div>
   <div class="metric">
     <div class="metric-label">Win Rate</div>
-    <div class="metric-value" style="color:var(--yellow)">{wr:.1f}%</div>
+    <div class="metric-value" style="color:var(--yellow)">{fmt_wr(wr)}</div>
   </div>
   <div class="metric">
     <div class="metric-label">Avg Win Turn</div>
-    <div class="metric-value">{avg_turns_win:.1f}</div>
+    <div class="metric-value">{fmt_avg(avg_turns_win)}</div>
   </div>
   <div class="metric">
     <div class="metric-label">Avg Loss Turn</div>
-    <div class="metric-value">{avg_turns_loss:.1f}</div>
+    <div class="metric-value">{fmt_avg(avg_turns_loss)}</div>
   </div>
 </div>
 
@@ -820,7 +901,8 @@ def generate_report(
   <thead>
     <tr>
       <th>Submission</th><th>Kaggle ID</th><th>Description</th><th>Kaggle Score</th>
-      <th>Episodes</th><th>W</th><th>L</th><th>Win Rate</th>
+      <th>Mapped Episodes</th><th>Parsed</th><th>W</th><th>L</th><th>Draws</th>
+      <th>Unprocessed</th><th>Win Rate (W+L)</th>
     </tr>
   </thead>
   <tbody>
@@ -832,23 +914,25 @@ def generate_report(
 <div class="metric-row">
   <div class="metric">
     <div class="metric-label">First Player WR</div>
-    <div class="metric-value {"loss" if first_wr < 50 else "win"}">{first_wr:.1f}%</div>
+    <div class="metric-value {first_wr_class}">{fmt_wr(first_wr)}</div>
     <div style="font-size:0.8rem;color:var(--muted)">
       {first_wins}W / {first_losses}L ({first_total}g)
     </div>
   </div>
   <div class="metric">
     <div class="metric-label">Second Player WR</div>
-    <div class="metric-value {"win" if second_wr >= 50 else "loss"}">{second_wr:.1f}%</div>
+    <div class="metric-value {second_wr_class}">{fmt_wr(second_wr)}</div>
     <div style="font-size:0.8rem;color:var(--muted)">
       {second_wins}W / {second_losses}L ({second_total}g)
     </div>
   </div>
   <div class="metric">
     <div class="metric-label">Advantage</div>
-    <div class="metric-value" style="color:var(--green)">+{second_wr - first_wr:.1f}%</div>
+    <div class="metric-value {advantage_class}">
+      {fmt_wr(advantage_value)}
+    </div>
     <div style="font-size:0.8rem;color:var(--muted)">
-      {"2nd" if second_wr > first_wr else "1st"} player
+      {advantage_label} player
     </div>
   </div>
 </div>
@@ -893,6 +977,7 @@ def generate_report(
 </table>
 
 <h3>4.2 &mdash; Metal Matchups</h3>
+<p>Matchups vs decks with a dominant Metal archetype.</p>
 <table>
   <thead><tr><th>Opponent Archetype</th><th>Wins</th><th>Losses</th>
     <th>Win Rate</th><th>Total</th></tr></thead>
@@ -910,7 +995,8 @@ def generate_report(
 <h2>5 &mdash; Attack Usage</h2>
 <div class="table-scroll">
 <table>
-  <thead><tr><th>Attack</th><th>Card</th><th>Win</th><th>Loss</th><th>Total</th></tr></thead>
+  <thead><tr><th>Attack (uses)</th><th>Card</th><th>Win</th>
+    <th>Loss</th><th>Total Uses</th></tr></thead>
   <tbody>{atk_rows}</tbody>
 </table>
 </div>
@@ -954,7 +1040,7 @@ def generate_report(
   Focus on archetypes with 5+ total games for reliable signal.
 </div>
 
-<h3>7.1 &mdash; Worst Matchups (Top 10 by win rate)</h3>
+<h3>7.1 &mdash; Worst Matchups (Top 10, minimum 5 games)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -969,7 +1055,7 @@ def generate_report(
 </table>
 </div>
 
-<h3>7.2 &mdash; Best Matchups (Top 10 by win rate)</h3>
+<h3>7.2 &mdash; Best Matchups (Top 10, minimum 5 games)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -1010,7 +1096,7 @@ def generate_report(
     output_path.write_text(html, encoding="utf-8")
     print(f"Report generated: {output_path}")
     print(f"Total replays: {total}")
-    print(f"W/L: {games_win}/{games_loss} ({wr:.1f}%)")
+    print(f"W/L: {games_win}/{games_loss} ({fmt_wr(wr)})")
     print(f"Unique archetypes: {len(matchup_data)}")
 
 
