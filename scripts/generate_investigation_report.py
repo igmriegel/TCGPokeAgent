@@ -625,7 +625,12 @@ def generate_report(
     worst_matchups = list(sorted_matchups)
     worst_matchups = sorted(
         worst_matchups,
-        key=lambda x: x[1]["w"] / (x[1]["w"] + x[1]["l"]) if (x[1]["w"] + x[1]["l"]) else 0,
+        key=lambda x: (
+            -x[1]["l"],
+            x[1]["w"] / (x[1]["w"] + x[1]["l"])
+            if (x[1]["w"] + x[1]["l"])
+            else 0,
+        ),
     )
 
     worst_rows = ""
