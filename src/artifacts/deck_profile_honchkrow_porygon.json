@@ -1,0 +1,93 @@
+{
+  "schema_version": "v2",
+  "deck_id": "honchkrow_porygon",
+  "deck_sha256": "9fb2aee973f8ccfd08fb1c8b3db0b5a73e5d3aba1a3cf205de37edaa9dd9fa42",
+  "attack_energy_targets": {
+    "463": 1,
+    "891": 2,
+    "473": 1,
+    "474": 3,
+    "414": 3
+  },
+  "attack_plans": {
+    "652": {"name": "Deceit", "energy_cost": 1},
+    "653": {"name": "Torment", "energy_cost": 2, "guaranteed_damage": 30},
+    "1285": {"name": "Rocket Feathers", "energy_cost": 2},
+    "1286": {"name": "Hammer In", "energy_cost": 3, "guaranteed_damage": 100},
+    "669": {"name": "Hacking", "energy_cost": 1},
+    "670": {"name": "R Command", "energy_cost": 3},
+    "583": {"name": "Dark Frost", "energy_cost": 3, "guaranteed_damage": 60}
+  },
+  "board_targets": {
+    "minimum_attackers": 2,
+    "reserved_bench_slots": 1
+  },
+  "basic_energy_count": 0,
+  "discard_priority": [
+    "redundant_supporter",
+    "temporary_energy",
+    "redundant_item",
+    "duplicate_pokemon",
+    "protected_resource"
+  ],
+  "bench_priority": [
+    "primary_attacker",
+    "secondary_attacker",
+    "tech_defense",
+    "evolution_basic"
+  ],
+  "promotion_priority": [
+    "ready_primary_attacker",
+    "ready_secondary_attacker",
+    "lowest_prize_value"
+  ],
+  "prize_priority": [
+    "guaranteed_win",
+    "highest_prize_ko",
+    "lowest_effort"
+  ],
+  "resource_values": {
+    "463": 145.0,
+    "891": 190.0,
+    "473": 130.0,
+    "474": 165.0,
+    "414": 155.0,
+    "1216": 150.0,
+    "1220": 145.0,
+    "1219": 125.0,
+    "1134": 135.0,
+    "1152": 120.0,
+    "1121": 145.0,
+    "1257": 150.0,
+    "15": 125.0,
+    "17": 90.0
+  },
+  "prize_values": {
+    "463": 1,
+    "891": 1,
+    "473": 1,
+    "474": 1,
+    "414": 1
+  },
+  "evolution_lines": [
+    [463, 891],
+    [473, 474]
+  ],
+  "roles": {
+    "pokemon": [463, 891, 473, 474, 414],
+    "attacker": [463, 891, 473, 474, 414],
+    "primary_attacker": [891, 463],
+    "secondary_attacker": [474, 473],
+    "evolution_basic": [463, 473],
+    "development_priority": [463, 473],
+    "tech_defense": [414],
+    "supporter": [1216, 1217, 1218, 1220, 1219],
+    "hand_refresh": [1216],
+    "pokemon_search": [1152, 1121],
+    "supporter_search": [1134, 1219],
+    "trainer_search": [1219],
+    "stadium_engine": [1257],
+    "recovery": [1097, 1109],
+    "basic_energy": [15, 17]
+  }
+}
