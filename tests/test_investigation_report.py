@@ -5,8 +5,50 @@ from pathlib import Path
 
 import pytest
 
+from cg.api import all_card_data
 from scripts import download_all_replays as downloader
 from scripts import generate_investigation_report as report
+from src.core.archetype import resolve_deck_archetype, resolve_deck_archetype_lines
+
+CARD_BY_NAME = {card.name: card for card in all_card_data()}
+CARD_BY_ID = {card.cardId: card for card in all_card_data()}
+
+
+def _ids(*names: str) -> list[int]:
+    """Return canonical SDK IDs for card names used by archetype tests."""
+    return [CARD_BY_NAME[name].cardId for name in names]
+
+
+def test_archetype_keeps_evolution_lines_and_ex_cards_separate() -> None:
+    """Count all copies in each exact-name evolution line."""
+    label = resolve_deck_archetype(
+        _ids("Abra", "Kadabra", "Alakazam", "Dunsparce", "Dudunsparce"),
+        CARD_BY_ID.get,
+    )
+
+    assert label == "Alakazam / Dudunsparce"
+    assert set(
+        resolve_deck_archetype(_ids("Pikachu", "Pikachu ex"), CARD_BY_ID.get).split(" / ")
+    ) == {
+        "Pikachu",
+        "Pikachu ex",
+    }
+
+
+def test_metal_matchup_uses_only_dominant_terminal_lines() -> None:
+    """Auxiliary Genesect must not make a non-Metal archetype Metal."""
+    non_metal_lines = resolve_deck_archetype_lines(
+        _ids("Abra", "Kadabra", "Alakazam", "Dunsparce", "Dudunsparce", "Genesect"),
+        CARD_BY_ID.get,
+    )
+    metal_lines = resolve_deck_archetype_lines(_ids("Duraludon", "Archaludon ex"), CARD_BY_ID.get)
+
+    assert not report._dominant_metal_deck(
+        _ids("Abra", "Kadabra", "Alakazam", "Dunsparce", "Dudunsparce", "Genesect")
+    )
+    assert any(energy_type == 8 for _, _, energy_type in metal_lines)
+    assert any(name == "Archaludon ex" for name, _, _ in metal_lines)
+    assert non_metal_lines[0][0] == "Alakazam"
 
 
 def test_active_submissions_returns_two_latest_completed() -> None:

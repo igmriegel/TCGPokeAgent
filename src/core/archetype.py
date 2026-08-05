@@ -23,6 +23,24 @@ def resolve_deck_archetype(
     Returns:
         The two most represented terminal evolution lines, or ``"unknown"``.
     """
+    lines = resolve_deck_archetype_lines(card_ids, card_lookup)
+    return " / ".join(line[0] for line in lines) or "unknown"
+
+
+def resolve_deck_archetype_lines(
+    card_ids: Iterable[int],
+    card_lookup: Callable[[int], Any | None],
+) -> list[tuple[str, int, int]]:
+    """Resolve the two dominant evolution lines with their energy types.
+
+    Args:
+        card_ids: Card IDs from the complete deck list.
+        card_lookup: Function returning SDK objects or mapping records by ID.
+
+    Returns:
+        ``(terminal_name, copy_count, energy_type)`` tuples for the two
+        dominant Pokémon lines. The list is empty when no Pokémon are found.
+    """
     counts = Counter(int(card_id) for card_id in card_ids)
     records: dict[int, Any] = {}
     children: defaultdict[str, list[Any]] = defaultdict(list)
@@ -36,7 +54,7 @@ def resolve_deck_archetype(
             children[str(parent)].append(card)
 
     if not records:
-        return "unknown"
+        return []
 
     line_counts: Counter[str] = Counter()
     line_priority: dict[str, tuple[int, int]] = {}
@@ -57,7 +75,13 @@ def resolve_deck_archetype(
             name,
         ),
     )
-    return " / ".join(ranked[:2])
+    result = []
+    for name in ranked[:2]:
+        terminal = next(
+            card for card in records.values() if str(_value(card, "name", "unknown")) == name
+        )
+        result.append((name, line_counts[name], int(_value(terminal, "energyType", -1) or -1)))
+    return result
 
 
 def _terminal_name(card: Any, children: Mapping[str, list[Any]]) -> str:
