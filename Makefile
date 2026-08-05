@@ -31,6 +31,7 @@ update-replays-reports:
 		[ "$$report" = "perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html" ] && continue; \
 		submission_id=$${report##*/INVESTIGATION_REPORT_}; \
 		submission_id=$${submission_id%.html}; \
+		case "$$submission_id" in ''|*[!0-9]*) continue;; esac; \
 		scripts/generate_investigation_report.sh \
 			data/raw/kaggle/kaggle_gameplay_runs "$$report" "Igor Riegel" \
 			--submission-id "$$submission_id"; \
