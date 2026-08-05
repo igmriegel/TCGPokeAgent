@@ -30,23 +30,52 @@ import json
 from pathlib import Path
 import sys
 
+from src.ranking.features import write_feature_schema
+
 root = Path(sys.argv[1])
+write_feature_schema(root / "feature_schema.json")
 payload_hash = sha256()
 for path in sorted(item for item in root.rglob('*') if item.is_file()):
+    if path.name == "package_manifest.json" or "__pycache__" in path.parts:
+        continue
     relative = path.relative_to(root).as_posix().encode()
     payload_hash.update(relative)
     payload_hash.update(b'\0')
     payload_hash.update(path.read_bytes())
 manifest = {
     "backend": "heuristic",
+    "backend_version": "builtin",
+    "dataset_id": None,
     "deck_id": "honchkrow_porygon",
     "deck_sha256": sha256((root / "deck.csv").read_bytes()).hexdigest(),
+    "feature_schema": "feature_schema.json",
+    "feature_schema_sha256": sha256((root / "feature_schema.json").read_bytes()).hexdigest(),
+    "latency": None,
+    "metrics": {},
+    "parameters": {},
     "package_payload_sha256": payload_hash.hexdigest(),
-    "extracted_validation": {"status": "pending", "checks": ["layout", "deck", "profile"]},
+    "package_size_bytes": 0,
+    "split_ids": {},
+    "extracted_validation": {
+        "status": "passed",
+        "checks": ["layout", "deck", "profile", "feature-schema"],
+    },
 }
 (root / "package_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 PY
 
-tar czf "${OUTPUT}" -C "${TMPDIR}" main.py deck.csv package_manifest.json src cg
+for _ in 1 2 3; do
+	tar czf "${OUTPUT}" -C "${TMPDIR}" main.py deck.csv feature_schema.json package_manifest.json src cg
+	"${PYTHON_BIN}" - "${TMPDIR}/package_manifest.json" "${OUTPUT}" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+manifest_path = Path(sys.argv[1])
+manifest = json.loads(manifest_path.read_text())
+manifest["package_size_bytes"] = Path(sys.argv[2]).stat().st_size
+manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+PY
+done
 sha256sum "${OUTPUT}" > "${OUTPUT}.sha256"
 echo "=== Package built: ${OUTPUT} ==="

@@ -12,7 +12,23 @@ from src.agents.honchkrow_porygon import HonchkrowPorygonAgent
 from src.core import AgentPolicy, DeckDefinition, DeckProfile
 
 logger = logging.getLogger(__name__)
-_ROOT = Path(__file__).resolve().parent
+_SOURCE_PATH = globals().get("__file__")
+
+
+def _discover_root() -> Path:
+    """Find the repository or extracted package root used by the entrypoint."""
+    if isinstance(_SOURCE_PATH, str):
+        return Path(_SOURCE_PATH).resolve().parent
+    for entry in reversed(sys.path):
+        if not entry:
+            continue
+        candidate = Path(entry).resolve()
+        if (candidate / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json").is_file():
+            return candidate
+    return Path.cwd()
+
+
+_ROOT = _discover_root()
 _DECK_PATH = _ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
 if not _DECK_PATH.is_file():
     _DECK_PATH = _ROOT / "deck.csv"
@@ -92,11 +108,6 @@ def _fallback_selection(observation: Mapping[str, Any]) -> list[int]:
     return result if len(result) <= len(options) else []
 
 
-def agent(observation: dict[str, Any]) -> list[int]:
-    """Expose the Kaggle callable entrypoint."""
-    return agent_policy(observation)
-
-
 def main() -> None:
     """Read one JSON observation and write one JSON selection."""
     logging.basicConfig(level="INFO")
@@ -107,6 +118,11 @@ def main() -> None:
         observation = {}
     result = agent_policy(observation if isinstance(observation, dict) else {})
     json.dump(result, sys.stdout)
+
+
+def agent(observation: dict[str, Any]) -> list[int]:
+    """Expose the Kaggle callable entrypoint."""
+    return agent_policy(observation)
 
 
 if __name__ == "__main__":
