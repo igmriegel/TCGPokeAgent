@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
+
+from src.core.archetype import resolve_deck_archetype
 
 if TYPE_CHECKING:
     from src.core.catalog import CardCatalog
@@ -215,27 +216,12 @@ def _deck_archetype(
 ) -> str:
     """Resolve deck archetype from card IDs using the card catalog.
 
-    Strategy: find all Pokemon in the deck, return the highest-HP one
-    (or primary/secondary if multiple) as the archetype label.
+    Strategy: group all Pokémon copies by exact evolution line and use the
+    terminal Pokémon name for each of the two most represented lines.
     """
     if not card_ids or catalog is None:
         return "unknown"
-    counts = Counter(card_ids)
-    pokemon: list[tuple[int, str, int]] = []
-    for card_id, qty in counts.items():
-        traits = catalog.get_traits(card_id)
-        if traits.is_pokemon:
-            card = catalog.get_card(str(card_id)) or {}
-            hp = int(card.get("hp", 0) or 0)
-            name = card.get("name", f"card_{card_id}")
-            pokemon.append((hp, name, qty))
-    if not pokemon:
-        return "unknown"
-    pokemon.sort(key=lambda x: (-x[0], -x[2]))
-    primary = pokemon[0][1]
-    if len(pokemon) > 1:
-        return f"{primary} / {pokemon[1][1]}"
-    return primary
+    return resolve_deck_archetype(card_ids, lambda card_id: catalog.get_card(str(card_id)))
 
 
 def _terminal_visualization(replay: Mapping[str, Any]) -> Mapping[str, Any]:

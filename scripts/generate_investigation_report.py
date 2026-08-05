@@ -25,6 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from cg.api import all_attack, all_card_data  # noqa: E402
+from src.core.archetype import resolve_deck_archetype  # noqa: E402
 
 COMPETITION = "pokemon-tcg-ai-battle"
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
@@ -221,15 +222,7 @@ def resolve_deck_name(vis, owner_idx):
     try:
         action = vis[0]["action"]
         deck_ids = [int(_cid) for _cid in action[owner_idx]]
-        counts = Counter(deck_ids)
-        pokemon = []
-        for _cid, _qty in counts.items():
-            _c = cards_sdk.get(_cid)
-            if _c and (_c.basic or _c.stage1 or _c.stage2):
-                pokemon.append((_c.hp, _c.name, _qty))
-        if pokemon:
-            pokemon.sort(key=lambda x: (-x[0], -x[2]))
-            return " / ".join(p[1] for p in pokemon[:2])
+        return resolve_deck_archetype(deck_ids, cards_sdk.get)
     except (KeyError, IndexError, TypeError):
         pass
     return "unknown"
