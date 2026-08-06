@@ -5,6 +5,12 @@ HONCHKROW_PORYGON_ARCHIVE ?= honchkrow_porygon_submission.tar.gz
 PACKAGE_BACKEND ?= heuristic
 MODEL_DIR ?=
 SUBMISSION_ARGS ?=
+KAGGLE_JSON ?= $(CURDIR)/kaggle.json
+
+ifneq ($(wildcard $(KAGGLE_JSON)),)
+KAGGLE_API_TOKEN ?= $(shell jq -r '.key // empty' "$(KAGGLE_JSON)" 2>/dev/null)
+export KAGGLE_API_TOKEN
+endif
 
 .PHONY: help build-abomasnow-package build-honchkrow-porygon-package submit-kaggle update-replays-reports
 
@@ -27,6 +33,9 @@ submit-kaggle:
 update-replays-reports:
 	scripts/download_all_replays.sh
 	scripts/generate_investigation_report.sh
+	scripts/generate_investigation_report.sh \
+		data/raw/kaggle/kaggle_gameplay_runs perf_reports/INVESTIGATION_REPORT_HONCHKROW.html \
+		"Igor Riegel" --deck-filter "Honchkrow"
 	@for report in perf_reports/INVESTIGATION_REPORT_*.html; do \
 		[ "$$report" = "perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html" ] && continue; \
 		submission_id=$${report##*/INVESTIGATION_REPORT_}; \

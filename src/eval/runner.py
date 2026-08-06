@@ -332,9 +332,7 @@ class MatchRunner:
                         if policy_decision and policy_decision.ranked
                         else []
                     ),
-                    decision_phase=(
-                        policy_decision.decision_phase if policy_decision else ""
-                    ),
+                    decision_phase=(policy_decision.decision_phase if policy_decision else ""),
                     decision_phase_reason=(
                         policy_decision.decision_phase_reason if policy_decision else ""
                     ),

@@ -10,4 +10,11 @@ if [[ -z "${KAGGLE_API_TOKEN:-}" ]] && command -v kaggle >/dev/null 2>&1; then
 	fi
 fi
 
+if [[ -z "${KAGGLE_API_TOKEN:-}" ]] && [[ -r "kaggle.json" ]] && command -v jq >/dev/null 2>&1; then
+	_file_kaggle_token="$(jq -r '.key // empty' kaggle.json 2>/dev/null)"
+	if [[ -n "${_file_kaggle_token}" ]]; then
+		export KAGGLE_API_TOKEN="${_file_kaggle_token}"
+	fi
+fi
+
 exec .venv/bin/python scripts/download_all_replays.py "$@"

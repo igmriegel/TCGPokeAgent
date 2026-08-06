@@ -148,12 +148,15 @@ def _build_submission_rows(
     mapped_episode_count: Counter[str] | None = None,
     parsed_episode_count: Counter[str] | None = None,
     unprocessed_episode_count: Counter[str] | None = None,
+    included_submission_ids: set[str] | None = None,
 ) -> list[dict[str, object]]:
     """Build submission summary rows from local and Kaggle sources.
 
     Args:
         raw_results: Parsed replay results used to calculate local outcomes.
         submission_id: Optional ID that limits the returned rows to one submission.
+        included_submission_ids: Optional submission IDs represented by the
+            filtered replay scope.
 
     Returns:
         Submission rows for the combined report or the selected submission.
@@ -186,6 +189,8 @@ def _build_submission_rows(
         if not candidate_id:
             continue
         if submission_id is not None and candidate_id != submission_id:
+            continue
+        if included_submission_ids is not None and candidate_id not in included_submission_ids:
             continue
         submission_rows.append(
             {
@@ -471,6 +476,12 @@ def generate_report(
         elif mapped_submission_id:
             unprocessed_episode_count[mapped_submission_id] += 1
 
+    included_submission_ids = {
+        submission_map.get(str(result["episode_id"]))
+        for result in raw_results
+        if submission_map.get(str(result["episode_id"]))
+    }
+
     games_win = sum(1 for _x in raw_results if _x["outcome"] == "win")
     games_loss = sum(1 for _x in raw_results if _x["outcome"] == "loss")
     total = games_win + games_loss
@@ -506,20 +517,12 @@ def generate_report(
     losses_without_field_through_turn_3 = sum(
         _x["lost_to_no_pokemon_by_turn_3"] for _x in raw_results
     )
-    losses_to_weakness_type = sum(
-        _x["outcome"] == "loss" and _x["opponent_has_weakness_type"] for _x in raw_results
-    )
     losses_to_deck_out = sum(_x["lost_to_deck_out"] for _x in raw_results)
 
     donk_records = [_x for _x in raw_results if _x["lost_to_no_pokemon_by_turn_3"]]
     donk_by_archetype: dict[str, list[dict[str, object]]] = defaultdict(list)
     for _x in donk_records:
         donk_by_archetype[_x["opp_archetype"]].append(_x)
-
-    metal_matchups: dict[str, dict[str, int]] = defaultdict(lambda: {"w": 0, "l": 0})
-    for _x in raw_results:
-        if _x["opponent_dominant_metal"]:
-            metal_matchups[_x["opp_archetype"]][_x["outcome"][0]] += 1
 
     deck_out_records = [_x for _x in raw_results if _x["lost_to_deck_out"]]
 
@@ -687,17 +690,6 @@ def generate_report(
             f"<td>{_turn_2}</td><td>{len(_records) - _turn_2}</td><td>{_replays}</td></tr>\n"
         )
 
-    metal_rows = ""
-    for _arch, _data in sorted(metal_matchups.items()):
-        _total = _data["w"] + _data["l"]
-        _wr = _data["w"] / _total * 100 if _total else 0
-        metal_rows += (
-            f"<tr><td>{html_module.escape(str(_arch))}</td>"
-            f'<td class="win">{_data["w"]}</td><td class="loss">{_data["l"]}</td>'
-            f'<td class="{"win" if _wr >= 50 else "loss"}">{_wr:.1f}%</td>'
-            f"<td>{_total}</td></tr>\n"
-        )
-
     deck_out_rows = ""
     for _x in sorted(deck_out_records, key=lambda item: int(item["episode_id"])):
         deck_out_rows += (
@@ -717,6 +709,7 @@ def generate_report(
         mapped_episode_count,
         parsed_episode_count,
         unprocessed_episode_count,
+        included_submission_ids if deck_filter else None,
     )
 
     sub_rows = ""
@@ -747,7 +740,6 @@ def generate_report(
         )
 
     donk_empty = '<tr><td colspan="5">No donk losses in this scope.</td></tr>'
-    metal_empty = '<tr><td colspan="5">No Metal-type opponent decks in this scope.</td></tr>'
     deck_out_empty = '<tr><td colspan="9">No deck-out losses in this scope.</td></tr>'
 
     now = date.today().strftime("%b %d %Y")
@@ -781,7 +773,7 @@ def generate_report(
     matchup_section_title = (
         f"Matchup Analysis &mdash; Submission {escaped_submission_id}"
         if submission_id
-        else "Matchup Analysis (All Submissions Combined)"
+        else "Matchup Analysis (All Honchkrow Submissions Combined)"
     )
     footer_scope = (
         f"Submission {escaped_submission_id} &bull; {escaped_deck_label}"
@@ -917,7 +909,7 @@ def generate_report(
 <table>
   <thead>
     <tr>
-      <th>Submission</th><th>Kaggle ID</th><th>Description</th><th>Kaggle Score</th>
+      <th>Submission</th><th>Kaggle ID</th><th>Description</th><th>Kaggle Public Score*</th>
       <th>Mapped Episodes</th><th>Parsed</th><th>W</th><th>L</th><th>Draws</th>
       <th>Unprocessed</th><th>Win Rate (W+L)</th>
     </tr>
@@ -926,6 +918,10 @@ def generate_report(
     {sub_rows}
   </tbody>
 </table>
+<p style="font-size:0.75rem;color:var(--muted)">
+  * Score copied from the latest locally cached Kaggle submission metadata; it
+  may differ from a score recalculated on Kaggle after this snapshot.
+</p>
 
 <h2>3 &mdash; First vs Second Player</h2>
 <div class="metric-row">
@@ -954,7 +950,7 @@ def generate_report(
   </div>
 </div>
 
-<h2>4 &mdash; Early Losses and Weakness Matchups</h2>
+<h2>4 &mdash; Early Losses</h2>
 <div class="metric-row">
   <div class="metric">
     <div class="metric-label">Donk: no Pokémon through turn 2</div>
@@ -967,13 +963,6 @@ def generate_report(
     <div style="font-size:0.8rem;color:var(--muted)">losses only</div>
   </div>
   <div class="metric">
-    <div class="metric-label">Losses to {ABOMASNOW_WEAKNESS_NAME} Pokémon</div>
-    <div class="metric-value loss">{losses_to_weakness_type}</div>
-    <div style="font-size:0.8rem;color:var(--muted)">
-      opponent deck contained at least one {ABOMASNOW_WEAKNESS_NAME}-type Pokémon
-    </div>
-  </div>
-  <div class="metric">
     <div class="metric-label">Losses by deck-out</div>
     <div class="metric-value loss">{losses_to_deck_out}</div>
     <div style="font-size:0.8rem;color:var(--muted)">explicit replay termination reason</div>
@@ -981,9 +970,7 @@ def generate_report(
 </div>
 <div class="highlight">
   Donk is counted when the replay explicitly ends because we have no Pokémon in
-  play (termination reason 3) by the specified global turn. The weakness count uses the opening
-  opponent deck list and counts a match once if it contains a {ABOMASNOW_WEAKNESS_NAME}
-  Pokémon; it does not claim that Pokémon was the attacker.
+  play (termination reason 3) by the specified global turn.
 </div>
 
 <h3>4.1 &mdash; Donk Details</h3>
@@ -993,15 +980,7 @@ def generate_report(
   <tbody>{donk_rows or donk_empty}</tbody>
 </table>
 
-<h3>4.2 &mdash; Metal Matchups</h3>
-<p>Matchups vs decks with a dominant Metal archetype.</p>
-<table>
-  <thead><tr><th>Opponent Archetype</th><th>Wins</th><th>Losses</th>
-    <th>Win Rate</th><th>Total</th></tr></thead>
-  <tbody>{metal_rows or metal_empty}</tbody>
-</table>
-
-<h3>4.3 &mdash; Individual Deck-out Losses</h3>
+<h3>4.2 &mdash; Individual Deck-out Losses</h3>
 <table>
   <thead><tr><th>Replay</th><th>Our Prizes Left</th><th>Opponent Prizes Left</th>
     <th>Our Active</th><th>Our HP</th><th>Opponent Active</th><th>Opponent HP</th>
