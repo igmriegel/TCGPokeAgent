@@ -434,6 +434,49 @@ paired comparison.
 
 ## Adding feedback
 
+## FB-2026-013 — Honchkrow/Porygon resource and terminal-line audit
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not validated
+
+**Original feedback:** Proton, Team Rocket Supporters, Ignition Energy,
+Giovanni, Dragapult/Articuno, prohibited attacks, Roto Stick, and premature
+`END` decisions required deck-specific policy rather than isolated bonuses.
+
+**Accepted rule:** Apply declared Pokémon availability, the twenty-Supporter
+model, dynamic weakness-aware damage, hard attack/resource filters, explicit
+promotion priorities, and a productive-line guard to the dedicated agent.
+
+**Implemented foundation:** strategic profile context, Proton target scoring,
+Dragapult detection, Supporter scaling, Hacking/Deceit filters, Ignition and
+discard protection, Stadium ordering, Roto Stick reservation, and terminal
+line filtering. Focused tests and the full evaluation gates remain pending.
+
+### Gate
+
+T-025: focused deck audit fixtures, smoke, and paired comparison.
+
+## FB-2026-014 — Deck-out losses are the next P0 priority
+
+**Priority:** P0
+
+**Status:** `READY`
+
+**Evidence:** In the local bilateral evaluation against CABT `random_agent`,
+the policy completed all games without runtime errors, but instrumented losses
+frequently ended with the own `deckCount` at zero while an attacker remained
+in play. This is a strategic failure, not an execution failure.
+
+**Accepted next action:** Add terminal-cause telemetry and a dedicated deck-out
+guard covering shuffle-refill timing, resource preservation, and premature
+Supporter/Item consumption. Re-run the same 200-game baseline after the fix.
+
+### Gate
+
+T-026: zero unexplained deck-out regressions in focused fixtures and improved
+paired evaluation against the current submission baseline.
+
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and
 gate. Post-hoc agent replay review and live human demonstration must remain

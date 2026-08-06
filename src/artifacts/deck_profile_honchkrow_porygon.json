@@ -23,6 +23,17 @@
     "reserved_bench_slots": 1
   },
   "basic_energy_count": 0,
+  "strategic_context": {
+    "pokemon_counts": {"463": 4, "891": 3, "473": 2, "474": 1, "414": 2},
+    "dragapult_line": [119, 120, 121],
+    "supporter_count": 20,
+    "proton_priority": [463, 473, 474, 414],
+    "temporary_energy": [17],
+    "permanent_energy": [15],
+    "forbidden_attacks": [669],
+    "conditional_attacks": [652],
+    "dark_weakness_targets": true
+  },
   "discard_priority": [
     "redundant_supporter",
     "temporary_energy",

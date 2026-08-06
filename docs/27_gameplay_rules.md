@@ -3,7 +3,7 @@
 > Canonical policy-level rules. Feedback explains why a rule exists; this file
 > states what the agent should do.
 
-**Last reviewed:** 2026-08-03
+**Last reviewed:** 2026-08-06
 
 ## Status vocabulary
 
@@ -37,6 +37,9 @@
 | GR-019 | Retreat only when public Knock Out risk exists and a ready replacement improves the board; keep Kyogre active when Riptide is the better line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
 | GR-020 | Use visible Abra, Kadabra, or Alakazam as a tech branch for Team Rocket's Articuno and attach Energy there instead of following the default Snover/Kyogre line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
 | GR-021 | Without Alakazam-line evidence, do not search, Bench, energize, or retreat Team Rocket's Articuno unless a ready evolved attacker can replace it; accept the sacrifice | `ACTIVE / UNVALIDATED` | FB-2026-012, T-024 |
+| GR-022 | Honchkrow/Porygon Proton, Supporter, Energy, matchup, and attack restrictions | `ACTIVE / UNVALIDATED` | FB-2026-013, T-025 |
+| GR-023 | Productive terminal, promotion, Stadium, Giovanni, and Roto Stick ordering | `ACTIVE / UNVALIDATED` | FB-2026-013, T-025 |
+| GR-024 | Instrument terminal causes and prioritize deck-out prevention before promotion | `ACTIVE / UNVALIDATED` | FB-2026-014, T-026 |
 
 ## Turn order
 
@@ -48,11 +51,12 @@ For a normal `MAIN` decision:
 4. evolve first;
 5. attach Energy, especially when it completes the Active attack;
 6. place the declared `development_priority` Pokémon (Snover) on the Bench;
-7. play search and draw Items before any Supporter;
-8. play a Supporter only when no Item is playable, preferring search Supporters;
-9. retreat only when public Knock Out risk exists and the promoted replacement is ready, keeping Kyogre on board when Riptide is the better line;
-10. attack as the terminal action of the turn, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
-11. choose `END` only when no attack or higher-value pre-attack action remains.
+7. play search and draw Items before any Stadium or Supporter;
+8. play Stadium before a Supporter when both are legal;
+9. play a Supporter only when no earlier-phase action is playable, preferring search Supporters;
+10. retreat only when public Knock Out risk exists and the promoted replacement is ready, keeping Kyogre on board when Riptide is the better line;
+11. attack as the terminal action of the turn, preferring guaranteed Knock Outs and, near deck-out, shuffle-refill attacks;
+12. choose `END` only when no attack, refill, or higher-value pre-attack action remains, and record the terminal reason.
 
 Steps not represented by an active rule remain heuristic preferences, not
 guaranteed behavior.
@@ -178,6 +182,38 @@ Without public evidence of the Alakazam line, treat Team Rocket's Articuno as a
 sacrifice regardless of turn number. Do not search for it, Bench it, or invest
 Energy in it. Retreat is allowed only when a ready evolved attacker is already
 on the Bench; otherwise accept the Active Articuno being knocked out.
+
+### GR-022 — Honchkrow/Porygon strategic resource gate
+
+The dedicated Honchkrow/Porygon policy uses declared Pokémon counts and a fixed
+twenty-card Team Rocket Supporter model. Proton values remaining Murkrow first,
+then the Porygon line, and values Articuno only when Dragapult (Dreepy 119,
+Drakloak 120, or Dragapult ex 121) or the visible Alakazam line justifies the
+tech. Proton is blocked on a full Bench and is preferred through Rocket
+Transceiver during turns one and two when it is not already in hand.
+
+Hacking is forbidden. Deceit is retained only for damage, Knock Out, or an
+explicitly decisive interruption. Ignition Energy is reserved for an attachment
+that completes a damaging attack line, while Energy is protected in discard
+choices. Unsupported Articuno is sacrificial and is preferred over discarding
+Energy.
+
+### GR-023 — Productive terminal and promotion ordering
+
+`END` is filtered whenever visible Energy, a valid attacker, and enough
+Supporters expose a lethal Rocket Feathers/R Command line. Promotion ranks an
+energized Honchkrow above ready Porygon2, and both above Murkrow; Giovanni
+receives immediate-win priority and prefers Dark-weak targets. Stadium plays
+are an explicit phase before Supporters. Roto Stick is reserved until fetching
+a Supporter can close a Knock Out line.
+
+### GR-024 — Deck-out monitoring is the next release gate
+
+The dedicated agent must record terminal reason, turn, remaining deck, field,
+and prizes for every loss. A loss with the own deck at zero is a deck-out
+regression signal even when the agent completed every SDK action legally.
+Deck-out prevention, shuffle-refill timing, and preservation of a winning line
+take precedence over the current win-rate result until the P0 gate is closed.
 
 ## Required evaluation metrics
 

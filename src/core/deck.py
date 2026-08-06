@@ -133,6 +133,7 @@ class DeckProfile:
     promotion_priority: tuple[str, ...] = ()
     bench_priority: tuple[str, ...] = ()
     prize_priority: tuple[str, ...] = ()
+    strategic_context: Mapping[str, Any] = field(default_factory=dict)
 
     def cards_for_role(self, role: str) -> tuple[int, ...]:
         """Return cards assigned to a semantic role.
@@ -188,6 +189,7 @@ class DeckProfile:
             promotion_priority=tuple(str(value) for value in data.get("promotion_priority", ())),
             bench_priority=tuple(str(value) for value in data.get("bench_priority", ())),
             prize_priority=tuple(str(value) for value in data.get("prize_priority", ())),
+            strategic_context=dict(data.get("strategic_context", {})),
         )
 
     @classmethod

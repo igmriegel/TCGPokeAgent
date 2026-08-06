@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-08-03
+**Last reviewed:** 2026-08-06
 
 ## How to read this backlog
 
@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 3 |
-| Ready | 17 |
+| In progress | 4 |
+| Ready | 18 |
 | Deferred | 7 |
-| Total open | 27 |
+| Total open | 29 |
 
 ## Active release queue
 
@@ -48,6 +48,8 @@ documents to these totals.
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
 | T-023 | P1 | `READY` | Validate public-risk retreat and visible Alakazam-line tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
 | T-024 | P1 | `READY` | Validate conditional Articuno sacrifice and discard priority | FB-2026-012, H2A | Run Articuno attachment/discard fixtures |
+| T-025 | P0 | `IN_PROGRESS` | Validate Honchkrow/Porygon Proton, Supporter, Energy, matchup, promotion, and terminal-line rules | FB-2026-013, H2A | Run focused fixtures, smoke, and paired comparison |
+| T-026 | P0 | `READY` | Eliminate Honchkrow/Porygon deck-out losses and instrument terminal causes | FB-2026-014, H2A | Add deck-out guard, refill/END fixtures, and compare against the submitted baseline |
 
 ## Active-track coverage
 
@@ -62,7 +64,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021, T-023–T-024 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-026 |
 
 ## Deferred queue
 

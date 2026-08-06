@@ -74,6 +74,7 @@ class DecisionPhase(StrEnum):
     PLAY_POKEMON = "PLAY_POKEMON"
     ATTACH_OPEN = "ATTACH_OPEN"
     PLAY_ITEMS = "PLAY_ITEMS"
+    STADIUM = "STADIUM"
     PLAY_SUPPORTER = "PLAY_SUPPORTER"
     ATTACK = "ATTACK"
     ATTACH_FULL = "ATTACH_FULL"
@@ -89,6 +90,7 @@ _MAIN_PHASE_ORDER = (
     DecisionPhase.PLAY_POKEMON,
     DecisionPhase.ATTACH_OPEN,
     DecisionPhase.PLAY_ITEMS,
+    DecisionPhase.STADIUM,
     DecisionPhase.PLAY_SUPPORTER,
     DecisionPhase.ATTACH_FULL,
     DecisionPhase.UTILITY,
@@ -1622,6 +1624,8 @@ class HeuristicAgent(AgentPolicy):
                 if self._scorer._has_search_role(card_id):
                     return DecisionPhase.PLAY_SUPPORTER, "play_search_supporter"
                 return DecisionPhase.PLAY_SUPPORTER, "play_supporter"
+            if card_type == 4:
+                return DecisionPhase.STADIUM, "play_stadium_before_supporter"
             return DecisionPhase.UTILITY, "play_utility_card"
         if option_type is OptionType.ATTACK:
             if self._attack_is_priority(state, candidate):

@@ -1,0 +1,27 @@
+{
+  "report_type": "honchkrow_porygon_local_baseline",
+  "generated_at": "2026-08-06",
+  "agent": "honchkrow_porygon",
+  "opponent": "cabt.random_agent",
+  "sdk_version": "1.32.2",
+  "games": 200,
+  "wins": 157,
+  "losses": 43,
+  "draws": 0,
+  "execution_failures": 0,
+  "win_rate": 0.785,
+  "package_validation": "passed",
+  "submission": {
+    "status": "blocked_before_upload",
+    "reason": "Kaggle CLI requires OAuth login or ~/.kaggle/access_token"
+  },
+  "deck_out_monitoring": {
+    "status": "priority_p0",
+    "instrumented_sample_games": 40,
+    "instrumented_sample_losses": 6,
+    "deck_out_losses_observed": 5,
+    "other_or_unclassified_losses": 1,
+    "note": "The 200-game aggregate did not retain terminal-cause traces; the cause sample was collected in a separate bilateral instrumented run."
+  },
+  "next_development": "eliminate deck-out losses with terminal-cause telemetry, shuffle-refill timing, and resource-preservation guards"
+}
