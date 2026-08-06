@@ -38,6 +38,10 @@ ROCKET_ENERGY = 15
 IGNITION_ENERGY = 17
 ROCKET_FEATHERS = 1285
 R_COMMAND = 670
+HACKING = 669
+DECEIT = 652
+TORMENT = 653
+HAMMER_IN = 1286
 ARTICUNO_ATTACK = 583
 
 
@@ -69,6 +73,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         card_id = self._feature_int(candidate, "card_id")
         card_type = self._metadata_int(candidate.card, "cardType")
         if card_type == 0:
+            if self._own_field_count(state) < 2 and card_id in {MURKROW, PORYGON}:
+                return 1800.0, ["opening_backup_pokemon"]
             if card_id == ARTICUNO:
                 if self._articuno_is_needed(state):
                     return 920.0, ["play_articuno_matchup_tech"]
@@ -134,6 +140,21 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _attack_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         attack_id = self._attack_id(candidate)
+        opponent_hp = self._effective_opponent_hp(state)
+        explicit_damage = max(
+            self._metadata_int(candidate.attack, "damage"),
+            self._metadata_int(candidate.option, "damage"),
+            self._metadata_int(candidate.option, "expectedDamage"),
+        )
+        if self._truthy(candidate.option, "win", "wins", "gameOver"):
+            return 5000.0, ["honchkrow_win_now"]
+        reasons: list[str] = ["honchkrow_attack_for_prize_progress"]
+        score = 260.0 + explicit_damage
+        if self._truthy(candidate.option, "ko", "knockout", "isKo") or (
+            explicit_damage > 0 and opponent_hp > 0 and explicit_damage >= opponent_hp
+        ):
+            score += 1500.0
+            reasons.append("honchkrow_guaranteed_ko")
         if attack_id == ROCKET_FEATHERS:
             supporters = self._supporter_zone_counts(state)
             damage = supporters["hand"] * 60
@@ -144,10 +165,46 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 bonus -= 450.0
             if supporters["hand"] == 0:
                 bonus -= 1000.0
-            return 300.0 + damage + bonus, reasons
+            score = max(score, 300.0 + damage + bonus)
+            if damage >= opponent_hp > 0:
+                score += 1100.0
+                reasons.append("rocket_feathers_ko")
+            return score, reasons
         if attack_id == R_COMMAND:
             damage = self._rocket_supporters_in_discard(state) * 20
-            return 250.0 + damage, ["porygon2_r_command", "rocket_discard_damage"]
+            if damage >= opponent_hp > 0:
+                score += 900.0
+                reasons.append("r_command_ko")
+            return max(score, 250.0 + damage), [
+                "porygon2_r_command",
+                "rocket_discard_damage",
+                *reasons,
+            ]
+        if attack_id == HAMMER_IN:
+            damage = max(100, explicit_damage)
+            if damage >= opponent_hp > 0:
+                score += 1200.0
+                reasons.append("hammer_in_ko")
+            return score + damage, ["hammer_in_fixed_damage", *reasons]
+        if attack_id == HACKING:
+            tactical = self._truthy(
+                candidate.option,
+                "preventsAttack",
+                "removesRequiredResource",
+                "createsWinWindow",
+                "decisiveDisruption",
+            )
+            if not tactical:
+                return -700.0, ["hacking_without_decisive_interrupt"]
+            return 520.0, ["hacking_decisive_interrupt"]
+        if attack_id == DECEIT:
+            if explicit_damage <= 0 and not self._truthy(candidate.option, "disruptive", "switch"):
+                return -250.0, ["deceit_without_damage_or_tempo"]
+            return 420.0 + explicit_damage, ["deceit_contextual_tempo"]
+        if attack_id == TORMENT:
+            if self._truthy(candidate.option, "preventsAttack", "disablesAttack"):
+                return 560.0 + explicit_damage, ["torment_blocks_next_attack"]
+            return 300.0 + explicit_damage, ["torment_damage_only"]
         if attack_id == ARTICUNO_ATTACK:
             return -3000.0, ["articuno_never_attacks_in_honchkrow"]
         return super()._attack_score(state, candidate)
@@ -166,7 +223,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             SelectContext.TO_FIELD,
             SelectContext.TO_HAND,
         }:
-            if self._articuno_is_needed(state):
+            if self._articuno_is_needed(state) or self._own_field_count(state) < 2:
                 return 700.0, ["select_articuno_matchup_tech"]
             return -1500.0, ["avoid_articuno_without_matchup_need"]
         if context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
@@ -181,6 +238,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if context is SelectContext.TO_HAND and card_id == ARTICUNO:
             return (260.0, ["recover_articuno_against_dragapult"])
         return super()._card_selection_score(state, candidate, context)
+
+    def _own_field_count(self, state: GameState) -> int:
+        """Count own Active and Bench Pokémon visible to the policy."""
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        return int(player.active is not None) + sum(pokemon is not None for pokemon in player.bench)
 
     def _articuno_is_needed(self, state: GameState) -> bool:
         """Return whether public matchup evidence justifies Articuno."""
@@ -534,9 +598,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == ARTICUNO:
             return not (
                 self._scorer._articuno_is_needed(state)
+                or self._scorer._own_field_count(state) < 2
                 or self._scorer._articuno_hand_reduction_needed(state, candidate)
             )
-        if card_id == ARTICUNO and not self._scorer._articuno_is_needed(state):
+        if (
+            card_id == ARTICUNO
+            and not self._scorer._articuno_is_needed(state)
+            and self._scorer._own_field_count(state) >= 2
+        ):
             if candidate.option_type is OptionType.ATTACH:
                 return True
             if candidate.option_type is OptionType.CARD and context in {

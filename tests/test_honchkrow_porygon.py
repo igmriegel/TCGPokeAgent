@@ -8,18 +8,23 @@ from pathlib import Path
 from src.agents.honchkrow_porygon import (
     ARIANA,
     ARTICUNO,
+    DECEIT,
     GIOVANNI,
+    HACKING,
     HONCHKROW,
     IGNITION_ENERGY,
     NIGHT_STRETCHER,
     POKE_PAD,
+    PORYGON,
     R_COMMAND,
     ROCKET_FEATHERS,
     ROTO_STICK,
+    TORMENT,
     HonchkrowPorygonAgent,
     HonchkrowPorygonScorer,
 )
 from src.core import Candidate, GameState, OptionType, PlayerState, PokemonState, SelectContext
+from src.data.honchkrow_audit import classify_loss, decision_evidence
 
 ROOT = Path(__file__).parents[1]
 
@@ -171,6 +176,78 @@ def test_roto_stick_requires_ready_honchkrow() -> None:
     )
     state = GameState(players=[PlayerState(), PlayerState()])
     assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+
+def test_non_damaging_hacking_loses_to_a_decisive_policy_signal() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    hacking = _candidate(0, OptionType.ATTACK, attack_id=HACKING)
+    score, reasons = scorer._attack_score(
+        GameState(players=[PlayerState(active=PokemonState(HONCHKROW, 130, 130)), PlayerState()]),
+        hacking,
+    )
+    assert score < 0
+    assert "hacking_without_decisive_interrupt" in reasons
+
+
+def test_torment_is_contextual_and_deceit_requires_tempo() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(players=[PlayerState(), PlayerState(active=PokemonState(999, 100, 100))])
+    torment = _candidate(0, OptionType.ATTACK, attack_id=TORMENT)
+    torment.option["preventsAttack"] = True
+    assert scorer._attack_score(state, torment)[0] > 500
+    deceit = _candidate(1, OptionType.ATTACK, attack_id=DECEIT)
+    assert scorer._attack_score(state, deceit)[0] < 0
+
+
+def test_loss_classifier_prioritizes_terminal_causes() -> None:
+    assert (
+        classify_loss(owner_deck_count=0, owner_field_count=1, owner_prizes=3, opponent_prizes=1)
+        == "DECK_OUT"
+    )
+    assert (
+        classify_loss(owner_deck_count=20, owner_field_count=0, owner_prizes=3, opponent_prizes=3)
+        == "DONK / BOARD_COLLAPSE"
+    )
+    assert (
+        classify_loss(owner_deck_count=20, owner_field_count=1, owner_prizes=2, opponent_prizes=0)
+        == "PRIZE_RACE_LOSS"
+    )
+
+
+def test_decision_evidence_captures_competing_attacks_and_supporters() -> None:
+    record = {
+        "episode_id": 90272101,
+        "step_index": 12,
+        "selected_indices": [1],
+        "observation": {
+            "current": {
+                "turn": 6,
+                "yourIndex": 0,
+                "players": [
+                    {
+                        "active": [{"id": HONCHKROW}],
+                        "bench": [{"id": PORYGON}],
+                        "hand": [{"id": ARIANA}],
+                        "deckCount": 18,
+                        "prize": [None, None, None],
+                    },
+                    {"prize": [None, None]},
+                ],
+            },
+            "select": {
+                "context": 0,
+                "option": [
+                    {"type": 13, "attackId": HACKING},
+                    {"type": 13, "attackId": TORMENT, "damage": 30},
+                ],
+            },
+        },
+    }
+    evidence = decision_evidence(record)
+    assert evidence.attack_id == TORMENT
+    assert evidence.competing_attack_ids == (HACKING,)
+    assert evidence.supporter_ids_in_hand == (ARIANA,)
+    assert evidence.opponent_prizes == 2
 
 
 def test_giovanni_is_low_priority_when_it_would_break_the_ko_line() -> None:

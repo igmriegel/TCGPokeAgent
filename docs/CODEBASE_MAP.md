@@ -64,6 +64,7 @@ been captured in one frozen report.
 | `src/data/replay_ingestor.py` | Leakage-safe replay decision datasets | `tests/test_replay_ingestor.py` |
 | `src/data/gameplay_annotations.py` | Decision-linked post-hoc review records | `tests/test_gameplay_annotations.py` |
 | `src/data/replay_deep_analysis.py` | Deep replay analysis with damage/evolution/bench tracking | Used by investigation report generation |
+| `src/data/honchkrow_audit.py` | Honchkrow/Porygon decision ledger and contextual loss classification | `tests/test_honchkrow_porygon.py`; replay-decision JSONL audits |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active; produces `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html` |
