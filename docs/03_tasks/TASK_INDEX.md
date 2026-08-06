@@ -48,7 +48,7 @@ documents to these totals.
 | T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
 | T-023 | P1 | `READY` | Validate public-risk retreat and visible Alakazam-line tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
 | T-024 | P1 | `READY` | Validate conditional Articuno sacrifice and discard priority | FB-2026-012, H2A | Run Articuno attachment/discard fixtures |
-| T-025 | P0 | `IN_PROGRESS` | Validate Honchkrow/Porygon Proton, Supporter, Energy, matchup, promotion, and terminal-line rules | FB-2026-013, H2A | Run focused fixtures, smoke, and paired comparison |
+| T-025 | P0 | `IN_PROGRESS` | Validate Honchkrow/Porygon Proton, Supporter, Energy, promotion, and terminal-line rules; keep Alakazam as a separate pending gameplay review | FB-2026-013, H2A | Run focused fixtures, smoke, and paired comparison |
 | T-026 | P0 | `READY` | Eliminate Honchkrow/Porygon deck-out losses and instrument terminal causes | FB-2026-014, H2A | Add deck-out guard, refill/END fixtures, and compare against the submitted baseline |
 
 ## Active-track coverage

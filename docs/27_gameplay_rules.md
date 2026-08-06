@@ -35,7 +35,7 @@
 | GR-017 | Prefer an attack with guaranteed Knock Out over probabilistic or non-KO attacks | `ACTIVE / UNVALIDATED` | FB-2026-009, T-021 |
 | GR-018 | Do not block a legal attack behind attacker-target development | `ACTIVE / UNVALIDATED` | FB-2026-010 |
 | GR-019 | Retreat only when public Knock Out risk exists and a ready replacement improves the board; keep Kyogre active when Riptide is the better line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
-| GR-020 | Use visible Abra, Kadabra, or Alakazam as a tech branch for Team Rocket's Articuno and attach Energy there instead of following the default Snover/Kyogre line | `ACTIVE / UNVALIDATED` | FB-2026-011, T-023 |
+| GR-020 | Define a dedicated Abra/Kadabra/Alakazam gameplay branch, including evolution timing, attack line, and target selection | `PENDING / OUT OF SCOPE FOR THIS AUDIT` | FB-2026-011, T-023 |
 | GR-021 | Without Alakazam-line evidence, do not search, Bench, energize, or retreat Team Rocket's Articuno unless a ready evolved attacker can replace it; accept the sacrifice | `ACTIVE / UNVALIDATED` | FB-2026-012, T-024 |
 | GR-022 | Honchkrow/Porygon Proton, Supporter, Energy, matchup, and attack restrictions | `ACTIVE / UNVALIDATED` | FB-2026-013, T-025 |
 | GR-023 | Productive terminal, promotion, Stadium, Giovanni, and Roto Stick ordering | `ACTIVE / UNVALIDATED` | FB-2026-013, T-025 |
@@ -193,19 +193,26 @@ tech. Proton is blocked on a full Bench and is preferred through Rocket
 Transceiver during turns one and two when it is not already in hand.
 
 Hacking is forbidden. Deceit is retained only for damage, Knock Out, or an
-explicitly decisive interruption. Ignition Energy is reserved for an attachment
-that completes a damaging attack line, while Energy is protected in discard
-choices. Unsupported Articuno is sacrificial and is preferred over discarding
-Energy.
+explicitly decisive interruption. Ignition Energy is allowed only on the Active
+when it completes a damaging attack line; Team Rocket Energy is not attached to
+Porygon-Z. Unsupported Articuno is sacrificial and is preferred over discarding
+Energy. Poké Pad may fetch Honchkrow when it enables an attack or reduces a large
+hand for Ariana, while Porygon-Z is not benched before the opening line.
+Transceiver fetches Proton during early setup even when Ariana is already in
+hand, provided a positive target remains.
 
 ### GR-023 — Productive terminal and promotion ordering
 
 `END` is filtered whenever visible Energy, a valid attacker, and enough
 Supporters expose a lethal Rocket Feathers/R Command line. Promotion ranks an
 energized Honchkrow above ready Porygon2, and both above Murkrow; Giovanni
-receives immediate-win priority and prefers Dark-weak targets. Stadium plays
-are an explicit phase before Supporters. Roto Stick is reserved until fetching
-a Supporter can close a Knock Out line.
+receives immediate-win priority and prefers the highest-prize target, then the
+lowest remaining HP. Guaranteed Knock Outs and KO-enabling discards precede
+development, search, Energy, retreat, and `END`. Retreat is blocked while the
+Active still has a productive or lethal attack. Stadium plays are an explicit
+phase before Supporters. Roto Stick is reserved until fetching a Supporter can
+close a Knock Out line. Ariana remains protected unless the discard is marked
+as required by the current KO line.
 
 ### GR-024 — Deck-out monitoring is the next release gate
 

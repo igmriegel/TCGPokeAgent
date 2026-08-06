@@ -52,6 +52,7 @@
 | `uv run --frozen python scripts/download_all_replays.py` | Download all available Kaggle replays into the local mirror |
 | `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
+| `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
 
 ## Internal helpers
 

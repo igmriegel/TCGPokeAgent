@@ -49,7 +49,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 
 **Priority:** P0
 
-**Status:** `IMPLEMENTED`, not validated
+**Status:** `IMPLEMENTED`, focused fixtures passing; evaluation pending
 
 **Source:** post-submission human review of automated Kaggle matches
 
@@ -448,14 +448,20 @@ Giovanni, Dragapult/Articuno, prohibited attacks, Roto Stick, and premature
 model, dynamic weakness-aware damage, hard attack/resource filters, explicit
 promotion priorities, and a productive-line guard to the dedicated agent.
 
-**Implemented foundation:** strategic profile context, Proton target scoring,
-Dragapult detection, Supporter scaling, Hacking/Deceit filters, Ignition and
-discard protection, Stadium ordering, Roto Stick reservation, and terminal
-line filtering. Focused tests and the full evaluation gates remain pending.
+**Implemented foundation:** strategic profile context, positive-count Proton
+target scoring, Dragapult detection, Supporter scaling, Hacking/Deceit filters,
+Ignition and discard protection, Poké Pad/Honchkrow setup gating, Stadium
+ordering, Roto Stick reservation, KO-first MAIN ordering, retreat protection,
+and terminal-line filtering. Focused tests pass; the full evaluation gate
+remains pending.
 
 ### Gate
 
 T-025: focused deck audit fixtures, smoke, and paired comparison.
+
+The Alakazam matchup remains a separate gameplay review. This audit does not
+add a speculative branch; a future review must define its evolution wait, attack
+line, and target before promoting a rule.
 
 ## FB-2026-014 — Deck-out losses are the next P0 priority
 
