@@ -36,6 +36,12 @@ def _parser() -> argparse.ArgumentParser:
         help="Agent mode used by the smoke gate.",
     )
     parser.add_argument(
+        "--package-kind",
+        choices=("standard", "honchkrow_porygon"),
+        default="standard",
+        help="Package builder to use; prevents rebuilding a dedicated deck as standard.",
+    )
+    parser.add_argument(
         "--yes",
         action="store_true",
         help="Submit without the interactive confirmation prompt.",
@@ -91,6 +97,13 @@ def _submission_command(kaggle: str, archive: Path, message: str) -> list[str]:
         "-m",
         message,
     ]
+
+
+def _package_command(package_kind: str, archive: Path, backend: str) -> list[str]:
+    """Return the package builder command for the requested submission target."""
+    if package_kind == "honchkrow_porygon":
+        return ["scripts/build_honchkrow_porygon_package.sh", str(archive)]
+    return ["scripts/build_package.sh", str(archive), backend]
 
 
 def _confirmed(answer: str) -> bool:
@@ -211,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
         for command in commands:
             _run(command)
         package_backend = args.agent_mode if args.agent_mode == "hdi_v1" else "heuristic"
-        _run(["scripts/build_package.sh", str(archive), package_backend])
+        _run(_package_command(args.package_kind, archive, package_backend))
         _run([python, "-m", "src.eval.validation", "--package", str(archive)])
     except (OSError, RuntimeError) as error:
         print(f"\nSUBMISSION PIPELINE FAILED: {error}", file=sys.stderr)

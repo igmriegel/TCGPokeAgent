@@ -42,6 +42,7 @@
 | `uv run --frozen python -m src.eval.validation --package submission.tar.gz` | Validate an extracted archive |
 | `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
 | `scripts/submit_simulation.sh` | Gate, confirm interactively, and submit using the configured `~/.kaggle` login |
+| `scripts/submit_simulation.sh --package-kind honchkrow_porygon --archive honchkrow_porygon_submission.tar.gz --skip-smoke --yes` | Build, validate, and submit the dedicated Honchkrow/Porygon package after its separate CABT smoke |
 | `make submit-kaggle` | Run the guarded Kaggle submission workflow for `submission.tar.gz` |
 
 ## Operational Python scripts
@@ -56,7 +57,8 @@
 
 `scripts/cabt_smoke.py` is the Python implementation invoked by
 `scripts/run_smoke.sh`. `scripts/submit_simulation.py` implements the guarded
-pipeline invoked by `scripts/submit_simulation.sh`. They remain directly
+pipeline invoked by `scripts/submit_simulation.sh`, including explicit package
+selection for dedicated decks. They remain directly
 executable for focused debugging, but the shell wrappers are the public
 commands.
 
@@ -66,8 +68,9 @@ commands.
 - generated run directories and reports do not overwrite an existing run ID;
 - policy logic remains in `src/`, not in shell wrappers;
 - submission never uploads without `--yes` or an affirmative prompt;
-- submission uses the authenticated Kaggle CLI state in `~/.kaggle` and does
-  not depend on a repo-local `KAGGLE_CONFIG_DIR`;
+- submission uses `KAGGLE_API_TOKEN`, `~/.kaggle/access_token`, or the ignored
+  repository-root `kaggle.json` fallback without printing or persisting the
+  credential;
 - successful uploads write a credential-free receipt;
 - generated data and reports follow the persistence contracts.
 

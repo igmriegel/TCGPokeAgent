@@ -32,6 +32,20 @@ automatically read as `KAGGLE_API_TOKEN` by the Python submission flow.
 Successful uploads create a credential-free receipt under
 `reports/submissions/`.
 
+For the dedicated Honchkrow/Porygon package, select its builder explicitly so
+the submission flow does not replace it with the standard package:
+
+```bash
+scripts/submit_simulation.sh \
+  --package-kind honchkrow_porygon \
+  --archive honchkrow_porygon_submission.tar.gz \
+  --skip-smoke --yes
+```
+
+Run the dedicated CABT smoke before this command. The submission flow reads
+the ignored root `kaggle.json` only to pass `KAGGLE_API_TOKEN` to the Kaggle
+process; it never prints, stores, or includes the token in an archive/report.
+
 ## Gameplay smoke
 
 Run a balanced matrix and reject an agent that completes games without

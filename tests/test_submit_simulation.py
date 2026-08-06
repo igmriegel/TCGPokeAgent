@@ -6,6 +6,7 @@ from scripts.submit_simulation import (
     COMPETITION,
     PROJECT_ROOT,
     _confirmed,
+    _package_command,
     _parser,
     _sha256,
     _submission_command,
@@ -48,6 +49,14 @@ def test_hdi_mode_is_available_to_guarded_submission_pipeline() -> None:
     args = _parser().parse_args(["--agent-mode", "hdi_v1", "--dry-run"])
 
     assert args.agent_mode == "hdi_v1"
+
+
+def test_dedicated_package_kind_uses_dedicated_builder(tmp_path: Path) -> None:
+    archive = tmp_path / "honchkrow.tar.gz"
+    assert _package_command("honchkrow_porygon", archive, "heuristic") == [
+        "scripts/build_honchkrow_porygon_package.sh",
+        str(archive),
+    ]
 
 
 def test_submission_env_ignores_repo_root_kaggle_config_dir(
