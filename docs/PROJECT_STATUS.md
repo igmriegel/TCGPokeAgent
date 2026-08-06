@@ -14,9 +14,8 @@ manifests rather than copied into this self-changing status page
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon package passes
-isolated validation. A new remote upload was attempted on 2026-08-06 but was
-blocked before upload because the installed Kaggle CLI requires OAuth login or
-`~/.kaggle/access_token`. The local 200-game dedicated baseline completed all
+isolated validation. Submission `55304212` was uploaded on 2026-08-06 and is
+pending remote evaluation. The local 200-game dedicated baseline completed all
 games, but instrumented losses identify deck-out as the next P0 strategic
 priority. The project is not ready to claim a closed MVP.
 
@@ -35,7 +34,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
 | Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
-| Package | Honchkrow/Porygon package built and isolated validation passed; remote upload blocked by Kaggle authentication | Local artifact usable; remote submission pending |
+| Package | Honchkrow/Porygon package built, isolated validation passed, and uploaded as `55304212` | Remote evaluation pending |
 | Search | Native lifecycle lacks a verified project Python adapter | Disabled and deferred |
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
@@ -78,6 +77,9 @@ operational evidence until that metadata discrepancy is resolved.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
     development gate; do not promote the current local baseline on win rate
     alone.
+11. Track remote submission `55304212` as the current Honchkrow/Porygon
+    observation baseline; do not infer strategic improvement until its score
+    and replays are available.
 
 ## Next work
 
@@ -85,7 +87,7 @@ The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
 1. close T-026: instrument and eliminate Honchkrow/Porygon deck-out losses;
-2. authenticate and submit the dedicated package, then collect remote replays;
+2. monitor submission `55304212` and collect its remote replays;
 3. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 4. validate Rule Box/PrizeMap and PrizeCheck transitions;
 5. rebuild the replay dataset and close the release checklist.

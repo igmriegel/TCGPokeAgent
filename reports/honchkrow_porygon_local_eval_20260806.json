@@ -12,8 +12,11 @@
   "win_rate": 0.785,
   "package_validation": "passed",
   "submission": {
-    "status": "blocked_before_upload",
-    "reason": "Kaggle CLI requires OAuth login or ~/.kaggle/access_token"
+    "status": "pending",
+    "ref": "55304212",
+    "file": "honchkrow_porygon_eval.tar.gz",
+    "description": "honchkrow-porygon deckout baseline 2026-08-06",
+    "remote_score": null
   },
   "deck_out_monitoring": {
     "status": "priority_p0",

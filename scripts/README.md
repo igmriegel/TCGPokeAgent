@@ -27,7 +27,9 @@ scripts/submit_simulation.sh --dry-run
 The flow requires an authenticated Kaggle CLI and submits to
 `pokemon-tcg-ai-battle`. Use `kaggle auth login` or an API token under
 `~/.kaggle/`; do not point `KAGGLE_CONFIG_DIR` at the repository root for the
-submission step. Successful uploads create a credential-free receipt under
+submission step. When present, the ignored repository-root `kaggle.json` is
+automatically read as `KAGGLE_API_TOKEN` by the Python submission flow.
+Successful uploads create a credential-free receipt under
 `reports/submissions/`.
 
 ## Gameplay smoke

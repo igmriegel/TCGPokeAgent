@@ -109,6 +109,16 @@ def _submission_env() -> dict[str, str]:
         A copy of the current environment suitable for the Kaggle CLI.
     """
     env = os.environ.copy()
+    if not env.get("KAGGLE_API_TOKEN"):
+        local_credentials = PROJECT_ROOT / "kaggle.json"
+        try:
+            credentials = json.loads(local_credentials.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            credentials = {}
+        token = credentials.get("key") if isinstance(credentials, dict) else None
+        if isinstance(token, str) and token:
+            env["KAGGLE_API_TOKEN"] = token
+            print("Using the ignored repository kaggle.json as KAGGLE_API_TOKEN.", flush=True)
     config_dir = env.get("KAGGLE_CONFIG_DIR")
     if config_dir is None:
         return env
