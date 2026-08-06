@@ -13,10 +13,14 @@ from src.agents.honchkrow_porygon import (
     HACKING,
     HONCHKROW,
     IGNITION_ENERGY,
+    MURKROW,
     NIGHT_STRETCHER,
     POKE_PAD,
     PORYGON,
+    PORYGON2,
+    PROTON,
     R_COMMAND,
+    ROCKET_ENERGY,
     ROCKET_FEATHERS,
     ROTO_STICK,
     TORMENT,
@@ -164,6 +168,56 @@ def test_pokepad_does_not_search_honchkrow_before_murkrow_is_ready() -> None:
     )
     state = GameState(players=[PlayerState(hand=[{"id": POKE_PAD}]), PlayerState()])
     assert agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+
+
+def test_pokepad_searches_honchkrow_for_attack_or_ariana_hand_refresh() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=3,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 60, 60),
+                hand=[{"id": card_id} for card_id in range(8)],
+            ),
+            PlayerState(),
+        ],
+    )
+    candidate = _candidate(
+        0,
+        OptionType.CARD,
+        card_id=HONCHKROW,
+        card={"cardType": 0},
+    )
+    assert not agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+
+
+def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(turn=1, players=[PlayerState(hand=[{"id": ARIANA}]), PlayerState()])
+    candidate = _candidate(0, OptionType.CARD, card_id=PROTON, card={"cardType": 3})
+    score, reasons = scorer._card_selection_score(state, candidate, SelectContext.TO_HAND)
+    assert score > 1500
+    assert "select_proton_for_early_setup" in reasons
+
+
+def test_porygon_is_not_benched_before_the_opening_pokemon() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    candidate = _candidate(0, OptionType.CARD, card_id=PORYGON2, card={"cardType": 0})
+    state = GameState(players=[PlayerState(), PlayerState()])
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.SETUP_BENCH_POKEMON)
+
+
+def test_rocket_energy_is_not_attached_to_porygon() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    candidate = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 5},
+        features={"card_id": ROCKET_ENERGY, "target_card_id": PORYGON2},
+    )
+    state = GameState(players=[PlayerState(), PlayerState()])
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.ATTACH_ENERGY)
 
 
 def test_roto_stick_requires_ready_honchkrow() -> None:
