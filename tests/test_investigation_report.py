@@ -8,6 +8,7 @@ import pytest
 from cg.api import all_card_data
 from scripts import download_all_replays as downloader
 from scripts import generate_investigation_report as report
+from scripts import update_replays_reports as report_updater
 from src.core.archetype import resolve_deck_archetype, resolve_deck_archetype_lines
 
 CARD_BY_NAME = {card.name: card for card in all_card_data()}
@@ -64,6 +65,24 @@ def test_active_submissions_returns_two_latest_completed() -> None:
         "new",
         "mid",
     ]
+
+
+def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) -> None:
+    """Select only the latest completed submissions with local replay files."""
+    replay_dir = tmp_path / "replays"
+    replay_dir.mkdir()
+    (replay_dir / "new-episode.json").touch()
+    (replay_dir / "old-episode.json").touch()
+    metadata = [
+        {"ref": "old", "date": "2026-08-01 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+        {"ref": "new", "date": "2026-08-05 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+        {"ref": "missing", "date": "2026-08-06 00:00:00", "status": "SubmissionStatus.COMPLETE"},
+    ]
+    submission_map = {"new-episode": "new", "old-episode": "old"}
+
+    assert report_updater.latest_downloaded_submission_ids(
+        metadata, submission_map, replay_dir
+    ) == ["new", "old"]
 
 
 def test_filter_replay_paths_uses_submission_map(

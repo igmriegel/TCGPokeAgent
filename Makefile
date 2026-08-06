@@ -32,16 +32,4 @@ submit-kaggle:
 
 update-replays-reports:
 	scripts/download_all_replays.sh
-	scripts/generate_investigation_report.sh
-	scripts/generate_investigation_report.sh \
-		data/raw/kaggle/kaggle_gameplay_runs perf_reports/INVESTIGATION_REPORT_HONCHKROW.html \
-		"Igor Riegel" --deck-filter "Honchkrow"
-	@for report in perf_reports/INVESTIGATION_REPORT_*.html; do \
-		[ "$$report" = "perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html" ] && continue; \
-		submission_id=$${report##*/INVESTIGATION_REPORT_}; \
-		submission_id=$${submission_id%.html}; \
-		case "$$submission_id" in ''|*[!0-9]*) continue;; esac; \
-		scripts/generate_investigation_report.sh \
-			data/raw/kaggle/kaggle_gameplay_runs "$$report" "Igor Riegel" \
-			--submission-id "$$submission_id"; \
-	done
+	.venv/bin/python scripts/update_replays_reports.py
