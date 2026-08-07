@@ -10,6 +10,8 @@ from typing import Any, Iterable, Mapping
 from src.agents.honchkrow_porygon import (
     DECEIT,
     HACKING,
+    R_COMMAND,
+    ROCKET_FEATHERS,
     TORMENT,
 )
 
@@ -34,6 +36,10 @@ class DecisionEvidence:
     competing_attack_ids: tuple[int, ...]
     guaranteed_ko_available: bool
     disruption_without_damage: bool
+    missed_post_draw_r_command: bool = False
+    missed_ko: bool = False
+    resource_waste: bool = False
+    preventable_deck_out: bool = False
 
 
 def _int(value: Any) -> int | None:
@@ -132,6 +138,19 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
     disruptive = chosen_attack in {HACKING, DECEIT, TORMENT} and not damage_options.intersection(
         attack_ids
     )
+    guaranteed_ko = any(
+        isinstance(option, Mapping) and bool(option.get("ko", option.get("knockout", False)))
+        for option in options
+    )
+    r_command_available = R_COMMAND in attack_ids
+    selected_type = (
+        options[selected_indices[0]].get("type")
+        if selected_indices
+        and 0 <= selected_indices[0] < len(options)
+        and isinstance(options[selected_indices[0]], Mapping)
+        else None
+    )
+    deck_count = _int(own.get("deckCount")) or 0
     return DecisionEvidence(
         episode_id=_int(record.get("episode_id")) or 0,
         step_index=_int(record.get("step_index")) or 0,
@@ -144,7 +163,7 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
         supporter_ids_in_hand=tuple(
             supporter_id for supporter_id in supporter_ids if supporter_id is not None
         ),
-        deck_count=_int(own.get("deckCount")) or 0,
+        deck_count=deck_count,
         own_prizes=len(own.get("prize") or []) if isinstance(own.get("prize"), list) else 0,
         opponent_prizes=len(opponent.get("prize") or [])
         if isinstance(opponent.get("prize"), list)
@@ -153,11 +172,12 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
         competing_attack_ids=tuple(
             attack_id for attack_id in attack_ids if attack_id != chosen_attack
         ),
-        guaranteed_ko_available=any(
-            isinstance(option, Mapping) and bool(option.get("ko", option.get("knockout", False)))
-            for option in options
-        ),
+        guaranteed_ko_available=guaranteed_ko,
         disruption_without_damage=disruptive,
+        missed_post_draw_r_command=r_command_available and chosen_attack not in {R_COMMAND, None},
+        missed_ko=guaranteed_ko and chosen_attack not in attack_ids,
+        resource_waste=chosen_attack == ROCKET_FEATHERS and not guaranteed_ko,
+        preventable_deck_out=(deck_count <= 2 and selected_type == 14 and bool(attack_ids)),
     )
 
 
@@ -184,12 +204,16 @@ def classify_loss(
     evidence = list(ledger)
     if owner_field_count == 0:
         return "DONK / BOARD_COLLAPSE"
+    if any(item.preventable_deck_out for item in evidence):
+        return "PREVENTABLE_DECK_OUT"
     if owner_deck_count == 0:
         return "DECK_OUT"
     if opponent_prizes == 0 or owner_prizes > opponent_prizes:
         return "PRIZE_RACE_LOSS"
     if any(item.disruption_without_damage for item in evidence):
         return "LOW_DAMAGE_OR_DISRUPTION"
+    if any(item.missed_post_draw_r_command for item in evidence):
+        return "MISSED_POST_DRAW_R_COMMAND"
     if any(item.guaranteed_ko_available for item in evidence):
         return "MISSED_KO"
     return "UNDETERMINED"

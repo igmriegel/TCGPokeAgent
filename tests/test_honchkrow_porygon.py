@@ -6,13 +6,16 @@ import sys
 from pathlib import Path
 
 from src.agents.honchkrow_porygon import (
+    ARCHER,
     ARIANA,
     ARTICUNO,
     DECEIT,
+    FACTORY,
     GIOVANNI,
     HACKING,
     HONCHKROW,
     IGNITION_ENERGY,
+    MIRACLE_HEADSET,
     MURKROW,
     NIGHT_STRETCHER,
     POKE_PAD,
@@ -24,10 +27,19 @@ from src.agents.honchkrow_porygon import (
     ROCKET_FEATHERS,
     ROTO_STICK,
     TORMENT,
+    ULTRA_BALL,
     HonchkrowPorygonAgent,
     HonchkrowPorygonScorer,
 )
-from src.core import Candidate, GameState, OptionType, PlayerState, PokemonState, SelectContext
+from src.core import (
+    Candidate,
+    GameState,
+    OptionType,
+    PlayerState,
+    PokemonState,
+    SelectContext,
+    Selection,
+)
 from src.data.honchkrow_audit import classify_loss, decision_evidence
 
 ROOT = Path(__file__).parents[1]
@@ -373,6 +385,127 @@ def test_make_exposes_separate_deck_packaging_commands() -> None:
     )
     assert "scripts/build_package.sh" in completed.stdout
     assert "scripts/build_honchkrow_porygon_package.sh" in completed.stdout
+
+
+def test_draw_first_prefers_ariana_before_factory_or_nonwinning_attack() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": ARIANA}, {"id": FACTORY}, {"id": ROCKET_ENERGY}],
+                hand_count=3,
+                deck_count=12,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4}),
+        _candidate(2, OptionType.ATTACK, attack_id=TORMENT),
+    ]
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,)) for candidate in candidates
+    ]
+    _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
+    assert reason == "ariana_before_factory"
+    assert [selection.indices for selection in eligible] == [(0,)]
+
+
+def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    bench_state = GameState(
+        players=[PlayerState(discard=[{"id": PORYGON}], bench_max=1), PlayerState()]
+    )
+    assert scorer._night_stretcher_is_productive(bench_state)
+
+    evolve_state = GameState(
+        players=[
+            PlayerState(bench=[PokemonState(MURKROW, 80, 80)], discard=[{"id": HONCHKROW}]),
+            PlayerState(),
+        ]
+    )
+    assert scorer._night_stretcher_is_productive(evolve_state)
+
+    blocked_state = GameState(
+        players=[
+            PlayerState(
+                bench=[PokemonState(MURKROW, 80, 80)], bench_max=1, discard=[{"id": PORYGON}]
+            ),
+            PlayerState(),
+        ]
+    )
+    assert not scorer._night_stretcher_is_productive(blocked_state)
+
+
+def test_factory_is_only_useful_after_supporter_and_with_two_cards_left_to_draw() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(players=[PlayerState(deck_count=2), PlayerState()])
+    assert not scorer._factory_is_useful(state)
+    state.supporter_played = True
+    assert scorer._factory_is_useful(state)
+    state.players[0].deck_count = 1
+    assert not scorer._factory_is_useful(state)
+
+
+def test_r_command_uses_all_discarded_rocket_supporters_without_darkness_weakness() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    target = PokemonState(999, 330, 330)
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90),
+                discard=[{"id": ARIANA}] * 16,
+            ),
+            PlayerState(active=target),
+        ]
+    )
+    candidate = _candidate(0, OptionType.ATTACK, attack_id=R_COMMAND)
+    score, reasons = scorer._attack_score(state, candidate)
+    assert score >= 820
+    assert "r_command_ko" not in reasons
+    state.players[0].discard.extend([{"id": ARCHER}] * 3)
+    assert "r_command_ko" in scorer._attack_score(state, candidate)[1]
+
+
+def test_deck_and_resource_guards_reject_wasteful_search_and_archer() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(players=[PlayerState(deck_count=2, hand_count=2), PlayerState()])
+    ultra_ball = _candidate(0, OptionType.PLAY, card_id=ULTRA_BALL, card={"cardType": 1})
+    headset = _candidate(1, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    archer = _candidate(2, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    archer.option["eligibleAfterKo"] = True
+    assert agent._candidate_is_forbidden(state, ultra_ball, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, headset, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, archer, SelectContext.MAIN)
+
+
+def test_articuno_and_benched_ignition_remain_forbidden() -> None:
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(players=[PlayerState(), PlayerState()])
+    articuno_energy = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 5},
+        features={"card_id": ROCKET_ENERGY, "target_card_id": ARTICUNO},
+    )
+    ignition_bench = Candidate(
+        1,
+        {"type": OptionType.ATTACH.value, "enablesAttack": True},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": IGNITION_ENERGY,
+            "target_card_id": HONCHKROW,
+            "target_energy_count": 1,
+            "target_is_active": False,
+        },
+    )
+    assert agent._candidate_is_forbidden(state, articuno_energy, SelectContext.ATTACH_ENERGY)
+    assert agent._candidate_is_forbidden(state, ignition_bench, SelectContext.ATTACH_ENERGY)
 
 
 assert HonchkrowPorygonAgent
