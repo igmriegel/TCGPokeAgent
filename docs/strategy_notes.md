@@ -743,3 +743,29 @@ These are policy corrections, not proof of a production win-rate increase.
 The required next experiment is the bilateral CABT replay gate with explicit
 counts for forbidden actions, elective deck-out attempts, typed-energy
 attachments, and terminal Porygon2 conversions.
+
+## 2026-08-07 CABT comparison baseline promotion
+
+```yaml
+baseline_name: "honchkrow_porygon_post_audit_cabt_300"
+git_commit: "d5f42c5"
+source_report: "reports/honchkrow_porygon_cabt_300_post_audit_clean_20260807.json"
+summary_report: "reports/honchkrow_porygon_cabt_baseline_20260807.json"
+matches: 300
+matches_per_side: 150
+opponent: "cabt.random_agent"
+results: "249W/0D/51L"
+win_rate: 0.83
+wilson_95: [0.7834, 0.8683]
+execution_failures: 0
+deck_out_losses: 12
+unknown_losses: 39
+comparison_reference:
+  report: "reports/honchkrow_porygon_cabt_200_ignition_terminal_20260807.json"
+  results: "162W/0D/38L"
+  win_rate: 0.81
+  deck_out_losses: 26
+  interpretation: "The +2.0 percentage-point win-rate difference is inconclusive; the reduction in deck-out losses is the primary operational improvement."
+promotion_scope: "This is the local CABT comparison baseline. Kaggle submission and remote ranking require a separate decision."
+future_gate: "Use fresh independent CABT samples, preserve side splits, and report terminal-cause attribution before changing the baseline."
+```

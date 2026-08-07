@@ -9,21 +9,24 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** Honchkrow/Porygon turn-planning candidate submitted for observation; promotion remains blocked by the local deck-out gate
+**Current release:** Honchkrow/Porygon post-audit policy promoted as the new CABT comparison baseline; Kaggle promotion remains an explicit separate decision
 
 The 2026-08-07 audit of submissions `55320796` and `55322957` identified and
 patched a fail-open forbidden-action path, missing global deck-out reserve,
 typed-energy readiness gaps, and a missed terminal Porygon2 promotion line.
-The fixes are locally tested; production revalidation remains required.
+The post-audit code is now the comparison baseline after a clean 300-match CABT
+run; Kaggle upload and remote ranking remain separate from this local baseline.
 
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon policy
-`supporter_resource_v2` is now the default and production probe. In the initial
-independent 200-match comparison it finished 168W/32L versus 160W/40L for the
-prior baseline, with 22 versus 28 deck-out losses. The difference remains
-statistically inconclusive; the candidate was submitted to Kaggle to observe
-production behavior. Receipt: `reports/submissions/20260807T090834Z-df9cd5928160.json`.
+`supporter_resource_v2` is now the default and CABT comparison baseline. The
+post-audit 300-match run finished 249W/51L (83.0%), with zero execution
+failures and 12 audited deck-out losses. The historical 200-match reference
+finished 162W/38L (81.0%) with 26 audited deck-out losses; the win-rate
+difference is not statistically conclusive, while the deck-out reduction is a
+strong operational signal. Full metrics are in
+[`reports/honchkrow_porygon_cabt_baseline_20260807.json`](../reports/honchkrow_porygon_cabt_baseline_20260807.json).
 
 The independent HDI v1 candidate was accepted as submission `55119505` and
 scored 490.4, compared with 539.2 for reference submission `55088176`. This is
@@ -34,7 +37,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 279 tests pass; Ruff, mypy, and documentation audit pass | Green for the implemented scope |
+| Quality | 281 tests pass; Ruff, mypy, and documentation audit pass | Green for the implemented scope |
+| **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
 | Mega Abomasnow fix smoke | 40 bilateral games vs CABT `random_agent`: 34W/0D/6L, zero execution failures | Operationally green; not sufficient for promotion |
@@ -81,16 +85,17 @@ promotion matrix have not run, so the release policy remains heuristic.
 6. Keep search and human-capture delivery outside the immediate release path.
 7. Require `scripts/audit_documentation.py` to pass with every code or
    documentation change.
-8. Use the committed-switch Honchkrow/Porygon policy as `baseline`; preserve
-   the prior policy as `legacy_baseline` for regression comparisons.
+8. Use the post-audit 300-match policy at commit `d5f42c5` as the CABT
+   comparison `baseline`; preserve the committed-switch policy as
+   `legacy_baseline` for historical regression comparisons.
 9. Keep the existing submission `55304212` as historical remote evidence; the
    new turn-planning package is submitted for observation but is not promoted.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
     development gate; the baseline promotion records a user decision and
     tactical invariants, not a statistically significant win-rate claim.
-11. Keep the new fail-safe filtering, global draw reserve, typed-energy solver,
-    and terminal Porygon2 promotion rule behind the bilateral CABT revalidation
-    gate; local focused tests alone do not promote the production policy.
+11. Keep Kaggle upload and remote ranking separate from the promoted local CABT
+    baseline; local baseline promotion records a comparison reference, not a
+    claim of statistically significant win-rate improvement.
 12. Track remote submission `55304212` as the current Honchkrow/Porygon
     observation baseline; do not infer strategic improvement until its score
     and replays are available.
@@ -109,8 +114,8 @@ The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
 1. audit the new gameplay observations against the promoted baseline;
-2. close T-026 by reducing the remaining 56/400 deck-out losses and rerun the
-   promoted baseline at 1,000 matches;
+2. close the remaining terminal-cause gap and rerun the promoted baseline at
+   1,000 matches;
 3. monitor the new turn-planning submission and collect its remote replays;
 4. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 5. validate Rule Box/PrizeMap and PrizeCheck transitions;
@@ -129,6 +134,7 @@ The recommended order is:
 - [Honchkrow/Porygon local baseline](../reports/honchkrow_porygon_local_eval_20260806.json)
 - [Mega Abomasnow fix smoke](../reports/honchkrow_porygon_mega_commit_smoke_20260807.json)
 - [CABT 200-match telemetry audit](../reports/honchkrow_porygon_cabt_200_telemetry_20260807.json)
+- [Promoted CABT 300-match baseline](../reports/honchkrow_porygon_cabt_baseline_20260807.json)
 - [CABT 1,000-match full-trace summary](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.json)
 - [CABT 1,000-match compressed full trace](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.jsonl.gz)
 - [CABT replay damage diagnostics](../reports/cabt_replay_damage_diagnostics_20260807.json)

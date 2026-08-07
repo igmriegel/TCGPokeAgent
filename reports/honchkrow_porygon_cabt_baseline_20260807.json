@@ -1,0 +1,35 @@
+{
+  "baseline_name": "honchkrow_porygon_post_audit_cabt_300",
+  "promoted_at": "2026-08-07T18:45:52Z",
+  "git_commit": "d5f42c5",
+  "policy_variant": "supporter_resource_v2",
+  "opponent": "cabt.random_agent",
+  "source_report": "reports/honchkrow_porygon_cabt_300_post_audit_clean_20260807.json",
+  "matches": 300,
+  "matches_per_side": 150,
+  "outcomes": {
+    "wins": 249,
+    "losses": 51,
+    "draws": 0,
+    "win_rate": 0.83
+  },
+  "execution_failures": 0,
+  "wilson_95_win_rate": [0.7833848086, 0.8682705276],
+  "telemetry": {
+    "deck_out_losses": 12,
+    "unknown_losses": 39,
+    "ignition_attachments": 268,
+    "ignition_attacks": 268,
+    "ignition_without_attack": 0,
+    "partial_mega_abomasnow_attacks": 0,
+    "petrel_factory_opportunities": 131,
+    "petrel_factory_conversions": 131,
+    "porygon_terminal_opportunities": 29,
+    "porygon_terminal_conversions": 0,
+    "poke_pad_ko_opportunities": 18,
+    "poke_pad_ko_conversions": 17,
+    "poke_pad_ko_misses": 1,
+    "fallbacks": 0
+  },
+  "comparison_policy": "Future CABT comparisons must use fresh independent samples; nominal seeds are metadata only."
+}
