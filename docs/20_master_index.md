@@ -14,6 +14,8 @@ other documents link to it instead of copying it.
 | Is the release acceptable? | [`19_final_harness_checklist.md`](19_final_harness_checklist.md) |
 | Which gameplay rules are active? | [`27_gameplay_rules.md`](27_gameplay_rules.md) |
 | What human decision process is desired? | [`33_human_decision_index.md`](33_human_decision_index.md) |
+| How is the Honchkrow expert interview conducted? | [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) |
+| What has the Honchkrow expert answered? | [`35_honchkrow_expert_interview_record.md`](35_honchkrow_expert_interview_record.md) |
 | What feedback was received? | [`29_gameplay_feedback.md`](29_gameplay_feedback.md) |
 | What evidence supports a decision? | [`strategy_notes.md`](strategy_notes.md) |
 
@@ -67,6 +69,12 @@ Read these before changing runtime behavior:
 - [`32_learning_to_rank.md`](32_learning_to_rank.md) — grouped datasets, native rankers, packages, and promotion gates.
 - [`33_human_decision_index.md`](33_human_decision_index.md) — phased human
   reasoning interview, CABT context map, and independent coverage gaps.
+- [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) —
+  dedicated policy audit, expert questions, ratification protocol, and final
+  implementation-plan contract.
+- [`35_honchkrow_expert_interview_record.md`](35_honchkrow_expert_interview_record.md) —
+  append-only expert answers, clarifications, and discovered implementation
+  deltas.
 - [`25_rfl_experiments.md`](25_rfl_experiments.md) — learned-policy experiment runbook.
 
 ## Planning detail

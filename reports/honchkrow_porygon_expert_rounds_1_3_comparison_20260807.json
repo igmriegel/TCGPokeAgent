@@ -1,0 +1,73 @@
+{
+  "report_type": "honchkrow_expert_rounds_1_3_independent_comparison_v1",
+  "generated_at": "2026-08-07T20:55:00Z",
+  "comparison_mode": "independent",
+  "pairing_valid": false,
+  "pairing_limitation": "CABT 1.32.2 does not forward the configured seed into battle_start; nominal seeds are metadata only.",
+  "matches_per_policy": 300,
+  "matches_per_side": 150,
+  "baseline": {
+    "policy_variant": "supporter_resource_v2",
+    "report": "reports/honchkrow_porygon_cabt_300_post_audit_clean_20260807.json",
+    "wins": 249,
+    "draws": 0,
+    "losses": 51,
+    "win_rate": 0.83,
+    "wilson_95": [0.7833848086, 0.8682705276],
+    "execution_failures": 0,
+    "deck_out_losses": 12,
+    "unresolved_terminal_reasons": 50,
+    "terminal_turn_median": 12.5,
+    "decision_count_median": 41.0,
+    "by_side": {
+      "0": {"wins": 126, "losses": 24},
+      "1": {"wins": 123, "losses": 27}
+    }
+  },
+  "candidate": {
+    "policy_variant": "expert_rounds_1_3_v1",
+    "report": "reports/honchkrow_porygon_expert_rounds_1_3_300_clean_20260807.json",
+    "trace": "reports/honchkrow_porygon_expert_rounds_1_3_300_clean_20260807.jsonl.gz",
+    "wins": 264,
+    "draws": 0,
+    "losses": 36,
+    "win_rate": 0.88,
+    "wilson_95": [0.8383413318, 0.9120496614],
+    "execution_failures": 0,
+    "deck_out_losses": 9,
+    "unresolved_terminal_reasons": 39,
+    "terminal_turn_median": 9.0,
+    "decision_count_median": 35.0,
+    "by_side": {
+      "0": {"wins": 134, "losses": 16},
+      "1": {"wins": 130, "losses": 20}
+    },
+    "observed_policy_activations": {
+      "pre_draw_game_win": 24,
+      "roto_opening_setup_or_survival": 60,
+      "deceit_searches_ariana_survival_line": 0,
+      "post_draw_best_damage": 339
+    }
+  },
+  "win_rate_difference_points": 5.0,
+  "independent_difference_ci95_points": [-0.62, 10.62],
+  "two_proportion_test": {
+    "z": 1.7391961901,
+    "p_two_sided": 0.0820002594
+  },
+  "operational_deltas": {
+    "losses": -15,
+    "deck_out_losses": -3,
+    "unresolved_terminal_reasons": -11,
+    "terminal_turn_median": -3.5,
+    "decision_count_median": -6.0
+  },
+  "classification": "promising_not_statistically_conclusive_keep_experimental",
+  "limitations": [
+    "The independent 95% interval includes zero and the two-sided p-value is 0.082.",
+    "The opponent samples are not paired despite identical nominal seed metadata.",
+    "The existing Porygon terminal-conversion telemetry remains invalid and cannot support causal attribution.",
+    "The Deceit survival branch had zero observed activations in this sample.",
+    "Round 4 Energy rules and the high-confidence Honchkrow-to-Porygon over-discard commitment were intentionally excluded."
+  ]
+}

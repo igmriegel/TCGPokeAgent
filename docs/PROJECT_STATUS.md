@@ -17,6 +17,13 @@ typed-energy readiness gaps, and a missed terminal Porygon2 promotion line.
 The post-audit code is now the comparison baseline after a clean 300-match CABT
 run; Kaggle upload and remote ranking remain separate from this local baseline.
 
+The expert strategy interview is paused after Rounds 1–3. Its remaining nine
+rounds are frozen in `docs/34_honchkrow_expert_interview.md`. The isolated
+`expert_rounds_1_3_v1` candidate completed its first local comparison at
+264W/36L (88.0%) versus the independent 249W/51L (83.0%) promoted baseline.
+The +5.0-point estimate is promising but not conclusive: its independent 95%
+interval is -0.62 to +10.62 points. The candidate remains experimental.
+
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon policy
@@ -37,7 +44,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 281 tests pass; Ruff, mypy, and documentation audit pass | Green for the implemented scope |
+| Quality | 287 tests pass; Ruff and documentation audit pass for the interview experiment; prior mypy gate remains green | Green for the implemented scope |
+| Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
@@ -113,13 +121,17 @@ promotion matrix have not run, so the release policy remains heuristic.
 The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
-1. audit the new gameplay observations against the promoted baseline;
-2. close the remaining terminal-cause gap and rerun the promoted baseline at
+1. evaluate `expert_rounds_1_3_v1` against the promoted CABT baseline, then
+   resume the Honchkrow/Porygon expert interview at Round 4 in
+   [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) and
+   approve a decision-complete implementation plan before changing runtime behavior;
+2. audit the new gameplay observations against the promoted baseline;
+3. close the remaining terminal-cause gap and rerun the promoted baseline at
    1,000 matches;
-3. monitor the new turn-planning submission and collect its remote replays;
-4. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
-5. validate Rule Box/PrizeMap and PrizeCheck transitions;
-6. rebuild the replay dataset and close the release checklist.
+4. monitor the new turn-planning submission and collect its remote replays;
+5. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
+6. validate Rule Box/PrizeMap and PrizeCheck transitions;
+7. rebuild the replay dataset and close the release checklist.
 
 ## Evidence links
 
@@ -135,6 +147,8 @@ The recommended order is:
 - [Mega Abomasnow fix smoke](../reports/honchkrow_porygon_mega_commit_smoke_20260807.json)
 - [CABT 200-match telemetry audit](../reports/honchkrow_porygon_cabt_200_telemetry_20260807.json)
 - [Promoted CABT 300-match baseline](../reports/honchkrow_porygon_cabt_baseline_20260807.json)
+- [Expert Rounds 1–3 comparison](../reports/honchkrow_porygon_expert_rounds_1_3_comparison_20260807.json)
+- [Expert Rounds 1–3 clean 300-match report](../reports/honchkrow_porygon_expert_rounds_1_3_300_clean_20260807.json)
 - [CABT 1,000-match full-trace summary](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.json)
 - [CABT 1,000-match compressed full trace](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.jsonl.gz)
 - [CABT replay damage diagnostics](../reports/cabt_replay_damage_diagnostics_20260807.json)
