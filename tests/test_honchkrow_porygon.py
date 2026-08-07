@@ -154,6 +154,395 @@ def test_rocket_feathers_requires_supporter_in_hand() -> None:
     assert scorer._supporters_in_hand(state) == 0
 
 
+def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow() -> None:
+    """The strict variant accepts the exact six-supporter Mega KO only."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v2_strict")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{"id": 15}, {"id": 15}]),
+                hand=[{"id": card_id} for card_id in (1216, 1217, 1218, 1219, 1220, 1216)],
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+        ]
+    )
+    candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    assert not agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+    state.players[0].hand.pop()
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+
+def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:
+    """A productive Honchkrow must not burn its Energy to promote an empty Bench."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=15,
+        players=[
+            PlayerState(
+                active=PokemonState(
+                    HONCHKROW,
+                    130,
+                    130,
+                    serial=10,
+                    energies=[{"id": 15}, {"id": 15}],
+                ),
+                bench=[
+                    PokemonState(PORYGON2, 90, 90, serial=20),
+                    PokemonState(PORYGON, 60, 60, serial=21),
+                    PokemonState(HONCHKROW, 130, 130, serial=22),
+                    PokemonState(MURKROW, 80, 80, serial=23),
+                ],
+                hand=[{"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ],
+    )
+    feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    retreat = _candidate(1, OptionType.RETREAT)
+
+    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, retreat, SelectContext.MAIN)
+
+
+def test_v3_paid_retreat_requires_ready_bench_attack() -> None:
+    """Paid retreat is legal only when a specific Bench attacker can attack now."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10, energies=[{}]),
+                bench=[PokemonState(HONCHKROW, 130, 130, serial=22)],
+                hand=[{"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ]
+    )
+    retreat = _candidate(0, OptionType.RETREAT)
+    assert agent._candidate_is_forbidden(state, retreat, SelectContext.MAIN)
+
+    state.players[0].bench[0].energies = [{}, {}]  # type: ignore[union-attr]
+    assert not agent._candidate_is_forbidden(state, retreat, SelectContext.MAIN)
+
+
+def test_v3_giovanni_free_switch_dominates_paid_retreat() -> None:
+    """Giovanni must replace paid retreat when the opponent has no Bench."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10, energies=[{}]),
+                bench=[
+                    PokemonState(
+                        HONCHKROW,
+                        130,
+                        130,
+                        serial=22,
+                        energies=[{}, {}],
+                    )
+                ],
+                hand=[{"id": GIOVANNI}, {"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ],
+    )
+    plan = agent._giovanni_switch_plan(state)
+    assert plan is not None
+    assert plan.method == "giovanni"
+    assert plan.target_serial == 22
+    assert plan.attack_id == ROCKET_FEATHERS
+    assert agent._candidate_is_forbidden(
+        state, _candidate(0, OptionType.RETREAT), SelectContext.MAIN
+    )
+
+    giovanni = _candidate(
+        0,
+        OptionType.PLAY,
+        card_id=GIOVANNI,
+        card={"cardType": 3},
+    )
+    retreat = _candidate(1, OptionType.RETREAT)
+    end = _candidate(2, OptionType.END)
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.RETREAT,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [giovanni, retreat, end],
+    )
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "giovanni_free_switch_to_committed_attacker"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_v3_giovanni_does_not_promote_an_unready_bench() -> None:
+    """Neither Giovanni nor paid retreat may promote a zero-Energy attacker."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10, energies=[{}]),
+                bench=[PokemonState(HONCHKROW, 130, 130, serial=22)],
+                hand=[{"id": GIOVANNI}, {"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ]
+    )
+    assert agent._giovanni_switch_plan(state) is None
+    assert agent._paid_retreat_plan(state) is None
+
+
+def test_v3_giovanni_uses_post_play_supporter_damage() -> None:
+    """A lone Giovanni cannot pretend to fund Rocket Feathers after being played."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}])],
+                hand=[{"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ]
+    )
+    assert agent._giovanni_switch_plan(state) is None
+
+
+def test_v3_giovanni_can_complete_r_command_from_discard() -> None:
+    """Giovanni in discard must be included in the committed R Command damage."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}])],
+                hand=[{"id": GIOVANNI}],
+                discard=[{"id": ARIANA}] * 17,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ]
+    )
+    plan = agent._giovanni_switch_plan(state)
+    assert plan is not None
+    assert plan.attack_id == R_COMMAND
+    assert plan.planned_damage == 360
+
+
+def test_v3_projects_ignition_before_promoting_porygon2() -> None:
+    """Promotion planning must include the three Energy supplied by Ignition."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                hand=[{"id": GIOVANNI}, {"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 17,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ],
+    )
+
+    plan = agent._giovanni_switch_plan(state)
+
+    assert plan is not None
+    assert plan.target_serial == 22
+    assert plan.attack_id == R_COMMAND
+    assert plan.planned_damage == 360
+    assert plan.requires_ignition
+
+
+def test_v3_commits_ignition_and_r_command_after_porygon2_promotion() -> None:
+    """The selected Porygon2 line must force its Ignition attachment and attack."""
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    agent._switch_commitment = SwitchCommitment(
+        method="giovanni",
+        turn=8,
+        target_card_id=PORYGON2,
+        target_serial=22,
+        attack_id=R_COMMAND,
+        planned_damage=360,
+        requires_ignition=True,
+    )
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90, serial=22),
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 18,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ],
+    )
+    ignition = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": IGNITION_ENERGY,
+            "target_card_id": PORYGON2,
+            "target_serial": 22,
+            "target_energy_count": 0,
+            "target_is_active": True,
+        },
+    )
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.ATTACH,)),
+            Selection((1,), (OptionType.END,)),
+        ],
+        [ignition, end],
+    )
+
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "attach_ignition_to_committed_attacker"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+    state.energy_attached = True
+    state.players[0].active.energies = [  # type: ignore[union-attr]
+        {"source": IGNITION_ENERGY},
+        {"source": IGNITION_ENERGY},
+        {"source": IGNITION_ENERGY},
+    ]
+    state.players[0].hand = []
+    attack = _candidate(2, OptionType.ATTACK, attack_id=R_COMMAND)
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((2,), (OptionType.ATTACK,)),
+            Selection((1,), (OptionType.END,)),
+        ],
+        [attack, end],
+    )
+
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "execute_committed_switch_attack"
+    assert [selection.indices for selection in choices] == [(2,)]
+
+
+def test_v3_does_not_project_ignition_after_energy_was_attached() -> None:
+    """A spent attachment cannot justify promoting an otherwise unready Porygon2."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        energy_attached=True,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                hand=[{"id": GIOVANNI}, {"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 17,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ],
+    )
+
+    assert agent._giovanni_switch_plan(state) is None
+
+
+def test_v3_switch_prompt_selects_exact_committed_serial() -> None:
+    """A switch commitment must not promote an unready duplicate card ID."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent._switch_commitment = SwitchCommitment(
+        method="giovanni",
+        turn=4,
+        target_card_id=HONCHKROW,
+        target_serial=22,
+        attack_id=ROCKET_FEATHERS,
+        planned_damage=120,
+    )
+    candidates = [
+        Candidate(
+            0,
+            {"type": OptionType.CARD.value},
+            OptionType.CARD,
+            features={"card_id": HONCHKROW, "card_serial": 21, "card_energy_count": 0},
+        ),
+        Candidate(
+            1,
+            {"type": OptionType.CARD.value},
+            OptionType.CARD,
+            features={"card_id": HONCHKROW, "card_serial": 22, "card_energy_count": 2},
+        ),
+    ]
+    selections = [
+        Selection((0,), (OptionType.CARD,)),
+        Selection((1,), (OptionType.CARD,)),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        GameState(turn=4), selections, candidates, SelectContext.TO_ACTIVE
+    )
+    assert [selection.indices for selection in filtered] == [(1,)]
+
+
+def test_v3_headset_is_not_spent_for_one_supporter_while_holding_ariana() -> None:
+    """Headset cannot be consumed for a one-card recovery with Ariana already held."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+                discard=[{"id": ARCHER}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150)),
+        ],
+    )
+    headset = _candidate(0, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    assert agent._candidate_is_forbidden(state, headset, SelectContext.MAIN)
+
+
+def test_v3_headset_recovers_exactly_two_nonduplicate_supporters_for_ko() -> None:
+    """A committed Headset line takes two useful Supporters and avoids duplicate Ariana."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+                discard=[{"id": ARIANA}, {"id": ARCHER}, {"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150)),
+        ],
+    )
+    headset = _candidate(0, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    assert not agent._candidate_is_forbidden(state, headset, SelectContext.MAIN)
+    agent._headset_turn = 5
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((ARIANA, ARCHER, GIOVANNI))
+    ]
+    selections = [
+        Selection((0,), (OptionType.CARD,)),
+        Selection((1, 2), (OptionType.CARD, OptionType.CARD)),
+        Selection((0, 1), (OptionType.CARD, OptionType.CARD)),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state, selections, candidates, SelectContext.TO_HAND
+    )
+    assert [selection.indices for selection in filtered] == [(1, 2)]
+
+
 def test_ignition_energy_is_restricted_to_active_or_promotion_target() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     candidate = _candidate(

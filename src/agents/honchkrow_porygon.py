@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -87,6 +88,36 @@ class TurnTacticalLedger:
         self.draw_sequence.clear()
         self.resource_guard = ""
         self.deck_risk = "safe"
+
+
+@dataclass(slots=True)
+class AttackSequence:
+    """Record a committed attack until its intermediate prompts resolve."""
+
+    attack_id: int
+    target_card_id: int
+    target_hp_before: int
+    attacker_card_id: int
+    attacker_energy: int
+    supporters_available: int
+    planned_damage: int
+    minimum_damage: int
+    ko_threshold: int
+    deck_reserve_before: int
+    pending_intermediate: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class SwitchCommitment:
+    """Bind a voluntary switch to one ready attacker and immediate attack."""
+
+    method: str
+    turn: int
+    target_card_id: int
+    target_serial: int | None
+    attack_id: int
+    planned_damage: int
+    requires_ignition: bool = False
 
 
 class HonchkrowPorygonScorer(SimpleHeuristicScorer):
@@ -1120,7 +1151,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 class HonchkrowPorygonAgent(HeuristicAgent):
     """Run the isolated Honchkrow/Porygon heuristic with shared legal plumbing."""
 
-    def __init__(self, profile: DeckProfile) -> None:
+    def __init__(self, profile: DeckProfile, policy_variant: str | None = None) -> None:
         super().__init__(deck_profile=profile)
         self._scorer: HonchkrowPorygonScorer = HonchkrowPorygonScorer(
             deck_profile=profile, catalog=_CG_CATALOG
@@ -1129,6 +1160,29 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._configured_profile = profile
         self._active_deck_profile = profile
         self._turn_ledger = TurnTacticalLedger()
+        self._attack_sequence: AttackSequence | None = None
+        self._switch_commitment: SwitchCommitment | None = None
+        self._headset_turn: int | None = None
+        configured_variant = policy_variant or os.environ.get(
+            "HONCHKROW_POLICY_VARIANT", "baseline"
+        )
+        self.policy_variant = (
+            configured_variant
+            if configured_variant
+            in {
+                "baseline",
+                "legacy_baseline",
+                "ko_priority_v1",
+                "ko_priority_v2_strict",
+                "ko_priority_v3_retreat_guard",
+            }
+            else "baseline"
+        )
+
+    @property
+    def _uses_retreat_guard(self) -> bool:
+        """Return whether the promoted committed-switch policy is active."""
+        return self.policy_variant in {"baseline", "ko_priority_v3_retreat_guard"}
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -1158,12 +1212,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         super().start_match(deck)
         self._scorer.set_proton_used_previous_turn(False)
         self._turn_ledger.reset(0)
+        self._attack_sequence = None
+        self._switch_commitment = None
+        self._headset_turn = None
 
     def decide(self, observation: dict[str, Any]) -> Any:
         """Decide while recording only public pre/post-draw tactical evidence."""
         parsed = self._parser.parse(observation)
         if parsed.state.turn != self._turn_ledger.turn:
             self._turn_ledger.reset(parsed.state.turn)
+        if (
+            self._switch_commitment is not None
+            and self._switch_commitment.turn != parsed.state.turn
+        ):
+            self._switch_commitment = None
+        if self._headset_turn is not None and self._headset_turn != parsed.state.turn:
+            self._headset_turn = None
         attacks = [
             candidate
             for candidate in parsed.candidates
@@ -1201,11 +1265,55 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.draw_sequence.append("factory")
             elif candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
                 self._turn_ledger.draw_sequence.append("night_stretcher")
+            elif (
+                self._uses_retreat_guard
+                and candidate.option_type is OptionType.PLAY
+                and card_id == GIOVANNI
+            ):
+                self._switch_commitment = self._giovanni_switch_plan(parsed.state)
+            elif (
+                self._uses_retreat_guard
+                and candidate.option_type is OptionType.PLAY
+                and card_id == MIRACLE_HEADSET
+            ):
+                self._headset_turn = parsed.state.turn
+            elif self._uses_retreat_guard and candidate.option_type is OptionType.RETREAT:
+                self._switch_commitment = self._paid_retreat_plan(parsed.state)
             elif candidate.option_type is OptionType.ATTACK:
                 self._turn_ledger.chosen_attacker = self._scorer._attack_id(candidate)
                 self._turn_ledger.chosen_target = self._scorer._feature_int(
                     candidate, "target_card_id"
                 )
+                if self.policy_variant == "ko_priority_v2_strict":
+                    player = self._scorer._own_player(parsed.state)
+                    active = self._scorer._own_active(parsed.state)
+                    self._attack_sequence = AttackSequence(
+                        attack_id=self._scorer._attack_id(candidate),
+                        target_card_id=self._scorer._feature_int(candidate, "target_card_id"),
+                        target_hp_before=self._target_hp(parsed.state, candidate),
+                        attacker_card_id=active.card_id if active else 0,
+                        attacker_energy=len(active.energies) if active else 0,
+                        supporters_available=self._scorer._supporters_in_hand(parsed.state),
+                        planned_damage=self._candidate_damage(parsed.state, candidate),
+                        minimum_damage=self._target_hp(parsed.state, candidate),
+                        ko_threshold=self._target_hp(parsed.state, candidate),
+                        deck_reserve_before=player.deck_count if player else 0,
+                    )
+                if self._uses_retreat_guard:
+                    self._switch_commitment = None
+        if (
+            self._uses_retreat_guard
+            and parsed.select_context is SelectContext.TO_HAND
+            and self._headset_turn == parsed.state.turn
+        ):
+            self._headset_turn = None
+        if (
+            self.policy_variant == "ko_priority_v2_strict"
+            and parsed.select_context
+            in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}
+            and self._attack_sequence is not None
+        ):
+            self._attack_sequence.pending_intermediate = False
         player = self._scorer._own_player(parsed.state)
         if player is not None and player.deck_count <= 2:
             self._turn_ledger.deck_risk = "critical"
@@ -1274,6 +1382,81 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if game_wins:
             return DecisionPhase.ATTACK_PRIORITY.value, "pre_draw_game_win", game_wins
 
+        if (
+            self._uses_retreat_guard
+            and self._active_matches_switch_commitment(state)
+            and self._switch_commitment is not None
+        ):
+            committed_attack = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.ATTACK
+                    and self._scorer._attack_id(candidate) == self._switch_commitment.attack_id
+                )
+            )
+            if committed_attack:
+                return (
+                    DecisionPhase.ATTACK_PRIORITY.value,
+                    "execute_committed_switch_attack",
+                    committed_attack,
+                )
+
+        if (
+            self._uses_retreat_guard
+            and self._switch_commitment is not None
+            and self._switch_commitment.requires_ignition
+        ):
+            ignition = matching(self._candidate_completes_committed_ignition)
+            if ignition:
+                return (
+                    DecisionPhase.ATTACK_PRIORITY.value,
+                    "attach_ignition_to_committed_attacker",
+                    ignition,
+                )
+
+        if self._uses_retreat_guard and self._giovanni_switch_plan(state) is not None:
+            giovanni_switch = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id") == GIOVANNI
+                )
+            )
+            if giovanni_switch:
+                return (
+                    DecisionPhase.ATTACK_PRIORITY.value,
+                    "giovanni_free_switch_to_committed_attacker",
+                    giovanni_switch,
+                )
+
+        if self.policy_variant in {"ko_priority_v1", "ko_priority_v2_strict"}:
+            lethal_attacks = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.ATTACK
+                    and self._variant_attack_is_lethal(state, candidate)
+                )
+            )
+            if lethal_attacks:
+                if self.policy_variant == "ko_priority_v2_strict":
+                    hammer_lethal = [
+                        selection
+                        for selection in lethal_attacks
+                        if any(
+                            self._scorer._attack_id(candidate) == HAMMER_IN
+                            for index in selection.indices
+                            if (candidate := by_index.get(index)) is not None
+                        )
+                    ]
+                    if hammer_lethal:
+                        return (
+                            DecisionPhase.ATTACK_PRIORITY.value,
+                            "strict_hammer_in_lethal_attack",
+                            hammer_lethal,
+                        )
+                return (
+                    DecisionPhase.ATTACK_PRIORITY.value,
+                    "ko_priority_lethal_attack",
+                    lethal_attacks,
+                )
+
         night_stretcher = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
@@ -1314,6 +1497,44 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return DecisionPhase.ATTACK.value, "post_draw_best_damage", attacks
         return super()._main_phase_selections(state, safe, candidates)
 
+    def _variant_attack_is_lethal(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether a public attack candidate takes the current Active KO."""
+        target_hp = self._target_hp(state, candidate)
+        if target_hp <= 0:
+            return False
+        attack_id = self._scorer._attack_id(candidate)
+        if attack_id == ROCKET_FEATHERS:
+            return (
+                self._scorer._supporters_in_hand(state) >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
+                if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
+                else self._candidate_damage(state, candidate) >= target_hp
+            )
+        if attack_id == R_COMMAND:
+            return (
+                self._scorer._rocket_supporters_in_discard(state)
+                >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
+                if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
+                else self._candidate_damage(state, candidate) >= target_hp
+            )
+        if attack_id == HAMMER_IN:
+            return self._scorer._raw_opponent_hp(state) <= 100
+        return self._candidate_damage(state, candidate) >= target_hp
+
+    def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether a non-lethal Rocket Feathers line preserves a next KO."""
+        target_hp = self._target_hp(state, candidate)
+        damage = self._candidate_damage(state, candidate)
+        remaining = max(0, target_hp - damage)
+        supporters = self._scorer._supporters_in_hand(state)
+        next_turn_supporters = max(0, supporters - 1)
+        player = self._scorer._own_player(state)
+        active = self._scorer._own_active(state)
+        ready = bool(
+            active and len(active.energies) >= self._scorer._attack_energy_target(HONCHKROW)
+        )
+        deck_safe = bool(player and player.deck_count > MEGA_ABOMASNOW_DECK_RESERVE)
+        return remaining <= next_turn_supporters * 60 and ready and deck_safe
+
     def _is_safe_pre_draw_hand_reduction(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a Pokémon/evolution can leave hand before Ariana safely."""
         card_id = self._scorer._feature_int(candidate, "card_id")
@@ -1335,6 +1556,49 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
         if (
+            self._uses_retreat_guard
+            and context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH}
+            and self._switch_commitment is not None
+        ):
+            exact_switch = [
+                selection
+                for selection in selections
+                if any(
+                    self._candidate_matches_switch_commitment(by_index.get(index))
+                    for index in selection.indices
+                )
+            ]
+            if exact_switch:
+                self._turn_ledger.resource_guard = "promote_committed_switch_attacker"
+                return exact_switch
+        if (
+            self._uses_retreat_guard
+            and context is SelectContext.TO_HAND
+            and self._headset_turn == state.turn
+        ):
+            exact_two = [
+                selection
+                for selection in selections
+                if self._rocket_supporter_count(selection, by_index) == 2
+            ]
+            if exact_two:
+                holds_ariana = any(
+                    self._scorer._card_id_from_value(card) == ARIANA
+                    for card in self._scorer._hand_cards(state)
+                )
+                without_duplicate_ariana = [
+                    selection
+                    for selection in exact_two
+                    if not holds_ariana
+                    or all(
+                        self._scorer._feature_int(candidate, "card_id") != ARIANA
+                        for index in selection.indices
+                        if (candidate := by_index.get(index)) is not None
+                    )
+                ]
+                self._turn_ledger.resource_guard = "headset_recovers_two_supporters"
+                return without_duplicate_ariana or exact_two
+        if (
             context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}
             and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
         ):
@@ -1347,6 +1611,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if lethal_discard:
                 self._turn_ledger.resource_guard = "discard_six_for_mega_abomasnow_ko"
                 return lethal_discard
+            if (
+                self.policy_variant == "ko_priority_v2_strict"
+                and self._attack_sequence is not None
+                and self._attack_sequence.attack_id == ROCKET_FEATHERS
+            ):
+                self._turn_ledger.resource_guard = "strict_rocket_feathers_requires_six"
+                return [
+                    selection
+                    for selection in selections
+                    if self._rocket_supporter_count(selection, by_index) == 0
+                ]
         safe = super()._filter_forbidden_selections(state, selections, candidates, context)
         committed = [
             selection
@@ -1398,6 +1673,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate is None or self._scorer._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
             return False
         if candidate.option_type is OptionType.ATTACK:
+            if (
+                self.policy_variant in {"ko_priority_v1", "ko_priority_v2_strict"}
+                and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+                and not self._variant_attack_is_lethal(state, candidate)
+            ):
+                if self.policy_variant == "ko_priority_v2_strict":
+                    return True
+                return not self._rocket_feathers_has_horizon(state, candidate)
             return not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
         if candidate.option_type is OptionType.RETREAT:
             return not self._retreat_enables_committed_mega_abomasnow_ko(state)
@@ -1454,6 +1737,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         card_type = self._scorer._metadata_int(candidate.card, "cardType")
         target_id = self._scorer._feature_int(candidate, "target_card_id")
         card_id = self._scorer._feature_int(candidate, "card_id")
+        if self._uses_retreat_guard and self._candidate_completes_committed_ignition(candidate):
+            return False
         if candidate.option_type is OptionType.END and self._scorer._productive_line_available(
             state
         ):
@@ -1514,12 +1799,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             candidate.option_type is OptionType.ATTACK
             and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
         ):
+            if self.policy_variant == "ko_priority_v2_strict":
+                return not self._variant_attack_is_lethal(state, candidate)
+            if self.policy_variant == "ko_priority_v1" and not self._variant_attack_is_lethal(
+                state, candidate
+            ):
+                return not self._rocket_feathers_has_horizon(state, candidate)
             return self._scorer._supporters_in_hand(state) == 0
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
             return not self._scorer._roto_stick_is_needed(state)
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:
             return not self._scorer._ultra_ball_is_productive(state)
         if candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
+            if self._uses_retreat_guard:
+                return not self._v3_miracle_headset_is_useful(state)
             return not self._scorer._miracle_headset_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
             return not self._scorer._night_stretcher_is_productive(state)
@@ -1528,6 +1821,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == FACTORY:
             return not self._scorer._factory_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == GIOVANNI:
+            if self._uses_retreat_guard:
+                opponent = self._scorer._opponent_player(state)
+                if opponent is not None and not any(
+                    pokemon is not None for pokemon in opponent.bench
+                ):
+                    return self._giovanni_switch_plan(state) is None
             return not self._giovanni_is_productive(state, candidate)
         if candidate.option_type is OptionType.PLAY and card_id == ARTICUNO:
             return not self._scorer._articuno_is_needed(state)
@@ -1618,6 +1917,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if context is SelectContext.TO_HAND and candidate.option.get("sourceCardId") == PETREL:
             return not self._petrel_target_is_useful(state, candidate)
         if candidate.option_type is OptionType.RETREAT:
+            if self._uses_retreat_guard:
+                justified = self._paid_retreat_plan(state) is not None
+                self._turn_ledger.resource_guard = (
+                    "paid_retreat_to_committed_attacker"
+                    if justified
+                    else "paid_retreat_without_attack_conversion"
+                )
+                return not justified
             if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
                 justified = self._retreat_enables_committed_mega_abomasnow_ko(state)
                 self._turn_ledger.resource_guard = (
@@ -1629,6 +1936,203 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if self._active_has_productive_attack(state) or self._active_has_guaranteed_ko(state):
                 return True
         return False
+
+    def _candidate_matches_switch_commitment(self, candidate: Candidate | None) -> bool:
+        """Return whether a switch option is the exact committed attacker."""
+        commitment = self._switch_commitment
+        if candidate is None or commitment is None or candidate.option_type is not OptionType.CARD:
+            return False
+        serial = self._scorer._feature_int(candidate, "card_serial")
+        if commitment.target_serial is not None and serial:
+            return serial == commitment.target_serial
+        return bool(self._scorer._feature_int(candidate, "card_id") == commitment.target_card_id)
+
+    def _active_matches_switch_commitment(self, state: GameState) -> bool:
+        """Return whether the committed attacker is now the Active Pokémon."""
+        commitment = self._switch_commitment
+        player = self._scorer._own_player(state)
+        active = player.active if player is not None else None
+        if commitment is None or active is None:
+            return False
+        if commitment.target_serial is not None and active.serial is not None:
+            return bool(active.serial == commitment.target_serial)
+        return bool(active.card_id == commitment.target_card_id)
+
+    def _candidate_completes_committed_ignition(self, candidate: Candidate | None) -> bool:
+        """Return whether an attachment completes the committed attack setup."""
+        commitment = self._switch_commitment
+        if (
+            candidate is None
+            or commitment is None
+            or not commitment.requires_ignition
+            or candidate.option_type is not OptionType.ATTACH
+            or self._scorer._feature_int(candidate, "card_id") != IGNITION_ENERGY
+            or self._scorer._feature_int(candidate, "target_card_id") != commitment.target_card_id
+            or not bool(candidate.features.get("target_is_active", False))
+        ):
+            return False
+        target_serial = self._scorer._feature_int(candidate, "target_serial")
+        return bool(
+            commitment.target_serial is None
+            or not target_serial
+            or target_serial == commitment.target_serial
+        )
+
+    def _giovanni_switch_plan(self, state: GameState) -> SwitchCommitment | None:
+        """Plan a free Giovanni switch only when it converts into an immediate attack."""
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if (
+            player is None
+            or opponent is None
+            or opponent.active is None
+            or state.supporter_played
+            or any(pokemon is not None for pokemon in opponent.bench)
+            or not any(
+                self._scorer._card_id_from_value(card) == GIOVANNI for card in player.hand or ()
+            )
+        ):
+            return None
+        bench_plan = self._best_switch_plan(state, method="giovanni", giovanni_played=True)
+        if bench_plan is None:
+            return None
+        active_choice = self._pokemon_attack_choice(state, player.active, giovanni_played=False)
+        active_damage = active_choice[1] if active_choice is not None else 0
+        target_hp = max(0, int(opponent.active.hp))
+        if active_damage > 0 and not (active_damage < target_hp <= bench_plan.planned_damage):
+            return None
+        return bench_plan
+
+    def _paid_retreat_plan(self, state: GameState) -> SwitchCommitment | None:
+        """Allow paid retreat only when it creates an immediate productive attack."""
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if player is None or player.active is None or opponent is None or opponent.active is None:
+            return None
+        if self._giovanni_switch_plan(state) is not None:
+            return None
+        active_choice = self._pokemon_attack_choice(state, player.active, giovanni_played=False)
+        plan = self._best_switch_plan(state, method="retreat", giovanni_played=False)
+        if plan is None:
+            return None
+        target_hp = max(0, int(opponent.active.hp))
+        active_damage = active_choice[1] if active_choice is not None else 0
+        if active_damage > 0 and not (active_damage < target_hp <= plan.planned_damage):
+            return None
+        if opponent.active.card_id == MEGA_ABOMASNOW_EX and plan.planned_damage < target_hp:
+            return None
+        return plan
+
+    def _best_switch_plan(
+        self,
+        state: GameState,
+        *,
+        method: str,
+        giovanni_played: bool,
+    ) -> SwitchCommitment | None:
+        """Return the highest-damage ready Bench attacker for one switch method."""
+        player = self._scorer._own_player(state)
+        if player is None:
+            return None
+        plans: list[SwitchCommitment] = []
+        for pokemon in player.bench:
+            choice = self._pokemon_attack_choice(state, pokemon, giovanni_played=giovanni_played)
+            if pokemon is None or choice is None:
+                continue
+            attack_id, damage, requires_ignition = choice
+            plans.append(
+                SwitchCommitment(
+                    method=method,
+                    turn=state.turn,
+                    target_card_id=int(pokemon.card_id),
+                    target_serial=pokemon.serial,
+                    attack_id=attack_id,
+                    planned_damage=damage,
+                    requires_ignition=requires_ignition,
+                )
+            )
+        return max(plans, key=lambda plan: plan.planned_damage, default=None)
+
+    def _pokemon_attack_choice(
+        self,
+        state: GameState,
+        pokemon: Any | None,
+        *,
+        giovanni_played: bool,
+    ) -> tuple[int, int, bool] | None:
+        """Return the best current or post-Ignition attack for a Pokémon."""
+        if pokemon is None or not isinstance(pokemon.card_id, int):
+            return None
+        energy_count = len(pokemon.energies)
+        projected_energy = energy_count
+        can_attach_ignition = self._ignition_available_for(state, pokemon)
+        if can_attach_ignition:
+            projected_energy += 3
+        choices: list[tuple[int, int, bool]] = []
+
+        def add_choice(attack_id: int, damage: int, required_energy: int) -> None:
+            if damage <= 0 or projected_energy < required_energy:
+                return
+            choices.append((attack_id, damage, energy_count < required_energy))
+
+        if pokemon.card_id == HONCHKROW:
+            supporters = self._scorer._supporters_in_hand(state) - int(giovanni_played)
+            if supporters > 0:
+                add_choice(
+                    ROCKET_FEATHERS,
+                    self._dark_attack_damage(state, supporters * 60),
+                    self._scorer._attack_energy_target(HONCHKROW),
+                )
+            add_choice(HAMMER_IN, self._dark_attack_damage(state, 100), 3)
+        elif pokemon.card_id == PORYGON2:
+            supporters = self._scorer._rocket_supporters_in_discard(state) + int(giovanni_played)
+            if supporters > 0:
+                add_choice(
+                    R_COMMAND,
+                    supporters * 20,
+                    self._scorer._attack_energy_target(PORYGON2),
+                )
+        card = self._scorer.catalog.get_card(str(pokemon.card_id)) or {}
+        for raw_attack_id in card.get("attacks", []):
+            if not isinstance(raw_attack_id, int):
+                continue
+            attack = self._scorer.catalog.get_attack(str(raw_attack_id)) or {}
+            energies = attack.get("energies", [])
+            damage = self._scorer._metadata_int(attack, "damage")
+            if isinstance(energies, list):
+                add_choice(
+                    raw_attack_id,
+                    self._dark_attack_damage(state, damage),
+                    len(energies),
+                )
+        return max(choices, key=lambda choice: choice[1], default=None)
+
+    def _ignition_available_for(self, state: GameState, pokemon: Any) -> bool:
+        """Return whether this Evolution Pokémon can receive Ignition this turn."""
+        if state.energy_attached or pokemon.card_id not in {HONCHKROW, PORYGON2}:
+            return False
+        player = self._scorer._own_player(state)
+        return bool(
+            player is not None
+            and any(
+                self._scorer._card_id_from_value(card) == IGNITION_ENERGY
+                for card in player.hand or ()
+            )
+        )
+
+    def _dark_attack_damage(self, state: GameState, base_damage: int) -> int:
+        """Apply visible Darkness weakness and resistance to a planned attack."""
+        opponent = self._scorer._opponent_player(state)
+        target = opponent.active if opponent is not None else None
+        if target is None:
+            return max(0, base_damage)
+        card = self._scorer.catalog.get_card(str(target.card_id)) or {}
+        damage = max(0, base_damage)
+        if self._scorer._contains_type(card.get("weakness") or card.get("weaknesses"), "dark"):
+            damage *= 2
+        if self._scorer._contains_type(card.get("resistance") or card.get("resistances"), "dark"):
+            damage = max(0, damage - 20)
+        return damage
 
     def _retreat_enables_committed_mega_abomasnow_ko(self, state: GameState) -> bool:
         """Require retreat to exchange a nonlethal Active for an immediate KO."""
@@ -1707,6 +2211,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             metadata = self._scorer.catalog.get_card(str(card_id)) or {}
             energies += int(self._scorer._metadata_int(metadata, "cardType") in {5, 6})
         return energies == 1
+
+    def _v3_miracle_headset_is_useful(self, state: GameState) -> bool:
+        """Spend Headset only for two Supporters that complete an immediate KO."""
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if player is None or opponent is None or opponent.active is None:
+            return False
+        active = player.active
+        if (
+            active is None
+            or active.card_id != HONCHKROW
+            or len(active.energies) < self._scorer._attack_energy_target(HONCHKROW)
+        ):
+            return False
+        discarded = self._scorer._rocket_supporters_in_discard(state)
+        if discarded < 2:
+            return False
+        supporters_after = self._scorer._supporters_in_hand(state) + 2
+        damage = self._dark_attack_damage(state, supporters_after * 60)
+        return damage >= max(0, int(opponent.active.hp)) > 0
 
     def _ignition_target_is_valid(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether Ignition completes a damaging attack this turn."""

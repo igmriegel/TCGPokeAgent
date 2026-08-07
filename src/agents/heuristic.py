@@ -1300,7 +1300,8 @@ class HeuristicAgent(AgentPolicy):
             )
             if not decision_phase:
                 decision_phase = winning_phase.value
-            decision_phase_reason = winning_phase_reason
+            if not decision_phase_reason:
+                decision_phase_reason = winning_phase_reason
         result = PolicyDecision(
             selection=ranked[0].selection,
             ranked=tuple(ranked),

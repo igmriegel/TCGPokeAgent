@@ -9,6 +9,7 @@ class PokemonState:
     card_id: int | str | None
     hp: int
     max_hp: int
+    serial: int | None = None
     energies: list[dict[str, Any]] = field(default_factory=list)
     energy_card_ids: list[str] = field(default_factory=list)
     tool_ids: list[str] = field(default_factory=list)

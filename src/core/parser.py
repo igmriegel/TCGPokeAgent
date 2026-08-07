@@ -257,6 +257,7 @@ class DefaultParser(ObservationParserInterface):
             card_id=self._card_id(data),
             hp=self._int_field(data, "hp"),
             max_hp=self._int_field(data, "maxHp"),
+            serial=self._mapping_int(data, "serial") or None,
             energies=deepcopy(data.get("energies") or []),
             energy_card_ids=deepcopy(data.get("energyCards") or []),
             tool_ids=deepcopy(data.get("tools") or []),
@@ -314,6 +315,7 @@ class DefaultParser(ObservationParserInterface):
                             card_traits.base_prize_value if card_traits is not None else 0
                         ),
                         "card_id": int(card_id) if isinstance(card_id, int) else 0,
+                        "card_serial": self._mapping_int(resolved_card, "serial"),
                         "card_hp": self._mapping_int(resolved_card, "hp"),
                         "card_max_hp": self._mapping_int(resolved_card, "maxHp"),
                         "card_energy_count": self._mapping_length(resolved_card, "energies"),
@@ -323,6 +325,7 @@ class DefaultParser(ObservationParserInterface):
                         if resolved_card
                         else False,
                         "target_card_id": target_card_id,
+                        "target_serial": self._mapping_int(target, "serial"),
                         "target_has_rule_box": (
                             target_traits.has_rule_box if target_traits is not None else False
                         ),
