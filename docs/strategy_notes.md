@@ -558,7 +558,7 @@ status: "locally validated and active in the promoted development baseline"
 
 ```yaml
 observed_at: "2026-08-07T00:00:00-03:00"
-report: "reports/honchkrow_porygon_cabt_200_telemetry_20260807.json"
+artifact: "local generated report; compact metrics are preserved in this entry"
 matches: 200
 results: "156W/0D/44L"
 execution_failures: 0
@@ -583,8 +583,7 @@ status: "completed; deck-out prevention remains T-026 P0"
 
 ```yaml
 observed_at: "2026-08-07T00:00:00-03:00"
-report: "reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.json"
-trace: "reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.jsonl.gz"
+artifact: "local generated full trace; compact metrics are preserved in this entry"
 matches: 1000
 results: "776W/0D/224L"
 win_rate: 0.776
@@ -603,7 +602,7 @@ status: "legacy baseline frozen; future CABT comparisons must use independent sa
 
 ```yaml
 observed_at: "2026-08-07T00:00:00-03:00"
-report: "reports/cabt_replay_damage_diagnostics_20260807.json"
+artifact: "local generated diagnostics dump; compact metrics are preserved in this entry"
 replays: 643
 losses: 343
 deck_out_replays: 64
@@ -678,7 +677,7 @@ status: "ready"
 
 ```yaml
 observed_at: "2026-08-07T07:13:00-03:00"
-report: "reports/honchkrow_porygon_cabt_200_ignition_terminal_20260807.json"
+artifact: "local generated report; compact metrics are preserved in this entry"
 matches: 200
 evaluation_design: "100 matches per agent side against CABT"
 results: "179W/0D/21L"
@@ -749,7 +748,7 @@ attachments, and terminal Porygon2 conversions.
 ```yaml
 baseline_name: "honchkrow_porygon_post_audit_cabt_300"
 git_commit: "d5f42c5"
-source_report: "reports/honchkrow_porygon_cabt_300_post_audit_clean_20260807.json"
+source_report: "reports/honchkrow_porygon_cabt_baseline_20260807.json"
 summary_report: "reports/honchkrow_porygon_cabt_baseline_20260807.json"
 matches: 300
 matches_per_side: 150

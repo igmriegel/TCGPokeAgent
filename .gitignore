@@ -18,6 +18,16 @@ htmlcov/
 replays/
 reports/runs/
 reports/submissions/
+# Generated evaluation artifacts: keep compact summaries under version control,
+# but regenerate full traces and progress/dump files locally.
+reports/*.jsonl.gz
+reports/*.progress.json
+reports/*_fulltrace_*.json
+reports/*_telemetry_*.json
+reports/*_diagnostics_*.json
+reports/*_ignition_terminal_*.json
+reports/*_post_audit_clean_*.json
+reports/*_300_clean_*.json
 submissions/*
 !submissions/.gitkeep
 runs/*
