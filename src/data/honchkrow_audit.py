@@ -15,6 +15,352 @@ from src.agents.honchkrow_porygon import (
     TORMENT,
 )
 
+HAMMER_IN = 1286
+MEGA_ABOMASNOW = 723
+ROCKET_SUPPORTERS = {1216, 1217, 1218, 1219, 1220}
+
+
+class OpportunityCategory:
+    """Stable categories emitted by the attack-opportunity audit."""
+
+    CORRECT_R_COMMAND_KO = "CORRECT_R_COMMAND_KO"
+    R_COMMAND_NOT_READY = "R_COMMAND_NOT_READY"
+    MISSED_LETHAL_ROCKET_FEATHERS = "MISSED_LETHAL_ROCKET_FEATHERS"
+    MISSED_LETHAL_HAMMER = "MISSED_LETHAL_HAMMER"
+    PARTIAL_DAMAGE_WITH_NEXT_TURN_KO = "PARTIAL_DAMAGE_WITH_NEXT_TURN_KO"
+    PARTIAL_DAMAGE_WITHOUT_KO_HORIZON = "PARTIAL_DAMAGE_WITHOUT_KO_HORIZON"
+    END_WITH_LETHAL_LINE = "END_WITH_LETHAL_LINE"
+    RETREAT_WITHOUT_CONVERSION = "RETREAT_WITHOUT_CONVERSION"
+    DECK_OUT_AFTER_CONSUMPTION = "DECK_OUT_AFTER_CONSUMPTION"
+    UNRESOLVED_SEQUENCE = "UNRESOLVED_SEQUENCE"
+    PARTIAL_LINE_BLOCKED_BEFORE_ATTACK = "PARTIAL_LINE_BLOCKED_BEFORE_ATTACK"
+    PARTIAL_LINE_UNDERFUNDED = "PARTIAL_LINE_UNDERFUNDED"
+    PARTIAL_LINE_ATTACKER_KO = "PARTIAL_LINE_ATTACKER_KO"
+    PARTIAL_LINE_NO_NEXT_ATTACK = "PARTIAL_LINE_NO_NEXT_ATTACK"
+    PARTIAL_LINE_NEXT_ATTACK_KO = "PARTIAL_LINE_NEXT_ATTACK_KO"
+    LETHAL_LINE_NOT_SELECTED = "LETHAL_LINE_NOT_SELECTED"
+    NON_DAMAGE_ATTACK_WITH_DAMAGE_ALTERNATIVE = "NON_DAMAGE_ATTACK_WITH_DAMAGE_ALTERNATIVE"
+    DECK_OUT_AFTER_UNRESOLVED_LINE = "DECK_OUT_AFTER_UNRESOLVED_LINE"
+    RETREAT_WITHOUT_KO_CONVERSION = "RETREAT_WITHOUT_KO_CONVERSION"
+
+
+@dataclass(frozen=True, slots=True)
+class OpportunityAudit:
+    """Audit one complete Rocket attack opportunity, including setup prompts.
+
+    All indices remain the simulator's original option indices.  The audit is
+    deliberately factual: it derives outcomes from public before/after
+    snapshots and never treats a discard prompt as a completed attack.
+    """
+
+    episode_id: int
+    opportunity_id: int
+    target_card_id: int | None
+    target_hp: int
+    attacker_card_id: int | None
+    attacker_energy: int
+    hand_supporters: int
+    discard_supporters: int
+    expected_damage: int
+    observed_damage: int
+    lethal_line_available: bool
+    line_chosen: str
+    result: str
+    category: str
+    decision_indices: tuple[int, ...] = ()
+    original_indices: tuple[int, ...] = ()
+    reasons: tuple[str, ...] = ()
+    contexts: tuple[str, ...] = ()
+    planned_damage: int = 0
+    selected_supporters: int = 0
+    target_hp_before: int = 0
+    target_hp_after: int = 0
+    attacker_survived: bool | None = None
+    next_attack_available: bool = False
+    next_attack_ko: bool = False
+    deck_reserve_before: int = 0
+    deck_reserve_after: int = 0
+    sequence_result: str = ""
+    failure_category: str = ""
+
+
+def _as_int(value: Any, default: int = 0) -> int:
+    """Convert a value to an integer without allowing malformed traces to fail."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _option_type(option: Mapping[str, Any]) -> str:
+    """Return a normalized option type for mixed CABT traces."""
+    return str(option.get("type", "")).upper()
+
+
+def _attack_id(option: Mapping[str, Any]) -> int | None:
+    """Extract an attack identifier from a trace option."""
+    value = option.get("attackId", option.get("attack_id"))
+    return _as_int(value, -1) if value is not None else None
+
+
+def _selected_options(decision: Any) -> list[Mapping[str, Any]]:
+    """Resolve selected options while preserving their original indices."""
+    options = getattr(decision, "options", None)
+    selected = getattr(decision, "selected_indices", None)
+    if isinstance(decision, Mapping):
+        options = decision.get("options", options)
+        selected = decision.get("selected_indices", selected)
+    if not isinstance(options, list) or not isinstance(selected, list):
+        return []
+    return [
+        option
+        for index in selected
+        if 0 <= _as_int(index, -1) < len(options)
+        and isinstance((option := options[_as_int(index, -1)]), Mapping)
+    ]
+
+
+def audit_opportunities(matches: Iterable[Any]) -> list[OpportunityAudit]:
+    """Group decision traces into complete Rocket attack opportunities.
+
+    ``matches`` accepts ``MatchRecord`` instances or serialized mappings. A
+    group starts at a Rocket attack or its discard preparation and ends at the
+    next attack, a terminal transition, or a context change that proves the
+    line was abandoned.
+    """
+    audits: list[OpportunityAudit] = []
+    opportunity_id = 0
+    for episode_id, match in enumerate(matches):
+        decisions = getattr(match, "decisions", None)
+        if isinstance(match, Mapping):
+            decisions = match.get("decisions", match.get("events", decisions))
+        if not isinstance(decisions, list):
+            continue
+        pending: list[Any] = []
+        for decision in decisions + [None]:
+            options = getattr(decision, "options", []) if decision is not None else []
+            if isinstance(decision, Mapping):
+                options = decision.get("options", [])
+            selected = _selected_options(decision) if decision is not None else []
+            attack_options = [
+                option
+                for option in options
+                if isinstance(option, Mapping) and _attack_id(option) is not None
+            ]
+            selected_attacks = [option for option in selected if _attack_id(option) is not None]
+            is_rocket = any(
+                _attack_id(option) in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}
+                for option in selected_attacks
+            )
+            is_setup = any(
+                _option_type(option) in {"DISCARD", "DISCARD_CARD_OR_ATTACHED_CARD"}
+                for option in selected
+            )
+            missed_end = any(_option_type(option) == "END" for option in selected) and any(
+                _attack_id(option) in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}
+                for option in attack_options
+            )
+            if is_rocket or is_setup or missed_end or pending:
+                if is_rocket or is_setup or missed_end:
+                    pending.append(decision)
+            if pending and (
+                selected_attacks or decision is None or (not is_rocket and not is_setup)
+            ):
+                audits.append(
+                    _build_opportunity(episode_id, opportunity_id, pending, selected_attacks)
+                )
+                opportunity_id += 1
+                pending = []
+    return audits
+
+
+def _build_opportunity(
+    episode_id: int,
+    opportunity_id: int,
+    decisions: list[Any],
+    selected_attacks: list[Mapping[str, Any]],
+) -> OpportunityAudit:
+    """Build one audit record from grouped setup and attack decisions."""
+    first = decisions[0]
+    before = getattr(first, "telemetry_before", {}) if first is not None else {}
+    if isinstance(first, Mapping):
+        before = first.get("telemetry_before", first.get("state_before", {}))
+    before = before if isinstance(before, Mapping) else {}
+    opponent = before.get("opponent", {}) if isinstance(before.get("opponent", {}), Mapping) else {}
+    target = opponent.get("active", {}) if isinstance(opponent.get("active", {}), Mapping) else {}
+    own = before.get("own", {}) if isinstance(before.get("own", {}), Mapping) else {}
+    chosen = selected_attacks[0] if selected_attacks else {}
+    chosen_id = _attack_id(chosen)
+    hand = _as_int(own.get("hand_supporters"), 0)
+    discard = _as_int(own.get("discard_supporters"), 0)
+    target_hp = _as_int(target.get("hp"), 0)
+    all_options = [
+        option
+        for decision in decisions
+        for option in (
+            getattr(decision, "options", [])
+            if not isinstance(decision, Mapping)
+            else decision.get("options", [])
+        )
+        if isinstance(option, Mapping)
+    ]
+    selected_types = {
+        _option_type(option) for decision in decisions for option in _selected_options(decision)
+    }
+    if chosen_id == ROCKET_FEATHERS:
+        expected = hand * 60
+    elif chosen_id == R_COMMAND:
+        expected = discard * 20
+    elif chosen_id == HAMMER_IN:
+        expected = 100
+    else:
+        expected = max(
+            (_as_int(chosen.get(key)) for key in ("damage", "expectedDamage")), default=0
+        )
+    effects = getattr(decisions[-1], "transition", {}) if decisions else {}
+    if isinstance(decisions[-1], Mapping):
+        effects = decisions[-1].get("transition", {})
+    effects = effects if isinstance(effects, Mapping) else {}
+    observed = _as_int(effects.get("target_damage"), 0)
+    after = getattr(decisions[-1], "telemetry_after", {}) if decisions else {}
+    if isinstance(decisions[-1], Mapping):
+        after = decisions[-1].get("telemetry_after", decisions[-1].get("state_after", {}))
+    after = after if isinstance(after, Mapping) else {}
+    after_opponent = (
+        after.get("opponent", {}) if isinstance(after.get("opponent", {}), Mapping) else {}
+    )
+    after_target = (
+        after_opponent.get("active", {})
+        if isinstance(after_opponent.get("active", {}), Mapping)
+        else {}
+    )
+    after_own = after.get("own", {}) if isinstance(after.get("own", {}), Mapping) else {}
+    selected_supporters = sum(
+        _as_int(option.get("cardId", option.get("card_id")), 0) in ROCKET_SUPPORTERS
+        for decision in decisions
+        for option in _selected_options(decision)
+    )
+    lethal = any(
+        (_attack_id(option) == ROCKET_FEATHERS and hand >= 6)
+        or (_attack_id(option) == R_COMMAND and discard >= 18)
+        or (_attack_id(option) == HAMMER_IN and target_hp <= 100)
+        for option in all_options
+    )
+    if chosen_id == R_COMMAND and discard >= 18 and bool(effects.get("target_ko")):
+        category = OpportunityCategory.CORRECT_R_COMMAND_KO
+    elif chosen_id == R_COMMAND and discard < 18:
+        category = OpportunityCategory.R_COMMAND_NOT_READY
+    elif "RETREAT" in selected_types and not bool(effects.get("target_ko")):
+        category = OpportunityCategory.RETREAT_WITHOUT_CONVERSION
+    elif not selected_attacks and "END" in selected_types and lethal:
+        category = OpportunityCategory.END_WITH_LETHAL_LINE
+    elif chosen_id != ROCKET_FEATHERS and any(
+        _attack_id(option) == ROCKET_FEATHERS and hand >= 6 for option in all_options
+    ):
+        category = OpportunityCategory.MISSED_LETHAL_ROCKET_FEATHERS
+    elif chosen_id != HAMMER_IN and any(
+        _attack_id(option) == HAMMER_IN and target_hp <= 100 for option in all_options
+    ):
+        category = OpportunityCategory.MISSED_LETHAL_HAMMER
+    elif chosen_id == ROCKET_FEATHERS and hand >= 6 and not bool(effects.get("target_ko")):
+        remaining = max(0, target_hp - expected)
+        horizon = remaining <= max(0, hand - 1) * 60 and _as_int(own.get("deck_count"), 0) > 2
+        category = (
+            OpportunityCategory.PARTIAL_DAMAGE_WITH_NEXT_TURN_KO
+            if horizon
+            else OpportunityCategory.PARTIAL_DAMAGE_WITHOUT_KO_HORIZON
+        )
+    elif chosen_id == ROCKET_FEATHERS and hand < 6:
+        category = OpportunityCategory.PARTIAL_LINE_UNDERFUNDED
+    elif _as_int(own.get("deck_count"), 0) <= 0 and observed:
+        category = OpportunityCategory.DECK_OUT_AFTER_CONSUMPTION
+    elif selected_attacks:
+        category = OpportunityCategory.UNRESOLVED_SEQUENCE
+    else:
+        category = OpportunityCategory.UNRESOLVED_SEQUENCE
+    indices = tuple(
+        _as_int(index)
+        for decision in decisions
+        for index in (
+            getattr(decision, "selected_indices", [])
+            if not isinstance(decision, Mapping)
+            else decision.get("selected_indices", [])
+        )
+    )
+    reasons = tuple(
+        reason
+        for decision in decisions
+        for reason in (
+            getattr(decision, "reasons", [])
+            if not isinstance(decision, Mapping)
+            else decision.get("reasons", [])
+        )
+    )
+    contexts = tuple(
+        str(getattr(decision, "context", ""))
+        if not isinstance(decision, Mapping)
+        else str(decision.get("context", ""))
+        for decision in decisions
+    )
+    return OpportunityAudit(
+        episode_id=episode_id,
+        opportunity_id=opportunity_id,
+        target_card_id=_as_int(target.get("card_id"), 0) or None,
+        target_hp=target_hp,
+        attacker_card_id=_as_int(
+            (
+                before.get("own", {}).get("active", {})
+                if isinstance(before.get("own", {}), Mapping)
+                else {}
+            ).get("card_id"),
+            0,
+        )
+        or None,
+        attacker_energy=_as_int(
+            (
+                before.get("own", {}).get("active", {})
+                if isinstance(before.get("own", {}), Mapping)
+                else {}
+            ).get("energy_count"),
+            0,
+        ),
+        hand_supporters=hand,
+        discard_supporters=discard,
+        expected_damage=expected,
+        observed_damage=observed,
+        lethal_line_available=lethal,
+        line_chosen=str(chosen_id or "none"),
+        result="KO" if effects.get("target_ko") else "DAMAGE" if observed else "ABANDONED",
+        category=category,
+        decision_indices=tuple(
+            getattr(decision, "decision_index", i)
+            if not isinstance(decision, Mapping)
+            else _as_int(decision.get("decision_index"), i)
+            for i, decision in enumerate(decisions)
+        ),
+        original_indices=indices,
+        reasons=reasons,
+        contexts=contexts,
+        planned_damage=expected,
+        selected_supporters=selected_supporters,
+        target_hp_before=target_hp,
+        target_hp_after=_as_int(after_target.get("hp"), max(0, target_hp - observed)),
+        attacker_survived=(not bool(effects.get("own_active_ko")) if effects else None),
+        next_attack_available=bool(effects.get("next_attack_available", False)),
+        next_attack_ko=bool(effects.get("next_attack_ko", False)),
+        deck_reserve_before=_as_int(own.get("deck_count"), 0),
+        deck_reserve_after=_as_int(after_own.get("deck_count"), 0),
+        sequence_result=(
+            "KO" if effects.get("target_ko") else "DAMAGE" if observed else "ABANDONED"
+        ),
+        failure_category=category
+        if category
+        not in {
+            OpportunityCategory.CORRECT_R_COMMAND_KO,
+        }
+        else "",
+    )
+
 
 @dataclass(frozen=True, slots=True)
 class DecisionEvidence:

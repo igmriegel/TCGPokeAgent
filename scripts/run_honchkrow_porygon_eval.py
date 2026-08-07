@@ -11,6 +11,7 @@ import shutil
 import sys
 import time
 from collections import Counter
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -27,6 +28,7 @@ from src.agents.honchkrow_porygon import (  # noqa: E402
     HonchkrowPorygonAgent,
 )
 from src.core import DeckDefinition, DeckProfile  # noqa: E402
+from src.data.honchkrow_audit import audit_opportunities  # noqa: E402
 from src.eval.telemetry import public_snapshot, transition  # noqa: E402
 
 PROFILE_PATH = ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
@@ -236,6 +238,7 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             _option_type(option) for option in selected if isinstance(option, Mapping)
         ]
         ledger = agent.turn_ledger
+        policy_decision = agent.last_decision
         event = {
             "turn": int(current.get("turn", 0) or 0),
             "deck_count": int(own.get("deckCount", 0) or 0),
@@ -266,6 +269,7 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "option_types": [
                 _option_type(option) for option in options if isinstance(option, Mapping)
             ],
+            "options": [dict(option) for option in options if isinstance(option, Mapping)],
             "attack_ids": attacks,
             "selected_indices": result,
             "selected_types": selected_types,
@@ -275,6 +279,11 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "deck_risk": ledger.deck_risk,
             "partial_mega_abomasnow_attack": partial,
             "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
+            "decision_phase": getattr(policy_decision, "decision_phase", ""),
+            "decision_phase_reason": getattr(policy_decision, "decision_phase_reason", ""),
+            "selection_reasons": list(
+                getattr(getattr(policy_decision, "selection", None), "reasons", ())
+            ),
             "state_before": dict(current),
             "telemetry_before": telemetry_before,
         }
@@ -313,10 +322,14 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
     if not reason_explicit:
         reason = inferred_reason
     terminal = _terminal_counts(current, side)
+    opportunities = [
+        asdict(opportunity) for opportunity in audit_opportunities([{"events": events}])
+    ]
     return {
         "match_id": f"honchkrow_{seed}_{side}",
         "seed": seed,
         "agent_side": side,
+        "policy_variant": agent.policy_variant,
         "result": result,
         "reward": reward,
         "status": "ok" if status_ok else "error",
@@ -349,8 +362,16 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "resource_guards": dict(
                 Counter(event["resource_guard"] for event in events if event["resource_guard"])
             ),
+            "decision_phase_reasons": dict(
+                Counter(
+                    event["decision_phase_reason"]
+                    for event in events
+                    if event["decision_phase_reason"]
+                )
+            ),
         },
         "events": events,
+        "opportunities": opportunities,
     }
 
 
@@ -364,7 +385,9 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
     failures = Counter(match["status"] for match in matches)
     telemetry = Counter()
     guards: Counter[str] = Counter()
+    opportunities = Counter()
     for match in matches:
+        opportunities.update(item["category"] for item in match["opportunities"])
         telemetry.update(
             {key: value for key, value in match["telemetry"].items() if isinstance(value, int)}
         )
@@ -414,6 +437,10 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sdk_version": "1.32.2",
         "agent": "honchkrow_porygon",
+        "policy_variant": next(
+            (match["policy_variant"] for match in matches),
+            "baseline",
+        ),
         "opponent": "cabt.random_agent",
         "matches_per_side": matches_per_side,
         "total_matches": len(matches),
@@ -423,6 +450,10 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
         "termination_reasons": dict(reasons),
         "telemetry_totals": dict(telemetry),
         "resource_guard_totals": dict(guards),
+        "opportunity_audit": {
+            "category_totals": dict(opportunities),
+            "total": sum(opportunities.values()),
+        },
         "audit": audit,
         "matches": matches,
     }
@@ -440,6 +471,7 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
     statuses: Counter[str] = Counter()
     telemetry: Counter[str] = Counter()
     guards: Counter[str] = Counter()
+    opportunities: Counter[str] = Counter()
     with trace_path.open("w", encoding="utf-8") as trace:
         for index in range(matches_per_side):
             for side in (0, 1):
@@ -473,6 +505,7 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
                     }
                 )
                 guards.update(match["telemetry"]["resource_guards"])
+                opportunities.update(item["category"] for item in match["opportunities"])
                 summary = {key: value for key, value in match.items() if key != "events"}
                 summary["event_count"] = len(match["events"])
                 summaries.append(summary)
@@ -500,6 +533,10 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sdk_version": "1.32.2",
         "agent": "honchkrow_porygon",
+        "policy_variant": next(
+            (match["policy_variant"] for match in summaries),
+            "baseline",
+        ),
         "opponent": "cabt.random_agent",
         "matches_per_side": matches_per_side,
         "total_matches": total,
@@ -513,6 +550,10 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
         "termination_reasons": dict(reasons),
         "telemetry_totals": dict(telemetry),
         "resource_guard_totals": dict(guards),
+        "opportunity_audit": {
+            "category_totals": dict(opportunities),
+            "total": sum(opportunities.values()),
+        },
         "audit": {
             "matches_with_explicit_reason": sum(
                 match["termination_reason_explicit"] for match in summaries
