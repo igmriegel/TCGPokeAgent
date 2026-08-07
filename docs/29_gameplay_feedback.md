@@ -44,6 +44,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-010 | Legal attacks should not be blocked by attacker-target development | Attacker-target gate retired; legal attacks now score directly | Reinterpreted | None |
 | FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Alakazam-line evidence | Retreat gating and conditional Articuno tech branch implemented | Pending | T-023 |
 | FB-2026-012 | Articuno without matchup evidence should be sacrificial and discard-favored over Energy | Conditional-sacrifice Articuno scoring implemented | Pending | T-024 |
+| FB-2026-018 | Turn planning ignores setup-aware Supporters and proven evolution-KO sequences | Persistent objective, Supporter comparison, Transceiver targeting, and Poké Pad commitment implemented | Pending | T-030 |
 
 ## FB-2026-001 — Continuous board development
 
@@ -575,6 +576,66 @@ fixture updated to the reviewed order.
 
 T-029: ordered multi-observation fixtures, deck-out guard coverage, and a
 bilateral CABT evaluation confirming the sequence without execution failures.
+
+## FB-2026-018 — Persistent turn planning, setup Supporters, and evolution-KO lines
+
+**Priority:** P0
+
+**Status:** `IN_PROGRESS`
+
+**Evidence source:** post-hoc audit of the local 200-match CABT decision trace.
+The audit found 199 Ariana plays with estimated marginal draw of at most one,
+20 initial Ariana choices while Proton was visible in hand, and 46 Torment
+attacks while Poké Pad was visible in hand. These are replay-derived agent
+observations, not live human demonstrations.
+
+**Affected decisions:** first-own-turn Supporter play; Rocket Transceiver
+target selection; Petrel and Ariana comparison; Poké Pad search; Murkrow
+evolution; and terminal attack choice.
+
+**Accepted scope:** persist one public turn objective ordered by immediate
+win, no-Pokémon survival, highest-Prize Knock Out, board development, resource
+improvement, and damage/control. Proton requires a useful Basic target, Bench
+space, and a setup gain. Ariana uses marginal draw and visible hand
+composition. Petrel into Factory supersedes Ariana when Ariana adds at most one
+card and the two-card Factory line is legal. Transceiver resolves from the
+stored objective and has no automatic Proton fallback.
+
+Poké Pad may start the Honchkrow line only when the public state proves a
+remaining Honchkrow, a legally evolvable Murkrow, compatible Energy, sufficient
+Rocket Feathers damage, and a visible target. The exact Murkrow serial and the
+line stage remain committed through the nested prompts. Immediate game win,
+then higher Prize value, then lower resource cost govern competing Knock Outs.
+
+**Exceptions:** Factory already in play removes the Petrel-to-Factory
+advantage. Ariana remains legal when its complete sequence is stronger. Proton
+remains legal in later turns only with a demonstrated survival or development
+gain. Poké Pad in hand alone is not evidence of an evolution-KO opportunity.
+
+**Rule and task:** GR-025, T-030. T-028 and T-029 remain open until their
+existing Ignition and ordered draw-engine gates are independently satisfied.
+
+### Gate
+
+Run the detector over every synchronized replay, then compare `bb38f95` and
+the candidate on 150 new positions from both sides. Require zero operational
+failures, zero target tactical violations, no increase in no-Pokémon or
+deck-out losses, and a 3-percentage-point non-inferiority margin. Report W/D/L,
+side split, terminal turn and cause, paired difference and 95% interval, plus
+the new tactical counters and residual traces.
+
+The first 300-match-per-policy run completed with zero execution failures.
+The candidate finished 259W/41L versus 257W/43L for `bb38f95`, a +0.67
+percentage-point independent-sample difference with a 95% interval from
+-4.89 to +6.22 points. The candidate detector reported zero Ariana-over-Petrel,
+zero Ariana-with-required-Proton, zero late Transceiver-to-Proton, and zero
+Torment-with-proven-Poké-Pad-KO violations. It converted 31 of 37 ledger
+Poké Pad KO commitments and missed six. Deck-out losses increased from 28 to
+32, so the mandatory terminal gate failed and the candidate is not promoted.
+CABT 1.32.2 did not forward the requested seeds into `battle_start`; the
+interval is therefore independent-sample, not a valid paired interval.
+The durable summary is
+[`reports/turn_planning_comparison_20260901.json`](../reports/turn_planning_comparison_20260901.json).
 
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and

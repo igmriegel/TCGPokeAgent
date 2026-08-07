@@ -33,6 +33,7 @@
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replay JSON files |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
+| `scripts/audit_turn_planning.py` | Audit Ariana, Proton, Transceiver, Petrel/Factory, and proven Poké Pad KO patterns in JSONL traces |
 | `scripts/build_package.sh submissions/submission.tar.gz` | Build the explicit submission allowlist |
 | `make build-abomasnow-package` | Build the Abomasnow `submissions/submission.tar.gz` archive |
 | `scripts/build_package.sh submissions/submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
@@ -52,6 +53,7 @@
 | `uv run --frozen python scripts/download_all_replays.py` | Download all available Kaggle replays into the local mirror |
 | `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
+| `uv run --frozen python scripts/audit_turn_planning.py <trace.jsonl.gz> --output <report.json>` | Emit tactical counters and bounded factual examples from a CABT trace |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
 | `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --policy-variant supporter_resource_v2 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with explicit policy selection and prize, deck, board, Supporter, action, and terminal telemetry |
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |

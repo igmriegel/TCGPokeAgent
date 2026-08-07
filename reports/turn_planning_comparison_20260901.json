@@ -1,0 +1,64 @@
+{
+  "report_type": "honchkrow_turn_planning_independent_comparison_v1",
+  "control_revision": "bb38f95",
+  "candidate": "working_tree",
+  "requested_seed_base": 20260901,
+  "matches_per_policy": 300,
+  "matches_per_side": 150,
+  "pairing_valid": false,
+  "pairing_limitation": "CABT 1.32.2 does not forward the configured seed into battle_start.",
+  "control": {
+    "wins": 257,
+    "draws": 0,
+    "losses": 43,
+    "win_rate": 0.8566666667,
+    "execution_failures": 0,
+    "deck_out_losses": 28,
+    "no_pokemon_losses_observed_in_last_public_snapshot": 0,
+    "terminal_turn_median": 9,
+    "by_side": {
+      "0": {"wins": 131, "draws": 0, "losses": 19, "terminal_turn_median": 9},
+      "1": {"wins": 126, "draws": 0, "losses": 24, "terminal_turn_median": 10}
+    },
+    "tactical": {
+      "ariana_with_required_proton": 37,
+      "ariana_over_petrel_factory": 0,
+      "late_proton_without_gain": 1,
+      "torment_with_proven_poke_pad_ko": 39
+    }
+  },
+  "candidate_result": {
+    "wins": 259,
+    "draws": 0,
+    "losses": 41,
+    "win_rate": 0.8633333333,
+    "execution_failures": 0,
+    "deck_out_losses": 32,
+    "no_pokemon_losses_observed_in_last_public_snapshot": 0,
+    "terminal_turn_median": 9,
+    "by_side": {
+      "0": {"wins": 132, "draws": 0, "losses": 18, "terminal_turn_median": 11},
+      "1": {"wins": 127, "draws": 0, "losses": 23, "terminal_turn_median": 9}
+    },
+    "tactical": {
+      "ariana_with_required_proton": 0,
+      "ariana_over_petrel_factory": 0,
+      "late_proton_without_gain": 0,
+      "petrel_factory_opportunities": 80,
+      "petrel_factory_conversions": 80,
+      "poke_pad_ko_opportunities": 37,
+      "poke_pad_ko_conversions": 31,
+      "poke_pad_ko_misses": 6,
+      "torment_with_proven_poke_pad_ko": 0
+    }
+  },
+  "win_rate_difference_points": 0.6666666667,
+  "independent_difference_ci95_points": [-4.8860261068, 6.2193594402],
+  "noninferiority_margin_points": -3.0,
+  "noninferiority_established": false,
+  "mandatory_gate_failures": [
+    "deck_out_losses_increased_from_28_to_32",
+    "independent_ci_lower_bound_below_noninferiority_margin"
+  ],
+  "classification": "regression_gate_failed_do_not_promote"
+}

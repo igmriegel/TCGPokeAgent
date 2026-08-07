@@ -69,6 +69,7 @@ been captured in one frozen report.
 | `src/data/honchkrow_audit.py` | Honchkrow/Porygon effective-sequence audit and contextual loss classification | `tests/test_honchkrow_porygon.py`, `tests/test_honchkrow_opportunity_audit.py`; replay-decision JSONL audits |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
+| `scripts/audit_turn_planning.py` | Detect setup-Supporter and proven Honchkrow evolution-KO patterns | Active; consumes plain or gzip JSONL CABT traces and emits bounded evidence |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active; produces `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html` |
 | `scripts/analyze_replays.py` | Build aggregate replay damage and failure diagnostics | Active; produces versioned JSON diagnostics |
 

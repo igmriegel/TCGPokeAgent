@@ -40,6 +40,7 @@
 | GR-022 | Honchkrow/Porygon Proton, Supporter, Energy, matchup, and attack restrictions | `ACTIVE` | FB-2026-013, completed T-025 |
 | GR-023 | Productive terminal, exact committed switching, projected Ignition damage, Giovanni, Miracle Headset, Stadium, and Roto Stick ordering | `ACTIVE` | FB-2026-013, completed T-025; 400-match promotion audit |
 | GR-024 | Instrument terminal causes and prioritize deck-out prevention before promotion | `ACTIVE / UNVALIDATED` | FB-2026-014, T-026 |
+| GR-025 | Persist the highest reachable turn objective and prove setup, Supporter, and evolution-KO lines from public facts | `ACTIVE / UNVALIDATED` | FB-2026-018, T-030 |
 
 ## Turn order
 
@@ -228,6 +229,27 @@ and prizes for every loss. A loss with the own deck at zero is a deck-out
 regression signal even when the agent completed every SDK action legally.
 Deck-out prevention, shuffle-refill timing, and preservation of a winning line
 take precedence over the current win-rate result until the P0 gate is closed.
+
+### GR-025 — Persistent turn objective and proven tactical lines
+
+The dedicated Honchkrow/Porygon policy records absolute turn, own turn,
+turn-action count, and one persistent objective in this order: win now;
+prevent a no-Pokémon loss; take the highest-value Knock Out; build an attacker
+and the Bench; improve resources; then attack for damage or control. Lower
+actions cannot displace a reachable higher objective during nested prompts.
+
+On the first own turn, Proton precedes Ariana when a useful Basic remains in
+the deck, the Bench has space, and the board needs development. Rocket
+Transceiver selects Proton only for that demonstrated setup gain; otherwise it
+selects Ariana, Petrel, or Giovanni according to the stored objective. When
+Ariana would draw at most one card and Factory is not active, legal
+`Petrel → Factory → draw two` takes precedence.
+
+Poké Pad commits to Honchkrow only when a visible Murkrow is legally evolvable,
+Honchkrow remains accessible, attached Energy pays Rocket Feathers, and the
+visible Supporter count proves the target Knock Out. The commitment persists
+through search, evolution of the exact Murkrow serial, and attack. Torment is
+not legal policy output while that superior committed line exists.
 
 ## Required evaluation metrics
 

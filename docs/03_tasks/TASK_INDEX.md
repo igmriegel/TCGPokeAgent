@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 6 |
+| In progress | 7 |
 | Ready | 18 |
 | Deferred | 7 |
-| Total open | 31 |
+| Total open | 32 |
 
 ## Active release queue
 
@@ -52,6 +52,7 @@ documents to these totals.
 | T-027 | P1 | `READY` | Measure opponent-sample variance for identical-package submissions | Remote evaluation variance | Compare submissions `55320796` and `55320706` across two distinct opponent samples; report opponent composition, win rate, variance, and confidence intervals before attributing differences to the package |
 | T-028 | P0 | `IN_PROGRESS` | Convert every Ignition attachment into a same-turn attack and prioritize game-winning Porygon2 promotion | FB-2026-016, H2A | Run terminal Porygon2, Prize-race, Ignition-commitment, and no-wasted-energy gates, then evaluate the promoted policy against CABT |
 | T-029 | P0 | `IN_PROGRESS` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
+| T-030 | P0 | `IN_PROGRESS` | Enforce persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | FB-2026-018, H2A | Eliminate the 32 versus 28 deck-out-loss regression, then rerun the frozen comparison |
 
 ## Active-track coverage
 
@@ -66,7 +67,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021, T-023–T-026 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-030 |
 
 ## Deferred queue
 
