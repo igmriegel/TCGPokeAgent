@@ -84,6 +84,8 @@ class TurnTacticalLedger:
     turn_action_count: int = 0
     first_own_turn: bool = False
     objective: str = ""
+    replans: int = 0
+    last_replan_reason: str = ""
     pre_draw_ko_candidates: tuple[int, ...] = ()
     post_draw_ko_candidates: tuple[int, ...] = ()
     potential_damage: dict[int, int] = field(default_factory=dict)
@@ -133,6 +135,8 @@ class TurnTacticalLedger:
         self.turn_action_count = 0
         self.first_own_turn = False
         self.objective = ""
+        self.replans = 0
+        self.last_replan_reason = ""
         self.pre_draw_ko_candidates = ()
         self.post_draw_ko_candidates = ()
         self.potential_damage.clear()
@@ -476,7 +480,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return -2200.0, ["deceit_without_decisive_damage_or_interrupt"]
             return 420.0 + explicit_damage, ["deceit_contextual_tempo"]
         if attack_id == TORMENT:
-            if self._truthy(candidate.option, "preventsAttack", "disablesAttack"):
+            if self._torment_single_attack_lock(state, candidate):
                 return 560.0 + explicit_damage, ["torment_blocks_next_attack"]
             return 300.0 + explicit_damage, ["torment_damage_only"]
         if attack_id == ARTICUNO_ATTACK:
@@ -515,6 +519,17 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         context: SelectContext | None,
     ) -> tuple[float, list[str]]:
         card_id = self._feature_int(candidate, "card_id")
+        if context is SelectContext.SETUP_ACTIVE_POKEMON:
+            setup_active_scores = {
+                MURKROW: (3000.0, "opening_active_murkrow"),
+                PORYGON: (2000.0, "opening_active_porygon"),
+                ARTICUNO: (1000.0, "opening_active_articuno_fallback"),
+            }
+            if card_id in setup_active_scores:
+                score, reason = setup_active_scores[card_id]
+                return score, [reason]
+        if context is SelectContext.SETUP_BENCH_POKEMON and card_id == MURKROW:
+            return 2600.0, ["opening_bench_maximize_murkrow"]
         if context is SelectContext.TO_HAND and card_id == PROTON:
             if self._proton_setup_is_useful(state):
                 return 1800.0, ["select_proton_for_early_setup"]
@@ -938,6 +953,44 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             or self._truthy(candidate.option, "decisive", "win", "gameOver")
         )
 
+    def _deceit_is_survival_line(self, state: GameState) -> bool:
+        """Allow Deceit only as a conservative no-Supporter, low-hand Ariana line."""
+        player = self._own_player(state)
+        return bool(
+            player
+            and self._supporters_in_hand(state) == 0
+            and player.hand_count <= 2
+            and self._supporter_copies_remaining(state, ARIANA) > 0
+        )
+
+    def _supporter_copies_remaining(self, state: GameState, card_id: int) -> int:
+        """Count a four-copy Supporter outside actor-visible non-deck zones."""
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        known = sum(
+            self._card_id_from_value(card) == card_id
+            for card in list(player.hand or ()) + list(player.discard) + list(player.prize)
+        )
+        return max(0, 4 - known)
+
+    def _torment_single_attack_lock(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether Torment disables the sole attack on a lone opposing Pokémon."""
+        opponent = self._opponent_player(state)
+        if opponent is None or opponent.active is None:
+            return False
+        field = [opponent.active, *opponent.bench]
+        if sum(pokemon is not None for pokemon in field) != 1:
+            return False
+        card = self.catalog.get_card(str(opponent.active.card_id)) or {}
+        attacks = card.get("attacks")
+        return bool(
+            isinstance(attacks, Sequence)
+            and not isinstance(attacks, (str, bytes))
+            and len(attacks) == 1
+            and self._truthy(candidate.option, "preventsAttack", "disablesAttack")
+        )
+
     def _has_murkrow_ready_to_evolve(self, state: GameState) -> bool:
         """Return whether a visible Murkrow can support Honchkrow search."""
         player = self._own_player(state)
@@ -971,6 +1024,12 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         """Return whether Poké Pad fetching Honchkrow has an immediate purpose."""
         if self._has_murkrow_ready_to_evolve(state) or self._honchkrow_ready_to_attack(state):
             return True
+        player = self._own_player(state)
+        if self._own_turn_number(state) == 1 and player is not None:
+            return any(
+                pokemon is not None and pokemon.card_id == MURKROW
+                for pokemon in [player.active, *player.bench]
+            )
         return self._articuno_hand_reduction_needed(state, candidate)
 
     def _giovanni_target_score(
@@ -1015,8 +1074,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return any(
             pokemon is not None
             and pokemon.card_id == HONCHKROW
-            and self._energy_units_for_pokemon(pokemon)
-            >= self._attack_energy_target(HONCHKROW)
+            and self._energy_units_for_pokemon(pokemon) >= self._attack_energy_target(HONCHKROW)
             for pokemon in [player.active, *player.bench]
         )
 
@@ -1494,6 +1552,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "ko_priority_v3_retreat_guard",
                 "supporter_lethal_v1",
                 "supporter_resource_v2",
+                "expert_rounds_1_3_v1",
             }
             else "baseline"
         )
@@ -1506,17 +1565,27 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "ko_priority_v3_retreat_guard",
             "supporter_lethal_v1",
             "supporter_resource_v2",
+            "expert_rounds_1_3_v1",
         }
 
     @property
     def _uses_supporter_lethal_commitment(self) -> bool:
         """Return whether exact Rocket Feathers commitments are enabled."""
-        return self.policy_variant in {"supporter_lethal_v1", "supporter_resource_v2"}
+        return self.policy_variant in {
+            "supporter_lethal_v1",
+            "supporter_resource_v2",
+            "expert_rounds_1_3_v1",
+        }
 
     @property
     def _uses_resource_variant(self) -> bool:
         """Return whether Roto-Stick and Transceiver resource logic is enabled."""
-        return self.policy_variant == "supporter_resource_v2"
+        return self.policy_variant in {"supporter_resource_v2", "expert_rounds_1_3_v1"}
+
+    @property
+    def _uses_expert_rounds_1_3(self) -> bool:
+        """Return whether the first three ratified interview rounds are active."""
+        return self.policy_variant == "expert_rounds_1_3_v1"
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -1793,6 +1862,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         self._turn_ledger.lethal_lines_executed += 1
                 if self._uses_retreat_guard:
                     self._switch_commitment = None
+        replan_reason = self._replan_reason(
+            parsed.state,
+            decision.selection,
+            by_index,
+            parsed.select_context,
+        )
+        if replan_reason:
+            self._turn_ledger.objective = ""
+            self._turn_ledger.replans += 1
+            self._turn_ledger.last_replan_reason = replan_reason
         if (
             self._uses_retreat_guard
             and parsed.select_context is SelectContext.TO_HAND
@@ -1817,6 +1896,49 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         elif player is not None and player.deck_count <= 5:
             self._turn_ledger.deck_risk = "low"
         return decision
+
+    def _replan_reason(
+        self,
+        state: GameState,
+        selection: Selection,
+        by_index: Mapping[int, Candidate],
+        context: SelectContext | None,
+    ) -> str:
+        """Return the ratified reason to recompute the objective after this decision."""
+        if not self._uses_expert_rounds_1_3:
+            return ""
+        if context is SelectContext.TO_PRIZE:
+            return "prize_selection"
+        for index in selection.indices:
+            candidate = by_index.get(index)
+            if candidate is None:
+                continue
+            card_id = self._scorer._feature_int(candidate, "card_id")
+            source_id = self._scorer._metadata_int(candidate.option, "sourceCardId")
+            if candidate.option_type is OptionType.ATTACH:
+                return "energy_attachment"
+            if candidate.option_type is OptionType.EVOLVE or (
+                candidate.option_type is OptionType.PLAY and card_id in {HONCHKROW, PORYGON2}
+            ):
+                return "evolution"
+            if card_id in {
+                ARIANA,
+                FACTORY,
+                ROTO_STICK,
+                ULTRA_BALL,
+                TRANSCEIVER,
+                MIRACLE_HEADSET,
+            }:
+                return f"card_{card_id}"
+            if source_id in {FACTORY, ROTO_STICK, TRANSCEIVER, MIRACLE_HEADSET}:
+                return f"effect_{source_id}"
+            if context is SelectContext.TO_HAND and (
+                self._roto_turn == state.turn
+                or self._transceiver_turn == state.turn
+                or self._headset_turn == state.turn
+            ):
+                return "resolved_search_or_recovery"
+        return ""
 
     def _choose_turn_objective(
         self, state: GameState, candidates: Sequence[Candidate]
@@ -1962,7 +2084,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         game_wins = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.ATTACK
-                and self._scorer._truthy(candidate.option, "win", "wins", "gameOver")
+                and self._attack_wins_game(state, candidate)
             )
         )
         if game_wins:
@@ -2076,7 +2198,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 ignition,
             )
 
-        if self._uses_supporter_lethal_commitment:
+        if self._uses_supporter_lethal_commitment and not self._uses_expert_rounds_1_3:
             lethal_attacks = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.ATTACK
@@ -2141,6 +2263,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "required_proton_board_setup",
                 setup_supporter,
             )
+
+        if self._uses_expert_rounds_1_3:
+            setup_roto = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
+                    and self._roto_setup_mode(state)
+                )
+            )
+            if setup_roto:
+                return DecisionPhase.PLAY_ITEMS.value, "roto_opening_setup_or_survival", setup_roto
 
         petrel_factory = matching(
             lambda candidate: (
@@ -2223,10 +2356,40 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 productive_evolution,
             )
 
+        if self._uses_expert_rounds_1_3 and self._scorer._deceit_is_survival_line(state):
+            deceit = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.ATTACK
+                    and self._scorer._attack_id(candidate) == DECEIT
+                )
+            )
+            if deceit:
+                return DecisionPhase.ATTACK.value, "deceit_searches_ariana_survival_line", deceit
+
         attacks = matching(lambda candidate: candidate.option_type is OptionType.ATTACK)
         if attacks:
             return DecisionPhase.ATTACK.value, "post_draw_best_damage", attacks
         return super()._main_phase_selections(state, safe, candidates)
+
+    def _attack_wins_game(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether an attack explicitly or arithmetically takes the last Prizes."""
+        if self._scorer._truthy(candidate.option, "win", "wins", "gameOver"):
+            return True
+        player = self._scorer._own_player(state)
+        return bool(
+            player
+            and len(player.prize) > 0
+            and self._variant_attack_is_lethal(state, candidate)
+            and self._scorer._active_target_prize_value(state) >= len(player.prize)
+        )
+
+    def _roto_setup_mode(self, state: GameState) -> bool:
+        """Return whether Roto may search opening setup or a no-Supporter survival line."""
+        return bool(
+            self._scorer._own_turn_number(state) == 1
+            and not self._scorer._card_in_hand(state, PROTON)
+            and not self._scorer._card_in_hand(state, ARIANA)
+        )
 
     def _variant_attack_is_lethal(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a public attack candidate takes the current Active KO."""
@@ -2505,7 +2668,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         ]
         safe = committed or safe
         if context not in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
-            diversified = self._filter_duplicate_proton_roles(safe, candidates, context)
+            diversified = self._filter_duplicate_proton_roles(state, safe, candidates, context)
             return diversified or safe
         required = self._scorer._supporters_needed_for_ko(state)
         capped = [
@@ -2520,7 +2683,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             )
             <= required
         ]
-        proton_safe = self._filter_duplicate_proton_roles(capped or safe, candidates, context)
+        proton_safe = self._filter_duplicate_proton_roles(
+            state, capped or safe, candidates, context
+        )
         return proton_safe or capped or safe
 
     def _roto_recovery_selections(
@@ -2546,6 +2711,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._roto_turn != state.turn
         ):
             return None
+        if self._uses_expert_rounds_1_3 and self._roto_setup_mode(state):
+            by_card_id: dict[int, list[int]] = {}
+            for candidate in revealed:
+                card_id = self._scorer._feature_int(candidate, "card_id")
+                by_card_id.setdefault(card_id, []).append(candidate.option_index)
+            wanted: set[int] = set()
+            if by_card_id.get(PROTON):
+                wanted.add(by_card_id[PROTON][0])
+            wanted.update(by_card_id.get(ARIANA, ()))
+            if not wanted and self._scorer._supporters_in_hand(state) == 0:
+                if by_card_id.get(PETREL):
+                    wanted.add(by_card_id[PETREL][0])
+            exact = [
+                selection
+                for selection in selections
+                if {index for index in selection.indices if index in wanted} == wanted
+                and all(index in wanted for index in selection.indices)
+            ]
+            return len(wanted), exact or list(selections)
         wanted = {candidate.option_index for candidate in revealed}
         exact = [
             selection
@@ -2660,14 +2844,39 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _filter_duplicate_proton_roles(
         self,
+        state: GameState,
         selections: Sequence[Selection],
         candidates: Sequence[Candidate],
         context: SelectContext | None,
     ) -> list[Selection]:
-        """Keep diversified Basic targets when Proton asks for several cards."""
+        """Apply the active variant's multi-target Proton objective."""
         if context is not SelectContext.TO_HAND:
             return list(selections)
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if self._uses_expert_rounds_1_3:
+            ranked: list[tuple[tuple[int, int, int, int], Selection]] = []
+            for selection in selections:
+                proton_cards = [
+                    self._scorer._feature_int(candidate, "card_id")
+                    for index in selection.indices
+                    if (candidate := by_index.get(index)) is not None
+                    and candidate.option.get("sourceCardId") == PROTON
+                ]
+                ranked.append(
+                    (
+                        (
+                            proton_cards.count(MURKROW),
+                            len(proton_cards),
+                            proton_cards.count(PORYGON),
+                            proton_cards.count(ARTICUNO)
+                            if self._scorer._articuno_is_needed(state)
+                            else 0,
+                        ),
+                        selection,
+                    )
+                )
+            best = max((rank for rank, _ in ranked), default=None)
+            return [selection for rank, selection in ranked if rank == best]
         filtered: list[Selection] = []
         for selection in selections:
             proton_cards = [
@@ -2775,7 +2984,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._scorer._metadata_int(candidate.option, "damage"),
                 self._scorer._metadata_int(candidate.option, "expectedDamage"),
             )
-            if not self._scorer._deceit_is_decisive(state, candidate, damage):
+            if not self._scorer._deceit_is_decisive(state, candidate, damage) and not (
+                self._uses_expert_rounds_1_3 and self._scorer._deceit_is_survival_line(state)
+            ):
                 return True
         if (
             candidate.option_type is OptionType.ATTACK
@@ -2789,7 +3000,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 return not self._rocket_feathers_has_horizon(state, candidate)
             return self._scorer._supporters_in_hand(state) == 0
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
-            return not self._scorer._roto_stick_is_needed(state)
+            return not (
+                self._scorer._roto_stick_is_needed(state)
+                or (self._uses_expert_rounds_1_3 and self._roto_setup_mode(state))
+            )
         if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
             return self._ignition_attack_plan(state, candidate) is None
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:

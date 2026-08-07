@@ -165,6 +165,7 @@ POLICY_VARIANTS = (
     "ko_priority_v3_retreat_guard",
     "supporter_lethal_v1",
     "supporter_resource_v2",
+    "expert_rounds_1_3_v1",
 )
 
 

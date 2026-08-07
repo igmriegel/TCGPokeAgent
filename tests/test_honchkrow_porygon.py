@@ -342,6 +342,166 @@ def test_late_transceiver_with_developed_board_does_not_fetch_proton() -> None:
     assert agent.turn_ledger.transceiver_target == ARIANA
 
 
+def test_expert_variant_takes_arithmetic_terminal_ko_before_setup() -> None:
+    """A last-Prize KO is immediate even without an SDK win annotation."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{"id": ROCKET_ENERGY}]),
+                hand=[{"id": ARIANA}],
+                prize=[None],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 60, 60)),
+        ]
+    )
+    candidates = [
+        _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS),
+        _candidate(1, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4}),
+    ]
+    selections = [
+        Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)
+    ]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert reason == "pre_draw_game_win"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_expert_proton_maximizes_murkrow_instead_of_diversifying_roles() -> None:
+    """Three Murkrow outrank a diversified Proton selection in the opening."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    state = GameState(turn=1, players=[PlayerState(), PlayerState()])
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": PROTON},
+            OptionType.CARD,
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((MURKROW, MURKROW, MURKROW, PORYGON))
+    ]
+    selections = [
+        Selection((0, 1, 2), (OptionType.CARD,) * 3),
+        Selection((0, 1, 3), (OptionType.CARD,) * 3),
+    ]
+
+    choices = agent._filter_duplicate_proton_roles(
+        state, selections, candidates, SelectContext.TO_HAND
+    )
+
+    assert [selection.indices for selection in choices] == [(0, 1, 2)]
+
+
+def test_expert_roto_setup_takes_one_proton_and_ariana_only() -> None:
+    """Opening Roto bounds setup targets instead of maximizing all Supporters."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    state = GameState(
+        turn=1,
+        your_index=0,
+        first_player=0,
+        players=[PlayerState(hand=[{"id": ARCHER}], deck_count=30), PlayerState()],
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((PROTON, PROTON, ARIANA, ARCHER))
+    ]
+    selections = [
+        Selection((0, 2), (OptionType.CARD,) * 2),
+        Selection((0, 1, 2), (OptionType.CARD,) * 3),
+        Selection((0, 2, 3), (OptionType.CARD,) * 3),
+    ]
+
+    result = agent._roto_recovery_selections(state, selections, candidates)
+
+    assert result is not None
+    count, choices = result
+    assert count == 2
+    assert [selection.indices for selection in choices] == [(0, 2)]
+
+
+def test_expert_replan_checkpoints_exclude_proton_and_poke_pad() -> None:
+    """Only the actions ratified as information-changing clear the objective."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    state = GameState(turn=3, players=[PlayerState(), PlayerState()])
+    ariana = _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    proton = _candidate(1, OptionType.PLAY, card_id=PROTON, card={"cardType": 3})
+    poke_pad = _candidate(2, OptionType.PLAY, card_id=POKE_PAD, card={"cardType": 2})
+    evolution = _candidate(3, OptionType.EVOLVE, card_id=HONCHKROW, card={"cardType": 0})
+    energy = _candidate(4, OptionType.ATTACH, card_id=ROCKET_ENERGY, card={"cardType": 5})
+    candidates = {item.option_index: item for item in (ariana, proton, poke_pad, evolution, energy)}
+
+    assert agent._replan_reason(
+        state, Selection((0,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+    )
+    assert not agent._replan_reason(
+        state, Selection((1,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+    )
+    assert not agent._replan_reason(
+        state, Selection((2,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+    )
+    assert (
+        agent._replan_reason(
+            state, Selection((3,), (OptionType.EVOLVE,)), candidates, SelectContext.MAIN
+        )
+        == "evolution"
+    )
+    assert (
+        agent._replan_reason(
+            state, Selection((4,), (OptionType.ATTACH,)), candidates, SelectContext.MAIN
+        )
+        == "energy_attachment"
+    )
+    assert (
+        agent._replan_reason(state, Selection((), ()), candidates, SelectContext.TO_PRIZE)
+        == "prize_selection"
+    )
+
+
+def test_expert_deceit_is_only_a_low_hand_no_supporter_survival_line() -> None:
+    """Deceit may find Ariana only when the hand cannot otherwise progress."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    candidate = _candidate(0, OptionType.ATTACK, attack_id=DECEIT)
+    low_hand = GameState(
+        players=[
+            PlayerState(hand=[], hand_count=0),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    supporter_hand = GameState(
+        players=[
+            PlayerState(hand=[{"id": ARIANA}], hand_count=1),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+
+    assert not agent._candidate_is_forbidden(low_hand, candidate, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(supporter_hand, candidate, SelectContext.MAIN)
+
+
+def test_opening_active_order_is_murkrow_then_porygon_then_articuno() -> None:
+    """Opening Active scoring follows the expert's sacrifice and setup order."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(players=[PlayerState(), PlayerState()])
+    scores = []
+    for card_id in (MURKROW, PORYGON, ARTICUNO):
+        candidate = _candidate(0, OptionType.CARD, card_id=card_id)
+        score, _ = scorer._card_selection_score(
+            state, candidate, SelectContext.SETUP_ACTIVE_POKEMON
+        )
+        scores.append(score)
+
+    assert scores[0] > scores[1] > scores[2]
+
+
 def test_petrel_factory_dominates_one_card_ariana_draw() -> None:
     """Petrel creates the two-card Factory line when Ariana adds only one card."""
     agent = HonchkrowPorygonAgent(_profile())
