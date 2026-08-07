@@ -53,13 +53,14 @@
 | `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
-| `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with prize, deck, board, Supporter, action, and terminal telemetry |
+| `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --policy-variant supporter_resource_v2 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with explicit policy selection and prize, deck, board, Supporter, action, and terminal telemetry |
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |
 | `uv run --frozen python scripts/analyze_replays.py REPLAY_DIR --output REPORT.json` | Rebuild per-replay damage, KO, resource, and loss diagnostics recursively |
 
-`HONCHKROW_POLICY_VARIANT=baseline` is the promoted committed-switch policy
-and is also the default. Use `legacy_baseline` only for rollback or regression
-measurement. `ko_priority_v3_retreat_guard` remains an accepted alias so prior
+`HONCHKROW_POLICY_VARIANT=supporter_resource_v2` is the promoted Supporter-resource
+policy and is also the default. Use `baseline` for the prior committed-switch
+policy, or `legacy_baseline` only for rollback/regression measurement.
+`ko_priority_v3_retreat_guard` remains an accepted alias so prior
 evaluation commands remain reproducible.
 
 ## Internal helpers

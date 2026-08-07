@@ -156,16 +156,27 @@ def _inferred_reason(current: Mapping[str, Any], loser_side: int) -> str:
     return "unknown"
 
 
-def _build_agent() -> tuple[HonchkrowPorygonAgent, DeckDefinition]:
+POLICY_VARIANTS = (
+    "baseline",
+    "legacy_baseline",
+    "ko_priority_v1",
+    "ko_priority_v2_strict",
+    "ko_priority_v3_retreat_guard",
+    "supporter_lethal_v1",
+    "supporter_resource_v2",
+)
+
+
+def _build_agent(policy_variant: str | None = None) -> tuple[HonchkrowPorygonAgent, DeckDefinition]:
     """Load the dedicated profile and deck."""
     profile = DeckProfile.from_dict(json.loads(PROFILE_PATH.read_text(encoding="utf-8")))
     deck = DeckDefinition.from_path(DECK_PATH, "honchkrow_porygon")
-    return HonchkrowPorygonAgent(profile), deck
+    return HonchkrowPorygonAgent(profile, policy_variant), deck
 
 
-def _run_match(seed: int, side: int) -> dict[str, Any]:
+def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[str, Any]:
     """Run one match and retain result, terminal, and policy telemetry."""
-    agent, deck = _build_agent()
+    agent, deck = _build_agent(policy_variant)
     events: list[dict[str, Any]] = []
     decisions = 0
     decision_ms: list[float] = []
@@ -277,6 +288,26 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "duration_ms": round(elapsed_ms, 3),
             "resource_guard": ledger.resource_guard,
             "deck_risk": ledger.deck_risk,
+            "roto_sticks_played": ledger.roto_sticks_played,
+            "roto_supporters_revealed": ledger.roto_supporters_revealed,
+            "roto_supporters_selected": ledger.roto_supporters_selected,
+            "roto_damage_acquired": ledger.roto_damage_acquired,
+            "roto_preserved_reason": ledger.roto_preserved_reason,
+            "transceiver_proton_in_hand": ledger.transceiver_proton_in_hand,
+            "transceiver_target": ledger.transceiver_target,
+            "transceiver_lethal_exception": ledger.transceiver_lethal_exception,
+            "supporter_played": ledger.supporter_played,
+            "second_supporter_attempts": ledger.second_supporter_attempts,
+            "rocket_planned_damage": ledger.rocket_planned_damage,
+            "rocket_supporters_needed": ledger.rocket_supporters_needed,
+            "rocket_supporters_available": ledger.rocket_supporters_available,
+            "rocket_supporters_discarded": ledger.rocket_supporters_discarded,
+            "rocket_supporters_preserved": ledger.rocket_supporters_preserved,
+            "lethal_lines_executed": ledger.lethal_lines_executed,
+            "lethal_lines_missed": ledger.lethal_lines_missed,
+            "lethal_lines_converted": ledger.lethal_lines_converted,
+            "miracle_headsets_played": ledger.miracle_headsets_played,
+            "miracle_supporters_recovered": ledger.miracle_supporters_recovered,
             "partial_mega_abomasnow_attack": partial,
             "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
             "decision_phase": getattr(policy_decision, "decision_phase", ""),
@@ -359,6 +390,14 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "retreats": sum(12 in event["selected_types"] for event in events),
             "attacks": sum(bool(event["selected_attack_ids"]) for event in events),
             "fallbacks": sum(event["fallback_used"] for event in events),
+            "roto_sticks_played": sum(event["roto_sticks_played"] for event in events),
+            "roto_supporters_revealed": sum(event["roto_supporters_revealed"] for event in events),
+            "roto_supporters_selected": sum(event["roto_supporters_selected"] for event in events),
+            "second_supporter_attempts": sum(
+                event["second_supporter_attempts"] for event in events
+            ),
+            "rocket_lethal_lines": sum(event["lethal_lines_executed"] for event in events),
+            "miracle_headsets_played": sum(event["miracle_headsets_played"] for event in events),
             "resource_guards": dict(
                 Counter(event["resource_guard"] for event in events if event["resource_guard"])
             ),
@@ -375,10 +414,16 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
     }
 
 
-def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
+def run(
+    matches_per_side: int,
+    seed_base: int,
+    policy_variant: str | None = None,
+) -> dict[str, Any]:
     """Run both sides and aggregate all requested outcome and telemetry metrics."""
     matches = [
-        _run_match(seed_base + index, side) for index in range(matches_per_side) for side in (0, 1)
+        _run_match(seed_base + index, side, policy_variant)
+        for index in range(matches_per_side)
+        for side in (0, 1)
     ]
     outcomes = Counter(match["result"] for match in matches)
     reasons = Counter(match["termination_reason"] for match in matches)
@@ -459,7 +504,12 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
     }
 
 
-def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str, Any]:
+def run_stream(
+    matches_per_side: int,
+    seed_base: int,
+    output: Path,
+    policy_variant: str | None = None,
+) -> dict[str, Any]:
     """Run matches while persisting each complete trace before continuing."""
     trace_path = output.with_suffix(output.suffix + ".jsonl")
     progress_path = output.with_suffix(output.suffix + ".progress.json")
@@ -475,7 +525,7 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
     with trace_path.open("w", encoding="utf-8") as trace:
         for index in range(matches_per_side):
             for side in (0, 1):
-                match = _run_match(seed_base + index, side)
+                match = _run_match(seed_base + index, side, policy_variant)
                 trace.write(json.dumps(match, sort_keys=True) + "\n")
                 trace.flush()
                 outcomes[match["result"]] += 1
@@ -535,7 +585,7 @@ def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str,
         "agent": "honchkrow_porygon",
         "policy_variant": next(
             (match["policy_variant"] for match in summaries),
-            "baseline",
+            "supporter_resource_v2",
         ),
         "opponent": "cabt.random_agent",
         "matches_per_side": matches_per_side,
@@ -581,9 +631,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--matches-per-side", type=int, default=100)
     parser.add_argument("--seed-base", type=int, default=20260807)
+    parser.add_argument(
+        "--policy-variant",
+        choices=POLICY_VARIANTS,
+        default="supporter_resource_v2",
+        help="Honchkrow/Porygon policy variant to evaluate.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = run_stream(args.matches_per_side, args.seed_base, args.output)
+    report = run_stream(
+        args.matches_per_side,
+        args.seed_base,
+        args.output,
+        args.policy_variant,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(

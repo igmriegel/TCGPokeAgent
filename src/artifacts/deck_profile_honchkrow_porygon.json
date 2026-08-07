@@ -27,6 +27,7 @@
     "pokemon_counts": {"463": 4, "891": 3, "473": 2, "474": 1, "414": 2},
     "dragapult_line": [119, 120, 121],
     "supporter_count": 20,
+    "supporter_counts": {"1216": 4, "1217": 4, "1218": 4, "1219": 4, "1220": 4},
     "proton_priority": [463, 473, 474, 414],
     "temporary_energy": [17],
     "permanent_energy": [15],

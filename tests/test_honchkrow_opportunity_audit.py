@@ -103,7 +103,7 @@ def test_promoted_baseline_and_legacy_policy_are_named() -> None:
     )
     baseline = HonchkrowPorygonAgent(profile)
     legacy = HonchkrowPorygonAgent(profile, "legacy_baseline")
-    assert baseline.policy_variant == "baseline"
+    assert baseline.policy_variant == "supporter_resource_v2"
     assert baseline._uses_retreat_guard
     assert legacy.policy_variant == "legacy_baseline"
     assert not legacy._uses_retreat_guard

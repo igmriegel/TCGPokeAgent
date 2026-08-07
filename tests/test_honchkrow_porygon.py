@@ -32,6 +32,7 @@ from src.agents.honchkrow_porygon import (
     ROTO_STICK,
     TORMENT,
     ULTRA_BALL,
+    AttackSequence,
     HonchkrowPorygonAgent,
     HonchkrowPorygonScorer,
 )
@@ -171,6 +172,78 @@ def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow()
 
     state.players[0].hand.pop()
     assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+
+def test_supporter_lethal_variant_discards_exact_required_count_including_last_supporter() -> None:
+    """A lethal Rocket Feathers line commits exactly the needed Supporters."""
+    agent = HonchkrowPorygonAgent(_profile(), "supporter_lethal_v1")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}, {"id": ARCHER}],
+            ),
+            PlayerState(active=PokemonState(999, 60, 60)),
+        ]
+    )
+    agent._attack_sequence = AttackSequence(
+        ROCKET_FEATHERS, 999, 60, HONCHKROW, 2, 2, 120, 60, 60, 20
+    )
+    candidates = [
+        _candidate(index, OptionType.CARD, card_id=card_id, card={"cardType": 3})
+        for index, card_id in enumerate((ARIANA, ARCHER))
+    ]
+    selections = [
+        Selection((0,), (OptionType.CARD,)),
+        Selection((0, 1), (OptionType.CARD, OptionType.CARD)),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state, selections, candidates, SelectContext.DISCARD
+    )
+    assert [selection.indices for selection in filtered] == [(0,)]
+
+
+def test_resource_variant_selects_all_roto_supporters_and_blocks_duplicate_proton() -> None:
+    """Roto takes every revealed Supporter and Transceiver diversifies Proton targets."""
+    agent = HonchkrowPorygonAgent(_profile(), "supporter_resource_v2")
+    state = GameState(players=[PlayerState(hand=[{"id": PROTON}], deck_count=20), PlayerState()])
+    roto_candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((ARIANA, ARCHER, GIOVANNI, PROTON))
+    ]
+    roto_selections = [
+        Selection((0, 1), (OptionType.CARD, OptionType.CARD)),
+        Selection((0, 1, 2, 3), (OptionType.CARD,) * 4),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state, roto_selections, roto_candidates, SelectContext.TO_HAND
+    )
+    assert [selection.indices for selection in filtered] == [(0, 1, 2, 3)]
+
+    transceiver_candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": 1134},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((PROTON, ARIANA))
+    ]
+    transceiver_selections = [
+        Selection((0,), (OptionType.CARD,)),
+        Selection((1,), (OptionType.CARD,)),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state, transceiver_selections, transceiver_candidates, SelectContext.TO_HAND
+    )
+    assert [selection.indices for selection in filtered] == [(1,)]
 
 
 def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:

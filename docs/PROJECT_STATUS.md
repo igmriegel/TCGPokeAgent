@@ -9,18 +9,16 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** heuristic-only; HDI v1 and learned rankers are unpromoted candidates
+**Current release:** Honchkrow/Porygon `supporter_resource_v2` production probe; HDI v1 and learned rankers remain unpromoted candidates
 
 ## Executive summary
 
-The agent is operational and the dedicated Honchkrow/Porygon baseline now uses
-the committed-switch policy previously named `ko_priority_v3_retreat_guard`.
-Across two independent 200-match blocks it finished 313W/87L, compared with
-308W/92L for `legacy_baseline`, reduced deck-out losses from 64 to 56, and
-converted all 44 selected retreats into a same-turn attack. The user accepted
-this policy as the new development baseline despite the statistically
-inconclusive +1.25 percentage-point win-rate signal. The previously submitted
-package remains remote evidence and has not yet been replaced by this baseline.
+The agent is operational and the dedicated Honchkrow/Porygon policy
+`supporter_resource_v2` is now the default and production probe. In the initial
+independent 200-match comparison it finished 168W/32L versus 160W/40L for the
+prior baseline, with 22 versus 28 deck-out losses. The difference remains
+statistically inconclusive; the candidate was submitted to Kaggle to observe
+production behavior. Receipt: `reports/submissions/20260807T090834Z-df9cd5928160.json`.
 
 The independent HDI v1 candidate was accepted as submission `55119505` and
 scored 490.4, compared with 539.2 for reference submission `55088176`. This is
@@ -31,8 +29,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 264 tests pass; Ruff, mypy, pre-commit, and documentation drift audit pass | Green for the implemented scope |
-| Dedicated local evaluation | Two independent 200-match blocks per policy: baseline 313W/87L (78.25%) versus legacy 308W/92L (77.00%); zero execution failures | Committed-switch policy promoted as development baseline by user decision |
+| Quality | 266 tests pass; Ruff and package validation pass | Green for the implemented scope |
+| Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
 | Mega Abomasnow fix smoke | 40 bilateral games vs CABT `random_agent`: 34W/0D/6L, zero execution failures | Operationally green; not sufficient for promotion |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
