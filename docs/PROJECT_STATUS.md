@@ -11,6 +11,11 @@ manifests rather than copied into this self-changing status page
 
 **Current release:** Honchkrow/Porygon turn-planning candidate submitted for observation; promotion remains blocked by the local deck-out gate
 
+The 2026-08-07 audit of submissions `55320796` and `55322957` identified and
+patched a fail-open forbidden-action path, missing global deck-out reserve,
+typed-energy readiness gaps, and a missed terminal Porygon2 promotion line.
+The fixes are locally tested; production revalidation remains required.
+
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon policy
@@ -83,15 +88,18 @@ promotion matrix have not run, so the release policy remains heuristic.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
     development gate; the baseline promotion records a user decision and
     tactical invariants, not a statistically significant win-rate claim.
-11. Track remote submission `55304212` as the current Honchkrow/Porygon
+11. Keep the new fail-safe filtering, global draw reserve, typed-energy solver,
+    and terminal Porygon2 promotion rule behind the bilateral CABT revalidation
+    gate; local focused tests alone do not promote the production policy.
+12. Track remote submission `55304212` as the current Honchkrow/Porygon
     observation baseline; do not infer strategic improvement until its score
     and replays are available.
-12. Against Mega Abomasnow ex, spend attack or retreat resources only on a
+13. Against Mega Abomasnow ex, spend attack or retreat resources only on a
     visible KO line; partial damage is not sufficient progress.
-13. Do not use McNemar or nominal `(seed, agent_side)` episode conversion for
+14. Do not use McNemar or nominal `(seed, agent_side)` episode conversion for
     CABT 1.32.2 reports: the environment does not forward the configured seed
     into `battle_start`, so these samples are independent.
-14. Keep T-030 open: the turn-planning candidate removed the target tactical
+15. Keep T-030 open: the turn-planning candidate removed the target tactical
     violations but failed the mandatory deck-out and statistical promotion
     gates in its first 300-match-per-policy comparison.
 

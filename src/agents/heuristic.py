@@ -1490,7 +1490,21 @@ class HeuristicAgent(AgentPolicy):
                 for index in selection.indices
             )
         ]
-        return safe if safe else list(selections)
+        if safe:
+            return safe
+        # A productive-line guard may forbid END while every productive action
+        # is also unsafe.  In that deadlock, ending the turn is the least-harmful
+        # legal choice; only mandatory prompts fall back to the original set.
+        end_selections = [
+            selection
+            for selection in selections
+            if any(
+                by_index.get(index) is not None
+                and by_index[index].option_type is OptionType.END
+                for index in selection.indices
+            )
+        ]
+        return end_selections or list(selections)
 
     def _candidate_is_forbidden(
         self,

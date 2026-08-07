@@ -17,6 +17,7 @@ from src.agents.honchkrow_porygon import (
     HAMMER_IN,
     HONCHKROW,
     IGNITION_ENERGY,
+    MEGA_ABOMASNOW_DECK_RESERVE,
     MEGA_ABOMASNOW_EX,
     MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS,
     MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS,
@@ -1175,9 +1176,29 @@ def test_factory_is_only_useful_after_supporter_and_with_two_cards_left_to_draw(
     state = GameState(players=[PlayerState(deck_count=2), PlayerState()])
     assert not scorer._factory_is_useful(state)
     state.supporter_played = True
+    state.players[0].deck_count = 3
     assert scorer._factory_is_useful(state)
     state.players[0].deck_count = 1
     assert not scorer._factory_is_useful(state)
+
+
+def test_elective_draw_reserves_natural_draw_outside_mega_matchup() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(players=[PlayerState(deck_count=1), PlayerState()])
+    assert scorer._elective_draw_reserve(state) == 1
+    state.players[1].active = PokemonState(MEGA_ABOMASNOW_EX, 350, 350)
+    assert scorer._elective_draw_reserve(state) == MEGA_ABOMASNOW_DECK_RESERVE
+
+
+def test_energy_units_count_rocket_and_ignition_as_multi_unit_cards() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    pokemon = PokemonState(
+        PORYGON2,
+        90,
+        90,
+        energy_card_ids=[str(ROCKET_ENERGY), str(IGNITION_ENERGY)],
+    )
+    assert scorer._energy_units_for_pokemon(pokemon) == 5
 
 
 def test_r_command_uses_all_discarded_rocket_supporters_without_darkness_weakness() -> None:

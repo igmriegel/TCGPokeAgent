@@ -395,7 +395,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _attachment_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         card_type = self._metadata_int(candidate.card, "cardType")
         target_id = self._feature_int(candidate, "target_card_id")
-        energy_count = self._feature_int(candidate, "target_energy_count")
+        energy_count = self._target_energy_units(state, candidate)
         if card_type not in {5, 6}:
             return super()._attachment_score(state, candidate)
         target = 0
@@ -558,6 +558,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 if self._r_command_is_best_damage_line(state):
                     return 1800.0, ["promote_porygon2_best_r_command"]
                 return 1250.0, ["promote_ready_porygon2"]
+            if card_id == PORYGON2 and self._porygon2_terminal_promotion_available(
+                state, candidate
+            ):
+                return 5100.0, [
+                    "promote_porygon2_terminal_ignition_line",
+                    "ignition_reaches_r_command_attack_cost",
+                ]
             if card_id == MURKROW:
                 return 100.0, ["promote_murkrow_only_without_evolved_attacker"]
             if card_id == ARTICUNO and not self._articuno_is_needed(state):
@@ -767,9 +774,9 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
 
     def _elective_draw_reserve(self, state: GameState) -> int:
-        """Keep natural-draw turns available while building a Mega Abomasnow KO."""
+        """Keep a natural draw available after elective draw effects."""
         if self._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
-            return 0
+            return 1
         if self._active_has_committed_mega_abomasnow_ko(state):
             return 0
         return MEGA_ABOMASNOW_DECK_RESERVE
@@ -905,8 +912,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _ignition_attachment_is_productive(self, state: GameState, candidate: Candidate) -> bool:
         target_id = self._feature_int(candidate, "target_card_id")
-        target_energy = self._feature_int(candidate, "target_energy_count")
-        completes = target_energy + 1 >= self._attack_energy_target(target_id)
+        target_energy = self._target_energy_units(state, candidate)
+        completes = target_energy + 3 >= self._attack_energy_target(target_id)
         explicit_damage = max(
             self._metadata_int(candidate.attack, "damage"),
             self._metadata_int(candidate.option, "damage"),
@@ -1008,7 +1015,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return any(
             pokemon is not None
             and pokemon.card_id == HONCHKROW
-            and len(pokemon.energies) >= self._attack_energy_target(HONCHKROW)
+            and self._energy_units_for_pokemon(pokemon)
+            >= self._attack_energy_target(HONCHKROW)
             for pokemon in [player.active, *player.bench]
         )
 
@@ -1070,9 +1078,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
 
     def _pokemon_is_ready(self, state: GameState, candidate: Candidate) -> bool:
-        energy_count = int(
-            candidate.features.get("target_energy_count", candidate.features.get("energy_count", 0))
-        )
+        energy_count = self._target_energy_units(state, candidate)
         if energy_count:
             return energy_count >= self._attack_energy_target(
                 self._feature_int(candidate, "card_id")
@@ -1083,7 +1089,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and any(
                 pokemon is not None
                 and pokemon.card_id == self._feature_int(candidate, "card_id")
-                and len(pokemon.energies) >= self._attack_energy_target(int(pokemon.card_id))
+                and self._energy_units_for_pokemon(pokemon)
+                >= self._attack_energy_target(int(pokemon.card_id))
                 for pokemon in player.bench
             )
         ) or bool(candidate.option.get("ready", candidate.option.get("energized", False)))
@@ -1098,7 +1105,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             any(
                 pokemon is not None
                 and pokemon.card_id == HONCHKROW
-                and len(pokemon.energies) >= self._attack_energy_target(HONCHKROW)
+                and self._energy_units_for_pokemon(pokemon) >= self._attack_energy_target(HONCHKROW)
                 for pokemon in player.bench
             )
             and self._effective_opponent_hp(state) <= 100
@@ -1170,6 +1177,21 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         prize_value = self._active_target_prize_value(state)
         return prizes_needed > 0 and prize_value >= prizes_needed
 
+    def _porygon2_terminal_promotion_available(
+        self, state: GameState, candidate: Candidate
+    ) -> bool:
+        """Return whether promotion plus an Ignition attachment wins next turn."""
+        if self._feature_int(candidate, "card_id") != PORYGON2:
+            return False
+        if self._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
+            if self._rocket_supporters_in_discard(state) < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS:
+                return False
+        if not self._r_command_wins_game(state):
+            return False
+        if self._pokemon_is_ready(state, candidate):
+            return False
+        return bool(self._card_in_hand(state, IGNITION_ENERGY) and not state.energy_attached)
+
     def _active_target_prize_value(self, state: GameState) -> int:
         """Return the effective public Prize value of the opposing Active."""
         active = self._opponent_player(state)
@@ -1192,7 +1214,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _pokemon_has_committed_mega_abomasnow_ko(self, state: GameState, pokemon: Any) -> bool:
         """Evaluate a visible attacker's exact 350-HP knockout resources."""
         card_id = int(pokemon.card_id) if isinstance(pokemon.card_id, int) else 0
-        energy_count = len(pokemon.energies)
+        energy_count = self._energy_units_for_pokemon(pokemon)
         if card_id == HONCHKROW:
             feathers_ready = (
                 energy_count >= self._attack_energy_target(HONCHKROW)
@@ -1301,10 +1323,41 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             any(
                 pokemon is not None
                 and pokemon.card_id in {HONCHKROW, PORYGON2}
-                and len(pokemon.energies) + 1 >= self._attack_energy_target(int(pokemon.card_id))
+                and self._energy_units_for_pokemon(pokemon) + 1
+                >= self._attack_energy_target(int(pokemon.card_id))
                 for pokemon in player.bench
             )
             and supporters > 0
+        )
+
+    @staticmethod
+    def _energy_units_for_pokemon(pokemon: Any) -> int:
+        """Return attack-energy units, including the multi-unit Rocket cards."""
+        units = 0
+        entries = getattr(pokemon, "energies", ()) or ()
+        ids = getattr(pokemon, "energy_card_ids", ()) or ()
+        values = list(entries) if entries else list(ids)
+        for energy in values:
+            if isinstance(energy, Mapping):
+                card_id = int(energy.get("id", energy.get("cardId", 0)) or 0)
+            else:
+                try:
+                    card_id = int(energy)
+                except (TypeError, ValueError):
+                    card_id = 0
+            units += 2 if card_id == ROCKET_ENERGY else 3 if card_id == IGNITION_ENERGY else 1
+        return units
+
+    def _target_energy_units(self, state: GameState, candidate: Candidate) -> int:
+        """Resolve a target's typed energy total before trusting candidate metadata."""
+        target_id = self._feature_int(candidate, "target_card_id")
+        player = self._own_player(state)
+        if player is not None:
+            for pokemon in [player.active, *player.bench]:
+                if pokemon is not None and int(pokemon.card_id or 0) == target_id:
+                    return self._energy_units_for_pokemon(pokemon)
+        return self._feature_int(candidate, "target_energy_count") or self._feature_int(
+            candidate, "energy_count"
         )
 
     @staticmethod
@@ -2753,10 +2806,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return not self._scorer._proton_setup_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == ARIANA:
             return bool(
-                self._scorer._proton_setup_is_useful(state)
-                and self._scorer._card_in_hand(state, PROTON)
+                not self._scorer._ariana_is_safe_and_useful(state)
+                or (
+                    self._scorer._proton_setup_is_useful(state)
+                    and self._scorer._card_in_hand(state, PROTON)
+                )
                 or self._scorer._petrel_factory_is_superior(state)
             )
+        factory_ability = self._is_factory_effect_candidate(candidate, state)
+        if candidate.option_type is OptionType.ABILITY and factory_ability:
+            return not self._scorer._factory_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == FACTORY:
             return not (
                 self._scorer._factory_is_useful(state)

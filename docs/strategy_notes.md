@@ -721,3 +721,25 @@ message: "Honchkrow turn planning and tactical ledger"
 status: "accepted by Kaggle; public score and replay review pending"
 promotion: "blocked until T-030 deck-out and non-inferiority gates pass"
 ```
+
+## 2026-08-07 production replay corrective audit
+
+The synchronized replays for submissions `55320796` and `55322957` were
+replayed against their exact archives. The decisive implementation defect was
+fail-open filtering: when every candidate was marked forbidden, the ranker was
+given the forbidden list again. The generic filter now chooses an available
+`END` selection in that deadlock and only preserves the original list for
+mandatory prompts with no end option.
+
+The deck-out guard is now global. Elective Ariana and Factory effects must leave
+one card for the natural draw, or two cards while the Mega Abomasnow KO line is
+being assembled. Factory abilities are checked as well as Factory plays. The
+scorer also uses typed energy units (Rocket = 2, Ignition = 3) in readiness,
+attachment, and Mega-Abomasnow commitment checks. Finally, a Porygon2 promotion
+is scored as terminal when visible R Command damage takes the last prizes and an
+Ignition Energy in hand completes the next-turn attack.
+
+These are policy corrections, not proof of a production win-rate increase.
+The required next experiment is the bilateral CABT replay gate with explicit
+counts for forbidden actions, elective deck-out attempts, typed-energy
+attachments, and terminal Porygon2 conversions.

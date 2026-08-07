@@ -641,3 +641,26 @@ Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and
 gate. Post-hoc agent replay review and live human demonstration must remain
 different evidence types.
+
+## Production replay audit: submissions 55320796 and 55322957
+
+```yaml
+observed_at: "2026-08-07"
+submission_ids: [55320796, 55322957]
+evidence: "24 and 28 synchronized Kaggle replays; exact submitted archives re-executed with zero policy mismatches"
+finding: "The policy could return a forbidden action when every candidate was filtered, and elective draw effects had no global natural-draw reserve."
+affected_decisions: "MAIN attack/ability selection, Ariana, Factory ability, and TO_ACTIVE Porygon2 promotion"
+implemented:
+  - "Fail-safe filtering prefers END when all productive choices are unsafe; mandatory prompts retain their legal fallback."
+  - "Ariana and Factory ability are hard-gated by the deck reserve. One card is reserved generally and two cards while building the Mega Abomasnow line."
+  - "Rocket Energy counts as two units and Ignition Energy as three units for readiness and attachment projection."
+  - "Porygon2 promotion can be selected for a terminal R Command line when Ignition in hand completes the next-turn attack."
+original_loss_signals:
+  - "Hacking was selected in nine losses despite the forbidden score."
+  - "Deck-out losses included elective Factory/Ariana sequences that consumed the final natural-draw window."
+  - "Several traces showed Porygon2 promotion deferred even though the projected R Command prize race was terminal."
+exceptions: "If a prompt requires a choice and no safe candidate exists, the engine preserves the simulator's legal selection set."
+rule_links: [GR-025, T-030]
+gate: "Focused policy and replay-audit tests must pass; rerun the bilateral CABT gate and require no increase in deck-out losses or forbidden-action telemetry."
+status: "implemented; CABT revalidation pending"
+```
