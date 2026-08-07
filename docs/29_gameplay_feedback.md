@@ -111,7 +111,7 @@ attack. Trace a prevented attack explicitly.
 
 ### Gate
 
-T-005: tactical fixtures and frozen paired comparison with zero operational
+T-005: tactical fixtures and frozen controlled comparison with zero operational
 failures.
 
 ## FB-2026-003 — Prize checking and searchable availability
@@ -176,7 +176,7 @@ legal only when it is the sole discardable option.
 ### Gate
 
 T-015: focused fixtures over the real deck and no regression in the frozen
-paired comparison.
+controlled comparison.
 
 ## FB-2026-005 — Evolution before Energy placement
 
@@ -205,7 +205,7 @@ cost wins inside the ATTACH phase over later development (GR-003, GR-014).
 
 ### Gate
 
-T-016: post-evolution fixtures and no regression in the frozen paired
+T-016: post-evolution fixtures and no regression in the frozen controlled
 comparison.
 
 ## FB-2026-006 — Search before generic Bench; never tutor Petrel
@@ -237,7 +237,7 @@ selection (GR-013).
 
 ### Gate
 
-T-017: search-order fixtures and no regression in the frozen paired comparison.
+T-017: search-order fixtures and no regression in the frozen controlled comparison.
 
 ## FB-2026-007 — Kyogre shuffle-refill near deck-out
 
@@ -266,7 +266,7 @@ discarded Energy count (GR-015).
 
 ### Gate
 
-T-018: deck-out fixtures and no regression in the frozen paired comparison.
+T-018: deck-out fixtures and no regression in the frozen controlled comparison.
 
 ## FB-2026-008 — Every legal Item before any Supporter
 
@@ -294,7 +294,7 @@ Play all legal Items before any Supporter; Supporters are a last-resort search
 
 ### Gate
 
-T-020: item/supporter ordering fixtures and no regression in the frozen paired
+T-020: item/supporter ordering fixtures and no regression in the frozen controlled
 comparison.
 
 ## FB-2026-009 — Prefer the attack with guaranteed Knock Out
@@ -332,7 +332,7 @@ as guaranteed (GR-017).
 
 ### Gate
 
-T-021: guaranteed-KO fixtures and no regression in the frozen paired comparison.
+T-021: guaranteed-KO fixtures and no regression in the frozen controlled comparison.
 
 ## FB-2026-010 — Legal attacks are not blocked by attacker target
 
@@ -397,7 +397,7 @@ prefers Energy on that branch.
 
 ### Gate
 
-T-023: retreat/mobility and tech-branch fixtures, plus the frozen paired
+T-023: retreat/mobility and tech-branch fixtures, plus the frozen controlled
 comparison.
 
 ## FB-2026-012 — Articuno without evidence is sacrificial
@@ -430,7 +430,7 @@ tech branch separate, and score Articuno above Energy in discard contexts.
 ### Gate
 
 T-024: conditional-Articuno attachment and discard fixtures, plus the frozen
-paired comparison.
+controlled comparison.
 
 ## Adding feedback
 
@@ -438,7 +438,7 @@ paired comparison.
 
 **Priority:** P0
 
-**Status:** `IMPLEMENTED`, not validated
+**Status:** `VALIDATED`, promoted as the development baseline
 
 **Original feedback:** Proton, Team Rocket Supporters, Ignition Energy,
 Giovanni, Dragapult/Articuno, prohibited attacks, Roto Stick, and premature
@@ -451,13 +451,17 @@ promotion priorities, and a productive-line guard to the dedicated agent.
 **Implemented foundation:** strategic profile context, positive-count Proton
 target scoring, Dragapult detection, Supporter scaling, Hacking/Deceit filters,
 Ignition and discard protection, Poké Pad/Honchkrow setup gating, Stadium
-ordering, Roto Stick reservation, KO-first MAIN ordering, retreat protection,
-and terminal-line filtering. Focused tests pass; the full evaluation gate
-remains pending.
+ordering, Roto Stick reservation, KO-first MAIN ordering, exact-serial switch
+commitments, Giovanni-before-retreat, projected Porygon2/Ignition damage,
+exact two-Supporter Miracle Headset recovery, and terminal-line filtering.
+Across 400 matches per policy, the promoted policy had zero retreat-without-
+attack events, increased R Command KOs from 10 to 35, and completed 106/106
+Headset recoveries with exactly two Supporters.
 
 ### Gate
 
-T-025: focused deck audit fixtures, smoke, and paired comparison.
+T-025 completed: 264 tests and two independent 200-match blocks per policy.
+The CABT seed label is not a pairing key, so no McNemar claim is made.
 
 The Alakazam matchup remains a separate gameplay review. This audit does not
 add a speculative branch; a future review must define its evolution wait, attack
@@ -467,27 +471,28 @@ line, and target before promoting a rule.
 
 **Priority:** P0
 
-**Status:** `READY`
+**Status:** `IN_PROGRESS`
 
 **Evidence:** In the local bilateral evaluation against CABT `random_agent`,
 the policy completed all games without runtime errors, but instrumented losses
 frequently ended with the own `deckCount` at zero while an attacker remained
 in play. This is a strategic failure, not an execution failure.
 
-**Accepted next action:** Add terminal-cause telemetry and a dedicated deck-out
-guard covering shuffle-refill timing, resource preservation, and premature
-Supporter/Item consumption. Re-run the same 200-game baseline after the fix.
+**Accepted next action:** Terminal-cause telemetry and committed resource guards
+are active. The promoted policy reduced deck-out losses from 64/400 to 56/400,
+but did not eliminate them. Audit those 56 losses against the new gameplay
+observations before the 1,000-match confirmation.
 
 ### Gate
 
-T-026: zero unexplained deck-out regressions in focused fixtures and improved
-paired evaluation against the current submission baseline.
+T-026: reduce the remaining promoted-baseline deck-outs in focused fixtures and
+an independent 1,000-match evaluation. Nominal CABT seeds are not paired.
 
 ## FB-2026-015 — Mega Abomasnow requires committed 350-HP KO lines
 
 **Priority:** P0
 
-**Status:** `IMPLEMENTED`, not fully validated
+**Status:** `VALIDATED` locally and active in the promoted baseline
 
 **Evidence:** Remote replay `90494772` from submission `55304212` used Rocket
 Feathers against an Active Mega Abomasnow ex with four Supporters at 350 HP,
@@ -511,8 +516,9 @@ Focused fixtures and replay-observation checks pass.
 
 ### Gate
 
-T-026: repeat the frozen 200-game comparison against submission `55304212`,
-retain zero execution failures, and classify every remaining deck-out loss.
+The two independent 200-match blocks per policy retained zero execution
+failures and zero partial Mega Abomasnow attacks. Remaining deck-out
+classification continues under T-026.
 
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and

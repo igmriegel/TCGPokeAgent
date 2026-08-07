@@ -10,7 +10,9 @@ Current status and priorities are owned by the
 - Keep the stable remote candidate available for rollback.
 - Freeze deck, opponents, side allocation, acceptance expression, and artifact.
 - Preserve simulator indices and deterministic legal fallback.
-- Promote only with zero operational failures and paired evidence.
+- Promote only with zero operational failures and valid controlled evidence;
+  CABT 1.32.2 evaluations use independent samples because its nominal seed is
+  not forwarded into the battle engine.
 - Keep deck-specific knowledge in profiles, not policy branches.
 
 ## H0 — Measurement baseline and complete opponent matrix
@@ -78,8 +80,8 @@ holdout and match evaluation.
 **Outcome:** compact legal-selection ranker with deterministic preprocessing,
 model/schema hashes, and heuristic fallback.
 
-**Gate:** data-volume threshold, temporal holdout, latency, package, and paired
-non-regression gates pass.
+**Gate:** data-volume threshold, temporal holdout, latency, package, and valid
+controlled non-regression gates pass.
 
 ## H7 — Matchup-aware profiles
 

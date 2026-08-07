@@ -4,7 +4,7 @@
 > status. The automated documentation audit requires every Python module under
 > `src/` to appear here.
 
-**Last audited:** 2026-08-01
+**Last audited:** 2026-08-07
 
 ## Runtime paths
 
@@ -27,7 +27,7 @@
 | `src/agents/baseline.py` | Deterministic context fallback | `tests/test_baseline_agent.py` |
 | `src/agents/hdi.py` | HDI v1 ordinal policy, factual combat context, and deterministic tie-breaking | `tests/test_hdi_agent.py`, HDI package smoke |
 | `src/agents/heuristic.py` | Scoring, priority ladder, and conditional board-development ordering | `tests/test_heuristic_agent.py`, `tests/test_heuristic_strategy.py`, `tests/test_profile.py`, CABT golden gameplay |
-| `src/agents/honchkrow_porygon.py` | Isolated Honchkrow/Porygon deck scorer and policy | `tests/test_honchkrow_porygon.py`; dedicated package smoke |
+| `src/agents/honchkrow_porygon.py` | Honchkrow/Porygon baseline with legacy and experimental variants, exact switch commitments, and projected attack damage | `tests/test_honchkrow_porygon.py`, `tests/test_honchkrow_opportunity_audit.py`; dedicated package smoke and 400-match promotion audit |
 | `src/agents/search.py` | Bounded adapter scaffold and heuristic pass-through wrapper | `tests/test_search.py`; not integrated into decisions |
 | `src/core/candidate.py`, `src/core/parsed_decision.py`, `src/core/policy_decision.py` | Parsed and auditable policy decision vocabulary | Parser, heuristic, and ranking tests |
 | `src/core/parser.py`, `src/core/catalog.py` | Observation normalization and card metadata | `tests/test_parser.py`, CABT golden gameplay |
@@ -66,7 +66,7 @@ been captured in one frozen report.
 | `src/data/gameplay_annotations.py` | Decision-linked post-hoc review records | `tests/test_gameplay_annotations.py` |
 | `src/data/replay_deep_analysis.py` | Deep replay analysis with damage/evolution/bench tracking | Used by investigation report generation |
 | `src/data/replay_diagnostics.py` | Replay-derived damage, KO, resource, and loss diagnostics | `tests/test_replay_diagnostics.py`; CABT diagnostics report |
-| `src/data/honchkrow_audit.py` | Honchkrow/Porygon decision ledger and contextual loss classification | `tests/test_honchkrow_porygon.py`; replay-decision JSONL audits |
+| `src/data/honchkrow_audit.py` | Honchkrow/Porygon effective-sequence audit and contextual loss classification | `tests/test_honchkrow_porygon.py`, `tests/test_honchkrow_opportunity_audit.py`; replay-decision JSONL audits |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active; produces `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html` |

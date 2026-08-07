@@ -551,7 +551,7 @@ evidence:
   - "the replay observation at turns 7 and 9 now selects END instead of Rocket Feathers"
   - "the full suite passes: 239 tests"
   - "40-game bilateral operational smoke: 34W/0D/6L, zero execution failures"
-status: "implemented; paired 200-game comparison pending"
+status: "locally validated and active in the promoted development baseline"
 ```
 
 ## CABT 200-match telemetry audit
@@ -596,7 +596,7 @@ observed_kos: 1520
 partial_mega_abomasnow_attacks: 0
 retreats: 520
 retreats_without_ko_line: 665
-status: "baseline frozen; policy changes require paired comparison"
+status: "legacy baseline frozen; future CABT comparisons must use independent samples"
 ```
 
 ## CABT replay damage diagnostics
@@ -610,4 +610,50 @@ deck_out_replays: 64
 damage_not_converted_losses: 111
 no_observed_damage_losses: 4
 status: "evidence source for KO-horizon and deck-preservation policy work"
+```
+
+## Honchkrow/Porygon committed-switch baseline promotion
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+candidate_name: "ko_priority_v3_retreat_guard"
+promoted_name: "baseline"
+preserved_prior_name: "legacy_baseline"
+evaluation_design:
+  blocks_per_policy: 2
+  matches_per_block: 200
+  matches_per_policy: 400
+  agent_sides_per_block: "100 side 0; 100 side 1"
+  comparison_mode: "independent"
+  pairing_limitation: "CABT 1.32.2 does not forward the configured seed to battle_start; nominal seed and side labels do not identify paired episodes"
+legacy_results:
+  wins: 308
+  losses: 92
+  win_rate: 0.77
+  deck_out_losses: 64
+  selected_retreats: 230
+  retreats_without_same_turn_attack: 193
+promoted_results:
+  wins: 313
+  losses: 87
+  win_rate: 0.7825
+  deck_out_losses: 56
+  selected_retreats: 44
+  retreats_without_same_turn_attack: 0
+  exact_two_supporter_headset_recoveries: "106/106"
+  r_command_executions: 53
+  r_command_kos: 35
+statistics:
+  win_rate_delta_percentage_points: 1.25
+  independent_two_proportion_p_two_sided: 0.671
+decision:
+  - "Promote the committed-switch policy as the development baseline by explicit user decision."
+  - "Do not claim statistical win-rate superiority from this sample."
+  - "Preserve the prior behavior as legacy_baseline and keep the existing Kaggle package unchanged until an explicit rebuild and submission."
+  - "Continue T-026 against the remaining 56 deck-out losses and confirm the promoted baseline over 1,000 independent matches."
+evidence:
+  - "reports/honchkrow_v3_retreat_guard_audit_20260807.md"
+  - "tests/test_honchkrow_porygon.py"
+  - "tests/test_honchkrow_opportunity_audit.py"
+status: "promoted development baseline; remote submission pending"
 ```

@@ -5,7 +5,8 @@
 1. `validation.py`: preflight of SDK, deck, agent, and package.
 2. `runner.py`: execution of a match and a batch.
 3. `metrics.py`: aggregation without I/O.
-4. `comparison.py`: paired comparison and gates.
+4. `comparison.py`: controlled comparison and gates; pairing is used only when
+   the environment exposes reproducible episode identity.
 5. `reporting.py`: serialization of computed objects.
 
 ## Preflight

@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 5 |
+| In progress | 4 |
 | Ready | 17 |
 | Deferred | 7 |
-| Total open | 29 |
+| Total open | 28 |
 
 ## Active release queue
 
@@ -32,24 +32,23 @@ documents to these totals.
 | T-002 | P0 | `READY` | Complete repeated-play, evolution, full-Bench, and immediate-win fixtures | FB-2026-001, S2, S4 | Add real and synthetic golden cases |
 | T-003 | P0 | `READY` | Report skipped development, board width, conversion, and replacement readiness | FB-2026-001, S5 | Extend decision and aggregate metrics |
 | T-004 | P0 | `READY` | Run the frozen four-opponent, both-side comparison with correct metadata | FB-2026-001, H0, S6 | Freeze matrix and acceptance expression before execution |
-| T-005 | P0 | `READY` | Validate Rule Box and PrizeMap tactics | FB-2026-002 | Add tactical fixtures, then run the paired matrix |
+| T-005 | P0 | `READY` | Validate Rule Box and PrizeMap tactics | FB-2026-002 | Add tactical fixtures, then run the controlled matrix |
 | T-006 | P0 | `READY` | Validate PrizeCheck across zone transitions | FB-2026-003 | Add search/draw/discard/attach/evolve/prize golden sequence |
 | T-007 | P1 | `READY` | Rebuild the derived dataset from all 85 raw replays | Replay foundation | Version a new dataset; do not overwrite `v1` |
 | T-008 | P1 | `READY` | Revalidate parser, selection, and fallback against current real observations | S2, S3 | Add current replay-derived fixtures and run focused gates |
 | T-009 | P1 | `READY` | Revalidate belief and evaluator against corrected factual state | S7 | Add real-observation invariant cases |
 | T-011 | P1 | `IN_PROGRESS` | Close the heuristic-only package and handoff checklist | S9 | Resolve unchecked evidence and rebuild after promoted changes |
-| T-013 | P1 | `IN_PROGRESS` | Qualify XGBoost and LightGBM ranker candidates | Learned-policy gates | Capture 250 human groups, freeze holdout, and run paired matrix |
-| T-015 | P1 | `READY` | Validate development-priority placement and discard protection | FB-2026-004, H2A | Run Snover bench/discard fixtures and the paired comparison |
-| T-016 | P1 | `READY` | Validate Evolution-before-Energy and completion attach | FB-2026-005, H2A | Run post-evolution fixtures and the paired comparison |
-| T-017 | P1 | `READY` | Validate search ordering and no Petrel tutoring | FB-2026-006, H2A | Run search-order fixtures and the paired comparison |
-| T-018 | P1 | `READY` | Validate deck-out shuffle-refill attack | FB-2026-007, H2A | Run deck-out fixtures and the paired comparison |
+| T-013 | P1 | `IN_PROGRESS` | Qualify XGBoost and LightGBM ranker candidates | Learned-policy gates | Capture 250 human groups, freeze holdout, and run the controlled matrix |
+| T-015 | P1 | `READY` | Validate development-priority placement and discard protection | FB-2026-004, H2A | Run Snover bench/discard fixtures and the controlled comparison |
+| T-016 | P1 | `READY` | Validate Evolution-before-Energy and completion attach | FB-2026-005, H2A | Run post-evolution fixtures and the controlled comparison |
+| T-017 | P1 | `READY` | Validate search ordering and no Petrel tutoring | FB-2026-006, H2A | Run search-order fixtures and the controlled comparison |
+| T-018 | P1 | `READY` | Validate deck-out shuffle-refill attack | FB-2026-007, H2A | Run deck-out fixtures and the controlled comparison |
 | T-019 | P1 | `READY` | Validate deck_profile integrity against deck v2 | H2A | Run profile tests and golden gameplay gates |
-| T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the paired comparison |
-| T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the paired comparison |
+| T-020 | P1 | `READY` | Validate Item-before-Supporter play ordering | FB-2026-008, H2A | Run item/supporter ordering fixtures and the controlled comparison |
+| T-021 | P1 | `READY` | Validate guaranteed-KO attack preference | FB-2026-009, H2A | Run guaranteed-KO fixtures and the controlled comparison |
 | T-023 | P1 | `READY` | Validate public-risk retreat and visible Alakazam-line tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
 | T-024 | P1 | `READY` | Validate conditional Articuno sacrifice and discard priority | FB-2026-012, H2A | Run Articuno attachment/discard fixtures |
-| T-025 | P0 | `IN_PROGRESS` | Validate Honchkrow/Porygon Proton, Supporter, Energy, promotion, and terminal-line rules; keep Alakazam as a separate pending gameplay review | FB-2026-013, H2A | Run focused fixtures, smoke, and paired comparison |
-| T-026 | P0 | `IN_PROGRESS` | Eliminate Honchkrow/Porygon deck-out losses with committed 350-HP KO, draw-reserve, retreat, and terminal-cause guards | FB-2026-014, FB-2026-015, H2A | Run the 200-game paired comparison against submission `55304212` and audit remaining deck-out losses |
+| T-026 | P0 | `IN_PROGRESS` | Eliminate Honchkrow/Porygon deck-out losses with committed 350-HP KO, draw-reserve, retreat, and terminal-cause guards | FB-2026-014, FB-2026-015, H2A | Audit the remaining 56/400 promoted-baseline deck-out losses and run the independent 1,000-match confirmation |
 
 ## Active-track coverage
 
@@ -85,6 +84,7 @@ This table prevents roadmap work from existing without an executable owner.
 | T-000 | Reproducible environment, deck, wrapper, and package smoke | S0–S1 evidence and release manifest |
 | T-010 | Reconcile remote scores and retain `55088176` as reference | Score correction in `strategy_notes.md` |
 | T-022 | Reinterpreted attacker-target gate; legal attacks are no longer blocked by board target | Policy revision in `docs/27_gameplay_rules.md` and `docs/29_gameplay_feedback.md` |
+| T-025 | Promoted the Honchkrow/Porygon committed-switch, Giovanni, Miracle Headset, and projected Porygon2/Ignition policy as the development baseline | 264 tests; two independent 200-match blocks per policy; 0/44 unconverted retreats; `reports/honchkrow_v3_retreat_guard_audit_20260807.md` |
 | FB001-A2 | Pre-terminal ordering layer | `e268c96`, focused gameplay tests |
 | FB001-A3 | Generic Pokémon play before attack with open Bench | `e268c96`, replay regression |
 | RF-001 | Replay ingestion and leakage-safe dataset foundation | `gameplay_replays/v1` manifest |

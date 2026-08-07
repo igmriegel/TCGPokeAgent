@@ -4,14 +4,21 @@
 
 Every alteration starts with a falsifiable hypothesis and ends with `promote`, `iterate` or `reject`. The record includes agent version, deck version, model hash when applicable, effective configuration, seeds, opponents and artifacts.
 
-## Paired comparison
+## Controlled comparison
 
 - Freeze the opponent pool.
-- Use the same seeds for candidate and reference.
+- Use the same seeds for candidate and reference only when the environment
+  demonstrably forwards and honors them.
 - Run both as player 0 and player 1.
 - Keep the deck constant, except for an explicitly identified deck experiment.
 - Compare first with the best stable version; also compare with direct ablation.
 - Do not mix results from different SDKs or feature schemas.
+
+CABT 1.32.2 does not forward the evaluation configuration seed into
+`battle_start`, and its random agent consumes global random state. CABT reports
+must therefore be treated as independent samples even when their nominal seed
+labels match. Use Wilson intervals and an independent two-proportion test; do
+not report McNemar or episode conversions for those labels.
 
 ## Stages
 
@@ -31,7 +38,8 @@ Repeat the full against `random`, `first`, stable version and relevant ablation.
 
 - Heuristic: promotes only with reproducible gain in the target matchup and no operational regression.
 - Search: promotes only if it does not reduce win rate against pure heuristics and respects latency/failures.
-- Model: promotes only after temporal holdout, paired matches and ablation.
+- Model: promotes only after temporal holdout, a valid controlled comparison,
+  and ablation.
 - Inconclusive result generates more matches or a revised hypothesis; never promotion by visual inspection.
 
 ## Leakage
