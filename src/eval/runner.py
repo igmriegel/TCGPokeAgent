@@ -17,6 +17,13 @@ from pathlib import Path
 from typing import Any, cast
 
 from src.core import ErrorCategory, ExecutionStatus, PolicyDecision
+from src.eval.telemetry import (
+    aggregate_decisions,
+    classify_terminal,
+    failure_flags,
+    public_snapshot,
+    transition,
+)
 from src.eval.validation import check_legal_selection
 
 AgentCallable = Callable[[dict[str, Any]], list[int]]
@@ -53,6 +60,10 @@ class DecisionRecord:
     error_message: str = ""
     state_before: dict[str, Any] = field(default_factory=dict)
     state_after: dict[str, Any] | None = None
+    telemetry_before: dict[str, Any] = field(default_factory=dict)
+    telemetry_after: dict[str, Any] | None = None
+    transition: dict[str, Any] = field(default_factory=dict)
+    failure_flags: list[str] = field(default_factory=list)
     action_sequence: list[dict[str, Any]] = field(default_factory=list)
     teacher_decision: list[int] | None = None
     ranked: list[dict[str, Any]] = field(default_factory=list)
@@ -119,6 +130,9 @@ class MatchRecord:
     started_at: float = 0.0
     finished_at: float = 0.0
     termination_reason: str = "unknown"
+    termination_reason_explicit: bool = False
+    terminal_state: dict[str, Any] = field(default_factory=dict)
+    telemetry: dict[str, Any] = field(default_factory=dict)
     error_category: str = ErrorCategory.NONE.value
     error_message: str = ""
 
@@ -142,6 +156,11 @@ class RunReport:
     def total_matches(self) -> int:
         """Return the number of attempted matches."""
         return len(self.matches)
+
+    @property
+    def telemetry_summary(self) -> dict[str, Any]:
+        """Return decision-level telemetry aggregated across this batch."""
+        return aggregate_decisions(self.matches)
 
 
 class MatchRunner:
@@ -188,7 +207,18 @@ class MatchRunner:
                 else self._environment_error_message(environment)
                 or "one or more players did not finish"
             )
-            termination_reason = "completed" if status is ExecutionStatus.OK else "incomplete"
+            terminal_raw = self._latest_public_state(environment)
+            terminal_snapshot = public_snapshot(terminal_raw)
+            if terminal_snapshot.get("own") and terminal_snapshot.get("opponent"):
+                termination_reason, reason_explicit = classify_terminal(
+                    terminal_snapshot, result, side
+                )
+            else:
+                termination_reason, reason_explicit = "completed", False
+            if status is not ExecutionStatus.OK:
+                termination_reason = "INCOMPLETE"
+                reason_explicit = False
+            self._finalize_decisions(decisions, terminal_raw)
         except Exception as error:
             status = ExecutionStatus.ERROR
             result = None
@@ -196,6 +226,8 @@ class MatchRunner:
             error_category = self._error_category(error)
             error_message = str(error)
             termination_reason = "exception"
+            reason_explicit = False
+            terminal_snapshot = {}
 
         finished_at = time.time()
 
@@ -219,6 +251,19 @@ class MatchRunner:
             started_at=started_at,
             finished_at=finished_at,
             termination_reason=termination_reason,
+            termination_reason_explicit=reason_explicit,
+            terminal_state=terminal_snapshot,
+            telemetry=aggregate_decisions(
+                [
+                    MatchRecord(
+                        match_id=match_id,
+                        seed=seed,
+                        agent_side=side,
+                        status=status,
+                        decisions=decisions,
+                    )
+                ]
+            ),
         )
 
     def run_batch(
@@ -280,9 +325,24 @@ class MatchRunner:
             raise ValueError(f"unsupported opponent: {opponent}") from error
 
     def _instrument(self, policy: AgentCallable, records: list[DecisionRecord]) -> AgentCallable:
+        pending: DecisionRecord | None = None
+
         def wrapped(observation: dict[str, Any]) -> list[int]:
+            nonlocal pending
             start = time.perf_counter()
             select = observation.get("select")
+            raw_before = observation.get("current")
+            telemetry_before = public_snapshot(observation)
+            if pending is not None:
+                pending.state_after = dict(raw_before) if isinstance(raw_before, Mapping) else {}
+                pending.telemetry_after = telemetry_before
+                pending.transition = transition(pending.telemetry_before, telemetry_before)
+                pending.failure_flags = failure_flags(
+                    selected_indices=pending.selected_indices,
+                    options=pending.options,
+                    before=pending.telemetry_before,
+                    effects=pending.transition,
+                )
             result = policy(observation)
             duration_ms = (time.perf_counter() - start) * 1000
             if not isinstance(select, Mapping):
@@ -301,51 +361,92 @@ class MatchRunner:
             current = observation.get("current")
             turn = current.get("turn") if isinstance(current, Mapping) else None
             policy_decision = self._policy_decision(policy)
-            records.append(
-                DecisionRecord(
-                    decision_index=len(records),
-                    turn=turn if isinstance(turn, int) else None,
-                    context=(
-                        str(select.get("context")) if select.get("context") is not None else None
-                    ),
-                    select_type=(
-                        str(select.get("type")) if select.get("type") is not None else None
-                    ),
-                    options=[dict(option) for option in options if isinstance(option, Mapping)],
-                    option_count=len(options) if isinstance(options, list) else 0,
-                    min_count=int(select.get("minCount", 0) or 0),
-                    max_count=int(select.get("maxCount", 0) or 0),
-                    selected_indices=selected,
-                    legal=legal,
-                    duration_ms=duration_ms,
-                    overage_balance_ms=self.decision_budget_ms - duration_ms,
-                    state_before=self._state_snapshot(observation),
-                    error_category=error_category,
-                    error_message=error_message,
-                    score=(
-                        policy_decision.ranked[0].score
-                        if policy_decision and policy_decision.ranked
-                        else None
-                    ),
-                    reasons=(
-                        list(policy_decision.ranked[0].reasons)
-                        if policy_decision and policy_decision.ranked
-                        else []
-                    ),
-                    decision_phase=(policy_decision.decision_phase if policy_decision else ""),
-                    decision_phase_reason=(
-                        policy_decision.decision_phase_reason if policy_decision else ""
-                    ),
-                    ranked=self._serialize_ranking(policy_decision),
-                    features=self._serialize_features(policy_decision),
-                    fallback_used=policy_decision.fallback_used if policy_decision else False,
-                    model_backend=policy_decision.model_backend if policy_decision else "",
-                    model_version=policy_decision.model_version if policy_decision else "",
-                )
+            options_mappings = [dict(option) for option in options if isinstance(option, Mapping)]
+            record = DecisionRecord(
+                decision_index=len(records),
+                turn=turn if isinstance(turn, int) else None,
+                context=(str(select.get("context")) if select.get("context") is not None else None),
+                select_type=(str(select.get("type")) if select.get("type") is not None else None),
+                options=options_mappings,
+                option_count=len(options) if isinstance(options, list) else 0,
+                min_count=int(select.get("minCount", 0) or 0),
+                max_count=int(select.get("maxCount", 0) or 0),
+                selected_indices=selected,
+                legal=legal,
+                duration_ms=duration_ms,
+                overage_balance_ms=self.decision_budget_ms - duration_ms,
+                state_before=self._state_snapshot(observation),
+                telemetry_before=telemetry_before,
+                error_category=error_category,
+                error_message=error_message,
+                score=(
+                    policy_decision.ranked[0].score
+                    if policy_decision and policy_decision.ranked
+                    else None
+                ),
+                reasons=(
+                    list(policy_decision.ranked[0].reasons)
+                    if policy_decision and policy_decision.ranked
+                    else []
+                ),
+                decision_phase=(policy_decision.decision_phase if policy_decision else ""),
+                decision_phase_reason=(
+                    policy_decision.decision_phase_reason if policy_decision else ""
+                ),
+                ranked=self._serialize_ranking(policy_decision),
+                features=self._serialize_features(policy_decision),
+                fallback_used=policy_decision.fallback_used if policy_decision else False,
+                model_backend=policy_decision.model_backend if policy_decision else "",
+                model_version=policy_decision.model_version if policy_decision else "",
             )
+            records.append(record)
+            pending = record
             return result
 
         return wrapped
+
+    @staticmethod
+    def _finalize_decisions(
+        decisions: list[DecisionRecord], terminal_raw: Mapping[str, Any]
+    ) -> None:
+        """Attach the final public snapshot and transition to the last decision."""
+        if not decisions:
+            return
+        last = decisions[-1]
+        after = public_snapshot(terminal_raw)
+        last.state_after = dict(terminal_raw)
+        last.telemetry_after = after
+        last.transition = transition(last.telemetry_before, after)
+        last.failure_flags = failure_flags(
+            selected_indices=last.selected_indices,
+            options=last.options,
+            before=last.telemetry_before,
+            effects=last.transition,
+        )
+
+    @staticmethod
+    def _latest_public_state(environment: Any) -> Mapping[str, Any]:
+        """Return the latest current mapping exposed by CABT's step history."""
+        candidates: list[Mapping[str, Any]] = []
+        for step in getattr(environment, "steps", []):
+            if not isinstance(step, list):
+                continue
+            for player_step in step:
+                if not isinstance(player_step, Mapping):
+                    continue
+                observation = player_step.get("observation")
+                current = observation.get("current") if isinstance(observation, Mapping) else None
+                if isinstance(current, Mapping):
+                    candidates.append(current)
+        if not candidates:
+            return {}
+        return max(
+            candidates,
+            key=lambda current: (
+                int(current.get("turn", 0) or 0),
+                int(current.get("turnActionCount", 0) or 0),
+            ),
+        )
 
     @staticmethod
     def _policy_decision(policy: AgentCallable) -> PolicyDecision | None:

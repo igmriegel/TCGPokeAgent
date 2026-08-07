@@ -43,6 +43,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Heuristic priority fixes | Honchkrow/Porygon Proton/Supporter/Energy/Articuno/promotion/terminal-line rules plus Stadium ordering | Implemented with focused tests; full strategic validation pending |
 | Mega Abomasnow KO policy | Six-Supporter Rocket Feathers, eighteen-Supporter R Command, exact lethal discard, draw reserve, and justified retreat guards | Implemented with focused and replay-observation checks; 200-game comparison pending |
 | CABT 200-match telemetry audit | 156W/0D/44L, zero execution failures; 152 no-Pokémon endings, 40 deck-outs, 8 unresolved pre-terminal states; zero partial Mega Abomasnow attacks | Instrumentation complete; resolve remaining terminal-state gap and eliminate deck-outs under T-026 |
+| CABT 1,000-match full trace | 776W/0D/224L (77.6%), zero execution failures; 166 deck-out losses, 76 unresolved terminal states, 50,688 full decisions, 1,520 observed KOs | Baseline evidence; reduce deck-outs and convert damage before promotion |
+| Replay damage diagnostics | 643 replays; 343 losses, 64 deck-outs, 111 damage-not-converted losses | Use loss clusters to drive the next policy changes |
 | Documentation integrity | All `src` modules inventoried; internal links, task IDs, counts, and stale claims checked automatically | Living gate |
 
 The local 400-match artifact reports `agent_mode: baseline` although its path
@@ -110,3 +112,6 @@ The recommended order is:
 - [Honchkrow/Porygon local baseline](../reports/honchkrow_porygon_local_eval_20260806.json)
 - [Mega Abomasnow fix smoke](../reports/honchkrow_porygon_mega_commit_smoke_20260807.json)
 - [CABT 200-match telemetry audit](../reports/honchkrow_porygon_cabt_200_telemetry_20260807.json)
+- [CABT 1,000-match full-trace summary](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.json)
+- [CABT 1,000-match compressed full trace](../reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.jsonl.gz)
+- [CABT replay damage diagnostics](../reports/cabt_replay_damage_diagnostics_20260807.json)

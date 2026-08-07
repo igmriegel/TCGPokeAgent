@@ -46,6 +46,7 @@ Honchkrow/Porygon deck without changing the default package.
 | Modules | Responsibility | Direct evidence |
 |---|---|---|
 | `src/eval/__init__.py`, `src/eval/validation.py` | SDK, deck, legality, package, and archive gates | validation, preflight, package tests |
+| `src/eval/runner.py`, `src/eval/telemetry.py` | Match execution, full decision snapshots, transitions, and terminal telemetry | runner and telemetry tests; full CABT trace |
 | `src/eval/runner.py`, `src/eval/metrics.py`, `src/eval/gameplay.py` | Match records, aggregates, and gameplay observability | runner, metrics, gameplay tests |
 | `src/eval/reporting.py`, `src/eval/comparison.py` | Stable reports and paired/composite comparisons | runner and metrics tests |
 | `src/experiments/__init__.py`, `src/experiments/orchestrator.py` | Immutable run directories and manifests | exercised by full-run scripts; end-to-end gate remains open |
@@ -64,10 +65,12 @@ been captured in one frozen report.
 | `src/data/replay_ingestor.py` | Leakage-safe replay decision datasets | `tests/test_replay_ingestor.py` |
 | `src/data/gameplay_annotations.py` | Decision-linked post-hoc review records | `tests/test_gameplay_annotations.py` |
 | `src/data/replay_deep_analysis.py` | Deep replay analysis with damage/evolution/bench tracking | Used by investigation report generation |
+| `src/data/replay_diagnostics.py` | Replay-derived damage, KO, resource, and loss diagnostics | `tests/test_replay_diagnostics.py`; CABT diagnostics report |
 | `src/data/honchkrow_audit.py` | Honchkrow/Porygon decision ledger and contextual loss classification | `tests/test_honchkrow_porygon.py`; replay-decision JSONL audits |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active; produces `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html` |
+| `scripts/analyze_replays.py` | Build aggregate replay damage and failure diagnostics | Active; produces versioned JSON diagnostics |
 
 Post-hoc annotations describe human review of agent games. They are not live
 human gameplay demonstrations.

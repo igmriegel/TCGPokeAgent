@@ -116,7 +116,9 @@ def _parse_player_state(
     bench = [_parse_pokemon(p, False) for p in bench_raw if isinstance(p, Mapping)]
 
     prize_raw = player.get("prize", []) or []
-    prize_count = sum(1 for p in prize_raw if p is not None)
+    # Hidden prize cards are represented as ``None`` slots; slot count is the
+    # public number of prizes remaining.
+    prize_count = len(prize_raw)
 
     return PlayerFrameState(
         active=active,
@@ -349,7 +351,7 @@ def load_all_deep_analyses(
         List of successful deep analyses (failures silently skipped).
     """
     results = []
-    for path in sorted(Path(replay_dir).glob("episode-*.json")):
+    for path in sorted(Path(replay_dir).rglob("episode-*.json")):
         try:
             results.append(extract_deep_analysis(path, owner_name=owner_name))
         except ValueError:

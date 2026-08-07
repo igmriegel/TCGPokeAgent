@@ -578,3 +578,36 @@ limitations:
   - "eight matches ended between the final public observation and terminal resolution"
 status: "completed; deck-out prevention remains T-026 P0"
 ```
+
+## CABT 1,000-match full-trace baseline
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+report: "reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.json"
+trace: "reports/honchkrow_porygon_cabt_1000_fulltrace_20260807.jsonl.gz"
+matches: 1000
+results: "776W/0D/224L"
+win_rate: 0.776
+execution_failures: 0
+losses: "166 deck-outs, 58 unresolved terminal causes"
+decisions: 50688
+observed_damage: 288190
+observed_kos: 1520
+partial_mega_abomasnow_attacks: 0
+retreats: 520
+retreats_without_ko_line: 665
+status: "baseline frozen; policy changes require paired comparison"
+```
+
+## CABT replay damage diagnostics
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+report: "reports/cabt_replay_damage_diagnostics_20260807.json"
+replays: 643
+losses: 343
+deck_out_replays: 64
+damage_not_converted_losses: 111
+no_observed_damage_losses: 4
+status: "evidence source for KO-horizon and deck-preservation policy work"
+```

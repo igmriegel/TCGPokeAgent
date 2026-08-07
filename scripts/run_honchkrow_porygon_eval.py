@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import gzip
 import json
 import os
+import shutil
 import sys
 import time
 from collections import Counter
@@ -25,6 +27,7 @@ from src.agents.honchkrow_porygon import (  # noqa: E402
     HonchkrowPorygonAgent,
 )
 from src.core import DeckDefinition, DeckProfile  # noqa: E402
+from src.eval.telemetry import public_snapshot, transition  # noqa: E402
 
 PROFILE_PATH = ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
 DECK_PATH = ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
@@ -165,9 +168,10 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
     decisions = 0
     decision_ms: list[float] = []
     last_current: Mapping[str, Any] = {}
+    pending_event: dict[str, Any] | None = None
 
     def policy(observation: dict[str, Any]) -> list[int]:
-        nonlocal decisions, last_current
+        nonlocal decisions, last_current, pending_event
         if observation.get("select") is None:
             agent.start_match(deck)
             return list(deck.card_ids)
@@ -180,6 +184,14 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
         current = observation.get("current", {})
         if not isinstance(select, Mapping) or not isinstance(current, Mapping):
             return result
+        telemetry_before = public_snapshot(observation)
+        if pending_event is not None:
+            pending_event["state_after"] = dict(current)
+            telemetry_after = telemetry_before
+            pending_event["telemetry_after"] = telemetry_after
+            pending_event["transition"] = transition(
+                pending_event["telemetry_before"], telemetry_after
+            )
         last_current = current
         own_index = int(current.get("yourIndex", side) or side)
         own = _player(current, own_index)
@@ -224,48 +236,50 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             _option_type(option) for option in selected if isinstance(option, Mapping)
         ]
         ledger = agent.turn_ledger
-        events.append(
-            {
-                "turn": int(current.get("turn", 0) or 0),
-                "deck_count": int(own.get("deckCount", 0) or 0),
-                "prize_count": len(own.get("prize", []))
-                if isinstance(own.get("prize", []), list)
-                else 0,
-                "hand_count": int(own.get("handCount", 0) or 0),
-                "discard_count": len(own.get("discard", []))
-                if isinstance(own.get("discard", []), list)
-                else 0,
-                "bench_count": own_bench_count,
-                "pokemon_in_play": own_bench_count + int(bool(active)),
-                "active_card_id": _card_id(active),
-                "active_energy_count": len(active.get("energies", []))
-                if isinstance(active.get("energies", []), list)
-                else 0,
-                "target_card_id": _card_id(target),
-                "target_hp": int(target.get("hp", 0) or 0),
-                "opponent_deck_count": int(opponent.get("deckCount", 0) or 0),
-                "opponent_prize_count": len(opponent.get("prize", []))
-                if isinstance(opponent.get("prize", []), list)
-                else 0,
-                "opponent_bench_count": opponent_bench_count,
-                "opponent_pokemon_in_play": opponent_bench_count + int(bool(target)),
-                "hand_supporters": hand_supporters,
-                "discard_supporters": discard_supporters,
-                "select_type": select.get("type"),
-                "option_types": [
-                    _option_type(option) for option in options if isinstance(option, Mapping)
-                ],
-                "attack_ids": attacks,
-                "selected_indices": result,
-                "selected_types": selected_types,
-                "selected_attack_ids": selected_attacks,
-                "duration_ms": round(elapsed_ms, 3),
-                "resource_guard": ledger.resource_guard,
-                "deck_risk": ledger.deck_risk,
-                "partial_mega_abomasnow_attack": partial,
-                "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
-            }
-        )
+        event = {
+            "turn": int(current.get("turn", 0) or 0),
+            "deck_count": int(own.get("deckCount", 0) or 0),
+            "prize_count": len(own.get("prize", []))
+            if isinstance(own.get("prize", []), list)
+            else 0,
+            "hand_count": int(own.get("handCount", 0) or 0),
+            "discard_count": len(own.get("discard", []))
+            if isinstance(own.get("discard", []), list)
+            else 0,
+            "bench_count": own_bench_count,
+            "pokemon_in_play": own_bench_count + int(bool(active)),
+            "active_card_id": _card_id(active),
+            "active_energy_count": len(active.get("energies", []))
+            if isinstance(active.get("energies", []), list)
+            else 0,
+            "target_card_id": _card_id(target),
+            "target_hp": int(target.get("hp", 0) or 0),
+            "opponent_deck_count": int(opponent.get("deckCount", 0) or 0),
+            "opponent_prize_count": len(opponent.get("prize", []))
+            if isinstance(opponent.get("prize", []), list)
+            else 0,
+            "opponent_bench_count": opponent_bench_count,
+            "opponent_pokemon_in_play": opponent_bench_count + int(bool(target)),
+            "hand_supporters": hand_supporters,
+            "discard_supporters": discard_supporters,
+            "select_type": select.get("type"),
+            "option_types": [
+                _option_type(option) for option in options if isinstance(option, Mapping)
+            ],
+            "attack_ids": attacks,
+            "selected_indices": result,
+            "selected_types": selected_types,
+            "selected_attack_ids": selected_attacks,
+            "duration_ms": round(elapsed_ms, 3),
+            "resource_guard": ledger.resource_guard,
+            "deck_risk": ledger.deck_risk,
+            "partial_mega_abomasnow_attack": partial,
+            "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
+            "state_before": dict(current),
+            "telemetry_before": telemetry_before,
+        }
+        events.append(event)
+        pending_event = event
         return result
 
     started = time.perf_counter()
@@ -288,6 +302,11 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
         else "draw"
     )
     current = last_current or _terminal_snapshot(environment)
+    if pending_event is not None:
+        telemetry_after = public_snapshot(current)
+        pending_event["state_after"] = dict(current)
+        pending_event["telemetry_after"] = telemetry_after
+        pending_event["transition"] = transition(pending_event["telemetry_before"], telemetry_after)
     reason_code, reason, reason_explicit = _terminal_reason(environment, current)
     loser_side = 1 - side if result == "win" else side
     inferred_reason = _inferred_reason(current, loser_side)
@@ -331,13 +350,7 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
                 Counter(event["resource_guard"] for event in events if event["resource_guard"])
             ),
         },
-        "events": [
-            event
-            for event in events
-            if event["partial_mega_abomasnow_attack"]
-            or event["deck_count"] <= 2
-            or event["selected_types"] in ([12], [14])
-        ],
+        "events": events,
     }
 
 
@@ -354,6 +367,22 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
     for match in matches:
         telemetry.update(
             {key: value for key, value in match["telemetry"].items() if isinstance(value, int)}
+        )
+        telemetry.update(
+            {
+                "observed_target_damage": sum(
+                    int(event.get("transition", {}).get("target_damage", 0) or 0)
+                    for event in match["events"]
+                ),
+                "observed_target_kos": sum(
+                    bool(event.get("transition", {}).get("target_ko", False))
+                    for event in match["events"]
+                ),
+                "own_active_kos_taken": sum(
+                    bool(event.get("transition", {}).get("own_active_ko", False))
+                    for event in match["events"]
+                ),
+            }
         )
         guards.update(match["telemetry"]["resource_guards"])
     losses = [match for match in matches if match["result"] == "loss"]
@@ -399,6 +428,113 @@ def run(matches_per_side: int, seed_base: int) -> dict[str, Any]:
     }
 
 
+def run_stream(matches_per_side: int, seed_base: int, output: Path) -> dict[str, Any]:
+    """Run matches while persisting each complete trace before continuing."""
+    trace_path = output.with_suffix(output.suffix + ".jsonl")
+    progress_path = output.with_suffix(output.suffix + ".progress.json")
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    total = matches_per_side * 2
+    summaries: list[dict[str, Any]] = []
+    outcomes: Counter[str] = Counter()
+    reasons: Counter[str] = Counter()
+    statuses: Counter[str] = Counter()
+    telemetry: Counter[str] = Counter()
+    guards: Counter[str] = Counter()
+    with trace_path.open("w", encoding="utf-8") as trace:
+        for index in range(matches_per_side):
+            for side in (0, 1):
+                match = _run_match(seed_base + index, side)
+                trace.write(json.dumps(match, sort_keys=True) + "\n")
+                trace.flush()
+                outcomes[match["result"]] += 1
+                reasons[match["termination_reason"]] += 1
+                statuses[match["status"]] += 1
+                telemetry.update(
+                    {
+                        key: value
+                        for key, value in match["telemetry"].items()
+                        if isinstance(value, int)
+                    }
+                )
+                telemetry.update(
+                    {
+                        "observed_target_damage": sum(
+                            int(event.get("transition", {}).get("target_damage", 0) or 0)
+                            for event in match["events"]
+                        ),
+                        "observed_target_kos": sum(
+                            bool(event.get("transition", {}).get("target_ko", False))
+                            for event in match["events"]
+                        ),
+                        "own_active_kos_taken": sum(
+                            bool(event.get("transition", {}).get("own_active_ko", False))
+                            for event in match["events"]
+                        ),
+                    }
+                )
+                guards.update(match["telemetry"]["resource_guards"])
+                summary = {key: value for key, value in match.items() if key != "events"}
+                summary["event_count"] = len(match["events"])
+                summaries.append(summary)
+                completed = len(summaries)
+                progress = {
+                    "completed": completed,
+                    "total": total,
+                    "remaining": total - completed,
+                    "outcomes": dict(outcomes),
+                    "last_match_id": match["match_id"],
+                }
+                progress_path.write_text(
+                    json.dumps(progress, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+    compressed_trace_path = output.with_suffix(".jsonl.gz")
+    with (
+        trace_path.open("rb") as source,
+        gzip.open(compressed_trace_path, "wb", compresslevel=9) as target,
+    ):
+        shutil.copyfileobj(source, target)
+    trace_path.unlink()
+    losses = [match for match in summaries if match["result"] == "loss"]
+    return {
+        "report_type": "honchkrow_porygon_cabt_1000_fulltrace",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "sdk_version": "1.32.2",
+        "agent": "honchkrow_porygon",
+        "opponent": "cabt.random_agent",
+        "matches_per_side": matches_per_side,
+        "total_matches": total,
+        "completed_matches": len(summaries),
+        "seed_base": seed_base,
+        "trace_compression": "gzip",
+        "trace_jsonl": str(compressed_trace_path),
+        "progress_json": str(progress_path),
+        "outcomes": dict(outcomes),
+        "execution_status": dict(statuses),
+        "termination_reasons": dict(reasons),
+        "telemetry_totals": dict(telemetry),
+        "resource_guard_totals": dict(guards),
+        "audit": {
+            "matches_with_explicit_reason": sum(
+                match["termination_reason_explicit"] for match in summaries
+            ),
+            "unresolved_terminal_reasons": sum(
+                match["termination_reason"] == "unknown" for match in summaries
+            ),
+            "losses": len(losses),
+            "losses_by_reason": dict(Counter(match["termination_reason"] for match in losses)),
+            "deck_out_losses": sum(
+                match["result"] == "loss" and match["termination_reason"] == "deck_out"
+                for match in summaries
+            ),
+            "partial_attack_matches": sum(
+                match["telemetry"]["partial_mega_abomasnow_attacks"] > 0 for match in summaries
+            ),
+            "partial_attack_events": telemetry["partial_mega_abomasnow_attacks"],
+        },
+        "matches": summaries,
+    }
+
+
 def main() -> None:
     """Parse arguments, run CABT, and write a JSON report."""
     parser = argparse.ArgumentParser()
@@ -406,7 +542,7 @@ def main() -> None:
     parser.add_argument("--seed-base", type=int, default=20260807)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = run(args.matches_per_side, args.seed_base)
+    report = run_stream(args.matches_per_side, args.seed_base, args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(
