@@ -14,6 +14,7 @@ from src.agents.honchkrow_porygon import (
     FACTORY,
     GIOVANNI,
     HACKING,
+    HAMMER_IN,
     HONCHKROW,
     IGNITION_ENERGY,
     MEGA_ABOMASNOW_EX,
@@ -42,6 +43,7 @@ from src.core import (
     OptionType,
     PlayerState,
     PokemonState,
+    PrizeMapBuilder,
     SelectContext,
     Selection,
 )
@@ -890,7 +892,7 @@ def test_make_exposes_separate_deck_packaging_commands() -> None:
     assert "scripts/build_honchkrow_porygon_package.sh" in completed.stdout
 
 
-def test_draw_first_prefers_ariana_before_factory_or_nonwinning_attack() -> None:
+def test_draw_first_prefers_factory_before_ariana_and_nonwinning_attack() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         turn=4,
@@ -913,8 +915,8 @@ def test_draw_first_prefers_ariana_before_factory_or_nonwinning_attack() -> None
         Selection((candidate.option_index,), (candidate.option_type,)) for candidate in candidates
     ]
     _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
-    assert reason == "ariana_before_factory"
-    assert [selection.indices for selection in eligible] == [(0,)]
+    assert reason == "stadium_before_ariana"
+    assert [selection.indices for selection in eligible] == [(1,)]
 
 
 def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -> None:
@@ -1071,6 +1073,146 @@ def test_porygon2_promotion_waits_for_mega_abomasnow_ko_line() -> None:
     assert score > 0
     assert reasons == ["promote_porygon2_best_r_command"]
     assert not agent._candidate_is_forbidden(state, porygon2, SelectContext.TO_ACTIVE)
+
+
+def test_porygon2_promotion_takes_the_last_prizes() -> None:
+    """A lethal R Command that ends the Prize race dominates promotion scoring."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                prize=[None, None],
+                bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}])],
+                discard=[{"id": ARIANA}] * 18,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+        ]
+    )
+    agent._scorer.set_strategic_context(None, PrizeMapBuilder(agent._scorer.catalog).build(state))
+    porygon2 = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "cardId": PORYGON2},
+        OptionType.CARD,
+        features={"card_id": PORYGON2, "target_energy_count": 3},
+    )
+
+    score, reasons = agent._scorer._card_selection_score(state, porygon2, SelectContext.TO_ACTIVE)
+
+    assert score == 5200.0
+    assert reasons == [
+        "promote_porygon2_game_winning_r_command",
+        "r_command_takes_last_prizes",
+    ]
+
+
+def test_ignition_attachment_commits_the_same_turn_attack() -> None:
+    """Generic Ignition attachments must force the attack that they enable."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=9,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90, serial=22),
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 18,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ],
+    )
+    ignition = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": IGNITION_ENERGY,
+            "target_card_id": PORYGON2,
+            "target_serial": 22,
+            "target_energy_count": 0,
+            "target_is_active": True,
+        },
+    )
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.ATTACH,)), Selection((1,), (OptionType.END,))],
+        [ignition, end],
+    )
+
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "ignition_requires_same_turn_attack"
+    assert [selection.indices for selection in choices] == [(0,)]
+    assert not agent._candidate_is_forbidden(state, ignition, SelectContext.MAIN)
+
+
+def test_attack_planner_counts_typed_rocket_energy_units() -> None:
+    """Hammer In needs Darkness plus two total units, not merely three cards."""
+    agent = HonchkrowPorygonAgent(_profile())
+    honchkrow = PokemonState(
+        HONCHKROW,
+        130,
+        130,
+        energy_card_ids=[{"id": ROCKET_ENERGY}],  # type: ignore[list-item]
+    )
+
+    assert not agent._attack_cost_satisfied(honchkrow, HAMMER_IN)
+    assert agent._attack_cost_satisfied(honchkrow, HAMMER_IN, include_ignition=True)
+
+    honchkrow.energy_card_ids.append({"id": ROCKET_ENERGY})  # type: ignore[arg-type]
+    assert agent._attack_cost_satisfied(honchkrow, HAMMER_IN)
+
+
+def test_attack_planner_does_not_treat_wrong_energy_type_as_darkness() -> None:
+    """A non-Darkness basic Energy cannot unlock Honchkrow's Hammer In."""
+    agent = HonchkrowPorygonAgent(_profile())
+    honchkrow = PokemonState(
+        HONCHKROW,
+        130,
+        130,
+        energy_card_ids=[{"id": 3}, {"id": 3}, {"id": 3}],  # type: ignore[list-item]
+    )
+
+    assert not agent._attack_cost_satisfied(honchkrow, HAMMER_IN)
+    assert not agent._attack_cost_satisfied(honchkrow, HAMMER_IN, include_ignition=True)
+
+
+def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
+    """A legal post-attachment attack remains mandatory if its ID was projected differently."""
+    agent = HonchkrowPorygonAgent(_profile())
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent._switch_commitment = SwitchCommitment(
+        method="ignition",
+        turn=9,
+        target_card_id=HONCHKROW,
+        target_serial=22,
+        attack_id=999999,
+        planned_damage=100,
+    )
+    state = GameState(
+        turn=9,
+        energy_attached=True,
+        players=[
+                PlayerState(
+                    active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}, {}]),
+                    hand=[{"id": ARIANA}],
+                ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ],
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.ATTACK,)), Selection((1,), (OptionType.PLAY,))],
+        [attack, ariana],
+    )
+
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "execute_committed_ignition_attack"
+    assert [selection.indices for selection in choices] == [(0,)]
 
 
 def test_retreat_requires_ready_mega_abomasnow_ko_replacement() -> None:

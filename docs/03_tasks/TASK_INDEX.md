@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 4 |
-| Ready | 17 |
+| In progress | 6 |
+| Ready | 18 |
 | Deferred | 7 |
-| Total open | 28 |
+| Total open | 31 |
 
 ## Active release queue
 
@@ -49,6 +49,9 @@ documents to these totals.
 | T-023 | P1 | `READY` | Validate public-risk retreat and visible Alakazam-line tech branch | FB-2026-011, H2A | Run retreat/mobility and tech-branch fixtures |
 | T-024 | P1 | `READY` | Validate conditional Articuno sacrifice and discard priority | FB-2026-012, H2A | Run Articuno attachment/discard fixtures |
 | T-026 | P0 | `IN_PROGRESS` | Eliminate Honchkrow/Porygon deck-out losses with committed 350-HP KO, draw-reserve, retreat, and terminal-cause guards | FB-2026-014, FB-2026-015, H2A | Audit the remaining 56/400 promoted-baseline deck-out losses and run the independent 1,000-match confirmation |
+| T-027 | P1 | `READY` | Measure opponent-sample variance for identical-package submissions | Remote evaluation variance | Compare submissions `55320796` and `55320706` across two distinct opponent samples; report opponent composition, win rate, variance, and confidence intervals before attributing differences to the package |
+| T-028 | P0 | `IN_PROGRESS` | Convert every Ignition attachment into a same-turn attack and prioritize game-winning Porygon2 promotion | FB-2026-016, H2A | Run terminal Porygon2, Prize-race, Ignition-commitment, and no-wasted-energy gates, then evaluate the promoted policy against CABT |
+| T-029 | P0 | `IN_PROGRESS` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
 
 ## Active-track coverage
 

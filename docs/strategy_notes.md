@@ -657,3 +657,54 @@ evidence:
   - "tests/test_honchkrow_opportunity_audit.py"
 status: "promoted development baseline; remote submission pending"
 ```
+
+## Identical-package opponent-sample variance TODO
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+submission_ids: [55320796, 55320706]
+observation: "Both submissions were produced from the same package."
+hypothesis: "Any score or outcome difference may be explained by remote evaluation variance and opponent composition rather than by a package change."
+todo:
+  - "Evaluate the result over two distinct opponent samples."
+  - "Document the opponent composition and sample size for each sample."
+  - "Compute win rate, variance, and confidence intervals for each sample."
+  - "Do not attribute a difference to the package until the opponent-sample effect is assessed."
+acceptance: "A reproducible report compares both submissions across the two opponent samples and preserves the evaluation metadata."
+status: "ready"
+```
+
+## Ignition energy-type and terminal-line CABT gate
+
+```yaml
+observed_at: "2026-08-07T07:13:00-03:00"
+report: "reports/honchkrow_porygon_cabt_200_ignition_terminal_20260807.json"
+matches: 200
+evaluation_design: "100 matches per agent side against CABT"
+results: "179W/0D/21L"
+win_rate: 0.895
+execution_failures: 0
+comparison_baseline:
+  report: "reports/honchkrow_porygon_local_eval_20260806.json"
+  results: "157W/0D/43L"
+  win_rate: 0.785
+  delta_percentage_points: 11.0
+telemetry:
+  ignition_attachments: 124
+  ignition_attacks: 120
+  ignition_without_attack: 4
+  porygon_terminal_opportunities: 5
+  porygon_terminal_conversions: 0
+  partial_mega_abomasnow_attacks: 0
+audit:
+  deck_out_losses: 15
+  unresolved_terminal_reasons: 8
+  partial_attack_matches: 0
+interpretation:
+  - "The planner now validates attack costs by energy type and quantity."
+  - "Rocket Energy is modeled as two independently allocatable Darkness/Psychic units."
+  - "Ignition Energy is modeled as three Colorless units on Evolution Pokémon."
+  - "The sample improved by 11.0 percentage points, but this is an independent CABT sample and is not a significance claim."
+  - "The gate remains open because four Ignition attachments were not followed by a recorded attack and five Porygon terminal opportunities converted zero times."
+status: "implemented; CABT improvement observed; residual terminal telemetry requires follow-up"
+```

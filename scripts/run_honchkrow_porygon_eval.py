@@ -249,6 +249,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             _option_type(option) for option in selected if isinstance(option, Mapping)
         ]
         ledger = agent.turn_ledger
+        match_ledger = agent.match_ledger
         policy_decision = agent.last_decision
         event = {
             "turn": int(current.get("turn", 0) or 0),
@@ -308,6 +309,11 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "lethal_lines_converted": ledger.lethal_lines_converted,
             "miracle_headsets_played": ledger.miracle_headsets_played,
             "miracle_supporters_recovered": ledger.miracle_supporters_recovered,
+            "porygon_terminal_opportunities": match_ledger.porygon_terminal_opportunities,
+            "porygon_terminal_conversions": match_ledger.porygon_terminal_conversions,
+            "ignition_attachments": match_ledger.ignition_attachments,
+            "ignition_attacks": match_ledger.ignition_attacks,
+            "ignition_without_attack": match_ledger.ignition_without_attack,
             "partial_mega_abomasnow_attack": partial,
             "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
             "decision_phase": getattr(policy_decision, "decision_phase", ""),
@@ -398,6 +404,11 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             ),
             "rocket_lethal_lines": sum(event["lethal_lines_executed"] for event in events),
             "miracle_headsets_played": sum(event["miracle_headsets_played"] for event in events),
+            "porygon_terminal_opportunities": agent.match_ledger.porygon_terminal_opportunities,
+            "porygon_terminal_conversions": agent.match_ledger.porygon_terminal_conversions,
+            "ignition_attachments": agent.match_ledger.ignition_attachments,
+            "ignition_attacks": agent.match_ledger.ignition_attacks,
+            "ignition_without_attack": agent.match_ledger.ignition_without_attack,
             "resource_guards": dict(
                 Counter(event["resource_guard"] for event in events if event["resource_guard"])
             ),

@@ -520,6 +520,62 @@ The two independent 200-match blocks per policy retained zero execution
 failures and zero partial Mega Abomasnow attacks. Remaining deck-out
 classification continues under T-026.
 
+## FB-2026-016 — Ignition must convert into an attack and Porygon2 must close the Prize race
+
+**Priority:** P0
+
+**Status:** `IN_PROGRESS`
+
+**Original feedback:** Gameplay evidence showed three opportunities to promote
+Porygon2 and use R Command for the winning Knock Out. Ignition Energy was also
+attached in positions where the agent did not attack, even though the resource
+is required for the late-game Porygon2 line.
+
+**Accepted rule:** Ignition Energy is a same-turn attack resource. It may be
+attached only when the public state supports a productive attack commitment;
+after attachment, optional actions are blocked until that attack resolves.
+Attack readiness must satisfy both the required energy types and the required
+number of units: Rocket Energy contributes two independently allocatable
+Darkness/Psychic units, while Ignition contributes three Colorless units on an
+Evolution Pokémon. A raw energy-card count is insufficient.
+When a ready or Ignition-enabled Porygon2 R Command takes the remaining
+Prizes, promotion and the committed attack outrank ordinary damage and
+development unless the current Active already wins immediately.
+
+**Implemented foundation:** Match-scoped public tactical ledger, PrizeMap-aware
+Porygon2 terminal scoring, serial-bound Ignition attack commitments, and a
+guard against spending the only Ignition Energy without an attack.
+
+### Gate
+
+T-028: focused terminal-line fixtures, zero Ignition attachments without a
+same-turn attack, and a bilateral CABT evaluation with no regression in
+execution failures or deck-out rate.
+
+## FB-2026-017 — Factory draw engine must preserve the reviewed action order
+
+**Priority:** P0
+
+**Status:** `IN_PROGRESS`
+
+**Original feedback:** The agent had Team Rocket's Factory and Ariana in hand,
+but played Ariana before the Stadium and used Roto-Stick before Ariana. The
+reviewed order is Factory, Ariana, Roto-Stick, Factory draw effect.
+
+**Accepted rule:** When no immediate winning attack supersedes the engine
+sequence, play Factory first, play Ariana second, use Roto-Stick third when it
+improves the attack line, and activate the Factory draw effect afterward.
+Skip Roto-Stick when it is not productive. Deck reserves remain mandatory.
+
+**Implemented foundation:** Dedicated MAIN-phase ordering for Stadium play,
+Ariana, Roto-Stick, and Factory activation, with the previous Ariana-first
+fixture updated to the reviewed order.
+
+### Gate
+
+T-029: ordered multi-observation fixtures, deck-out guard coverage, and a
+bilateral CABT evaluation confirming the sequence without execution failures.
+
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and
 gate. Post-hoc agent replay review and live human demonstration must remain
