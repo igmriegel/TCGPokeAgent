@@ -553,3 +553,28 @@ evidence:
   - "40-game bilateral operational smoke: 34W/0D/6L, zero execution failures"
 status: "implemented; paired 200-game comparison pending"
 ```
+
+## CABT 200-match telemetry audit
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+report: "reports/honchkrow_porygon_cabt_200_telemetry_20260807.json"
+matches: 200
+results: "156W/0D/44L"
+execution_failures: 0
+termination_reasons: "152 no-pokemon-in-play, 40 deck-outs, 8 unresolved pre-terminal states"
+partial_mega_abomasnow_attacks: 0
+retreats: 106
+critical_deck_end_selections: 58
+resource_guards: "134 committed six-Supporter KO gates; 122 retreat-without-KO refusals"
+telemetry_fields:
+  - "prize_count, deck_count, hand_count, discard_count"
+  - "bench_count, pokemon_in_play, active card/HP/energy"
+  - "opponent deck/prizes/board counts"
+  - "Rocket Supporters in hand and discard"
+  - "selection, attack, retreat, END, duration, fallback, and resource guard"
+limitations:
+  - "CABT live observations do not expose an explicit terminal reason code"
+  - "eight matches ended between the final public observation and terminal resolution"
+status: "completed; deck-out prevention remains T-026 P0"
+```

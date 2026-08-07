@@ -53,6 +53,7 @@
 | `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
+| `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with prize, deck, board, Supporter, action, and terminal telemetry |
 
 ## Internal helpers
 
