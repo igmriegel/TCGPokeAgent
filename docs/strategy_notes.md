@@ -519,3 +519,37 @@ evidence:
   - "158 unit tests pass"
 status: revised
 ```
+
+## Mega Abomasnow committed-KO investigation
+
+```yaml
+observed_at: "2026-08-07T00:00:00-03:00"
+submission_id: 55304212
+episode_id: 90494772
+opponent_target:
+  card_id: 723
+  name: "Mega Abomasnow ex"
+  max_hp: 350
+  prize_value: 3
+  weakness: Fire
+observed_partial_attacks:
+  - "turn 7: Rocket Feathers with 4 visible Team Rocket Supporters, target HP 350, own deck 24"
+  - "turn 9: Rocket Feathers with 5 visible Team Rocket Supporters, target HP 230, own deck 14"
+  - "turn 11: Rocket Feathers with 4 visible Team Rocket Supporters, target HP 50, own deck 8"
+root_causes:
+  - "Rocket Feathers was forbidden only with zero Supporters, so any positive partial damage remained legal"
+  - "R Command promotion compared relative damage instead of requiring the eighteen-Supporter 360-damage threshold"
+  - "the generic all-options fallback could reintroduce a strategically forbidden partial attack"
+  - "retreat protection recognized any damaging attack as productive instead of comparing immediate KO lines and retreat cost"
+decisions:
+  - "require 6 Supporters and an exact six-card discard for Rocket Feathers into Mega Abomasnow"
+  - "require 18 discarded Supporters before selecting or promoting Porygon2 for R Command"
+  - "allow retreat only when its cost is payable and the replacement has an immediate Mega Abomasnow KO"
+  - "preserve two natural draws when Ariana or Factory would consume deck without a committed KO"
+evidence:
+  - "35 focused Honchkrow/Porygon tests pass"
+  - "the replay observation at turns 7 and 9 now selects END instead of Rocket Feathers"
+  - "the full suite passes: 239 tests"
+  - "40-game bilateral operational smoke: 34W/0D/6L, zero execution failures"
+status: "implemented; paired 200-game comparison pending"
+```

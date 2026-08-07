@@ -1,0 +1,16 @@
+{
+  "report_type": "honchkrow_porygon_mega_commit_smoke",
+  "generated_at": "2026-08-07",
+  "agent": "honchkrow_porygon",
+  "opponent": "cabt.random_agent",
+  "sdk_version": "1.32.2",
+  "games": 40,
+  "games_per_side": 20,
+  "wins": 34,
+  "losses": 6,
+  "draws": 0,
+  "execution_failures": 0,
+  "win_rate": 0.85,
+  "scope": "Operational smoke only; not a paired promotion comparison",
+  "promotion_gate": "pending 200-game paired comparison against submission 55304212"
+}

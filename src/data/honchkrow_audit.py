@@ -40,6 +40,10 @@ class DecisionEvidence:
     missed_ko: bool = False
     resource_waste: bool = False
     preventable_deck_out: bool = False
+    opponent_active_card_id: int | None = None
+    opponent_active_hp: int = 0
+    rocket_supporters_in_discard: int = 0
+    mega_abomasnow_partial_attack: bool = False
 
 
 def _int(value: Any) -> int | None:
@@ -113,6 +117,19 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
     )
     active = own.get("active") or []
     active_card_id = _card_id(active[0]) if isinstance(active, list) and active else None
+    opponent_active = opponent.get("active") or []
+    opponent_active_card_id = (
+        _card_id(opponent_active[0])
+        if isinstance(opponent_active, list) and opponent_active
+        else None
+    )
+    opponent_active_hp = (
+        _int(opponent_active[0].get("hp")) or 0
+        if isinstance(opponent_active, list)
+        and opponent_active
+        and isinstance(opponent_active[0], Mapping)
+        else 0
+    )
     bench = own.get("bench") or []
     bench_ids = (
         tuple(
@@ -151,6 +168,25 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
         else None
     )
     deck_count = _int(own.get("deckCount")) or 0
+    discard = own.get("discard") or []
+    rocket_supporters_in_discard = (
+        sum(
+            _card_id(card) in {1216, 1217, 1218, 1219, 1220}
+            for card in discard
+            if isinstance(card, Mapping)
+        )
+        if isinstance(discard, list)
+        else 0
+    )
+    mega_abomasnow_partial_attack = bool(
+        opponent_active_card_id == 723
+        and (
+            chosen_attack == ROCKET_FEATHERS
+            and len(supporter_ids) < 6
+            or chosen_attack == R_COMMAND
+            and rocket_supporters_in_discard < 18
+        )
+    )
     return DecisionEvidence(
         episode_id=_int(record.get("episode_id")) or 0,
         step_index=_int(record.get("step_index")) or 0,
@@ -178,6 +214,10 @@ def decision_evidence(record: Mapping[str, Any]) -> DecisionEvidence:
         missed_ko=guaranteed_ko and chosen_attack not in attack_ids,
         resource_waste=chosen_attack == ROCKET_FEATHERS and not guaranteed_ko,
         preventable_deck_out=(deck_count <= 2 and selected_type == 14 and bool(attack_ids)),
+        opponent_active_card_id=opponent_active_card_id,
+        opponent_active_hp=opponent_active_hp,
+        rocket_supporters_in_discard=rocket_supporters_in_discard,
+        mega_abomasnow_partial_attack=mega_abomasnow_partial_attack,
     )
 
 
@@ -212,6 +252,8 @@ def classify_loss(
         return "PRIZE_RACE_LOSS"
     if any(item.disruption_without_damage for item in evidence):
         return "LOW_DAMAGE_OR_DISRUPTION"
+    if any(item.mega_abomasnow_partial_attack for item in evidence):
+        return "MEGA_ABOMASNOW_PARTIAL_ATTACK"
     if any(item.missed_post_draw_r_command for item in evidence):
         return "MISSED_POST_DRAW_R_COMMAND"
     if any(item.guaranteed_ko_available for item in evidence):

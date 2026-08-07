@@ -4,7 +4,7 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-08-06
+**Last verified:** 2026-08-07
 
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
@@ -28,9 +28,10 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
-| Quality | 219 tests pass; Ruff and documentation drift audit pass | Green; mypy remains a separate gate |
+| Quality | 239 tests pass; Ruff, mypy, and documentation drift audit pass | Green for the implemented scope |
 | Dedicated local evaluation | 200 matches vs CABT `random_agent`: 157W/0D/43L, 78.5% win rate, zero execution failures | Operational baseline; deck-out remains a strategic regression |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
+| Mega Abomasnow fix smoke | 40 bilateral games vs CABT `random_agent`: 34W/0D/6L, zero execution failures | Operationally green; not sufficient for promotion |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
 | Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
@@ -40,6 +41,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
 | Human gameplay capture | No live human match captured | HD0–HD5 remain deferred |
 | Heuristic priority fixes | Honchkrow/Porygon Proton/Supporter/Energy/Articuno/promotion/terminal-line rules plus Stadium ordering | Implemented with focused tests; full strategic validation pending |
+| Mega Abomasnow KO policy | Six-Supporter Rocket Feathers, eighteen-Supporter R Command, exact lethal discard, draw reserve, and justified retreat guards | Implemented with focused and replay-observation checks; 200-game comparison pending |
 | Documentation integrity | All `src` modules inventoried; internal links, task IDs, counts, and stale claims checked automatically | Living gate |
 
 The local 400-match artifact reports `agent_mode: baseline` although its path
@@ -54,7 +56,7 @@ operational evidence until that metadata discrepancy is resolved.
 | MVP S2–S7 | In progress | Core implementation and focused tests exist | Revalidate real observations, gameplay metrics, opponent matrix, and belief evidence |
 | Search S8 | Deferred | Gate, limits, fallback, and cleanup logic exist | Verified native adapter plus latency/non-regression gate |
 | Release S9 | In progress | Heuristic-only package and remote submissions exist | Final checklist and stable promotion evidence |
-| Feedback FB-2026-001–014 | Implemented or accepted, not validated | Core rules, deck-out evidence, and focused tests exist | Deck-out P0 gate T-026 and remaining validation actions |
+| Feedback FB-2026-001–015 | Implemented or accepted, not validated | Core rules, deck-out evidence, committed-KO guards, and focused tests exist | Deck-out P0 gate T-026 and remaining validation actions |
 | Human capture HD0–HD5 | Deferred | Design only; post-hoc agent replay review is separate | First live human trace and staged delivery gates |
 | Learned policies | Runtime implemented, not promoted | Shared schema, grouped datasets, XGBoost/LightGBM native runtime, fallback, and separate extracted-package smoke | Required human data, temporal holdout, paired CABT matrix, and promotion gates |
 | HDI v1 | Experimental, not promoted | Ordinal runtime, declarative profile, 40-episode smoke, extracted package, and remote score | Full reproducible local comparison and formal promotion decision |
@@ -80,6 +82,8 @@ operational evidence until that metadata discrepancy is resolved.
 11. Track remote submission `55304212` as the current Honchkrow/Porygon
     observation baseline; do not infer strategic improvement until its score
     and replays are available.
+12. Against Mega Abomasnow ex, spend attack or retreat resources only on a
+    visible KO line; partial damage is not sufficient progress.
 
 ## Next work
 
@@ -103,3 +107,4 @@ The recommended order is:
 - [Release manifest](../reports/release_heuristic_manifest.json)
 - [Full local report](../reports/runs/full_heuristic_final/27d3df870485/report.json)
 - [Honchkrow/Porygon local baseline](../reports/honchkrow_porygon_local_eval_20260806.json)
+- [Mega Abomasnow fix smoke](../reports/honchkrow_porygon_mega_commit_smoke_20260807.json)

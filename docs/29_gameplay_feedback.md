@@ -483,6 +483,37 @@ Supporter/Item consumption. Re-run the same 200-game baseline after the fix.
 T-026: zero unexplained deck-out regressions in focused fixtures and improved
 paired evaluation against the current submission baseline.
 
+## FB-2026-015 — Mega Abomasnow requires committed 350-HP KO lines
+
+**Priority:** P0
+
+**Status:** `IMPLEMENTED`, not fully validated
+
+**Evidence:** Remote replay `90494772` from submission `55304212` used Rocket
+Feathers against an Active Mega Abomasnow ex with four Supporters at 350 HP,
+then five Supporters at 230 HP, and four Supporters at 50 HP. The first attack
+started with 24 cards left in deck and the third with eight. Mega Abomasnow ex
+has 350 HP, yields three Prizes, and is weak to Fire rather than Darkness.
+
+**Accepted rule:** Against an Active Mega Abomasnow ex, Rocket Feathers must
+start with six Team Rocket Supporters and discard exactly six when that legal
+selection exists. R Command requires eighteen Team Rocket Supporters in the
+discard pile. Hammer In and other attacks are allowed only when their visible
+damage takes the remaining KO. Porygon2 promotion and retreat are permitted
+only when the visible replacement immediately converts the 350-HP KO line;
+elective draws preserve two natural draws while the line is incomplete.
+
+**Implemented foundation:** Hard attack filtering, a second commitment filter
+that cannot be undone by the generic legal fallback, exact six-card discard
+selection, Porygon2 promotion gating, retreat-cost and ready-replacement
+checks, elective-draw reserve, and decision telemetry for partial attacks.
+Focused fixtures and replay-observation checks pass.
+
+### Gate
+
+T-026: repeat the frozen 200-game comparison against submission `55304212`,
+retain zero execution failures, and classify every remaining deck-out loss.
+
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and
 gate. Post-hoc agent replay review and live human demonstration must remain
