@@ -9,7 +9,7 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** Honchkrow/Porygon `supporter_resource_v2` production probe; HDI v1 and learned rankers remain unpromoted candidates
+**Current release:** Honchkrow/Porygon turn-planning candidate submitted for observation; promotion remains blocked by the local deck-out gate
 
 ## Executive summary
 
@@ -36,7 +36,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
 | Prior experimental candidate | `55093119`: 479.8 public score | Do not promote |
-| Package | Existing Honchkrow/Porygon package was uploaded as `55304212`; promoted-baseline archive built in temporary storage and passed extracted validation | Promoted baseline is not yet submitted |
+| Package | Turn-planning archive passed extracted validation; SHA-256 `762c0f524af02a8dd14dba2d404e1a069bb9d4b923bec08c5c1963ea62b66f5d` | Submitted to Kaggle; public score and replay review pending |
+| Kaggle turn-planning submission | Receipt `reports/submissions/20260807T110209Z-762c0f524af0.json`; package message `Honchkrow turn planning and tactical ledger` | Await score, submission identifier, and remote replays; do not infer promotion from upload acceptance |
 | Search | Native lifecycle lacks a verified project Python adapter | Disabled and deferred |
 | Raw replay corpus | 85 valid replays; 82 attributable matches; 62 distinct opponent decks | Source snapshot is current |
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
@@ -77,8 +78,8 @@ promotion matrix have not run, so the release policy remains heuristic.
    documentation change.
 8. Use the committed-switch Honchkrow/Porygon policy as `baseline`; preserve
    the prior policy as `legacy_baseline` for regression comparisons.
-9. Keep the existing submitted package as remote evidence until the promoted
-   baseline is rebuilt, validated, and explicitly submitted.
+9. Keep the existing submission `55304212` as historical remote evidence; the
+   new turn-planning package is submitted for observation but is not promoted.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
     development gate; the baseline promotion records a user decision and
     tactical invariants, not a statistically significant win-rate claim.
@@ -102,7 +103,7 @@ The recommended order is:
 1. audit the new gameplay observations against the promoted baseline;
 2. close T-026 by reducing the remaining 56/400 deck-out losses and rerun the
    promoted baseline at 1,000 matches;
-3. monitor submission `55304212` and collect its remote replays;
+3. monitor the new turn-planning submission and collect its remote replays;
 4. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 5. validate Rule Box/PrizeMap and PrizeCheck transitions;
 6. rebuild the replay dataset and close the release checklist.
@@ -125,3 +126,4 @@ The recommended order is:
 - [CABT replay damage diagnostics](../reports/cabt_replay_damage_diagnostics_20260807.json)
 - [Promoted Honchkrow/Porygon baseline audit](../reports/honchkrow_v3_retreat_guard_audit_20260807.md)
 - [Submitted package receipt](../reports/submissions/20260807T074354Z-062e4ecea1cc.json)
+- [Turn-planning submission receipt](../reports/submissions/20260807T110209Z-762c0f524af0.json)

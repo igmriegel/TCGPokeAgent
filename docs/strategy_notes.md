@@ -708,3 +708,16 @@ interpretation:
   - "The gate remains open because four Ignition attachments were not followed by a recorded attack and five Porygon terminal opportunities converted zero times."
 status: "implemented; CABT improvement observed; residual terminal telemetry requires follow-up"
 ```
+
+## Turn-planning candidate Kaggle submission
+
+```yaml
+submitted_at: "2026-08-07T11:02:09Z"
+competition: "pokemon-tcg-ai-battle"
+archive: "submissions/honchkrow_porygon_turn_planning_20260807.tar.gz"
+archive_sha256: "762c0f524af02a8dd14dba2d404e1a069bb9d4b923bec08c5c1963ea62b66f5d"
+receipt: "reports/submissions/20260807T110209Z-762c0f524af0.json"
+message: "Honchkrow turn planning and tactical ledger"
+status: "accepted by Kaggle; public score and replay review pending"
+promotion: "blocked until T-030 deck-out and non-inferiority gates pass"
+```
