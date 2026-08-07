@@ -67,11 +67,6 @@ def _run_report(*args: str) -> None:
 
 def main() -> int:
     """Refresh general reports and the latest downloaded individual reports."""
-    metadata = _load_json(SUBMISSION_METADATA_PATH)
-    submission_map = _load_json(SUBMISSION_MAP_PATH)
-    if not isinstance(metadata, list) or not isinstance(submission_map, dict):
-        raise ValueError("submission metadata or episode map has an invalid format")
-
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     replay_dir = str(REPLAY_DIR)
     _run_report(replay_dir, str(REPORT_DIR / "INVESTIGATION_REPORT_ABOMASNOW.html"), OWNER_NAME)
@@ -82,6 +77,14 @@ def main() -> int:
         "--deck-filter",
         "Honchkrow",
     )
+
+    # The general report refreshes the metadata cache from Kaggle when the API
+    # is available. Read it only after that refresh so the individual reports
+    # follow the same moving two-submission window as the downloader.
+    metadata = _load_json(SUBMISSION_METADATA_PATH)
+    submission_map = _load_json(SUBMISSION_MAP_PATH)
+    if not isinstance(metadata, list) or not isinstance(submission_map, dict):
+        raise ValueError("submission metadata or episode map has an invalid format")
 
     submission_ids = latest_downloaded_submission_ids(
         metadata,

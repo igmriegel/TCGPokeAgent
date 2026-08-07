@@ -15,6 +15,7 @@ COMPETITION = "pokemon-tcg-ai-battle"
 REPLAY_DIR = Path("replays/remote")
 DATA_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
+SUBMISSION_METADATA_PATH = Path("data/raw/kaggle/submission_metadata.json")
 KAGGLE_COMMAND_TIMEOUT = int(os.environ.get("KAGGLE_COMMAND_TIMEOUT", "60"))
 ACTIVE_SUBMISSION_LIMIT = 2
 
@@ -84,6 +85,16 @@ def main() -> int:
         submission_map = json.loads(SUBMISSION_MAP_PATH.read_text())
 
     submissions = _list_submissions()
+    completed_submissions = [
+        submission
+        for submission in submissions
+        if submission.get("status") == "SubmissionStatus.COMPLETE"
+    ]
+    SUBMISSION_METADATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUBMISSION_METADATA_PATH.write_text(
+        json.dumps(completed_submissions, indent=2) + "\n",
+        encoding="utf-8",
+    )
     active = _active_submissions(submissions)
     print(
         "Active replay window: "
