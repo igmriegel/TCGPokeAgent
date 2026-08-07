@@ -13,7 +13,7 @@ import time
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -38,7 +38,7 @@ ROCKET_SUPPORTERS = {1216, 1217, 1218, 1219, 1220}
 
 
 @contextlib.contextmanager
-def quiet_sdk_output():
+def quiet_sdk_output() -> Iterator[None]:
     """Suppress native SDK diagnostics while preserving the JSON report."""
     stdout_fd, stderr_fd = os.dup(1), os.dup(2)
     try:
@@ -118,7 +118,8 @@ def _terminal_reason(environment: Any, current: Mapping[str, Any]) -> tuple[int 
                     continue
                 raw = event.get("reason")
                 code = int(raw) if isinstance(raw, int) else None
-                return code, TERMINATION_REASONS.get(code, "unknown"), code in TERMINATION_REASONS
+                reason = TERMINATION_REASONS.get(code, "unknown") if code is not None else "unknown"
+                return code, reason, code in TERMINATION_REASONS if code is not None else False
     result = current.get("result")
     return None, "draw" if result == 2 else "unknown", False
 
@@ -288,6 +289,10 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "selected_attack_ids": selected_attacks,
             "duration_ms": round(elapsed_ms, 3),
             "resource_guard": ledger.resource_guard,
+            "own_turn": ledger.own_turn,
+            "turn_action_count": ledger.turn_action_count,
+            "first_own_turn": ledger.first_own_turn,
+            "turn_objective": ledger.objective,
             "deck_risk": ledger.deck_risk,
             "roto_sticks_played": ledger.roto_sticks_played,
             "roto_supporters_revealed": ledger.roto_supporters_revealed,
@@ -297,6 +302,19 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "transceiver_proton_in_hand": ledger.transceiver_proton_in_hand,
             "transceiver_target": ledger.transceiver_target,
             "transceiver_lethal_exception": ledger.transceiver_lethal_exception,
+            "transceiver_objective": ledger.transceiver_objective,
+            "ariana_opportunities": ledger.ariana_opportunities,
+            "ariana_plays": ledger.ariana_plays,
+            "ariana_marginal_draw": ledger.ariana_marginal_draw,
+            "ariana_supporters_in_hand": ledger.ariana_supporters_in_hand,
+            "ariana_with_required_proton": ledger.ariana_with_required_proton,
+            "petrel_factory_opportunities": ledger.petrel_factory_opportunities,
+            "petrel_factory_conversions": ledger.petrel_factory_conversions,
+            "poke_pad_ko_opportunities": ledger.poke_pad_ko_opportunities,
+            "poke_pad_ko_conversions": ledger.poke_pad_ko_conversions,
+            "poke_pad_ko_misses": ledger.poke_pad_ko_misses,
+            "torment_with_superior_line": ledger.torment_with_superior_line,
+            "no_pokemon_risk": ledger.no_pokemon_risk,
             "supporter_played": ledger.supporter_played,
             "second_supporter_attempts": ledger.second_supporter_attempts,
             "rocket_planned_damage": ledger.rocket_planned_damage,
@@ -314,6 +332,13 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "ignition_attachments": match_ledger.ignition_attachments,
             "ignition_attacks": match_ledger.ignition_attacks,
             "ignition_without_attack": match_ledger.ignition_without_attack,
+            "late_proton_without_gain": match_ledger.late_proton_without_gain,
+            "match_petrel_factory_opportunities": match_ledger.petrel_factory_opportunities,
+            "match_petrel_factory_conversions": match_ledger.petrel_factory_conversions,
+            "match_poke_pad_ko_opportunities": match_ledger.poke_pad_ko_opportunities,
+            "match_poke_pad_ko_conversions": match_ledger.poke_pad_ko_conversions,
+            "match_poke_pad_ko_misses": match_ledger.poke_pad_ko_misses,
+            "match_torment_with_superior_line": match_ledger.torment_with_superior_line,
             "partial_mega_abomasnow_attack": partial,
             "fallback_used": bool(getattr(agent.last_decision, "fallback_used", False)),
             "decision_phase": getattr(policy_decision, "decision_phase", ""),
@@ -409,6 +434,13 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "ignition_attachments": agent.match_ledger.ignition_attachments,
             "ignition_attacks": agent.match_ledger.ignition_attacks,
             "ignition_without_attack": agent.match_ledger.ignition_without_attack,
+            "late_proton_without_gain": agent.match_ledger.late_proton_without_gain,
+            "petrel_factory_opportunities": agent.match_ledger.petrel_factory_opportunities,
+            "petrel_factory_conversions": agent.match_ledger.petrel_factory_conversions,
+            "poke_pad_ko_opportunities": agent.match_ledger.poke_pad_ko_opportunities,
+            "poke_pad_ko_conversions": agent.match_ledger.poke_pad_ko_conversions,
+            "poke_pad_ko_misses": agent.match_ledger.poke_pad_ko_misses,
+            "torment_with_superior_line": agent.match_ledger.torment_with_superior_line,
             "resource_guards": dict(
                 Counter(event["resource_guard"] for event in events if event["resource_guard"])
             ),
@@ -439,9 +471,9 @@ def run(
     outcomes = Counter(match["result"] for match in matches)
     reasons = Counter(match["termination_reason"] for match in matches)
     failures = Counter(match["status"] for match in matches)
-    telemetry = Counter()
+    telemetry: Counter[str] = Counter()
     guards: Counter[str] = Counter()
-    opportunities = Counter()
+    opportunities: Counter[str] = Counter()
     for match in matches:
         opportunities.update(item["category"] for item in match["opportunities"])
         telemetry.update(

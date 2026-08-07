@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, is_dataclass
 from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -71,6 +71,7 @@ class DecisionRecord:
     fallback_used: bool = False
     model_backend: str = ""
     model_version: str = ""
+    tactical: dict[str, Any] = field(default_factory=dict)
 
     def to_trace(self, match_id: str, deck_id: str = "default", matchup: str = "unknown") -> Any:
         """Convert the runner record to the versioned RFL decision schema."""
@@ -398,6 +399,7 @@ class MatchRunner:
                 fallback_used=policy_decision.fallback_used if policy_decision else False,
                 model_backend=policy_decision.model_backend if policy_decision else "",
                 model_version=policy_decision.model_version if policy_decision else "",
+                tactical=self._policy_tactical(policy),
             )
             records.append(record)
             pending = record
@@ -453,6 +455,17 @@ class MatchRunner:
         owner = getattr(policy, "policy_owner", None)
         decision = getattr(owner, "last_decision", None)
         return decision if isinstance(decision, PolicyDecision) else None
+
+    @staticmethod
+    def _policy_tactical(policy: AgentCallable) -> dict[str, Any]:
+        """Serialize optional public tactical ledgers owned by a policy."""
+        owner = getattr(policy, "policy_owner", None)
+        result: dict[str, Any] = {}
+        for name in ("turn_ledger", "match_ledger"):
+            ledger = getattr(owner, name, None)
+            if ledger is not None and is_dataclass(ledger):
+                result[name] = asdict(cast(Any, ledger))
+        return result
 
     @staticmethod
     def _serialize_ranking(decision: PolicyDecision | None) -> list[dict[str, Any]]:

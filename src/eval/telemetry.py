@@ -201,6 +201,10 @@ def aggregate_decisions(matches: Sequence[Any]) -> dict[str, Any]:
     flags: Counter[str] = Counter()
     actions: Counter[str] = Counter()
     transitions: Counter[str] = Counter()
+    tactical: Counter[str] = Counter()
+    transceiver_targets: Counter[str] = Counter()
+    transceiver_objectives: Counter[str] = Counter()
+    ariana_events: list[dict[str, Any]] = []
     for match in matches:
         for decision in match.decisions:
             flags.update(decision.failure_flags)
@@ -218,8 +222,52 @@ def aggregate_decisions(matches: Sequence[Any]) -> dict[str, Any]:
                     "active_ko_taken": int(bool(effects.get("own_active_ko"))),
                 }
             )
+            selected_options = [options[index] for index in selected if 0 <= index < len(options)]
+            turn_ledger = getattr(decision, "tactical", {}).get("turn_ledger", {})
+            selected_card_ids = {
+                _card_id(option) for option in selected_options if isinstance(option, Mapping)
+            }
+            if 1216 in selected_card_ids:
+                tactical["ariana_plays"] += 1
+                marginal = int(turn_ledger.get("ariana_marginal_draw", 0) or 0)
+                tactical["ariana_draw_at_most_one"] += int(marginal <= 1)
+                tactical["ariana_with_required_proton"] += int(
+                    turn_ledger.get("ariana_with_required_proton", 0) or 0
+                )
+                ariana_events.append(
+                    {
+                        "turn": decision.turn,
+                        "marginal_draw": marginal,
+                        "supporters_in_hand": int(
+                            turn_ledger.get("ariana_supporters_in_hand", 0) or 0
+                        ),
+                    }
+                )
+            target = turn_ledger.get("transceiver_target")
+            if target in selected_card_ids:
+                transceiver_targets[str(target)] += 1
+                transceiver_objectives[str(turn_ledger.get("transceiver_objective", ""))] += 1
+            tactical["no_pokemon_risk_decisions"] += int(
+                bool(turn_ledger.get("no_pokemon_risk", False))
+            )
+        if match.decisions:
+            match_ledger = getattr(match.decisions[-1], "tactical", {}).get("match_ledger", {})
+            for key in (
+                "late_proton_without_gain",
+                "petrel_factory_opportunities",
+                "petrel_factory_conversions",
+                "poke_pad_ko_opportunities",
+                "poke_pad_ko_conversions",
+                "poke_pad_ko_misses",
+                "torment_with_superior_line",
+            ):
+                tactical[key] += int(match_ledger.get(key, 0) or 0)
     return {
         "decision_failure_flags": dict(flags),
         "selected_option_types": dict(actions),
         "transition_totals": dict(transitions),
+        "tactical_counters": dict(tactical),
+        "transceiver_targets": dict(transceiver_targets),
+        "transceiver_objectives": dict(transceiver_objectives),
+        "ariana_events": ariana_events,
     }

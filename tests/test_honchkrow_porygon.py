@@ -23,6 +23,7 @@ from src.agents.honchkrow_porygon import (
     MIRACLE_HEADSET,
     MURKROW,
     NIGHT_STRETCHER,
+    PETREL,
     POKE_PAD,
     PORYGON,
     PORYGON2,
@@ -32,6 +33,7 @@ from src.agents.honchkrow_porygon import (
     ROCKET_FEATHERS,
     ROTO_STICK,
     TORMENT,
+    TRANSCEIVER,
     ULTRA_BALL,
     AttackSequence,
     HonchkrowPorygonAgent,
@@ -246,6 +248,229 @@ def test_resource_variant_selects_all_roto_supporters_and_blocks_duplicate_proto
         state, transceiver_selections, transceiver_candidates, SelectContext.TO_HAND
     )
     assert [selection.indices for selection in filtered] == [(1,)]
+
+
+def test_first_own_turn_uses_proton_before_ariana_for_required_setup() -> None:
+    """A full opening hand does not override the one-Pokémon survival line."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=1,
+        your_index=0,
+        first_player=0,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": PROTON}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))],
+                deck_count=40,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=PROTON, card={"cardType": 3}),
+    ]
+    selections = [Selection((index,), (OptionType.PLAY,)) for index in range(2)]
+
+    phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert phase == DecisionPhase.PLAY_SUPPORTER.value
+    assert reason == "required_proton_board_setup"
+    assert [selection.indices for selection in choices] == [(1,)]
+
+
+def test_one_pokemon_board_uses_transceiver_to_reach_proton_before_ariana() -> None:
+    """Transceiver inherits the setup objective when Proton is not in hand."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=2,
+        your_index=1,
+        first_player=0,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": TRANSCEIVER}, {"id": ARIANA}],
+                deck_count=40,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=TRANSCEIVER, card={"cardType": 2}),
+    ]
+    selections = [Selection((index,), (OptionType.PLAY,)) for index in range(2)]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert reason == "required_proton_board_setup"
+    assert [selection.indices for selection in choices] == [(1,)]
+
+
+def test_late_transceiver_with_developed_board_does_not_fetch_proton() -> None:
+    """A developed late board resolves Transceiver to resource improvement."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=9,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                bench=[PokemonState(PORYGON, 60, 60)],
+                hand=[{"id": TRANSCEIVER}],
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": TRANSCEIVER},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((PROTON, ARIANA))
+    ]
+    selections = [Selection((index,), (OptionType.CARD,)) for index in range(2)]
+
+    choices = agent._transceiver_selections(state, selections, candidates)
+
+    assert choices is not None
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.transceiver_target == ARIANA
+
+
+def test_petrel_factory_dominates_one_card_ariana_draw() -> None:
+    """Petrel creates the two-card Factory line when Ariana adds only one card."""
+    agent = HonchkrowPorygonAgent(_profile())
+    hand = [{"id": PETREL}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))]
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=hand,
+                hand_count=8,
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=PETREL, card={"cardType": 3}),
+    ]
+    selections = [Selection((index,), (OptionType.PLAY,)) for index in range(2)]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert reason == "petrel_factory_over_low_draw_ariana"
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.petrel_factory_opportunities == 1
+
+
+def test_factory_in_play_keeps_ariana_available_for_comparison() -> None:
+    """An active Factory removes the Petrel-to-Stadium advantage."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=5,
+        stadium=str(FACTORY),
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": PETREL}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))],
+                hand_count=8,
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=PETREL, card={"cardType": 3}),
+    ]
+    selections = [Selection((index,), (OptionType.PLAY,)) for index in range(2)]
+
+    _, _, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_poke_pad_commits_only_a_proven_honchkrow_ko_line() -> None:
+    """Search, legal evolution, Energy, damage, and target are one commitment."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=7, energies=[{}, {}]),
+                hand=[{"id": POKE_PAD}, {"id": ARIANA}, {"id": PROTON}],
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(121, 120, 320, serial=9)),
+        ],
+    )
+    poke_pad = _candidate(0, OptionType.PLAY, card_id=POKE_PAD, card={"cardType": 2})
+    torment = _candidate(1, OptionType.ATTACK, attack_id=TORMENT)
+    selections = [
+        Selection((0,), (OptionType.PLAY,)),
+        Selection((1,), (OptionType.ATTACK,)),
+    ]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, [poke_pad, torment])
+
+    assert reason == "commit_poke_pad_honchkrow_ko"
+    assert [selection.indices for selection in choices] == [(0,)]
+    assert agent._evolution_ko_commitment is not None
+    assert agent._evolution_ko_commitment.murkrow_serial == 7
+    assert agent.turn_ledger.poke_pad_ko_opportunities == 1
+
+
+def test_poke_pad_does_not_invent_ko_without_each_public_precondition() -> None:
+    """Missing Energy, deck target, or evolution legality prevents commitment."""
+    poke_pad = _candidate(0, OptionType.PLAY, card_id=POKE_PAD, card={"cardType": 2})
+    base = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=7, energies=[{}, {}]),
+                hand=[{"id": POKE_PAD}, {"id": ARIANA}, {"id": PROTON}],
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(121, 120, 320)),
+        ],
+    )
+    states = [
+        GameState(
+            turn=5, players=[PlayerState(active=PokemonState(MURKROW, 80, 80)), base.players[1]]
+        ),
+        GameState(
+            turn=5,
+            players=[
+                PlayerState(
+                    active=PokemonState(MURKROW, 80, 80, energies=[{}, {}]),
+                    hand=[{"id": HONCHKROW}] * 3,
+                ),
+                base.players[1],
+            ],
+        ),
+        GameState(
+            turn=5,
+            players=[
+                PlayerState(
+                    active=PokemonState(MURKROW, 80, 80, energies=[{}, {}], appear_this_turn=True),
+                    hand=base.players[0].hand,
+                ),
+                base.players[1],
+            ],
+        ),
+    ]
+
+    for state in states:
+        agent = HonchkrowPorygonAgent(_profile())
+        agent._refresh_evolution_ko_commitment(state, [poke_pad])
+        assert agent._evolution_ko_commitment is None
 
 
 def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:
@@ -1194,10 +1419,10 @@ def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
         turn=9,
         energy_attached=True,
         players=[
-                PlayerState(
-                    active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}, {}]),
-                    hand=[{"id": ARIANA}],
-                ),
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}, {}]),
+                hand=[{"id": ARIANA}],
+            ),
             PlayerState(active=PokemonState(999, 100, 100)),
         ],
     )

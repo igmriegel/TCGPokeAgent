@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any
 
 from src.agents.heuristic import (
@@ -59,6 +60,17 @@ MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS = 18
 MEGA_ABOMASNOW_DECK_RESERVE = 2
 
 
+class TurnObjective(StrEnum):
+    """Ordered result that the policy commits to for one public turn."""
+
+    WIN_NOW = "win_now"
+    PREVENT_NO_POKEMON_LOSS = "prevent_no_pokemon_loss"
+    HIGHEST_PRIZE_KO = "highest_prize_ko"
+    BUILD_ATTACKER_AND_BOARD = "build_attacker_and_board"
+    IMPROVE_RESOURCES = "improve_resources"
+    ATTACK_OR_CONTROL = "attack_or_control"
+
+
 @dataclass(slots=True)
 class TurnTacticalLedger:
     """Public, turn-scoped tactical evidence for the dedicated policy.
@@ -68,6 +80,10 @@ class TurnTacticalLedger:
     """
 
     turn: int = 0
+    own_turn: int = 0
+    turn_action_count: int = 0
+    first_own_turn: bool = False
+    objective: str = ""
     pre_draw_ko_candidates: tuple[int, ...] = ()
     post_draw_ko_candidates: tuple[int, ...] = ()
     potential_damage: dict[int, int] = field(default_factory=dict)
@@ -84,6 +100,19 @@ class TurnTacticalLedger:
     transceiver_proton_in_hand: bool = False
     transceiver_target: int | None = None
     transceiver_lethal_exception: bool = False
+    transceiver_objective: str = ""
+    ariana_opportunities: int = 0
+    ariana_plays: int = 0
+    ariana_marginal_draw: int = 0
+    ariana_supporters_in_hand: int = 0
+    ariana_with_required_proton: int = 0
+    petrel_factory_opportunities: int = 0
+    petrel_factory_conversions: int = 0
+    poke_pad_ko_opportunities: int = 0
+    poke_pad_ko_conversions: int = 0
+    poke_pad_ko_misses: int = 0
+    torment_with_superior_line: int = 0
+    no_pokemon_risk: bool = False
     supporter_played: int | None = None
     second_supporter_attempts: int = 0
     rocket_planned_damage: int = 0
@@ -100,6 +129,10 @@ class TurnTacticalLedger:
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
         self.turn = turn
+        self.own_turn = 0
+        self.turn_action_count = 0
+        self.first_own_turn = False
+        self.objective = ""
         self.pre_draw_ko_candidates = ()
         self.post_draw_ko_candidates = ()
         self.potential_damage.clear()
@@ -116,6 +149,19 @@ class TurnTacticalLedger:
         self.transceiver_proton_in_hand = False
         self.transceiver_target = None
         self.transceiver_lethal_exception = False
+        self.transceiver_objective = ""
+        self.ariana_opportunities = 0
+        self.ariana_plays = 0
+        self.ariana_marginal_draw = 0
+        self.ariana_supporters_in_hand = 0
+        self.ariana_with_required_proton = 0
+        self.petrel_factory_opportunities = 0
+        self.petrel_factory_conversions = 0
+        self.poke_pad_ko_opportunities = 0
+        self.poke_pad_ko_conversions = 0
+        self.poke_pad_ko_misses = 0
+        self.torment_with_superior_line = 0
+        self.no_pokemon_risk = False
         self.supporter_played = None
         self.second_supporter_attempts = 0
         self.rocket_planned_damage = 0
@@ -146,6 +192,13 @@ class MatchTacticalLedger:
     ignition_attachments: int = 0
     ignition_attacks: int = 0
     ignition_without_attack: int = 0
+    late_proton_without_gain: int = 0
+    petrel_factory_opportunities: int = 0
+    petrel_factory_conversions: int = 0
+    poke_pad_ko_opportunities: int = 0
+    poke_pad_ko_conversions: int = 0
+    poke_pad_ko_misses: int = 0
+    torment_with_superior_line: int = 0
     last_terminal_signature: tuple[int | None, int, int] | None = None
 
     def reset(self) -> None:
@@ -162,7 +215,27 @@ class MatchTacticalLedger:
         self.ignition_attachments = 0
         self.ignition_attacks = 0
         self.ignition_without_attack = 0
+        self.late_proton_without_gain = 0
+        self.petrel_factory_opportunities = 0
+        self.petrel_factory_conversions = 0
+        self.poke_pad_ko_opportunities = 0
+        self.poke_pad_ko_conversions = 0
+        self.poke_pad_ko_misses = 0
+        self.torment_with_superior_line = 0
         self.last_terminal_signature = None
+
+
+@dataclass(slots=True)
+class EvolutionKoCommitment:
+    """Persist a verified Poké Pad to Honchkrow Knock Out line."""
+
+    turn: int
+    murkrow_serial: int | None
+    target_card_id: int
+    target_prize_value: int
+    planned_damage: int
+    supporters_required: int
+    stage: str = "play_poke_pad"
 
 
 @dataclass(slots=True)
@@ -244,8 +317,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if card_id == ARIANA:
             if not self._ariana_is_safe_and_useful(state):
                 return -2600.0, ["ariana_deck_out_guard"]
-            if 1 <= state.turn <= 2 and self._proton_targets_remaining(state):
-                return 300.0, ["delay_ariana_for_early_proton"]
+            if self._proton_setup_is_useful(state) and self._card_in_hand(state, PROTON):
+                return -1800.0, ["delay_ariana_for_required_proton_setup"]
+            if self._petrel_factory_is_superior(state):
+                return -1600.0, ["delay_ariana_for_petrel_factory"]
             return 1400.0, [
                 "ariana_before_factory_hand_refresh",
                 "ariana_hand_refresh_and_energy_access",
@@ -260,8 +335,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return 80.0, ["giovanni_preserves_supporters_until_ko"]
         if card_id == PROTON:
             targets = self._proton_targets_remaining(state)
-            if self._own_bench_full(state) or not self._proton_targets_exist(state):
-                return -2400.0, ["proton_bench_full"]
+            if not self._proton_setup_is_useful(state):
+                return -2400.0, ["proton_without_setup_gain"]
             priority = self._proton_priority_score(state, targets)
             reasons = ["proton_targets_remaining"]
             if targets.get(MURKROW, 0) > 0:
@@ -270,7 +345,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 reasons.append("proton_matchup_articuno")
             return 420.0 + priority, reasons
         if card_id == TRANSCEIVER:
-            if self._early_proton_window(state) and self._proton_targets_exist(state):
+            if self._proton_setup_is_useful(state):
                 return 1200.0, ["transceiver_proton_early_game"]
             if self._proton_was_used_previous_turn(state):
                 return 690.0, ["transceiver_ariana_after_proton"]
@@ -290,6 +365,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return -1800.0, ["factory_without_post_supporter_draw"]
             return 1250.0, ["factory_after_ariana_draw_engine"]
         if card_id == PETREL:
+            if self._petrel_factory_is_superior(state):
+                return 1700.0, ["petrel_factory_two_card_draw"]
             if self._petrel_is_emergency(state):
                 return 820.0, ["petrel_emergency_ariana_search"]
             return -900.0, ["avoid_petrel_generic_supporter_search"]
@@ -439,7 +516,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     ) -> tuple[float, list[str]]:
         card_id = self._feature_int(candidate, "card_id")
         if context is SelectContext.TO_HAND and card_id == PROTON:
-            if self._early_proton_window(state) and self._proton_targets_exist(state):
+            if self._proton_setup_is_useful(state):
                 return 1800.0, ["select_proton_for_early_setup"]
         if context is SelectContext.TO_HAND and card_id == HONCHKROW:
             if self._pokepad_honchkrow_is_useful(state, candidate):
@@ -585,7 +662,27 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return supporters == [PETREL]
 
     def _early_proton_window(self, state: GameState) -> bool:
-        return 1 <= state.turn <= 2
+        return self._own_turn_number(state) <= 2
+
+    @staticmethod
+    def _own_turn_number(state: GameState) -> int:
+        """Return the one-based turn number for the acting player."""
+        if state.turn <= 0:
+            return 0
+        return (state.turn + 1) // 2 if state.your_index == state.first_player else state.turn // 2
+
+    def _proton_setup_is_useful(self, state: GameState) -> bool:
+        """Require a real Basic target, Bench space, and development gain."""
+        targets = self._proton_targets_remaining(state)
+        basic_target = any(targets.get(card_id, 0) > 0 for card_id in (MURKROW, PORYGON))
+        if self._articuno_is_needed(state):
+            basic_target = basic_target or targets.get(ARTICUNO, 0) > 0
+        field_count = self._own_field_count(state)
+        return bool(
+            basic_target
+            and not self._own_bench_full(state)
+            and (field_count < 2 or self._own_turn_number(state) == 1)
+        )
 
     def _card_in_hand(self, state: GameState, card_id: int) -> bool:
         return any(self._card_id_from_value(card) == card_id for card in self._hand_cards(state))
@@ -611,6 +708,37 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         """Return Ariana's public draw-to target for the current board."""
         return 8 if self._all_own_pokemon_are_rocket(state) else 5
 
+    def _ariana_marginal_draw(self, state: GameState) -> int:
+        """Return cards drawn after Ariana itself leaves the visible hand."""
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        return int(max(0, self._ariana_draw_count(state) - max(0, player.hand_count - 1)))
+
+    def _factory_in_play(self, state: GameState) -> bool:
+        stadium = state.stadium
+        if isinstance(stadium, list):
+            return any(
+                isinstance(card, Mapping) and self._card_id_from_value(card) == FACTORY
+                for card in stadium
+            )
+        if isinstance(stadium, Mapping):
+            return self._card_id_from_value(stadium) == FACTORY
+        return str(stadium) == str(FACTORY)
+
+    def _petrel_factory_is_superior(self, state: GameState) -> bool:
+        """Prefer Petrel into Factory when Ariana would draw at most one card."""
+        player = self._own_player(state)
+        return bool(
+            player
+            and not state.supporter_played
+            and not self._factory_in_play(state)
+            and not state.stadium_played
+            and self._card_in_hand(state, PETREL)
+            and self._ariana_marginal_draw(state) <= 1
+            and player.deck_count - 2 >= self._elective_draw_reserve(state)
+        )
+
     def _ariana_is_safe_and_useful(self, state: GameState) -> bool:
         """Reject Ariana when it cannot draw safely or improve the visible hand."""
         player = self._own_player(state)
@@ -618,7 +746,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return True
         if state.supporter_played:
             return False
-        draws = max(0, self._ariana_draw_count(state) - max(0, player.hand_count - 1))
+        draws = self._ariana_marginal_draw(state)
         reserve = self._elective_draw_reserve(state)
         return bool(draws > 0 and int(player.deck_count) - draws >= reserve)
 
@@ -809,10 +937,28 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return bool(
             player
             and any(
-                pokemon is not None and pokemon.card_id == MURKROW
+                pokemon is not None and pokemon.card_id == MURKROW and not pokemon.appear_this_turn
                 for pokemon in [player.active, *player.bench]
             )
         )
+
+    def _card_copies_remaining(self, state: GameState, card_id: int) -> int:
+        """Count declared copies not present in actor-visible zones."""
+        availability = self.prize_check.availability(card_id) if self.prize_check else None
+        if availability is not None and availability.searchable_exact is not None:
+            return int(availability.searchable_exact)
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        known = sum(
+            pokemon is not None and pokemon.card_id == card_id
+            for pokemon in [player.active, *player.bench]
+        )
+        known += sum(
+            self._card_id_from_value(card) == card_id
+            for card in list(player.hand or ()) + list(player.discard) + list(player.prize)
+        )
+        return int(max(0, self._declared_count(card_id) - known))
 
     def _pokepad_honchkrow_is_useful(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether Poké Pad fetching Honchkrow has an immediate purpose."""
@@ -1276,6 +1422,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._turn_ledger = TurnTacticalLedger()
         self._attack_sequence: AttackSequence | None = None
         self._switch_commitment: SwitchCommitment | None = None
+        self._evolution_ko_commitment: EvolutionKoCommitment | None = None
         self._headset_turn: int | None = None
         self._roto_turn: int | None = None
         self._transceiver_turn: int | None = None
@@ -1353,6 +1500,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._turn_ledger.reset(0)
         self._attack_sequence = None
         self._switch_commitment = None
+        self._evolution_ko_commitment = None
         self._headset_turn = None
         self._roto_turn = None
         self._transceiver_turn = None
@@ -1362,12 +1510,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Decide while recording only public pre/post-draw tactical evidence."""
         parsed = self._parser.parse(observation)
         if parsed.state.turn != self._turn_ledger.turn:
-            if (
-                self._switch_commitment is not None
-                and self._switch_commitment.method == "ignition"
-            ):
+            if self._evolution_ko_commitment is not None:
+                self._turn_ledger.poke_pad_ko_misses += 1
+                self._match_ledger.poke_pad_ko_misses += 1
+            if self._switch_commitment is not None and self._switch_commitment.method == "ignition":
                 self._match_ledger.ignition_without_attack += 1
             self._turn_ledger.reset(parsed.state.turn)
+            self._evolution_ko_commitment = None
+        self._turn_ledger.turn_action_count = parsed.state.turn_action_count
+        self._turn_ledger.own_turn = self._scorer._own_turn_number(parsed.state)
+        self._turn_ledger.first_own_turn = self._turn_ledger.own_turn == 1
+        self._turn_ledger.no_pokemon_risk = self._scorer._own_field_count(parsed.state) <= 1
+        self._refresh_evolution_ko_commitment(parsed.state, parsed.candidates)
+        if not self._turn_ledger.objective:
+            self._turn_ledger.objective = self._choose_turn_objective(
+                parsed.state, parsed.candidates
+            ).value
         if (
             self._switch_commitment is not None
             and self._switch_commitment.turn != parsed.state.turn
@@ -1386,9 +1544,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if opponent_active is not None:
             self._match_ledger.target_serial = opponent_active.serial
             self._match_ledger.target_card_id = (
-                int(opponent_active.card_id)
-                if isinstance(opponent_active.card_id, int)
-                else None
+                int(opponent_active.card_id) if isinstance(opponent_active.card_id, int) else None
             )
             self._match_ledger.target_hp = int(opponent_active.hp)
             self._match_ledger.target_prize_value = self._scorer._active_target_prize_value(
@@ -1437,6 +1593,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if candidate is None:
                 continue
             card_id = self._scorer._feature_int(candidate, "card_id")
+            if self._evolution_ko_commitment is not None:
+                if candidate.option_type is OptionType.PLAY and card_id == POKE_PAD:
+                    self._evolution_ko_commitment.stage = "select_honchkrow"
+                elif candidate.option_type is OptionType.CARD and card_id == HONCHKROW:
+                    self._evolution_ko_commitment.stage = "evolve_murkrow"
+                elif candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE} and (
+                    card_id == HONCHKROW
+                ):
+                    self._evolution_ko_commitment.stage = "attack"
             if (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._metadata_int(candidate.card, "cardType") == 3
@@ -1449,10 +1614,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.roto_sticks_played += 1
                 self._turn_ledger.roto_preserved_reason = "played_to_improve_rocket_feathers"
                 self._roto_turn = parsed.state.turn
-            if (
-                candidate.option_type is OptionType.ATTACH
-                and card_id == IGNITION_ENERGY
-            ):
+            if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
                 ignition_plan = self._ignition_attack_plan(parsed.state, candidate)
                 if ignition_plan is not None:
                     self._switch_commitment = ignition_plan
@@ -1463,7 +1625,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
                 self._transceiver_turn = parsed.state.turn
             if candidate.option_type is OptionType.PLAY and card_id == ARIANA:
+                self._turn_ledger.ariana_plays += 1
+                self._turn_ledger.ariana_marginal_draw = self._scorer._ariana_marginal_draw(
+                    parsed.state
+                )
+                self._turn_ledger.ariana_supporters_in_hand = self._scorer._supporters_in_hand(
+                    parsed.state
+                )
+                if self._scorer._card_in_hand(
+                    parsed.state, PROTON
+                ) and self._scorer._proton_setup_is_useful(parsed.state):
+                    self._turn_ledger.ariana_with_required_proton += 1
                 self._turn_ledger.draw_sequence.append("ariana")
+            elif candidate.option_type is OptionType.PLAY and card_id == PETREL:
+                if self._scorer._petrel_factory_is_superior(parsed.state):
+                    self._turn_ledger.petrel_factory_conversions += 1
+                    self._match_ledger.petrel_factory_conversions += 1
             elif candidate.option_type is OptionType.PLAY and card_id == FACTORY:
                 self._turn_ledger.draw_sequence.append("factory")
             elif candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
@@ -1487,6 +1664,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.miracle_headsets_played += 1
                 self._headset_turn = parsed.state.turn
             elif candidate.option_type is OptionType.ATTACK:
+                if self._scorer._attack_id(candidate) == TORMENT and (
+                    self._evolution_ko_commitment is not None
+                    or any(
+                        attack_id != TORMENT
+                        for attack_id in self._turn_ledger.pre_draw_ko_candidates
+                    )
+                ):
+                    self._turn_ledger.torment_with_superior_line += 1
+                    self._match_ledger.torment_with_superior_line += 1
+                if (
+                    self._evolution_ko_commitment is not None
+                    and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+                ):
+                    self._turn_ledger.poke_pad_ko_conversions += 1
+                    self._match_ledger.poke_pad_ko_conversions += 1
+                    self._evolution_ko_commitment = None
                 if (
                     self._switch_commitment is not None
                     and self._switch_commitment.method == "ignition"
@@ -1572,6 +1765,92 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.deck_risk = "low"
         return decision
 
+    def _choose_turn_objective(
+        self, state: GameState, candidates: Sequence[Candidate]
+    ) -> TurnObjective:
+        """Choose the highest reachable public objective once per own turn."""
+        attacks = [
+            candidate for candidate in candidates if candidate.option_type is OptionType.ATTACK
+        ]
+        lethal = [
+            candidate for candidate in attacks if self._variant_attack_is_lethal(state, candidate)
+        ]
+        player = self._scorer._own_player(state)
+        prizes_remaining = len(player.prize) if player is not None else 0
+        if any(
+            self._scorer._truthy(candidate.option, "win", "wins", "gameOver")
+            for candidate in lethal
+        ) or (
+            prizes_remaining > 0
+            and lethal
+            and self._scorer._active_target_prize_value(state) >= prizes_remaining
+        ):
+            return TurnObjective.WIN_NOW
+        if self._scorer._own_field_count(state) <= 1 and self._scorer._proton_setup_is_useful(
+            state
+        ):
+            return TurnObjective.PREVENT_NO_POKEMON_LOSS
+        if lethal or self._evolution_ko_commitment is not None:
+            return TurnObjective.HIGHEST_PRIZE_KO
+        if self._scorer._proton_setup_is_useful(state) or self._scorer._own_field_count(state) < 2:
+            return TurnObjective.BUILD_ATTACKER_AND_BOARD
+        if any(
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id")
+            in {ARIANA, PETREL, TRANSCEIVER, FACTORY, POKE_PAD}
+            for candidate in candidates
+        ):
+            return TurnObjective.IMPROVE_RESOURCES
+        return TurnObjective.ATTACK_OR_CONTROL
+
+    def _refresh_evolution_ko_commitment(
+        self, state: GameState, candidates: Sequence[Candidate]
+    ) -> None:
+        """Create one commitment only after every public KO precondition is proven."""
+        if self._evolution_ko_commitment is not None:
+            return
+        if not any(
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
+            for candidate in candidates
+        ):
+            return
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        murkrow = player.active if player is not None else None
+        target = opponent.active if opponent is not None else None
+        if (
+            murkrow is None
+            or murkrow.card_id != MURKROW
+            or murkrow.appear_this_turn
+            or target is None
+            or self._scorer._card_copies_remaining(state, HONCHKROW) <= 0
+            or not self._attack_cost_satisfied(murkrow, ROCKET_FEATHERS)
+        ):
+            return
+        damage_per_supporter = self._scorer._attack_damage(
+            state,
+            Candidate(0, {"attackId": ROCKET_FEATHERS}, OptionType.ATTACK),
+            60,
+            target,
+        )
+        if damage_per_supporter <= 0:
+            return
+        supporters = self._scorer._supporters_in_hand(state)
+        required = (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
+        if required <= 0 or supporters < required:
+            return
+        self._evolution_ko_commitment = EvolutionKoCommitment(
+            turn=state.turn,
+            murkrow_serial=murkrow.serial,
+            target_card_id=int(target.card_id) if isinstance(target.card_id, int) else 0,
+            target_prize_value=self._scorer._active_target_prize_value(state),
+            planned_damage=supporters * damage_per_supporter,
+            supporters_required=required,
+        )
+        self._turn_ledger.poke_pad_ko_opportunities += 1
+        self._match_ledger.poke_pad_ko_opportunities += 1
+
     def _candidate_damage(self, state: GameState, candidate: Candidate) -> int:
         """Calculate the candidate's visible tactical damage."""
         attack_id = self._scorer._attack_id(candidate)
@@ -1609,9 +1888,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         selections: Sequence[Selection],
         candidates: Sequence[Candidate],
     ) -> tuple[str, str, list[Selection]]:
-        """Apply the dedicated draw-first order to one public MAIN prompt."""
+        """Apply the persistent objective before lower-priority MAIN actions."""
         safe = self._filter_forbidden_selections(state, selections, candidates, SelectContext.MAIN)
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if not self._turn_ledger.objective:
+            self._refresh_evolution_ko_commitment(state, candidates)
+            self._turn_ledger.objective = self._choose_turn_objective(state, candidates).value
 
         def matching(predicate: Any) -> list[Selection]:
             return [
@@ -1755,6 +2037,75 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     lethal_attacks,
                 )
 
+        commitment = self._evolution_ko_commitment
+        if commitment is not None:
+            if commitment.stage == "play_poke_pad":
+                poke_pad = matching(
+                    lambda candidate: (
+                        candidate.option_type is OptionType.PLAY
+                        and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
+                    )
+                )
+                if poke_pad:
+                    return DecisionPhase.PLAY_ITEMS.value, "commit_poke_pad_honchkrow_ko", poke_pad
+            if commitment.stage == "evolve_murkrow":
+                evolution = matching(
+                    lambda candidate: self._candidate_matches_evolution_commitment(candidate)
+                )
+                if evolution:
+                    return (
+                        DecisionPhase.EVOLVE.value,
+                        "evolve_committed_murkrow_for_ko",
+                        evolution,
+                    )
+            if commitment.stage == "attack":
+                feathers = matching(
+                    lambda candidate: (
+                        candidate.option_type is OptionType.ATTACK
+                        and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+                        and self._variant_attack_is_lethal(state, candidate)
+                    )
+                )
+                if feathers:
+                    return DecisionPhase.ATTACK_PRIORITY.value, "execute_poke_pad_ko", feathers
+
+        setup_supporter = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and (
+                    self._scorer._feature_int(candidate, "card_id") == PROTON
+                    or (
+                        self._scorer._feature_int(candidate, "card_id") == TRANSCEIVER
+                        and not self._scorer._card_in_hand(state, PROTON)
+                    )
+                )
+                and self._scorer._proton_setup_is_useful(state)
+            )
+        )
+        if setup_supporter:
+            return (
+                DecisionPhase.PLAY_SUPPORTER.value,
+                "required_proton_board_setup",
+                setup_supporter,
+            )
+
+        petrel_factory = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == PETREL
+                and self._scorer._petrel_factory_is_superior(state)
+            )
+        )
+        if petrel_factory:
+            if self._turn_ledger.petrel_factory_opportunities == 0:
+                self._turn_ledger.petrel_factory_opportunities = 1
+                self._match_ledger.petrel_factory_opportunities += 1
+            return (
+                DecisionPhase.PLAY_SUPPORTER.value,
+                "petrel_factory_over_low_draw_ariana",
+                petrel_factory,
+            )
+
         night_stretcher = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
@@ -1778,6 +2129,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             )
         )
         if ariana:
+            if self._turn_ledger.ariana_opportunities == 0:
+                self._turn_ledger.ariana_opportunities = 1
+                self._turn_ledger.ariana_marginal_draw = self._scorer._ariana_marginal_draw(state)
+                self._turn_ledger.ariana_supporters_in_hand = self._scorer._supporters_in_hand(
+                    state
+                )
             return DecisionPhase.PLAY_SUPPORTER.value, "ariana_before_factory", ariana
 
         if self._uses_resource_variant:
@@ -1799,6 +2156,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
         if factory:
             return DecisionPhase.UTILITY.value, "factory_after_ariana_and_roto", factory
+
+        productive_evolution = matching(
+            lambda candidate: (
+                candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                and self._scorer._feature_int(candidate, "card_id") in {HONCHKROW, PORYGON2}
+            )
+        )
+        if productive_evolution:
+            return (
+                DecisionPhase.EVOLVE.value,
+                "productive_evolution_before_control",
+                productive_evolution,
+            )
 
         attacks = matching(lambda candidate: candidate.option_type is OptionType.ATTACK)
         if attacks:
@@ -1851,8 +2221,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         stadium = state.stadium
         if candidate.option_type is OptionType.ABILITY and isinstance(stadium, list):
             return any(
-                isinstance(card, Mapping)
-                and self._scorer._card_id_from_value(card) == FACTORY
+                isinstance(card, Mapping) and self._scorer._card_id_from_value(card) == FACTORY
                 for card in stadium
             )
         return False
@@ -1937,6 +2306,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> list[Selection]:
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if context is SelectContext.TO_HAND and self._evolution_ko_commitment is not None:
+            if self._evolution_ko_commitment.stage == "select_honchkrow":
+                honchkrow = [
+                    selection
+                    for selection in selections
+                    if any(
+                        self._scorer._feature_int(candidate, "card_id") == HONCHKROW
+                        for index in selection.indices
+                        if (candidate := by_index.get(index)) is not None
+                    )
+                ]
+                if honchkrow:
+                    self._turn_ledger.resource_guard = "select_committed_honchkrow"
+                    return honchkrow
         if (
             self._uses_supporter_lethal_commitment
             and context
@@ -2124,50 +2507,62 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         selections: Sequence[Selection],
         candidates: Sequence[Candidate],
     ) -> list[Selection] | None:
-        """Avoid duplicate Proton targets unless Proton is the only lethal target."""
+        """Resolve Transceiver from the persistent objective without a Proton fallback."""
         if (
             not any(candidate.option.get("sourceCardId") == TRANSCEIVER for candidate in candidates)
             and self._transceiver_turn != state.turn
         ):
             return None
         by_index = {candidate.option_index: candidate for candidate in candidates}
-        proton = [
-            selection
-            for selection in selections
-            if any(
-                (
-                    candidate.option.get("sourceCardId") == TRANSCEIVER
-                    or self._transceiver_turn == state.turn
-                )
-                and self._scorer._feature_int(candidate, "card_id") == PROTON
+        selection_ids: list[tuple[Selection, set[int]]] = []
+        for selection in selections:
+            ids = {
+                self._scorer._feature_int(candidate, "card_id")
                 for index in selection.indices
                 if (candidate := by_index.get(index)) is not None
-            )
-        ]
-        others = [
-            candidate
-            for candidate in candidates
-            if (
-                candidate.option.get("sourceCardId") == TRANSCEIVER
-                or self._transceiver_turn == state.turn
-            )
-            and self._scorer._feature_int(candidate, "card_id") != PROTON
-        ]
-        if not self._scorer._card_in_hand(state, PROTON):
-            return proton or list(selections)
-        if others:
-            without_proton = [selection for selection in selections if selection not in proton]
-            return without_proton or list(selections)
-        lethal = (
-            self._scorer._raw_opponent_hp(state)
-            <= (self._scorer._supporters_in_hand(state) + 1) * 60
+            }
+            selection_ids.append((selection, ids))
+
+        objective = (
+            self._turn_ledger.objective or self._choose_turn_objective(state, candidates).value
         )
-        if lethal and proton:
-            self._turn_ledger.transceiver_lethal_exception = True
-            return proton
-        return [selection for selection in selections if selection not in proton] or list(
-            selections
-        )
+        target_order: list[int]
+        if (
+            objective
+            in {
+                TurnObjective.PREVENT_NO_POKEMON_LOSS.value,
+                TurnObjective.BUILD_ATTACKER_AND_BOARD.value,
+            }
+            and self._scorer._proton_setup_is_useful(state)
+            and not self._scorer._card_in_hand(state, PROTON)
+        ):
+            target_order = [PROTON, ARIANA, PETREL, GIOVANNI]
+        elif objective in {TurnObjective.WIN_NOW.value, TurnObjective.HIGHEST_PRIZE_KO.value}:
+            target_order = [GIOVANNI, ARIANA, PETREL]
+        elif (
+            self._scorer._ariana_marginal_draw(state) <= 1
+            and not self._scorer._factory_in_play(state)
+            and not state.stadium_played
+        ):
+            target_order = [PETREL, ARIANA, GIOVANNI]
+        else:
+            target_order = [ARIANA, PETREL, GIOVANNI]
+
+        for target_id in target_order:
+            exact = [selection for selection, ids in selection_ids if target_id in ids]
+            if exact:
+                self._turn_ledger.transceiver_target = target_id
+                self._turn_ledger.transceiver_objective = objective
+                return exact
+        non_proton = [selection for selection, ids in selection_ids if PROTON not in ids]
+        if non_proton:
+            return non_proton
+        if self._scorer._proton_setup_is_useful(state):
+            self._turn_ledger.transceiver_target = PROTON
+            self._turn_ledger.transceiver_objective = objective
+            return list(selections)
+        self._match_ledger.late_proton_without_gain += 1
+        return list(selections)
 
     def _rocket_supporter_count(
         self, selection: Selection, by_index: Mapping[int, Candidate]
@@ -2307,6 +2702,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._attack_id(candidate) == HACKING
         ):
             return True
+        if (
+            candidate.option_type is OptionType.ATTACK
+            and self._scorer._attack_id(candidate) == TORMENT
+            and self._evolution_ko_commitment is not None
+        ):
+            return True
         if candidate.option_type is OptionType.ATTACK and not (
             self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
         ):
@@ -2348,6 +2749,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return not self._scorer._night_stretcher_is_productive(state)
         if candidate.option_type is OptionType.PLAY and card_id == ARCHER:
             return not self._scorer._archer_is_safe_and_useful(state, candidate)
+        if candidate.option_type is OptionType.PLAY and card_id == PROTON:
+            return not self._scorer._proton_setup_is_useful(state)
+        if candidate.option_type is OptionType.PLAY and card_id == ARIANA:
+            return bool(
+                self._scorer._proton_setup_is_useful(state)
+                and self._scorer._card_in_hand(state, PROTON)
+                or self._scorer._petrel_factory_is_superior(state)
+            )
         if candidate.option_type is OptionType.PLAY and card_id == FACTORY:
             return not (
                 self._scorer._factory_is_useful(state)
@@ -2487,6 +2896,23 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return serial == commitment.target_serial
         return bool(self._scorer._feature_int(candidate, "card_id") == commitment.target_card_id)
 
+    def _candidate_matches_evolution_commitment(self, candidate: Candidate | None) -> bool:
+        """Return whether an evolution option targets the committed Murkrow."""
+        commitment = self._evolution_ko_commitment
+        if (
+            candidate is None
+            or commitment is None
+            or candidate.option_type not in {OptionType.PLAY, OptionType.EVOLVE}
+            or self._scorer._feature_int(candidate, "card_id") != HONCHKROW
+        ):
+            return False
+        target_serial = self._scorer._feature_int(candidate, "target_serial")
+        return bool(
+            commitment.murkrow_serial is None
+            or not target_serial
+            or target_serial == commitment.murkrow_serial
+        )
+
     def _active_matches_switch_commitment(self, state: GameState) -> bool:
         """Return whether the committed attacker is now the Active Pokémon."""
         commitment = self._switch_commitment
@@ -2621,8 +3047,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             supporters = self._scorer._supporters_in_hand(state) - int(giovanni_played)
             mega_abomasnow = self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
             if supporters > 0 and (
-                not mega_abomasnow
-                or supporters >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
+                not mega_abomasnow or supporters >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
             ):
                 add_choice(
                     ROCKET_FEATHERS,
