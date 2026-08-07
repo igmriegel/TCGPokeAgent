@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-OUTPUT="${1:-submission.tar.gz}"
+OUTPUT="${1:-submissions/submission.tar.gz}"
 BACKEND="${2:-heuristic}"
 MODEL_DIR="${3:-}"
 
@@ -16,6 +16,8 @@ echo "=== Building package: ${OUTPUT} ==="
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
+
+mkdir -p "$(dirname "${OUTPUT}")"
 
 cp main.py "${TMPDIR}/"
 cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"

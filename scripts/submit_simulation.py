@@ -22,7 +22,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--archive",
         type=Path,
-        default=PROJECT_ROOT / "submission.tar.gz",
+        default=PROJECT_ROOT / "submissions" / "submission.tar.gz",
         help="Output archive path.",
     )
     parser.add_argument(

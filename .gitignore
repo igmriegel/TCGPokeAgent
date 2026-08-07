@@ -18,6 +18,8 @@ htmlcov/
 replays/
 reports/runs/
 reports/submissions/
+submissions/*
+!submissions/.gitkeep
 runs/*
 !runs/.gitkeep
 episode-*-agent-*-logs.json

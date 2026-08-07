@@ -36,6 +36,7 @@ implementation guides.
 - `src/`: agent, domain, evaluation, data, experiment, and learning code.
 - `configs/`: versioned runtime and evaluation profiles.
 - `scripts/`: operational, evaluation, package, and submission commands.
+- `submissions/`: ignored storage for submission archives and SHA-256 sidecars; keep `.gitkeep` only.
 - `data/raw/kaggle/`: authorized destination for official downloads, separated by competition.
 
 ## Docker
@@ -168,7 +169,7 @@ runbook](docs/25_rfl_experiments.md). The shortest complete local sequence is:
 ```bash
 scripts/run_smoke.sh rfl
 scripts/run_full.sh rfl configs/eval_full.yaml
-scripts/build_package.sh runs/rfl/latest/submission.tar.gz
+scripts/build_package.sh submissions/runs/rfl/latest/submission.tar.gz
 ```
 
 The full run uses 200 seeds on both player sides. Do not promote a profile from

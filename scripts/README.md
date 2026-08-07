@@ -10,7 +10,7 @@ Canonical command inventory:
 
 ## End-to-end simulation submission
 
-Run every local gate, build and validate `submission.tar.gz`, then answer the
+Run every local gate, build and validate `submissions/submission.tar.gz`, then answer the
 interactive confirmation prompt:
 
 ```bash
@@ -38,7 +38,7 @@ the submission flow does not replace it with the standard package:
 ```bash
 scripts/submit_simulation.sh \
   --package-kind honchkrow_porygon \
-  --archive honchkrow_porygon_submission.tar.gz \
+  --archive submissions/honchkrow_porygon_submission.tar.gz \
   --skip-smoke --yes
 ```
 

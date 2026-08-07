@@ -3,11 +3,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-OUTPUT="${1:-honchkrow_porygon_submission.tar.gz}"
+OUTPUT="${1:-submissions/honchkrow_porygon_submission.tar.gz}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
 
 echo "=== Building Honchkrow/Porygon package: ${OUTPUT} ==="
+mkdir -p "$(dirname "${OUTPUT}")"
 cp main_honchkrow_porygon.py "${TMPDIR}/main.py"
 cp src/artifacts/deck_team_rocket_murkrow.csv "${TMPDIR}/deck.csv"
 mkdir -p "${TMPDIR}/src/agents" "${TMPDIR}/src/core" "${TMPDIR}/src/ranking" "${TMPDIR}/src/artifacts"

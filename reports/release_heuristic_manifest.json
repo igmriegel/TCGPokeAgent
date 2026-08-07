@@ -10,7 +10,7 @@
   "sdk_version": "1.32.2",
   "deck_sha256": "1156379af39e71bc83eecb50d1e04c5cc480501d293621fcc89c2d355d99be78",
   "package": {
-    "path": "submission.tar.gz",
+    "path": "submissions/submission.tar.gz",
     "bytes": 543397,
     "sha256": "c5cc4ca3976e73f309f892f8267ce4eb7142712a4ddb02a7b648b1229dbe0411",
     "isolated_validation": "pass"

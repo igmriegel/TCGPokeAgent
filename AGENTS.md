@@ -275,7 +275,7 @@ AGENT_MODE=heuristic scripts/run_smoke.sh
 uv run --frozen python -c "from src.experiments.orchestrator import run_experiment; from src.config.loader import load_config; run_experiment('full', load_config('eval_full'))"
 
 # Build submission package
-scripts/build_package.sh submission.tar.gz
+scripts/build_package.sh submissions/submission.tar.gz
 ```
 
 ---

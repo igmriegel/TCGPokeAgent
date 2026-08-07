@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
-SUBMISSION_ARCHIVE ?= submission.tar.gz
-HONCHKROW_PORYGON_ARCHIVE ?= honchkrow_porygon_submission.tar.gz
+SUBMISSION_ARCHIVE ?= submissions/submission.tar.gz
+HONCHKROW_PORYGON_ARCHIVE ?= submissions/honchkrow_porygon_submission.tar.gz
 PACKAGE_BACKEND ?= heuristic
 MODEL_DIR ?=
 SUBMISSION_ARGS ?=

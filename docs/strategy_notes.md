@@ -249,7 +249,7 @@ limitations:
   - "Separating deck and engine effects requires a crossed comparison with at least two decks and frozen engine versions."
 evidence:
   receipt: "reports/submissions/20260729T221617Z-a16493a36264.json"
-  archive: "reports/submissions/candidate-16f1e8b.tar.gz"
+  archive: "submissions/candidate-16f1e8b.tar.gz"
 ```
 
 ## Competitive replay review record
@@ -417,7 +417,7 @@ observed_at: "2026-07-30T21:14:25Z"
 submission_id: 55119505
 mode: hdi_v1
 deck_id: mega_abomasnow_kyogre
-archive: submission_hdi_v1.tar.gz
+archive: submissions/submission_hdi_v1.tar.gz
 archive_bytes: 539099
 archive_sha256: 359adce7030e6c9d3b4b97482ab7a2f90f68bec60acf8e836fae18c9372f3a36
 package_payload_sha256: 1a08204a59c3c3dd82a0f722c1df121a469121d6ac3234da2f2584e3f17011c7
