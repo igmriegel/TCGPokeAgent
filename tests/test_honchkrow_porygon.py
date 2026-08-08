@@ -93,6 +93,8 @@ def test_dedicated_deck_and_profile_are_bound() -> None:
     assert len(deck) == 60
     assert deck[:4] == [463] * 4
     assert profile.deck_id == "honchkrow_porygon"
+    assert entrypoint.POLICY_VARIANT == "supporter_resource_v2_replay_fix_v1"
+    assert entrypoint._build_agent().policy_variant == entrypoint.POLICY_VARIANT
 
 
 def test_ariana_is_prioritized_as_the_hand_and_energy_engine() -> None:
@@ -464,6 +466,76 @@ def test_expert_replan_checkpoints_exclude_proton_and_poke_pad() -> None:
         agent._replan_reason(state, Selection((), ()), candidates, SelectContext.TO_PRIZE)
         == "prize_selection"
     )
+
+
+def test_expert_turn_loop_replans_after_board_search_supporter_and_retreat() -> None:
+    """The dedicated turn loop invalidates every public state-changing plan."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    state = GameState(turn=3, players=[PlayerState(), PlayerState()])
+    basic = _candidate(0, OptionType.PLAY, card_id=MURKROW, card={"cardType": 0})
+    search = _candidate(1, OptionType.PLAY, card_id=POKE_PAD, card={"cardType": 2})
+    supporter = _candidate(2, OptionType.PLAY, card_id=PROTON, card={"cardType": 3})
+    retreat = _candidate(3, OptionType.RETREAT)
+    candidates = {item.option_index: item for item in (basic, search, supporter, retreat)}
+
+    assert (
+        agent._replan_reason(
+            state, Selection((0,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+        )
+        == "pokemon_placement"
+    )
+    assert (
+        agent._replan_reason(
+            state, Selection((1,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+        )
+        == f"search_{POKE_PAD}"
+    )
+    assert (
+        agent._replan_reason(
+            state, Selection((2,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+        )
+        == f"supporter_{PROTON}"
+    )
+    assert (
+        agent._replan_reason(
+            state, Selection((3,), (OptionType.RETREAT,)), candidates, SelectContext.MAIN
+        )
+        == "retreat"
+    )
+
+
+def test_expert_turn_loop_ledger_uses_only_public_turn_facts() -> None:
+    """Plan arithmetic is refreshed from the current factual zones."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    state = GameState(
+        turn=5,
+        energy_attached=False,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{"id": ROCKET_ENERGY}]),
+                bench=[PokemonState(PORYGON2, 100, 100, energies=[{"id": IGNITION_ENERGY}])],
+                hand=[{"id": ARIANA}, {"id": GIOVANNI}, {"id": IGNITION_ENERGY}],
+                discard=[{"id": ARCHER}, {"id": PETREL}, {"id": PROTON}],
+                deck_count=17,
+            ),
+            PlayerState(active=PokemonState(999, 180, 180)),
+        ],
+    )
+
+    agent._refresh_public_turn_facts(state)
+
+    ledger = agent.turn_ledger
+    assert ledger.supporters_in_hand == 2
+    assert ledger.supporters_in_discard == 3
+    assert ledger.supporters_needed_for_ko == 3
+    assert ledger.rocket_feathers_damage == 120
+    assert ledger.r_command_damage == 60
+    assert ledger.active_attacker_card_id == HONCHKROW
+    assert ledger.bench_attacker_card_id == PORYGON2
+    assert ledger.active_energy_units == 2
+    assert ledger.energy_cards_in_hand == 1
+    assert ledger.energy_attachable
+    assert ledger.deck_reserve == 17
 
 
 def test_expert_deceit_is_only_a_low_hand_no_supporter_survival_line() -> None:
@@ -1303,6 +1375,46 @@ def test_draw_first_prefers_factory_before_ariana_and_nonwinning_attack() -> Non
     _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
     assert reason == "stadium_before_ariana"
     assert [selection.indices for selection in eligible] == [(1,)]
+
+
+def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() -> None:
+    """A Factory drawn by Ariana is placed before its productive draw effect."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    state = GameState(
+        turn=4,
+        supporter_played=True,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": FACTORY}, {"id": ROCKET_ENERGY}],
+                hand_count=2,
+                deck_count=8,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4}),
+        _candidate(1, OptionType.ATTACK, attack_id=TORMENT),
+    ]
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,)) for candidate in candidates
+    ]
+
+    _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
+
+    assert reason == "factory_drawn_by_ariana"
+    assert [selection.indices for selection in eligible] == [(0,)]
+    state.stadium = str(FACTORY)
+    state.stadium_played = True
+    factory_effect = _candidate(2, OptionType.ABILITY, card_id=FACTORY)
+    _, effect_reason, effect_choices = agent._main_phase_selections(
+        state,
+        [Selection((2,), (OptionType.ABILITY,))],
+        [factory_effect],
+    )
+    assert effect_reason == "factory_after_ariana_and_roto"
+    assert [selection.indices for selection in effect_choices] == [(2,)]
 
 
 def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -> None:

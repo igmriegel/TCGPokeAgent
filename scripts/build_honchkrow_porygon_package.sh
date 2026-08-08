@@ -4,6 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 OUTPUT="${1:-submissions/honchkrow_porygon_submission.tar.gz}"
+POLICY_VARIANT="${2:-supporter_resource_v2_replay_fix_v1}"
+EVIDENCE_CORPUS="${3:-55333874:26-replays}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
 
@@ -25,15 +27,35 @@ find "${TMPDIR}" -name '*.pyc' -delete
 PYTHON_BIN="python"
 if [[ -x .venv/bin/python ]]; then PYTHON_BIN=".venv/bin/python"; fi
 
-"${PYTHON_BIN}" - "${TMPDIR}" <<'PY'
+"${PYTHON_BIN}" - "${TMPDIR}/main.py" "${POLICY_VARIANT}" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+variant = sys.argv[2]
+source = path.read_text(encoding="utf-8")
+source = source.replace(
+    'POLICY_VARIANT = "supporter_resource_v2_replay_fix_v1"',
+    f'POLICY_VARIANT = "{variant}"',
+)
+path.write_text(source, encoding="utf-8")
+PY
+
+"${PYTHON_BIN}" - "${TMPDIR}" "${POLICY_VARIANT}" "${EVIDENCE_CORPUS}" <<'PY'
 from hashlib import sha256
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from src.ranking.features import write_feature_schema
 
 root = Path(sys.argv[1])
+policy_variant = sys.argv[2]
+evidence_corpus = sys.argv[3]
+commit = subprocess.run(
+    ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+).stdout.strip()
 write_feature_schema(root / "feature_schema.json")
 payload_hash = sha256()
 for path in sorted(item for item in root.rglob('*') if item.is_file()):
@@ -53,7 +75,19 @@ manifest = {
     "feature_schema_sha256": sha256((root / "feature_schema.json").read_bytes()).hexdigest(),
     "latency": None,
     "metrics": {},
-    "parameters": {},
+    "parameters": {
+        "policy_variant": policy_variant,
+        "evidence_corpus": evidence_corpus,
+        "evaluation_protocol": {
+            "screening_matches": 300,
+            "final_matches": 1000,
+            "both_sides": True,
+            "paired_seeds": False,
+        },
+    },
+    "policy_variant": policy_variant,
+    "source_commit": commit,
+    "evidence_corpus": evidence_corpus,
     "package_payload_sha256": payload_hash.hexdigest(),
     "package_size_bytes": 0,
     "split_ids": {},

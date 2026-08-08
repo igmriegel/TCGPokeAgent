@@ -84,8 +84,23 @@ class TurnTacticalLedger:
     turn_action_count: int = 0
     first_own_turn: bool = False
     objective: str = ""
+    stage: str = "observe"
+    previous_stage: str = ""
     replans: int = 0
     last_replan_reason: str = ""
+    last_replan_previous_stage: str = ""
+    last_replan_new_stage: str = ""
+    supporters_in_hand: int = 0
+    supporters_in_discard: int = 0
+    supporters_needed_for_ko: int = 0
+    rocket_feathers_damage: int = 0
+    r_command_damage: int = 0
+    active_attacker_card_id: int | None = None
+    bench_attacker_card_id: int | None = None
+    active_energy_units: int = 0
+    energy_cards_in_hand: int = 0
+    energy_attachable: bool = False
+    deck_reserve: int = 0
     pre_draw_ko_candidates: tuple[int, ...] = ()
     post_draw_ko_candidates: tuple[int, ...] = ()
     potential_damage: dict[int, int] = field(default_factory=dict)
@@ -135,8 +150,23 @@ class TurnTacticalLedger:
         self.turn_action_count = 0
         self.first_own_turn = False
         self.objective = ""
+        self.stage = "observe"
+        self.previous_stage = ""
         self.replans = 0
         self.last_replan_reason = ""
+        self.last_replan_previous_stage = ""
+        self.last_replan_new_stage = ""
+        self.supporters_in_hand = 0
+        self.supporters_in_discard = 0
+        self.supporters_needed_for_ko = 0
+        self.rocket_feathers_damage = 0
+        self.r_command_damage = 0
+        self.active_attacker_card_id = None
+        self.bench_attacker_card_id = None
+        self.active_energy_units = 0
+        self.energy_cards_in_hand = 0
+        self.energy_attachable = False
+        self.deck_reserve = 0
         self.pre_draw_ko_candidates = ()
         self.post_draw_ko_candidates = ()
         self.potential_damage.clear()
@@ -1553,6 +1583,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "supporter_lethal_v1",
                 "supporter_resource_v2",
                 "expert_rounds_1_3_v1",
+                "expert_turn_loop_v2",
+                "supporter_resource_v2_replay_fix_v1",
+                "expert_rounds_1_3_replay_fix_v1",
             }
             else "baseline"
         )
@@ -1566,6 +1599,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_lethal_v1",
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
+            "expert_turn_loop_v2",
+            "supporter_resource_v2_replay_fix_v1",
+            "expert_rounds_1_3_replay_fix_v1",
         }
 
     @property
@@ -1575,17 +1611,35 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_lethal_v1",
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
+            "expert_turn_loop_v2",
+            "supporter_resource_v2_replay_fix_v1",
+            "expert_rounds_1_3_replay_fix_v1",
         }
 
     @property
     def _uses_resource_variant(self) -> bool:
         """Return whether Roto-Stick and Transceiver resource logic is enabled."""
-        return self.policy_variant in {"supporter_resource_v2", "expert_rounds_1_3_v1"}
+        return self.policy_variant in {
+            "supporter_resource_v2",
+            "expert_rounds_1_3_v1",
+            "expert_turn_loop_v2",
+            "supporter_resource_v2_replay_fix_v1",
+            "expert_rounds_1_3_replay_fix_v1",
+        }
 
     @property
     def _uses_expert_rounds_1_3(self) -> bool:
         """Return whether the first three ratified interview rounds are active."""
-        return self.policy_variant == "expert_rounds_1_3_v1"
+        return self.policy_variant in {
+            "expert_rounds_1_3_v1",
+            "expert_turn_loop_v2",
+            "expert_rounds_1_3_replay_fix_v1",
+        }
+
+    @property
+    def _uses_expert_turn_loop_v2(self) -> bool:
+        """Return whether the dedicated expert turn-loop candidate is active."""
+        return self.policy_variant == "expert_turn_loop_v2"
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -1643,6 +1697,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._turn_ledger.own_turn = self._scorer._own_turn_number(parsed.state)
         self._turn_ledger.first_own_turn = self._turn_ledger.own_turn == 1
         self._turn_ledger.no_pokemon_risk = self._scorer._own_field_count(parsed.state) <= 1
+        self._refresh_public_turn_facts(parsed.state)
         self._refresh_evolution_ko_commitment(parsed.state, parsed.candidates)
         if not self._turn_ledger.objective:
             self._turn_ledger.objective = self._choose_turn_objective(
@@ -1709,6 +1764,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         else:
             self._turn_ledger.pre_draw_ko_candidates = ko_candidates
         decision = super().decide(observation)
+        self._set_turn_stage(
+            str(getattr(self.last_decision, "decision_phase", "") or "observe").casefold()
+        )
         by_index = {candidate.option_index: candidate for candidate in parsed.candidates}
         for index in decision.selection.indices:
             candidate = by_index.get(index)
@@ -1869,9 +1927,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             parsed.select_context,
         )
         if replan_reason:
+            previous_stage = self._turn_ledger.stage
             self._turn_ledger.objective = ""
             self._turn_ledger.replans += 1
             self._turn_ledger.last_replan_reason = replan_reason
+            self._turn_ledger.last_replan_previous_stage = previous_stage
+            self._turn_ledger.last_replan_new_stage = "observe"
+            self._set_turn_stage("observe")
         if (
             self._uses_retreat_guard
             and parsed.select_context is SelectContext.TO_HAND
@@ -1897,6 +1959,55 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.deck_risk = "low"
         return decision
 
+    def _refresh_public_turn_facts(self, state: GameState) -> None:
+        """Refresh the candidate plan exclusively from the current public observation."""
+        player = self._scorer._own_player(state)
+        active = player.active if player is not None else None
+        bench = [pokemon for pokemon in (player.bench if player is not None else []) if pokemon]
+        supporters_in_hand = self._scorer._supporters_in_hand(state)
+        supporters_in_discard = self._scorer._rocket_supporters_in_discard(state)
+        self._turn_ledger.supporters_in_hand = supporters_in_hand
+        self._turn_ledger.supporters_in_discard = supporters_in_discard
+        self._turn_ledger.supporters_needed_for_ko = self._scorer._supporters_needed_for_ko(state)
+        self._turn_ledger.rocket_feathers_damage = supporters_in_hand * 60
+        self._turn_ledger.r_command_damage = supporters_in_discard * 20
+        self._turn_ledger.active_attacker_card_id = (
+            int(active.card_id) if active is not None and isinstance(active.card_id, int) else None
+        )
+        best_bench = max(
+            bench,
+            key=self._scorer._energy_units_for_pokemon,
+            default=None,
+        )
+        self._turn_ledger.bench_attacker_card_id = (
+            int(best_bench.card_id)
+            if best_bench is not None and isinstance(best_bench.card_id, int)
+            else None
+        )
+        self._turn_ledger.active_energy_units = (
+            self._scorer._energy_units_for_pokemon(active) if active is not None else 0
+        )
+        hand = player.hand if player is not None and player.hand is not None else []
+        self._turn_ledger.energy_cards_in_hand = sum(
+            self._scorer._is_energy_card(
+                int(card.get("id", card.get("cardId", 0)) or 0),
+                card,
+            )
+            for card in hand
+            if isinstance(card, Mapping)
+        )
+        self._turn_ledger.energy_attachable = bool(
+            self._turn_ledger.energy_cards_in_hand and not state.energy_attached
+        )
+        self._turn_ledger.deck_reserve = player.deck_count if player is not None else 0
+
+    def _set_turn_stage(self, stage: str) -> None:
+        """Move the public turn ledger to a new observable decision stage."""
+        if stage == self._turn_ledger.stage:
+            return
+        self._turn_ledger.previous_stage = self._turn_ledger.stage
+        self._turn_ledger.stage = stage
+
     def _replan_reason(
         self,
         state: GameState,
@@ -1915,6 +2026,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 continue
             card_id = self._scorer._feature_int(candidate, "card_id")
             source_id = self._scorer._metadata_int(candidate.option, "sourceCardId")
+            if self._uses_expert_turn_loop_v2:
+                if candidate.option_type is OptionType.RETREAT:
+                    return "retreat"
+                if candidate.option_type is OptionType.PLAY:
+                    card_type = self._scorer._metadata_int(candidate.card, "cardType")
+                    if card_type == 0:
+                        return "pokemon_placement"
+                    if card_type == 3:
+                        return f"supporter_{card_id}"
+                    if card_id in {POKE_PAD, NIGHT_STRETCHER, ULTRA_BALL}:
+                        return f"search_{card_id}"
+                if context in {
+                    SelectContext.DISCARD,
+                    SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
+                }:
+                    return "discard"
             if candidate.option_type is OptionType.ATTACH:
                 return "energy_attachment"
             if candidate.option_type is OptionType.EVOLVE or (
@@ -2182,7 +2309,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
             )
             if factory_play:
-                return DecisionPhase.STADIUM.value, "stadium_before_ariana", factory_play
+                reason = (
+                    "factory_drawn_by_ariana"
+                    if self._uses_expert_turn_loop_v2 and state.supporter_played
+                    else "stadium_before_ariana"
+                )
+                return DecisionPhase.STADIUM.value, reason, factory_play
 
         ignition = matching(
             lambda candidate: (

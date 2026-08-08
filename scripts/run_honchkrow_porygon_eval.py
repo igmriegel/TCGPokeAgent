@@ -148,7 +148,8 @@ def _terminal_counts(current: Mapping[str, Any], side: int) -> dict[str, Any]:
 def _inferred_reason(current: Mapping[str, Any], loser_side: int) -> str:
     """Infer the terminal reason from the loser's last public counts."""
     loser = _terminal_counts(current, loser_side)
-    if loser["prize_count"] == 0:
+    winner = _terminal_counts(current, 1 - loser_side)
+    if winner["prize_count"] == 0:
         return "all_prizes_taken"
     if loser["deck_count"] == 0:
         return "deck_out"
@@ -166,6 +167,9 @@ POLICY_VARIANTS = (
     "supporter_lethal_v1",
     "supporter_resource_v2",
     "expert_rounds_1_3_v1",
+    "expert_turn_loop_v2",
+    "supporter_resource_v2_replay_fix_v1",
+    "expert_rounds_1_3_replay_fix_v1",
 )
 
 
@@ -294,6 +298,23 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "turn_action_count": ledger.turn_action_count,
             "first_own_turn": ledger.first_own_turn,
             "turn_objective": ledger.objective,
+            "turn_stage": ledger.stage,
+            "previous_turn_stage": ledger.previous_stage,
+            "replans": ledger.replans,
+            "last_replan_reason": ledger.last_replan_reason,
+            "last_replan_previous_stage": ledger.last_replan_previous_stage,
+            "last_replan_new_stage": ledger.last_replan_new_stage,
+            "supporters_in_hand": ledger.supporters_in_hand,
+            "supporters_in_discard": ledger.supporters_in_discard,
+            "supporters_needed_for_ko": ledger.supporters_needed_for_ko,
+            "rocket_feathers_damage": ledger.rocket_feathers_damage,
+            "r_command_damage": ledger.r_command_damage,
+            "active_attacker_card_id": ledger.active_attacker_card_id,
+            "bench_attacker_card_id": ledger.bench_attacker_card_id,
+            "active_energy_units": ledger.active_energy_units,
+            "energy_cards_in_hand": ledger.energy_cards_in_hand,
+            "energy_attachable": ledger.energy_attachable,
+            "deck_reserve": ledger.deck_reserve,
             "deck_risk": ledger.deck_risk,
             "roto_sticks_played": ledger.roto_sticks_played,
             "roto_supporters_revealed": ledger.roto_supporters_revealed,

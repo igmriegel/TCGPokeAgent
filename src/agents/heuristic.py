@@ -1499,8 +1499,7 @@ class HeuristicAgent(AgentPolicy):
             selection
             for selection in selections
             if any(
-                by_index.get(index) is not None
-                and by_index[index].option_type is OptionType.END
+                by_index.get(index) is not None and by_index[index].option_type is OptionType.END
                 for index in selection.indices
             )
         ]

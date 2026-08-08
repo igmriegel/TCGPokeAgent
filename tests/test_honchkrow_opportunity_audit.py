@@ -116,6 +116,16 @@ def test_promoted_baseline_and_legacy_policy_are_named() -> None:
         HonchkrowPorygonAgent(profile, "ko_priority_v3_retreat_guard").policy_variant
         == "ko_priority_v3_retreat_guard"
     )
+    assert (
+        HonchkrowPorygonAgent(profile, "supporter_resource_v2_replay_fix_v1").policy_variant
+        == "supporter_resource_v2_replay_fix_v1"
+    )
+    expert_fix = HonchkrowPorygonAgent(profile, "expert_rounds_1_3_replay_fix_v1")
+    assert expert_fix._uses_expert_rounds_1_3
+    expert_turn_loop = HonchkrowPorygonAgent(profile, "expert_turn_loop_v2")
+    assert expert_turn_loop.policy_variant == "expert_turn_loop_v2"
+    assert expert_turn_loop._uses_expert_turn_loop_v2
+    assert expert_turn_loop._uses_expert_rounds_1_3
 
 
 def test_unselected_rocket_attack_is_not_an_executed_opportunity() -> None:

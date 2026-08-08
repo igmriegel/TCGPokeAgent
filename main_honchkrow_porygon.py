@@ -33,6 +33,7 @@ _DECK_PATH = _ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
 if not _DECK_PATH.is_file():
     _DECK_PATH = _ROOT / "deck.csv"
 _PROFILE_PATH = _ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
+POLICY_VARIANT = "supporter_resource_v2_replay_fix_v1"
 _agent: AgentPolicy | None = None
 _deck: list[int] | None = None
 
@@ -57,7 +58,7 @@ def _load_profile() -> DeckProfile:
 
 def _build_agent() -> HonchkrowPorygonAgent:
     """Build the isolated Honchkrow/Porygon policy."""
-    return HonchkrowPorygonAgent(_load_profile())
+    return HonchkrowPorygonAgent(_load_profile(), POLICY_VARIANT)
 
 
 def agent_policy(observation: dict[str, Any]) -> list[int]:
