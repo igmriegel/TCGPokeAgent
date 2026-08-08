@@ -7,9 +7,10 @@
 
 **Expert context:** months of direct play with the fixed deck
 
-**Interview status:** Paused after Rounds 1–3 on 2026-08-07. Rounds 4–12 are
-documented in `34_honchkrow_expert_interview.md`; resume at Round 4. Matchup-
-dependent exceptions remain deferred to Round 9.
+**Interview status:** In progress in Round 4 (Energy economy) since 2026-08-07.
+Rounds 1–3 are ratified. Rounds 5–12 are documented in
+`34_honchkrow_expert_interview.md`; Round 4 answers are appended below.
+Matchup-dependent exceptions remain deferred to Round 9.
 
 **Experimental implementation:** `expert_rounds_1_3_v1` isolates the directly
 actionable rules from the first three rounds. It is an evaluation candidate,
@@ -852,3 +853,122 @@ The comparison is independent rather than paired because CABT 1.32.2 does not
 forward the configured seed into `battle_start`. The candidate remains
 experimental; the detailed evidence is in
 `reports/honchkrow_porygon_expert_rounds_1_3_comparison_20260807.json`.
+
+## Round 4 — Energy economy
+
+## HI-030 — Attachment priority by Pokémon and evolution stage
+
+```yaml
+question_id: "HI-030"
+expert_rule: "When a single Rocket is in hand with an Active Murkrow and a Honchkrow in hand, attach and evolve back-to-back when evolution is legal, because the two actions have equal value and together they also shrink the hand for a better Ariana."
+strength: "MUST"
+when:
+  - "One Rocket Energy is available"
+  - "Active is Murkrow"
+  - "Honchkrow is legal to play from hand this turn"
+priority_above:
+  - "Waiting for the Honchkrow to leave hand before attaching"
+priority_below:
+  - "An immediate game-winning line"
+exceptions:
+  - "If evolution is not legal (e.g., too many Energy for an evolved state already), fall back to the order that keeps the Honchkrow line legal"
+counterexample: "Attaching Rocket to the bench Murkrow instead of the Active slot that must evolve to keep Hammer In available within the turn."
+hidden_information_policy: "Use only public legal evolution flags; no draw outcome changes the attach-order preference."
+required_state: ["Active Murkrow", "Honchkrow in hand", "Rocket Energy in hand", "legal evolution from caller"]
+telemetry: ["attach_then_evolve_count", "evolve_then_attach_count", "hand size before Ariana"]
+golden_tests: ["attach into evolved Honchkrow", "keep legal when evolution is already satisfied", "evaluate opponent readiness before attach"]
+status: "RATIFIED"
+```
+
+The expert scored bench targets with attachment priority `Murkrow > Porygon >
+Articuno`. Porygon outranks Articuno for the sole Rocket because Articuno is
+not intended to receive energy; Articuno is energised only as a sacrificial
+retreat enabler when it opened Active and the bench lacks an exit line, and
+even then only with more than one energy already owned or a Giovanni in hand.
+
+### HI-030-3 — Rocket on Porygon forces same-turn evolution
+
+```yaml
+question_id: "HI-030-3"
+expert_rule: "A Rocket Energy placed on Porygon must evolve to Porygon2 within the same turn; putting Rocket on Porygon without evolving is forbidden."
+strength: "MUST"
+when:
+  - "Porygon is a legal attach target and Porygon2 is in hand or searchable"
+priority_above:
+  - "Attaching Rocket to a Porygon that will stay basic this turn"
+priority_below:
+  - "Ignition attachment chains on the Active Porygon2 when it can attack the same turn"
+exceptions:
+  - "Ignition on Porygon is never legal; Ignition requires an evolved Active ready to use its attack for the current turn"
+counterexample: "Placing Rocket on a bench Porygon with no Porygon2 line, blocking the two units in a development hole."
+hidden_information_policy: "Rocket supplies two units; it is exactly the R Command threshold on the evolved Porygon2 when the evolution is legal."
+required_state: ["Rocket Energy in hand", "Porygon target", "Porygon2 in hand", "same-turn evolution legality"]
+telemetry: ["porygon_rocket_attach", "same_turn_porygon2_evolution", "porygon2_rocket_forbidden"]
+golden_tests: ["bench Porygon + Rocket leaves unplayable steady state", "Porygon2 on bench same turn is legal", "Rocket on Porygon2 is forbidden"]
+status: "NEEDS_REPLAY"
+```
+Comparative note: the current code already refuses Rocket on Porygon2, but it
+does not model the legal attach-then-evolve window, so the rule above is a
+`NEEDS_REPLAY` boundary pending the CABT attach/evolve ordering confirmation.
+
+### HI-030-4 — Articuno never energised in practice
+
+```yaml
+question_id: "HI-030-4"
+expert_rule: "Never attach energy to Articuno in normal play; energise Articuno only to retreat an opening Active Articuno, and even that retreat requires either more than one energy or a Giovanni in hand."
+strength: "MUST"
+when:
+  - "Articuno is the opening Active and must leave"
+priority_above:
+  - "Energising Articuno for any non-retreat purpose"
+priority_below:
+  - "Promoting the built attacker when the exit is trivial"
+exceptions:
+  - "Articuno may only absorb opening damage when the opening forces the Active start; it is never an energy sink"
+counterexample: "Returning energy into Articuno to prevent a KO while a formed attacker already exists."
+hidden_information_policy: "Energy count and Giovanni presence are both public."
+required_state: ["Articuno opening", "retreat costing", "Giovanni in hand", "more than one energy owned"]
+telemetry: ["articuno_energized", "articuno_retreat_only", "giovanni_gate"]
+golden_tests: ["never energise Articuno", "retreat Articuno only with more than one energy or Giovanni", "no re-energy Articuno bench planning"]
+status: "NEEDS_REPLAY"
+```
+The retreat gate above is not yet modelled: line 2941 forbids every Articuno
+energy attach. When Articuno must vacate the Active with no natural retreat
+cost coverage, the only allowed energy subsidy is a Rocket pair or a Giovanni,
+so the movable gate stays `NEEDS_REPLAY` pending the exact CABT retreat-payment
+behaviour.
+
+### HI-030-5 — Honchkrow is the primary energy sink
+
+```yaml
+question_id: "HI-030-5"
+expert_rule: "All energy pressure targets Honchkrow first as the primary attacker; a Rocket on Murkrow stays attached when it evolves to Honchkrow."
+strength: "MUST"
+when:
+  - "Any Energy is attachable"
+priority_above:
+  - "Situationally boosting Porygon2"
+priority_below:
+  - "Rockets that complete a Honchkrow line"
+exceptions:
+  - "None observed by the expert"
+counterexample: "Energising the bench Porygon2 before the Honchkrow has a legal builder-line."
+hidden_information_policy: "Public, mirror only the attacker slots."
+required_state: ["Honchkrow in hand or in play", "Murkrow slots", "remaining Rocket count"]
+telemetry: ["energy_target", "first_energy_turn", "honchkrow_ready_turn", "porygon2_ready_turn"]
+golden_tests: ["two Rocket → Honchkrow", "Rocket → Murkrow→Honchkrow crossings", "keep rocket for evolution"]
+status: "RATIFIED"
+```
+
+### Round 4 implementation deltas discovered
+
+| ID | Expert rule | Current behavior | Required future slice |
+|---|---|---|---|
+| R4-D01 | Rocket on Porygon must evolve to Porygon2 the same turn; Rocket on Porygon2 stays forbidden | Line 2935 forbids Rocket on any Porygon2 permanently, so the interval must stay illegal without a legal exit | Implement a same-turn Porygon2 commit for Rocket-on-Pory, verified against CABT attach/evolve ordering |
+| R4-D02 | Articuno is energised only for a Rocket/Giovanni retreat exit | Line 2941 forbids every Articuno attach; there is no retreat-attach gate | Add a narrow retreat-legal attach branch keyed on more than one energy or Giovanni; no other use gains energy |
+| R4-D03 | Hand reduction via attach+evolve before Ariana is itself a value | Attach scoring is positional, not combinatorial | Score the attach+evolve pair as one value action when the player owns both components |
+
+The deck-facts block at the top of this document already matches the expert's
+view: Rocket fuels Murkrow/Honchkrow, Ignition never sits on Porygon, and
+Articuno is never energised except the narrow retreat escape. The earlier
+HS-014 agreement already forbids Rocket on Porygon2, so R4-D01 is consistent.

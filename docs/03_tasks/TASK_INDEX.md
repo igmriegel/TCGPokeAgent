@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-08-07
+**Last reviewed:** 2026-08-08
 
 ## How to read this backlog
 
@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 7 |
+| In progress | 8 |
 | Ready | 18 |
 | Deferred | 8 |
-| Total open | 33 |
+| Total open | 34 |
 
 ## Active release queue
 
@@ -54,6 +54,7 @@ documents to these totals.
 | T-029 | P0 | `IN_PROGRESS` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
 | T-030 | P0 | `IN_PROGRESS` | Enforce persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | FB-2026-018, H2A | Eliminate the 32 versus 28 deck-out-loss regression, then rerun the frozen comparison |
 | T-031 | P0 | `DEFERRED` | Ratify the complete Honchkrow/Porygon strategy with expert interview evidence and produce an implementation-ready plan | Honchkrow expert audit | Resume at Round 4 in `docs/34_honchkrow_expert_interview.md`; keep `expert_rounds_1_3_v1` experimental until comparison evidence is recorded |
+| T-033 | P0 | `IN_PROGRESS` | Implement and independently qualify `expert_turn_loop_v2` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Complete HLV2 golden gates before replay reproduction or CABT |
 
 ## Active-track coverage
 
@@ -69,6 +70,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S7 | T-009 |
 | S9 | T-011 |
 | H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-030 |
+| HLV2 | [HLV2-001–HLV2-025](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) |
 
 ## Deferred queue
 
@@ -90,6 +92,7 @@ This table prevents roadmap work from existing without an executable owner.
 | T-010 | Reconcile remote scores and retain `55088176` as reference | Score correction in `strategy_notes.md` |
 | T-022 | Reinterpreted attacker-target gate; legal attacks are no longer blocked by board target | Policy revision in `docs/27_gameplay_rules.md` and `docs/29_gameplay_feedback.md` |
 | T-025 | Promoted the Honchkrow/Porygon committed-switch, Giovanni, Miracle Headset, and projected Porygon2/Ignition policy as the development baseline | 264 tests; two independent 200-match blocks per policy; 0/44 unconverted retreats; `reports/honchkrow_v3_retreat_guard_audit_20260807.md` |
+| T-032 | Audited submission `55333874`, reproduced 1,434 decisions, froze 26 replay hashes, screened two candidates, and completed the independent final gate | `reports/replay_audits/55333874/`; no candidate promoted and no package built |
 | FB001-A2 | Pre-terminal ordering layer | `e268c96`, focused gameplay tests |
 | FB001-A3 | Generic Pokémon play before attack with open Bench | `e268c96`, replay regression |
 | RF-001 | Replay ingestion and leakage-safe dataset foundation | `gameplay_replays/v1` manifest |

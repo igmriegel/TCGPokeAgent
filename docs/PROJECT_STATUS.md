@@ -4,12 +4,29 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-08-07
+**Last verified:** 2026-08-08
 
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** Honchkrow/Porygon post-audit policy promoted as the new CABT comparison baseline; Kaggle promotion remains an explicit separate decision
+**Current release:** immutable Honchkrow/Porygon package from submission
+`55333874`; no replay-derived candidate passed every local promotion gate
+
+Submission `55333874` is `COMPLETE` at a dynamic public rating of 357.2,
+observed at 2026-08-08T01:13:52-03:00 after 26 public/validation episodes.
+The isolated audit reproduced all 1,434 real policy calls with zero divergence,
+invalid selection, exception, or fallback. The corpus contains 8 wins and 18
+losses; all 26 terminal reasons reconcile with the final state. Only 2 losses
+were effective deck-outs, although the owner deck reached zero in 3 games.
+
+No new replay-only correction met the evidence threshold. Candidate A was
+therefore behaviorally identical to the submitted policy and candidate B
+enabled only the already ratified expert Rounds 1–3 rules. Candidate B failed
+the 300-match screening gate. Candidate A reached 862W/138L in its independent
+1,000-match final block versus 840W/160L for the baseline, but the +2.2-point
+difference had a 95% interval of -0.92 to +5.32 points and one tactical counter
+regressed. No candidate was promoted, no new package was built, and no Kaggle
+upload was attempted.
 
 The 2026-08-07 audit of submissions `55320796` and `55322957` identified and
 patched a fail-open forbidden-action path, missing global deck-out reserve,
@@ -44,6 +61,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 
 | Area | Current evidence | Decision |
 |---|---|---|
+| Submission `55333874` replay audit | 26 isolated replays, 8W/18L; 1,434/1,434 decisions reproduced; zero invalid/fallback/exception; rating 357.2 at 2026-08-08T01:13:52-03:00 | Audit complete; retain immutable package SHA-256 `f6a7c94e…4fac` as technical reference |
+| Replay-fix candidate gate | Screening: baseline 251/300, A 254/300, B 247/300; final baseline 840/1000, A 862/1000; independent difference CI95 [-0.92, +5.32] points | No promotion; no package built or uploaded |
 | Quality | 287 tests pass; Ruff and documentation audit pass for the interview experiment; prior mypy gate remains green | Green for the implemented scope |
 | Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
@@ -115,17 +134,23 @@ promotion matrix have not run, so the release policy remains heuristic.
 15. Keep T-030 open: the turn-planning candidate removed the target tactical
     violations but failed the mandatory deck-out and statistical promotion
     gates in its first 300-match-per-policy comparison.
+16. Use only the 26 replays from submission `55333874` as evidence for its
+    strategy audit; older replay corpora remain context only.
+17. Keep unproven strategic root causes as `unknown` and treat replay
+    divergences as single-decision counterfactuals without alternate-win claims.
+18. Do not promote either replay-fix candidate: B failed screening and A's
+    final independent difference interval includes zero.
 
 ## Next work
 
 The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
-1. evaluate `expert_rounds_1_3_v1` against the promoted CABT baseline, then
-   resume the Honchkrow/Porygon expert interview at Round 4 in
+1. review the prioritized `55333874` decision queue and gather independent
+   evidence before converting any uncertain finding into a heuristic;
+2. resume the Honchkrow/Porygon expert interview at Round 4 in
    [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) and
    approve a decision-complete implementation plan before changing runtime behavior;
-2. audit the new gameplay observations against the promoted baseline;
 3. close the remaining terminal-cause gap and rerun the promoted baseline at
    1,000 matches;
 4. monitor the new turn-planning submission and collect its remote replays;
@@ -147,6 +172,8 @@ The recommended order is:
 - [Mega Abomasnow fix smoke](../reports/honchkrow_porygon_mega_commit_smoke_20260807.json)
 - [Promoted CABT 300-match baseline](../reports/honchkrow_porygon_cabt_baseline_20260807.json)
 - [Expert Rounds 1–3 comparison](../reports/honchkrow_porygon_expert_rounds_1_3_comparison_20260807.json)
+- [Submission 55333874 replay audit](../reports/replay_audits/55333874/summary.md)
+- [Submission 55333874 decision review](../reports/replay_audits/55333874/index.html)
 - [Report storage and regeneration policy](../reports/README.md)
 - [Promoted Honchkrow/Porygon baseline audit](../reports/honchkrow_v3_retreat_guard_audit_20260807.md)
 - [Submitted package receipt](../reports/submissions/20260807T074354Z-062e4ecea1cc.json)
