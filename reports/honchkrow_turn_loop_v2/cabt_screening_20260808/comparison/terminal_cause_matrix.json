@@ -1,0 +1,26 @@
+{
+  "baseline": {
+    "0": {
+      "deck_out": 20,
+      "no_pokemon_in_play": 235,
+      "unknown": 45
+    },
+    "1": {
+      "deck_out": 24,
+      "no_pokemon_in_play": 237,
+      "unknown": 39
+    }
+  },
+  "candidate": {
+    "0": {
+      "deck_out": 20,
+      "no_pokemon_in_play": 250,
+      "unknown": 30
+    },
+    "1": {
+      "deck_out": 28,
+      "no_pokemon_in_play": 224,
+      "unknown": 48
+    }
+  }
+}

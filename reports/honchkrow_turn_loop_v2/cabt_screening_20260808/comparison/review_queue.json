@@ -1,0 +1,12 @@
+[
+  {
+    "gate": "sample_1000_each",
+    "reason": "promotion gate did not pass",
+    "status": "review"
+  },
+  {
+    "gate": "positive_significant_win_rate",
+    "reason": "promotion gate did not pass",
+    "status": "review"
+  }
+]

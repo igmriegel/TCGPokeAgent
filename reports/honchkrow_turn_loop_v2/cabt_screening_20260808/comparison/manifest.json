@@ -1,0 +1,112 @@
+{
+  "baseline_variant": "supporter_resource_v2",
+  "candidate_variant": "expert_turn_loop_v2",
+  "decision": "HOLD",
+  "evaluation_protocol": {
+    "both_sides": true,
+    "final_matches_per_policy": 1000,
+    "final_seed_pairing": false,
+    "remote_kaggle_is_promotion_gate": false,
+    "screening_matches_per_policy": 300
+  },
+  "historical_corpus": {
+    "corpus_sha256": "b19bd7e190375d56b7a9a8157c1fd101286cb706a42110a6e8c3ce70513d872f",
+    "episode_count": 26,
+    "episode_ids": [
+      90812359,
+      90813277,
+      90814105,
+      90814923,
+      90815748,
+      90816581,
+      90817435,
+      90818273,
+      90819110,
+      90819963,
+      90820749,
+      90821591,
+      90822434,
+      90823249,
+      90824094,
+      90824946,
+      90825761,
+      90826608,
+      90827447,
+      90828279,
+      90829105,
+      90829937,
+      90830781,
+      90831612,
+      90836695,
+      90887041
+    ],
+    "replay_hashes_path": "reports/replay_audits/55333874/replay_hashes.json",
+    "submission_id": 55333874
+  },
+  "immutable_inputs": {
+    "deck_or_profile_changes_allowed": false,
+    "deck_path": "src/artifacts/deck_team_rocket_murkrow.csv",
+    "deck_sha256": "d939482fa54813a8b97a0ba3111d29566296bc6934b7da656249465ef611153c",
+    "profile_path": "src/artifacts/deck_profile_honchkrow_porygon.json",
+    "profile_sha256": "6f890bd0697cb1a3c07d325ec1e04c09206907992529e35f1133b65e5e94aa2a"
+  },
+  "inputs": {
+    "baseline_command": "uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 300 --seed-base 20260808 --policy-variant supporter_resource_v2 --output baseline.json",
+    "baseline_report_sha256": "6219cbf8227d5d283b0a46abc0d712a6511c46d3cd938931d51c068f196d71ec",
+    "candidate_command": "uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 300 --seed-base 20360808 --policy-variant expert_turn_loop_v2 --output candidate.json",
+    "candidate_report_sha256": "e28d0bd3d6838f373da620abdf4264102aefd9680a2f9b1ef182e5192181defc"
+  },
+  "runtime": {
+    "cabt_sdk_pin": "kaggle-environments==1.32.2",
+    "kaggle_environments": "1.32.2",
+    "python": "3.12.3"
+  },
+  "schema": "honchkrow_turn_loop_v2_foundation_manifest_v1",
+  "source": {
+    "commit": "f6b0254606d70d6bd43c4a54aa436020db22abcf",
+    "dirty_paths": [
+      ".gitignore",
+      "docs/02_sprints/honchkrow_turn_loop_v2_sprints.md",
+      "docs/03_tasks/HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md",
+      "docs/03_tasks/TASK_INDEX.md",
+      "docs/23_scripts_spec.md",
+      "docs/35_honchkrow_expert_interview_record.md",
+      "docs/PROJECT_STATUS.md",
+      "main_honchkrow_porygon.py",
+      "reports/honchkrow_turn_loop_v2/",
+      "reports/replay_audits/",
+      "scripts/audit_submission_55333874.py",
+      "scripts/build_honchkrow_porygon_package.sh",
+      "scripts/build_honchkrow_turn_loop_v2_report.py",
+      "scripts/compare_honchkrow_reports.py",
+      "scripts/create_honchkrow_turn_loop_v2_manifest.py",
+      "scripts/run_honchkrow_porygon_eval.py",
+      "scripts/summarize_honchkrow_turn_loop_v2_replays.py",
+      "src/agents/heuristic.py",
+      "src/agents/honchkrow_porygon.py",
+      "src/data/replay_deep_analysis.py",
+      "src/data/replay_diagnostics.py",
+      "src/data/replay_outcomes.py",
+      "tests/test_compare_honchkrow_reports.py",
+      "tests/test_honchkrow_eval_diagnostics.py",
+      "tests/test_honchkrow_opportunity_audit.py",
+      "tests/test_honchkrow_porygon.py",
+      "tests/test_honchkrow_turn_loop_v2_manifest.py",
+      "tests/test_honchkrow_turn_loop_v2_replays.py",
+      "tests/test_honchkrow_turn_loop_v2_report.py",
+      "tests/test_replay_diagnostics.py",
+      "tests/test_replay_outcomes.py"
+    ],
+    "implementation_sha256": {
+      "scripts/audit_submission_55333874.py": "69224aa9735180079a531b2396ce00416d993fe674d236160e6b16af050c4ea6",
+      "scripts/build_honchkrow_turn_loop_v2_report.py": "235ca0eba2d8f82e5b7130d056c009cbaca69131c6dcdf4f922cf3d4b3b99a5f",
+      "scripts/compare_honchkrow_reports.py": "1f0af54ed295e7cc83ad6e5d69cb9254420e024923f5c16db2e6c3f6d4b9d835",
+      "scripts/create_honchkrow_turn_loop_v2_manifest.py": "2c27e4e5cbf283116cc344464632e5a348cfab4a948fc04b0d0f802117d1f7b1",
+      "scripts/run_honchkrow_porygon_eval.py": "3be1ff8403bb8fd4d7fec0889200bcdadbf0199d9a8ed7a9d9e80c333b6abdab",
+      "scripts/summarize_honchkrow_turn_loop_v2_replays.py": "359a59fd49e9426fd14a53f9a10b03656879c56a5692716ad57d50e4a7ffd6e6",
+      "src/agents/honchkrow_porygon.py": "9ce70eafcb1e043a7626151bc06b3718de46e49a11e82d23bcf9d21fee3a961a"
+    },
+    "uv_lock_sha256": "56ab9400b41505c230e8e56d53a8dbe370d17d72a8ee6db0970dd44a7d57c587",
+    "worktree_dirty": true
+  }
+}

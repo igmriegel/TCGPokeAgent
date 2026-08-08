@@ -1,0 +1,107 @@
+{
+  "baseline_variant": "supporter_resource_v2",
+  "candidate_variant": "expert_turn_loop_v2",
+  "counterfactual_policy": "Independent CABT matches are not paired. Replay divergences are single-decision only and never imply an alternate match result.",
+  "decision": "HOLD",
+  "gates": {
+    "deck_out_non_regression": true,
+    "operational": true,
+    "positive_significant_win_rate": false,
+    "sample_1000_each": false,
+    "tactical_non_regression": true
+  },
+  "schema": "honchkrow_turn_loop_v2_comparison_v1",
+  "statistical": {
+    "by_side": {
+      "baseline": {
+        "0": {
+          "loss": 44,
+          "win": 256
+        },
+        "1": {
+          "loss": 45,
+          "win": 255
+        }
+      },
+      "variant": {
+        "0": {
+          "loss": 37,
+          "win": 263
+        },
+        "1": {
+          "loss": 45,
+          "win": 255
+        }
+      }
+    },
+    "comparison_mode": "independent",
+    "deck_out_losses": {
+      "baseline": 27,
+      "variant": 27
+    },
+    "difference_ci95": [
+      -0.027884514895493623,
+      0.05121784822882683
+    ],
+    "operational_status": {
+      "baseline": {
+        "ok": 600
+      },
+      "variant": {
+        "ok": 600
+      }
+    },
+    "outcomes": {
+      "baseline": {
+        "loss": 89,
+        "win": 511
+      },
+      "variant": {
+        "loss": 82,
+        "win": 518
+      }
+    },
+    "pairing_warning": "CABT nominal seeds are metadata only; McNemar and episode conversion tables are not valid for these reports.",
+    "sample_sizes": {
+      "baseline": 600,
+      "variant": 600
+    },
+    "two_proportion_test": {
+      "p_two_sided": 0.5632146236400364,
+      "z": 0.5780733130160769
+    },
+    "wilson_95": {
+      "baseline": [
+        0.8209915248161087,
+        0.87786724874305
+      ],
+      "variant": [
+        0.8335267315433605,
+        0.8885169302381397
+      ]
+    },
+    "win_rate_difference": 0.011666666666666603,
+    "win_rates": {
+      "baseline": 0.8516666666666667,
+      "variant": 0.8633333333333333
+    }
+  },
+  "tactical": {
+    "counters": {
+      "ignition_without_attack": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "partial_mega_abomasnow_attacks": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "torment_with_superior_line": {
+        "baseline": 1,
+        "candidate": 1
+      }
+    },
+    "passed": true,
+    "regressions": []
+  }
+}

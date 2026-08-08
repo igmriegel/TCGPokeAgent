@@ -1,0 +1,23 @@
+{
+  "baseline_by_side": {
+    "0": {
+      "loss": 44,
+      "win": 256
+    },
+    "1": {
+      "loss": 45,
+      "win": 255
+    }
+  },
+  "candidate_by_side": {
+    "0": {
+      "loss": 37,
+      "win": 263
+    },
+    "1": {
+      "loss": 45,
+      "win": 255
+    }
+  },
+  "opponent": "cabt.random_agent"
+}

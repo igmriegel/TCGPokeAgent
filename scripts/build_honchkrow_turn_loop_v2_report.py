@@ -11,7 +11,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
 
-from scripts.compare_honchkrow_reports import compare
+try:
+    from scripts.compare_honchkrow_reports import compare
+except ModuleNotFoundError:
+    from compare_honchkrow_reports import compare
 
 ROOT = Path(__file__).resolve().parents[1]
 FOUNDATION_MANIFEST = ROOT / "reports/honchkrow_turn_loop_v2/foundation/manifest.json"
