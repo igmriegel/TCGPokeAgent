@@ -63,7 +63,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 |---|---|---|
 | Submission `55333874` replay audit | 26 isolated replays, 8W/18L; 1,434/1,434 decisions reproduced; zero invalid/fallback/exception; rating 357.2 at 2026-08-08T01:13:52-03:00 | Audit complete; retain immutable package SHA-256 `f6a7c94e…4fac` as technical reference |
 | Replay-fix candidate gate | Screening: baseline 251/300, A 254/300, B 247/300; final baseline 840/1000, A 862/1000; independent difference CI95 [-0.92, +5.32] points | No promotion; no package built or uploaded |
-| Quality | 287 tests pass; Ruff and documentation audit pass for the interview experiment; prior mypy gate remains green | Green for the implemented scope |
+| Quality | 297 tests pass; scoped Ruff, mypy, and pre-commit gates pass for the HLV2 implementation | Green for the implemented scope |
+| Expert turn loop v2 foundation | Explicit `expert_turn_loop_v2` variant, public tactical ledger, reproducible manifest, replay summary, and comparison tooling committed; baseline remains `supporter_resource_v2` | Implementation and pre-gate replay evidence complete; HLV2 golden/CABT promotion gates remain open |
 | Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
