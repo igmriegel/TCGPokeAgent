@@ -93,7 +93,7 @@ def test_dedicated_deck_and_profile_are_bound() -> None:
     assert len(deck) == 60
     assert deck[:4] == [463] * 4
     assert profile.deck_id == "honchkrow_porygon"
-    assert entrypoint.POLICY_VARIANT == "supporter_resource_v2_replay_fix_v1"
+    assert entrypoint.POLICY_VARIANT == "expert_turn_loop_v2"
     assert entrypoint._build_agent().policy_variant == entrypoint.POLICY_VARIANT
 
 

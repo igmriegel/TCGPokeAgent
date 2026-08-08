@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 OUTPUT="${1:-submissions/honchkrow_porygon_submission.tar.gz}"
-POLICY_VARIANT="${2:-supporter_resource_v2_replay_fix_v1}"
+POLICY_VARIANT="${2:-expert_turn_loop_v2}"
 EVIDENCE_CORPUS="${3:-55333874:26-replays}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
@@ -29,15 +29,21 @@ if [[ -x .venv/bin/python ]]; then PYTHON_BIN=".venv/bin/python"; fi
 
 "${PYTHON_BIN}" - "${TMPDIR}/main.py" "${POLICY_VARIANT}" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 path = Path(sys.argv[1])
 variant = sys.argv[2]
 source = path.read_text(encoding="utf-8")
-source = source.replace(
-    'POLICY_VARIANT = "supporter_resource_v2_replay_fix_v1"',
+source, replacements = re.subn(
+    r'^POLICY_VARIANT = .*$',
     f'POLICY_VARIANT = "{variant}"',
+    source,
+    count=1,
+    flags=re.MULTILINE,
 )
+if replacements != 1:
+    raise SystemExit("main.py does not declare exactly one POLICY_VARIANT")
 path.write_text(source, encoding="utf-8")
 PY
 

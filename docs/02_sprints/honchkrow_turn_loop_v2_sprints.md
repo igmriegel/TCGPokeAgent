@@ -11,7 +11,9 @@
 - Historical replay evidence is restricted to the 26 frozen replays from
   submission `55333874`.
 - Beliefs, opposing hand contents, and post-divergence outcomes are never facts.
-- Local CABT gates decide promotion. Remote Kaggle upload is outside scope.
+- Local CABT gates decide promotion. Remote Kaggle upload is outside scope unless
+  explicitly authorized; this run has an explicit user override recorded in the
+  status index despite the screening `HOLD`.
 
 The reproducible foundation manifest is generated with:
 
@@ -105,6 +107,7 @@ operational failures and no deck-out or material tactical regression.
 
 ### HLV2-S8 — Closure and release
 
-HLV2-024 builds and validates a package only after every promotion gate passes.
+HLV2-024 builds and validates a package only after every promotion gate passes,
+or after an explicitly recorded user override such as this operational release.
 HLV2-025 updates release status only after that decision. Failure retains
 `supporter_resource_v2` and must not create or upload a submission.

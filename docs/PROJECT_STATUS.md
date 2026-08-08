@@ -9,8 +9,8 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** immutable Honchkrow/Porygon package from submission
-`55333874`; no replay-derived candidate passed every local promotion gate
+**Current release:** `expert_turn_loop_v2` operational promotion authorized by
+the user; the prior immutable package remains the rollback reference
 
 Submission `55333874` is `COMPLETE` at a dynamic public rating of 357.2,
 observed at 2026-08-08T01:13:52-03:00 after 26 public/validation episodes.
@@ -64,8 +64,9 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Submission `55333874` replay audit | 26 isolated replays, 8W/18L; 1,434/1,434 decisions reproduced; zero invalid/fallback/exception; rating 357.2 at 2026-08-08T01:13:52-03:00 | Audit complete; retain immutable package SHA-256 `f6a7c94e…4fac` as technical reference |
 | Replay-fix candidate gate | Screening: baseline 251/300, A 254/300, B 247/300; final baseline 840/1000, A 862/1000; independent difference CI95 [-0.92, +5.32] points | No promotion; no package built or uploaded |
 | Quality | 297 tests pass; scoped Ruff, mypy, and pre-commit gates pass for the HLV2 implementation | Green for the implemented scope |
-| Expert turn loop v2 foundation | Explicit `expert_turn_loop_v2` variant, public tactical ledger, reproducible manifest, replay summary, and comparison tooling committed; baseline remains `supporter_resource_v2` | Implementation and pre-gate replay evidence complete; HLV2 golden/CABT promotion gates remain open |
-| Expert turn loop v2 CABT screening | 600 bilateral episodes per policy: baseline 511W/89L, candidate 518W/82L; both 600/600 operationally `ok`, equal 27 deck-out losses, +1.17 p.p. difference, 95% CI [-2.79, +5.12] p.p. | Screening `HOLD`; run independent 1,000-match blocks before any promotion decision |
+| Expert turn loop v2 foundation | Explicit `expert_turn_loop_v2` variant, public tactical ledger, reproducible manifest, replay summary, and comparison tooling committed; baseline remains `supporter_resource_v2` | Implementation and replay evidence complete; statistical gate remains open after operational override |
+| Expert turn loop v2 CABT screening | 600 bilateral episodes per policy: baseline 511W/89L, candidate 518W/82L; both 600/600 operationally `ok`, equal 27 deck-out losses, +1.17 p.p. difference, 95% CI [-2.79, +5.12] p.p. | Statistical result `HOLD`; user authorized operational promotion with limitation recorded |
+| Expert turn loop v2 release | Default entrypoint and package builder now target `expert_turn_loop_v2`; prior package and `supporter_resource_v2` remain selectable for rollback | Package validation and Kaggle receipt pending |
 | Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
@@ -142,6 +143,9 @@ promotion matrix have not run, so the release policy remains heuristic.
     divergences as single-decision counterfactuals without alternate-win claims.
 18. Do not promote either replay-fix candidate: B failed screening and A's
     final independent difference interval includes zero.
+19. The user explicitly authorized operational promotion of `expert_turn_loop_v2`
+    despite the screening `HOLD`; preserve the old package for rollback and do
+    not describe this as statistically significant promotion.
 
 ## Next work
 
