@@ -9,10 +9,10 @@
 
 | Status | Count |
 |---|---:|
-| Done | 6 |
+| Done | 7 |
 | In progress | 3 |
 | Ready | 4 |
-| Blocked by prerequisite | 12 |
+| Blocked by prerequisite | 11 |
 | Total | 25 |
 
 ## Tasks
@@ -43,7 +43,7 @@
 | HLV2-022 | S7 | `READY` | 021 | Run independent 1,000-match block per policy; screening is `HOLD` because the 95% difference interval includes zero |
 | HLV2-023 | S7 | `BLOCKED` | 021, 022 | Generate full comparison and human review bundle |
 | HLV2-024 | S8 | `DONE` | 023 | `PROMOTE_WITH_USER_OVERRIDE`: operational promotion authorized despite screening `HOLD`; old package retained for rollback |
-| HLV2-025 | S8 | `IN_PROGRESS` | 024 | Build/validate the expert package, submit it, and record the receipt and rollback manifest |
+| HLV2-025 | S8 | `DONE` | 024 | Canonical package built from `2c554dc`, validated, submitted, and recorded in `reports/honchkrow_turn_loop_v2/release_manifest.json`; prior package retained for rollback |
 
 ## Current evidence
 
@@ -69,4 +69,5 @@
   the screening limitation recorded; this is not a claim that the statistical
   promotion gate passed. The prior package remains available for rollback.
 - HLV2 final 1,000-match block has not run; package build and remote submission
-  are the active HLV2-025 actions.
+  remain a statistical follow-up, not a condition hidden from the release record.
+- Canonical release: `reports/honchkrow_turn_loop_v2/release_manifest.json`.

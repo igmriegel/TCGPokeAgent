@@ -9,8 +9,8 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** `expert_turn_loop_v2` operational promotion authorized by
-the user; the prior immutable package remains the rollback reference
+**Current release:** `expert_turn_loop_v2` submitted from canonical commit
+`2c554dc`; the prior immutable package remains the rollback reference
 
 Submission `55333874` is `COMPLETE` at a dynamic public rating of 357.2,
 observed at 2026-08-08T01:13:52-03:00 after 26 public/validation episodes.
@@ -66,7 +66,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Quality | 297 tests pass; scoped Ruff, mypy, and pre-commit gates pass for the HLV2 implementation | Green for the implemented scope |
 | Expert turn loop v2 foundation | Explicit `expert_turn_loop_v2` variant, public tactical ledger, reproducible manifest, replay summary, and comparison tooling committed; baseline remains `supporter_resource_v2` | Implementation and replay evidence complete; statistical gate remains open after operational override |
 | Expert turn loop v2 CABT screening | 600 bilateral episodes per policy: baseline 511W/89L, candidate 518W/82L; both 600/600 operationally `ok`, equal 27 deck-out losses, +1.17 p.p. difference, 95% CI [-2.79, +5.12] p.p. | Statistical result `HOLD`; user authorized operational promotion with limitation recorded |
-| Expert turn loop v2 release | Default entrypoint and package builder now target `expert_turn_loop_v2`; prior package and `supporter_resource_v2` remain selectable for rollback | Package validation and Kaggle receipt pending |
+| Expert turn loop v2 release | Default entrypoint and package builder now target `expert_turn_loop_v2`; prior package and `supporter_resource_v2` remain selectable for rollback | Package validated and canonical Kaggle receipt recorded |
+| Expert turn loop v2 submission | Canonical package SHA-256 `e90c6b87687c75a033348be2891dc1e6625af6c7e3be4acf9f1ff85718e31262`, receipt `20260808T073233Z-e90c6b87687c.json`, source commit `2c554dc` | Submitted successfully; retain statistical `HOLD` limitation and await remote score/replays |
 | Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |

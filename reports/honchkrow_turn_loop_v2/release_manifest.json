@@ -1,0 +1,28 @@
+{
+  "schema": "honchkrow_turn_loop_v2_release_manifest_v1",
+  "policy_variant": "expert_turn_loop_v2",
+  "source_commit": "2c554dc3666b710837a17594b1ed1bf8a59d76cc",
+  "deck_sha256": "d939482fa54813a8b97a0ba3111d29566296bc6934b7da656249465ef611153c",
+  "evidence_corpus": "55333874:26-replays",
+  "screening_decision": "HOLD",
+  "operational_promotion": "PROMOTE_WITH_USER_OVERRIDE",
+  "rollback_policy": "supporter_resource_v2",
+  "package": {
+    "path": "submissions/honchkrow_porygon_expert_turn_loop_v2_20260808.tar.gz",
+    "sha256": "e90c6b87687c75a033348be2891dc1e6625af6c7e3be4acf9f1ff85718e31262",
+    "bytes": 577605,
+    "payload_sha256": "eb158d5a1152c0baca36ea30b95ed1787b1760f1752ec60f33e88cb3a8864d75",
+    "validation": "passed"
+  },
+  "submission": {
+    "competition": "pokemon-tcg-ai-battle",
+    "receipt": "reports/submissions/20260808T073233Z-e90c6b87687c.json",
+    "submitted_at": "2026-08-08T07:32:33.311127+00:00",
+    "status": "submitted",
+    "message": "Honchkrow expert turn loop v2 operational promotion (canonical commit)"
+  },
+  "superseded_submission": {
+    "receipt": "reports/submissions/20260808T073126Z-9b3b7a7b0195.json",
+    "reason": "built before the promotion commit; retained as historical upload evidence"
+  }
+}
