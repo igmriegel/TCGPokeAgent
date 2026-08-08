@@ -1,0 +1,43 @@
+{
+  "baseline": {
+    "decisions": 1434,
+    "divergences": 0,
+    "episodes": 26,
+    "exceptions": 0,
+    "fallbacks": 0,
+    "invalid_indices": 0,
+    "matches": 1434,
+    "sha256": "110bddfc3652cc1f3c9c3976f444a4613572241cc58c4dd8f6f3b0407b554baf",
+    "variant": "supporter_resource_v2"
+  },
+  "candidate": {
+    "decisions": 1434,
+    "divergences": 20,
+    "episodes": 26,
+    "exceptions": 0,
+    "fallbacks": 0,
+    "invalid_indices": 0,
+    "matches": 1414,
+    "sha256": "53affef678131f754964d2e13bb03f6e8bc1489c3516a0740703196cfcb3cdc9",
+    "variant": "expert_turn_loop_v2"
+  },
+  "corpus": {
+    "decisions": 1434,
+    "episodes": 26,
+    "submission_id": 55333874
+  },
+  "counterfactual_scope": "single_decision_only",
+  "divergences_by_reason": {
+    "ariana_before_factory": 5,
+    "card": 1,
+    "deceit_searches_ariana_survival_line": 1,
+    "factory_after_ariana_and_roto": 3,
+    "petrel_factory_over_low_draw_ariana": 1,
+    "reduce_hand_before_ariana": 1,
+    "roto_opening_setup_or_survival": 8
+  },
+  "formal_gate_blocker": "HLV2-019 and its prerequisite golden gates remain open",
+  "formal_gate_status": "PRE_GATE_EVIDENCE",
+  "outcome_inference_prohibited": true,
+  "schema": "honchkrow_turn_loop_v2_replay_gate_v1"
+}

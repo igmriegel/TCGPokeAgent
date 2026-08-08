@@ -90,3 +90,15 @@ def test_bulk_load_keeps_file_errors_visible(tmp_path) -> None:
     assert len(outcomes) == 1
     assert len(errors) == 1
     assert errors[0]["path"].endswith("invalid.json")
+
+
+def test_explicit_owner_index_resolves_duplicate_names(tmp_path) -> None:
+    replay = _replay(1, winner=1)
+    replay["info"]["Agents"] = [{"Name": "Owner"}, {"Name": "Owner"}]
+    replay_path = tmp_path / "self-play.json"
+    replay_path.write_text(json.dumps(replay), encoding="utf-8")
+
+    outcome = extract_replay_outcome(replay_path, owner_name="Owner", owner_index=1)
+
+    assert outcome.owner_index == 1
+    assert outcome.owner_outcome == "win"

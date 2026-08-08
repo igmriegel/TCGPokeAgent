@@ -22,6 +22,10 @@ reports/submissions/
 # but regenerate full traces and progress/dump files locally.
 reports/*.jsonl.gz
 reports/*.progress.json
+reports/**/*.jsonl.gz
+reports/**/*.progress.json
+reports/replay_audits/*/cabt_screen_*.json
+reports/replay_audits/*/cabt_final_*.json
 reports/*_fulltrace_*.json
 reports/*_telemetry_*.json
 reports/*_diagnostics_*.json

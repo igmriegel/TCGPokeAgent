@@ -1,0 +1,1439 @@
+[
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          5
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90813277,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 14,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          1
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90813277,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 15,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          0
+        ],
+        "phase": "ATTACK",
+        "reasons": [
+          "deceit_searches_ariana_survival_line"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 111,
+    "turn": 10
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          6
+        ],
+        "phase": "UTILITY",
+        "reasons": [
+          "factory_after_ariana_and_roto"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 168,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          1
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 5,
+    "turn": 1
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          2
+        ],
+        "phase": "PLAY_SUPPORTER",
+        "reasons": [
+          "ariana_before_factory"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      4
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 86,
+    "turn": 12
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          6
+        ],
+        "phase": "PLAY_SUPPORTER",
+        "reasons": [
+          "ariana_before_factory"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 91,
+    "turn": 14
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          6
+        ],
+        "phase": "PLAY_SUPPORTER",
+        "reasons": [
+          "ariana_before_factory"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      13
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 97,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          6
+        ],
+        "phase": "PLAY_SUPPORTER",
+        "reasons": [
+          "ariana_before_factory"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 30,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          7
+        ],
+        "phase": "PLAY_POKEMON",
+        "reasons": [
+          "reduce_hand_before_ariana"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      10
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 39,
+    "turn": 5
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          1
+        ],
+        "phase": "UTILITY",
+        "reasons": [
+          "card"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      0,
+      1
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 40,
+    "turn": 5
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          5
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 15,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          7
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 16,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          9
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      10
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 17,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          11
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 0,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 18,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [
+      {
+        "action": [
+          1
+        ],
+        "phase": "PLAY_ITEMS",
+        "reasons": [
+          "roto_opening_setup_or_survival"
+        ],
+        "variant": "expert_rounds_1_3_replay_fix_v1"
+      }
+    ],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 100,
+    "review_status": "human_review_required",
+    "step": 19,
+    "turn": 2
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 50,
+    "review_status": "human_review_required",
+    "step": 163,
+    "turn": 31
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 49,
+    "review_status": "human_review_required",
+    "step": 155,
+    "turn": 29
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 49,
+    "review_status": "human_review_required",
+    "step": 156,
+    "turn": 29
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 49,
+    "review_status": "human_review_required",
+    "step": 157,
+    "turn": 29
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 48,
+    "review_status": "human_review_required",
+    "step": 117,
+    "turn": 22
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 48,
+    "review_status": "human_review_required",
+    "step": 118,
+    "turn": 22
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 48,
+    "review_status": "human_review_required",
+    "step": 119,
+    "turn": 22
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 48,
+    "review_status": "human_review_required",
+    "step": 122,
+    "turn": 22
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 47,
+    "review_status": "human_review_required",
+    "step": 111,
+    "turn": 20
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 47,
+    "review_status": "human_review_required",
+    "step": 112,
+    "turn": 20
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      4
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 47,
+    "review_status": "human_review_required",
+    "step": 113,
+    "turn": 20
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      10
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 46,
+    "review_status": "human_review_required",
+    "step": 147,
+    "turn": 27
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 46,
+    "review_status": "human_review_required",
+    "step": 148,
+    "turn": 27
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 45,
+    "review_status": "human_review_required",
+    "step": 138,
+    "turn": 25
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 45,
+    "review_status": "human_review_required",
+    "step": 139,
+    "turn": 25
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      12
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 44,
+    "review_status": "human_review_required",
+    "step": 102,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      12
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 44,
+    "review_status": "human_review_required",
+    "step": 104,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 44,
+    "review_status": "human_review_required",
+    "step": 133,
+    "turn": 23
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 44,
+    "review_status": "human_review_required",
+    "step": 135,
+    "turn": 23
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 44,
+    "review_status": "human_review_required",
+    "step": 136,
+    "turn": 23
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 43,
+    "review_status": "human_review_required",
+    "step": 128,
+    "turn": 21
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 43,
+    "review_status": "human_review_required",
+    "step": 129,
+    "turn": 21
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 42,
+    "review_status": "human_review_required",
+    "step": 124,
+    "turn": 19
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90827447,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 42,
+    "review_status": "human_review_required",
+    "step": 125,
+    "turn": 19
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 41,
+    "review_status": "human_review_required",
+    "step": 101,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 38,
+    "turn": 6
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 39,
+    "turn": 6
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      9
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 40,
+    "turn": 6
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 143,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 144,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90815748,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 145,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      4
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 145,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 146,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 148,
+    "turn": 16
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 157,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 158,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 160,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 161,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 163,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 164,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90816581,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 166,
+    "turn": 18
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 16,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 17,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 22,
+    "turn": 5
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 23,
+    "turn": 5
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90818273,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 33,
+    "turn": 7
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90820749,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 27,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 41,
+    "turn": 4
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 80,
+    "turn": 12
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 81,
+    "turn": 12
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 83,
+    "turn": 12
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 84,
+    "turn": 12
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90822434,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 89,
+    "turn": 14
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90824094,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 26,
+    "turn": 7
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90824946,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 39,
+    "turn": 7
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90824946,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 45,
+    "turn": 9
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90824946,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 46,
+    "turn": 9
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90824946,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 48,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90825761,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 86,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90825761,
+    "executed_action": [
+      1
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 88,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90825761,
+    "executed_action": [
+      3
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 89,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 29,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 42,
+    "turn": 7
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 54,
+    "turn": 9
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 55,
+    "turn": 9
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      7
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 63,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 64,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      8
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 65,
+    "turn": 11
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90826608,
+    "executed_action": [
+      2
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 80,
+    "turn": 15
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 27,
+    "turn": 4
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90828279,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 28,
+    "turn": 4
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90829937,
+    "executed_action": [
+      0
+    ],
+    "legal_attack_count": 2,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 13,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90829937,
+    "executed_action": [
+      5
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 14,
+    "turn": 3
+  },
+  {
+    "candidate_divergences": [],
+    "counterfactual_scope": "single_decision_only",
+    "episode_id": 90836695,
+    "executed_action": [
+      6
+    ],
+    "legal_attack_count": 1,
+    "outcome_inference_prohibited": true,
+    "priority": 40,
+    "review_status": "human_review_required",
+    "step": 93,
+    "turn": 20
+  }
+]

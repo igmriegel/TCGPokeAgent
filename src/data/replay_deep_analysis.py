@@ -213,12 +213,14 @@ def extract_deep_analysis(
     replay_path: str | Path,
     *,
     owner_name: str = "Igor Riegel",
+    owner_index: int | None = None,
 ) -> DeepReplayAnalysis:
     """Extract full turn-by-turn analysis from a CABT replay.
 
     Args:
         replay_path: Path to the CABT replay JSON file.
         owner_name: Name of the owner agent for W/L classification.
+        owner_index: Explicit owner side for self-play or duplicate agent names.
 
     Returns:
         Complete turn-by-turn analysis.
@@ -232,8 +234,12 @@ def extract_deep_analysis(
     if not isinstance(replay, Mapping) or replay.get("name") != "cabt":
         raise ValueError(f"unsupported replay: {path}")
 
-    owner_index = _resolve_owner(replay, owner_name)
-    if owner_index is None:
+    if owner_index not in {None, 0, 1}:
+        raise ValueError("owner_index must be 0, 1, or None")
+    resolved_owner_index = (
+        owner_index if owner_index is not None else _resolve_owner(replay, owner_name)
+    )
+    if resolved_owner_index is None:
         raise ValueError(f"owner '{owner_name}' not found in replay: {path}")
 
     visualization = _get_visualization(replay)
@@ -241,7 +247,7 @@ def extract_deep_analysis(
         raise ValueError(f"no visualization timeline: {path}")
 
     agents = replay.get("info", {}).get("Agents", [])
-    opponent_index = 1 - owner_index
+    opponent_index = 1 - resolved_owner_index
     opponent_name = ""
     if isinstance(agents, list) and 0 <= opponent_index < len(agents):
         opponent_name = str(agents[opponent_index].get("Name", ""))
@@ -275,7 +281,9 @@ def extract_deep_analysis(
         energy_attached = bool(current.get("energyAttached", False))
         supporter_played = bool(current.get("supporterPlayed", False))
 
-        owner_state = _parse_player_state(players[owner_index], energy_attached, supporter_played)
+        owner_state = _parse_player_state(
+            players[resolved_owner_index], energy_attached, supporter_played
+        )
         opponent_state = _parse_player_state(
             players[opponent_index], energy_attached, supporter_played
         )
@@ -296,11 +304,15 @@ def extract_deep_analysis(
         )
 
     owner_outcome = (
-        "draw" if winner_index is None else "win" if winner_index == owner_index else "loss"
+        "draw"
+        if winner_index is None
+        else "win"
+        if winner_index == resolved_owner_index
+        else "loss"
     )
 
     # Resolve archetypes from deck cards
-    owner_archetype = _resolve_archetype(replay, owner_index)
+    owner_archetype = _resolve_archetype(replay, resolved_owner_index)
     opponent_archetype = _resolve_archetype(replay, opponent_index)
 
     return DeepReplayAnalysis(
@@ -308,7 +320,7 @@ def extract_deep_analysis(
         source_path=str(path),
         owner_name=owner_name,
         opponent_name=opponent_name,
-        owner_index=owner_index,
+        owner_index=resolved_owner_index,
         winner_index=winner_index,
         owner_outcome=owner_outcome,
         total_turns=terminal_turn,

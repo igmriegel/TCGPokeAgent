@@ -51,6 +51,25 @@ def _two_proportion_test(
     }
 
 
+def _difference_interval(
+    baseline_wins: int,
+    baseline_total: int,
+    variant_wins: int,
+    variant_total: int,
+) -> tuple[float, float]:
+    """Return the independent 95% Wald interval for variant minus baseline."""
+    if baseline_total == 0 or variant_total == 0:
+        return 0.0, 0.0
+    baseline_rate = baseline_wins / baseline_total
+    variant_rate = variant_wins / variant_total
+    difference = variant_rate - baseline_rate
+    standard_error = math.sqrt(
+        baseline_rate * (1.0 - baseline_rate) / baseline_total
+        + variant_rate * (1.0 - variant_rate) / variant_total
+    )
+    return difference - 1.96 * standard_error, difference + 1.96 * standard_error
+
+
 def compare(baseline_path: Path, variant_path: Path) -> dict[str, Any]:
     """Compare reports as independent samples.
 
@@ -86,6 +105,17 @@ def compare(baseline_path: Path, variant_path: Path) -> dict[str, Any]:
             "baseline": _wilson(baseline_wins, baseline_total),
             "variant": _wilson(variant_wins, variant_total),
         },
+        "win_rate_difference": (
+            variant_wins / variant_total - baseline_wins / baseline_total
+            if baseline_total and variant_total
+            else 0.0
+        ),
+        "difference_ci95": _difference_interval(
+            baseline_wins,
+            baseline_total,
+            variant_wins,
+            variant_total,
+        ),
         "two_proportion_test": _two_proportion_test(
             baseline_wins,
             baseline_total,

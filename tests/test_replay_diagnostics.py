@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from src.data.replay_deep_analysis import (
     DeepReplayAnalysis,
     FrameData,
@@ -63,7 +65,10 @@ def test_replay_diagnostic_detects_damage_without_ko() -> None:
         total_turns=2,
         first_player=0,
         frames=[_frame(150, 350, 20, 6), _frame(80, 250, 18, 6)],
-        events=[GameEvent(event_type="Attack", player_index=0)],
+        events=[
+            GameEvent(event_type="Attack", player_index=0),
+            GameEvent(event_type="HpChange", player_index=1, value=-100),
+        ],
         owner_archetype="owner",
         opponent_archetype="opponent",
     )
@@ -71,6 +76,8 @@ def test_replay_diagnostic_detects_damage_without_ko() -> None:
     diagnostic = diagnose_replay(analysis)
 
     assert diagnostic.opponent_damage_observed == 100
+    assert diagnostic.owner_attack_count == 1
+    assert diagnostic.opponent_attack_count == 0
     assert diagnostic.opponent_ko_count == 0
     assert diagnostic.loss_category == "DAMAGE_NOT_CONVERTED"
 
@@ -97,3 +104,62 @@ def test_replay_diagnostic_aggregates_loss_categories() -> None:
     assert report["replays"] == 1
     assert report["wins"] == 1
     assert report["losses"] == 0
+
+
+def test_empty_deck_is_distinct_from_effective_deck_out(tmp_path) -> None:
+    replay = {
+        "name": "cabt",
+        "info": {
+            "EpisodeId": 3,
+            "Agents": [{"Name": "owner"}, {"Name": "opponent"}],
+        },
+        "steps": [
+            [
+                {
+                    "visualize": [
+                        {
+                            "current": {
+                                "result": 1,
+                                "turn": 2,
+                                "players": [
+                                    {"active": [], "bench": [], "deckCount": 0, "prize": [None]},
+                                    {
+                                        "active": [{"id": 2}],
+                                        "bench": [],
+                                        "deckCount": 10,
+                                        "prize": [None],
+                                    },
+                                ],
+                            },
+                            "logs": [{"type": "Result", "result": 1, "reason": 3}],
+                        }
+                    ]
+                },
+                {},
+            ]
+        ],
+    }
+    replay_path = tmp_path / "replay.json"
+    replay_path.write_text(json.dumps(replay), encoding="utf-8")
+    analysis = DeepReplayAnalysis(
+        episode_id=3,
+        source_path=str(replay_path),
+        owner_name="owner",
+        opponent_name="opponent",
+        owner_index=0,
+        winner_index=1,
+        owner_outcome="loss",
+        total_turns=2,
+        first_player=0,
+        frames=[_frame(0, 100, 0, 6)],
+        events=[],
+        owner_archetype="owner",
+        opponent_archetype="opponent",
+    )
+
+    diagnostic = diagnose_replay(analysis)
+
+    assert diagnostic.owner_deck_reached_zero
+    assert not diagnostic.owner_lost_by_deck_out
+    assert diagnostic.termination_reason == "no_pokemon_in_play"
+    assert diagnostic.loss_category == "BOARD_COLLAPSE"

@@ -55,6 +55,9 @@ def test_comparison_treats_nominal_cabt_seeds_as_independent(tmp_path: Path) -> 
     assert "changed_episodes" not in result
     assert result["sample_sizes"] == {"baseline": 2, "variant": 2}
     assert result["win_rates"] == {"baseline": 0.5, "variant": 1.0}
+    assert result["win_rate_difference"] == 0.5
+    assert result["difference_ci95"][0] < 0.0
+    assert result["difference_ci95"][1] > 0.0
     assert result["by_side"]["baseline"]["1"] == {"loss": 1}
     assert result["deck_out_losses"] == {"baseline": 1, "variant": 0}
     assert result["operational_status"] == {

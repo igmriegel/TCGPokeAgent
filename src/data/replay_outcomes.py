@@ -54,6 +54,7 @@ def extract_replay_outcome(
     replay_path: str | Path,
     *,
     owner_name: str | None = None,
+    owner_index: int | None = None,
     catalog: CardCatalog | None = None,
 ) -> ReplayOutcome:
     """Extract the explicit result log and terminal public state.
@@ -61,6 +62,7 @@ def extract_replay_outcome(
     Args:
         replay_path: CABT replay JSON file.
         owner_name: Optional agent name used only to classify owner outcome.
+        owner_index: Explicit owner side for self-play or duplicate agent names.
         catalog: Optional card catalog for deck archetype resolution.
 
     Returns:
@@ -96,18 +98,22 @@ def extract_replay_outcome(
         if winner is None
         else "unknown"
     )
-    owner_index = _owner_index(replay, owner_name)
+    if owner_index not in {None, 0, 1}:
+        raise ValueError("owner_index must be 0, 1, or None")
+    resolved_owner_index = (
+        owner_index if owner_index is not None else _owner_index(replay, owner_name)
+    )
     owner_outcome = (
         "unknown"
-        if owner_index is None
+        if resolved_owner_index is None
         else "draw"
         if winner is None
         else "win"
-        if winner == owner_index
+        if winner == resolved_owner_index
         else "loss"
     )
 
-    opponent_index = 1 - owner_index if owner_index is not None else None
+    opponent_index = 1 - resolved_owner_index if resolved_owner_index is not None else None
     agents = replay.get("info", {}).get("Agents", [])
     opponent_name = (
         agents[opponent_index].get("Name")
@@ -149,7 +155,7 @@ def extract_replay_outcome(
         episode_id=int(replay.get("info", {}).get("EpisodeId", path.stem)),
         source_path=str(path),
         winner_index=winner,
-        owner_index=owner_index,
+        owner_index=resolved_owner_index,
         owner_outcome=owner_outcome,
         reason_code=reason_code,
         termination_reason=reason,
