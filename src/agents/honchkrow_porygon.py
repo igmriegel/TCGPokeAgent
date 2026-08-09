@@ -349,6 +349,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         super().__init__(*args, **kwargs)
         self._proton_used_previous_turn = False
         self._own_ko_observed = False
+        self._reference_roto = False
         self._persistent_target_serial: int | None = None
         self._persistent_target_card_id: int | None = None
 
@@ -364,6 +365,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def set_own_ko_observed(self, observed: bool) -> None:
         """Record the public transition that immediately followed our KO."""
         self._own_ko_observed = observed
+
+    def set_reference_roto(self, enabled: bool) -> None:
+        """Select the frozen pre-probabilistic-Roto reference policy."""
+        self._reference_roto = enabled
 
     def reset_persistent_target(self) -> None:
         """Forget a target when the public objective ends."""
@@ -959,6 +964,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
         """Return whether Roto-Stick has positive expected value for the KO line."""
+        if self._reference_roto:
+            needed = self._supporters_needed_for_ko(state)
+            hand = self._supporters_in_hand(state)
+            return bool(
+                hand < needed
+                and (self._rocket_supporters_in_discard(state) or self._card_in_hand(state, ARIANA))
+            )
         if not self._card_in_hand(state, ROTO_STICK):
             return False
         needed = self._supporters_needed_for_ko(state)
@@ -985,13 +997,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         visible += self._count_supporters(player.prize)
         return max(0, min(int(player.deck_count), total - visible))
 
-    def _roto_hit_probability(self, state: GameState, required: int) -> float:
-        """Estimate the chance that four Roto cards contain enough Supporters."""
+    def _supporter_hit_probability(self, state: GameState, draws: int, required: int) -> float:
+        """Estimate the chance that a hidden draw contains enough Supporters."""
         player = self._own_player(state)
-        if player is None or required <= 0:
+        if player is None or draws <= 0 or required <= 0:
             return 0.0
         deck = max(0, int(player.deck_count))
-        draws = min(4, deck)
+        draws = min(draws, deck)
         supporters = min(self._roto_remaining_supporters(state), deck)
         if draws == 0 or supporters == 0 or required > draws:
             return 0.0
@@ -1002,6 +1014,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             if 0 <= draws - successes <= deck - supporters
         )
         return max(0.0, min(1.0, 1.0 - miss / denominator))
+
+    def _roto_hit_probability(self, state: GameState, required: int) -> float:
+        """Estimate the chance that four Roto cards contain enough Supporters."""
+        return self._supporter_hit_probability(state, 4, required)
 
     def _roto_expected_value(self, state: GameState, required: int) -> tuple[float, float]:
         """Return expected Roto value and its probability of closing the deficit."""
@@ -1039,6 +1055,30 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if player is None:
             return 0
         return int(max(0, self._ariana_draw_count(state) - max(0, player.hand_count - 1)))
+
+    def _ariana_expected_value(
+        self, state: GameState, hand_reduction: int = 0, factory_will_be_played: bool = False
+    ) -> float:
+        """Estimate Ariana's value after safely removing cards from the hand."""
+        player = self._own_player(state)
+        if player is None or state.supporter_played:
+            return -2400.0
+        hand_after_play = max(0, int(player.hand_count) - max(0, hand_reduction) - 1)
+        ariana_draws = min(
+            max(0, self._ariana_draw_count(state) - hand_after_play),
+            max(0, int(player.deck_count) - self._elective_draw_reserve(state)),
+        )
+        factory_draws = 2 if self._factory_in_play(state) or factory_will_be_played else 0
+        draws = min(
+            ariana_draws + factory_draws,
+            max(0, int(player.deck_count) - self._elective_draw_reserve(state)),
+        )
+        if ariana_draws <= 0:
+            return -1800.0
+        deck = max(1, int(player.deck_count))
+        expected_supporters = draws * self._roto_remaining_supporters(state) / deck
+        deck_risk = max(0, self._elective_draw_reserve(state) - (int(player.deck_count) - draws))
+        return expected_supporters * 650.0 + draws * 35.0 - deck_risk * 250.0
 
     def _factory_in_play(self, state: GameState) -> bool:
         stadium = state.stadium
@@ -2017,11 +2057,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "expert_rounds_1_3_v1",
                 "expert_turn_loop",
                 "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
                 "supporter_resource_v2_replay_fix_v1",
                 "expert_rounds_1_3_replay_fix_v1",
             }
             else "baseline"
         )
+        self._scorer.set_reference_roto(self._uses_90pct_reference)
 
     @property
     def _uses_retreat_guard(self) -> bool:
@@ -2034,6 +2078,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
             "expert_turn_loop_no_ultra_ball_test",
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2047,6 +2094,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
             "expert_turn_loop_no_ultra_ball_test",
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2059,6 +2109,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
             "expert_turn_loop_no_ultra_ball_test",
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2070,6 +2123,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
             "expert_turn_loop_no_ultra_ball_test",
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
 
@@ -2079,6 +2135,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return self.policy_variant in {
             "expert_turn_loop",
             "expert_turn_loop_no_ultra_ball_test",
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
+        }
+
+    @property
+    def _uses_probabilistic_supporters(self) -> bool:
+        """Return whether the isolated probabilistic supporter experiment is active."""
+        return self.policy_variant in {
+            "expert_turn_loop_probabilistic_supporters_v1",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
+        }
+
+    @property
+    def _uses_90pct_reference(self) -> bool:
+        """Return whether the pre-probabilistic-Roto reference is active."""
+        return self.policy_variant in {
+            "expert_turn_loop_90pct_base",
+            "expert_turn_loop_90pct_probabilistic_ariana_v1",
         }
 
     @property
@@ -3003,16 +3078,29 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return DecisionPhase.PLAY_ITEMS.value, "recover_before_ariana", night_stretcher
 
         hand_reduction = matching(
-            lambda candidate: self._is_safe_pre_draw_hand_reduction(state, candidate)
+            lambda candidate: (
+                self._probabilistic_pre_draw_hand_reduction(state, candidate)
+                if self._uses_probabilistic_supporters
+                else self._is_safe_pre_draw_hand_reduction(state, candidate)
+            )
         )
         if hand_reduction:
-            return DecisionPhase.PLAY_POKEMON.value, "reduce_hand_before_ariana", hand_reduction
+            reason = (
+                "probabilistic_reduce_hand_before_ariana"
+                if self._uses_probabilistic_supporters
+                else "reduce_hand_before_ariana"
+            )
+            return DecisionPhase.PLAY_POKEMON.value, reason, hand_reduction
 
         ariana = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._feature_int(candidate, "card_id") == ARIANA
-                and self._scorer._ariana_is_safe_and_useful(state)
+                and (
+                    self._scorer._ariana_expected_value(state) > 0
+                    if self._uses_probabilistic_supporters
+                    else self._scorer._ariana_is_safe_and_useful(state)
+                )
             )
         )
         if ariana:
@@ -3590,6 +3678,42 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if self._scorer._metadata_int(candidate.card, "cardType") != 0:
             return False
         return card_id in {MURKROW, PORYGON} and not self._scorer._own_bench_full(state)
+
+    def _probabilistic_pre_draw_hand_reduction(
+        self, state: GameState, candidate: Candidate
+    ) -> bool:
+        """Return whether a safe action increases the estimated value of Ariana."""
+        if not self._scorer._ariana_is_safe_and_useful(state):
+            return False
+        if self._is_safe_pre_draw_hand_reduction(state, candidate):
+            reduction = 1
+        elif candidate.option_type is OptionType.ATTACH:
+            card_id = self._scorer._feature_int(candidate, "card_id")
+            reduction = int(
+                self._scorer._is_energy_card(card_id, candidate.card)
+                and self._scorer._attachment_score(state, candidate)[0] > 0
+            )
+        elif candidate.option_type is OptionType.PLAY:
+            card_id = self._scorer._feature_int(candidate, "card_id")
+            if card_id == FACTORY and self._scorer._factory_play_is_useful(state):
+                reduction = 1
+            elif card_id == POKE_PAD and self._scorer._pokepad_honchkrow_is_useful(
+                state, candidate
+            ):
+                reduction = 1
+            elif card_id == ULTRA_BALL and self._canonical_ultra_ball_is_productive(state):
+                reduction = 2
+            else:
+                return False
+        else:
+            return False
+        factory_will_be_played = (
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id") == FACTORY
+        )
+        return self._scorer._ariana_expected_value(state, reduction, factory_will_be_played) > (
+            self._scorer._ariana_expected_value(state) + 20.0
+        )
 
     def _filter_forbidden_selections(
         self,
