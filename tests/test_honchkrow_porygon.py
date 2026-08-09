@@ -11,6 +11,7 @@ from src.agents.honchkrow_porygon import (
     ARIANA,
     ARTICUNO,
     DECEIT,
+    DECK_OUT_EXPERIMENTAL_RESERVE,
     FACTORY,
     FROSLASS,
     GIOVANNI,
@@ -1934,6 +1935,16 @@ def test_elective_draw_reserves_natural_draw_outside_mega_matchup() -> None:
     assert scorer._elective_draw_reserve(state) == 1
     state.players[1].active = PokemonState(MEGA_ABOMASNOW_EX, 350, 350)
     assert scorer._elective_draw_reserve(state) == MEGA_ABOMASNOW_DECK_RESERVE
+
+
+def test_deck_reserve_experiment_preserves_three_natural_draws() -> None:
+    """The T-026 candidate only changes the elective draw reserve."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v1")
+    state = GameState(players=[PlayerState(deck_count=3), PlayerState()])
+
+    assert agent.policy_variant == "expert_turn_loop_deck_reserve_v1"
+    assert agent._uses_expert_turn_loop
+    assert agent._scorer._elective_draw_reserve(state) == DECK_OUT_EXPERIMENTAL_RESERVE
 
 
 def test_energy_units_count_rocket_and_ignition_as_multi_unit_cards() -> None:

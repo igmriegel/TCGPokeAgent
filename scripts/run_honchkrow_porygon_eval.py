@@ -213,6 +213,7 @@ POLICY_VARIANTS = (
     "expert_turn_loop_probabilistic_supporters_v1",
     "expert_turn_loop_90pct_base",
     "expert_turn_loop_90pct_probabilistic_ariana_v1",
+    "expert_turn_loop_deck_reserve_v1",
     "supporter_resource_v2_replay_fix_v1",
     "expert_rounds_1_3_replay_fix_v1",
 )

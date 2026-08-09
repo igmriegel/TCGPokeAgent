@@ -63,6 +63,7 @@ MEGA_ABOMASNOW_EX = 723
 MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS = 6
 MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS = 18
 MEGA_ABOMASNOW_DECK_RESERVE = 2
+DECK_OUT_EXPERIMENTAL_RESERVE = 3
 CANONICAL_POLICY_VARIANT = "expert_turn_loop"
 CONSOLIDATED_POLICY_VARIANTS = (
     "supporter_resource_v2",
@@ -358,6 +359,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         self._proton_used_previous_turn = False
         self._own_ko_observed = False
         self._reference_roto = False
+        self._elective_draw_reserve_override: int | None = None
         self._persistent_target_serial: int | None = None
         self._persistent_target_card_id: int | None = None
 
@@ -377,6 +379,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def set_reference_roto(self, enabled: bool) -> None:
         """Select the frozen pre-probabilistic-Roto reference policy."""
         self._reference_roto = enabled
+
+    def set_elective_draw_reserve_override(self, reserve: int | None) -> None:
+        """Set an experimental minimum reserve for elective draw effects."""
+        self._elective_draw_reserve_override = reserve
 
     def reset_persistent_target(self) -> None:
         """Forget a target when the public objective ends."""
@@ -1188,6 +1194,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _elective_draw_reserve(self, state: GameState) -> int:
         """Keep a natural draw available after elective draw effects."""
+        if self._elective_draw_reserve_override is not None:
+            return self._elective_draw_reserve_override
         if self._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
             return 1
         if self._active_has_committed_mega_abomasnow_ko(state):
@@ -2090,85 +2098,111 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "expert_turn_loop_probabilistic_supporters_v1",
                 "expert_turn_loop_90pct_base",
                 "expert_turn_loop_90pct_probabilistic_ariana_v1",
+                "expert_turn_loop_deck_reserve_v1",
                 "supporter_resource_v2_replay_fix_v1",
                 "expert_rounds_1_3_replay_fix_v1",
             }
             else "baseline"
         )
         self._scorer.set_reference_roto(self._uses_90pct_reference)
+        self._scorer.set_elective_draw_reserve_override(
+            DECK_OUT_EXPERIMENTAL_RESERVE
+            if self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+            else None
+        )
 
     @property
     def _uses_retreat_guard(self) -> bool:
         """Return whether the promoted committed-switch policy is active."""
-        return self.policy_variant in {
-            "baseline",
-            "ko_priority_v3_retreat_guard",
-            "supporter_lethal_v1",
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        }
+        return (
+            self.policy_variant
+            in {
+                "baseline",
+                "ko_priority_v3_retreat_guard",
+                "supporter_lethal_v1",
+                "supporter_resource_v2",
+                "expert_rounds_1_3_v1",
+                "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
+                "supporter_resource_v2_replay_fix_v1",
+                "expert_rounds_1_3_replay_fix_v1",
+            }
+            or self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+        )
 
     @property
     def _uses_supporter_lethal_commitment(self) -> bool:
         """Return whether exact Rocket Feathers commitments are enabled."""
-        return self.policy_variant in {
-            "supporter_lethal_v1",
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        }
+        return (
+            self.policy_variant
+            in {
+                "supporter_lethal_v1",
+                "supporter_resource_v2",
+                "expert_rounds_1_3_v1",
+                "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
+                "supporter_resource_v2_replay_fix_v1",
+                "expert_rounds_1_3_replay_fix_v1",
+            }
+            or self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+        )
 
     @property
     def _uses_resource_variant(self) -> bool:
         """Return whether Roto-Stick and Transceiver resource logic is enabled."""
-        return self.policy_variant in {
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        }
+        return (
+            self.policy_variant
+            in {
+                "supporter_resource_v2",
+                "expert_rounds_1_3_v1",
+                "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
+                "supporter_resource_v2_replay_fix_v1",
+                "expert_rounds_1_3_replay_fix_v1",
+            }
+            or self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+        )
 
     @property
     def _uses_expert_rounds_1_3(self) -> bool:
         """Return whether the first three ratified interview rounds are active."""
-        return self.policy_variant in {
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        }
+        return (
+            self.policy_variant
+            in {
+                "expert_rounds_1_3_v1",
+                "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
+                "expert_rounds_1_3_replay_fix_v1",
+            }
+            or self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+        )
 
     @property
     def _uses_expert_turn_loop(self) -> bool:
         """Return whether the official Owner-defined turn loop is active."""
-        return self.policy_variant in {
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-        }
+        return (
+            self.policy_variant
+            in {
+                "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
+                "expert_turn_loop_probabilistic_supporters_v1",
+                "expert_turn_loop_90pct_base",
+                "expert_turn_loop_90pct_probabilistic_ariana_v1",
+            }
+            or self.policy_variant == "expert_turn_loop_deck_reserve_v1"
+        )
 
     @property
     def _uses_probabilistic_supporters(self) -> bool:
