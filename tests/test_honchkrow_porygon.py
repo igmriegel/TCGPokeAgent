@@ -2052,8 +2052,8 @@ def test_attack_planner_does_not_treat_wrong_energy_type_as_darkness() -> None:
 
 
 def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
-    """A legal post-attachment attack remains mandatory if its ID was projected differently."""
-    agent = HonchkrowPorygonAgent(_profile())
+    """A legal post-Ignition attack precedes an otherwise safe Ariana play."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     from src.agents.honchkrow_porygon import SwitchCommitment
 
     agent._switch_commitment = SwitchCommitment(
@@ -2071,11 +2071,12 @@ def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
             PlayerState(
                 active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}, {}]),
                 hand=[{"id": ARIANA}],
+                deck_count=30,
             ),
             PlayerState(active=PokemonState(999, 100, 100)),
         ],
     )
-    attack = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    attack = _candidate(0, OptionType.ATTACK, attack_id=999999)
     ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
 
     phase, reason, choices = agent._main_phase_selections(
@@ -2085,7 +2086,7 @@ def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
     )
 
     assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "execute_committed_ignition_attack"
+    assert reason == "canonical_execute_ignition_attack"
     assert [selection.indices for selection in choices] == [(0,)]
 
 
@@ -2192,8 +2193,8 @@ def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
     assert [selection.indices for selection in eligible] == [(1,)]
 
 
-def test_expert_loop_rejects_unconvertible_rocket_line_against_any_target() -> None:
-    """The generic resource guard rejects a nonlethal 350 HP line outside the matchup rule."""
+def test_expert_loop_keeps_partial_rocket_line_against_non_mega_target() -> None:
+    """A legal partial Rocket Feathers attack remains available outside Mega Abomasnow."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
@@ -2207,7 +2208,46 @@ def test_expert_loop_rejects_unconvertible_rocket_line_against_any_target() -> N
     )
     feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
 
-    assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+
+
+def test_rocket_energy_enabling_murkrow_attack_is_not_forbidden() -> None:
+    """Rocket Energy may build an active Murkrow that can attack this turn."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80, serial=22)),
+            PlayerState(active=PokemonState(999, 80, 80)),
+        ]
+    )
+    rocket = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value, "enablesAttack": True},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": ROCKET_ENERGY,
+            "target_card_id": MURKROW,
+            "target_serial": 22,
+            "target_energy_count": 0,
+            "target_is_active": True,
+        },
+    )
+
+    assert not agent._candidate_is_forbidden(state, rocket, SelectContext.MAIN)
+
+
+def test_articuno_in_hand_does_not_block_development_without_a_legal_play() -> None:
+    """Unavailable Articuno cannot freeze the development stage against Dragapult."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(hand=[{"id": ARTICUNO}]),
+            PlayerState(active=PokemonState(119, 70, 70)),
+        ]
+    )
+
+    assert not agent._articuno_should_precede_development(state, [])
 
 
 def test_expert_loop_keeps_partial_rocket_line_with_next_ko_horizon() -> None:

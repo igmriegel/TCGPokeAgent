@@ -3231,10 +3231,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         best,
                     )
 
-        if (
-            self._scorer._own_bench_count(state) == 0
-            and not self._scorer._articuno_is_needed(state)
-        ):
+        if self._scorer._own_bench_count(
+            state
+        ) == 0 and not self._articuno_should_precede_development(state, candidates):
             development = matching(
                 lambda candidate: (
                     candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
@@ -3251,11 +3250,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     development,
                 )
 
-        if (
-            self._switch_commitment is not None
-            and self._active_matches_switch_commitment(state)
-            and (state.supporter_played or not self._scorer._ariana_is_safe_and_useful(state))
-        ):
+        if self._switch_commitment is not None and self._active_matches_switch_commitment(state):
             committed_attack = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.ATTACK
@@ -3495,7 +3490,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._scorer._feature_int(candidate, "card_id") == ARTICUNO
             and candidate.option_type in {OptionType.PLAY, OptionType.CARD}
             for candidate in candidates
-        ) or self._scorer._card_in_hand(state, ARTICUNO)
+        )
 
     def _articuno_should_precede_development(
         self, state: GameState, candidates: Sequence[Candidate]
@@ -3685,9 +3680,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._energy_units_for_pokemon(active)
             >= self._scorer._attack_energy_target(HONCHKROW)
         )
-        deck_safe = bool(
-            player and player.deck_count > self._scorer._elective_draw_reserve(state)
-        )
+        deck_safe = bool(player and player.deck_count > self._scorer._elective_draw_reserve(state))
         return remaining <= next_turn_supporters * 60 and ready and deck_safe
 
     def _is_safe_pre_draw_hand_reduction(self, state: GameState, candidate: Candidate) -> bool:
@@ -4135,9 +4128,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 return False
             if self._variant_attack_is_lethal(state, candidate):
                 return False
-            if attack_id == ROCKET_FEATHERS and self._rocket_feathers_has_horizon(
-                state, candidate
-            ):
+            if attack_id == ROCKET_FEATHERS and self._rocket_feathers_has_horizon(state, candidate):
                 return False
             return True
         if candidate.option_type is OptionType.RETREAT:
@@ -4253,10 +4244,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 and self._ignition_attack_plan(state, candidate) is None
             ):
                 return True
-            if target_id == MURKROW and bool(
-                candidate.option.get("enablesAttack", candidate.option.get("enables", False))
-            ):
-                return True
             if self._only_energy_in_hand(state) and not (
                 energy_id == IGNITION_ENERGY and self._ignition_attack_plan(state, candidate)
             ):
@@ -4280,10 +4267,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         if (
             candidate.option_type is OptionType.ATTACK
-            and (
-                self._uses_expert_turn_loop
-                or self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-            )
+            and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
             and not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
             and not (
                 self._scorer._attack_id(candidate) == ROCKET_FEATHERS
@@ -4319,10 +4303,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
             return not (
                 self._scorer._roto_stick_is_needed(state)
-                or (
-                    self._uses_expert_turn_loop
-                    and self._canonical_roto_is_productive(state)
-                )
+                or (self._uses_expert_turn_loop and self._canonical_roto_is_productive(state))
                 or (
                     self._uses_expert_rounds_1_3
                     and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
