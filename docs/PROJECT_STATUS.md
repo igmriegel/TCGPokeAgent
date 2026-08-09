@@ -4,7 +4,7 @@
 > remote score, or active priority changes. Historical evidence belongs in
 > [`strategy_notes.md`](strategy_notes.md), not here.
 
-**Last verified:** 2026-08-08
+**Last verified:** 2026-08-09
 
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
@@ -99,6 +99,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
+| Deck-reserve v2 screen | 200 bilateral CABT matches: 168W/32L, zero execution failures, explicit terminal reasons, zero partial Mega attacks, and 2 deck-out losses | Do not promote; the Roto reserve guard fixed one observed consumption path but did not eliminate long-game deck-outs |
 | Mega Abomasnow fix smoke | 40 bilateral games vs CABT `random_agent`: 34W/0D/6L, zero execution failures | Operationally green; not sufficient for promotion |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
@@ -209,8 +210,9 @@ The recommended order is:
 3. resume the Honchkrow/Porygon expert interview at Round 4 in
    [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) and
    approve a decision-complete implementation plan before changing runtime behavior;
-4. close the remaining terminal-cause gap and rerun the promoted baseline at
-   1,000 matches;
+4. retain terminal-cause extraction from CABT's visualizer snapshot; use the
+   resolved attack/discard sequence audit to determine whether remaining
+   deck-outs are preventable before rerunning a candidate at 1,000 matches;
 5. monitor the new turn-planning submission and collect its remote replays;
 6. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 7. validate Rule Box/PrizeMap and PrizeCheck transitions;
