@@ -6,6 +6,7 @@ import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
+from math import comb
 from typing import Any
 
 from src.agents.heuristic import (
@@ -957,7 +958,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return any(self._card_id_from_value(card) == card_id for card in self._hand_cards(state))
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
-        """Return whether Roto-Stick can address a real supporter damage deficit."""
+        """Return whether Roto-Stick has positive expected value for the KO line."""
         if not self._card_in_hand(state, ROTO_STICK):
             return False
         needed = self._supporters_needed_for_ko(state)
@@ -972,7 +973,47 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return False
         if player.deck_count <= self._elective_draw_reserve(state):
             return False
-        return hand * 60 < self._raw_opponent_hp(state)
+        return self._roto_expected_value(state, needed - hand)[0] > 0
+
+    def _roto_remaining_supporters(self, state: GameState) -> int:
+        """Estimate Supporters remaining in the hidden deck from public zones."""
+        player = self._own_player(state)
+        if player is None:
+            return 0
+        total = int(self._strategy.get("supporter_count", 20))
+        visible = self._supporters_in_hand(state) + self._rocket_supporters_in_discard(state)
+        visible += self._count_supporters(player.prize)
+        return max(0, min(int(player.deck_count), total - visible))
+
+    def _roto_hit_probability(self, state: GameState, required: int) -> float:
+        """Estimate the chance that four Roto cards contain enough Supporters."""
+        player = self._own_player(state)
+        if player is None or required <= 0:
+            return 0.0
+        deck = max(0, int(player.deck_count))
+        draws = min(4, deck)
+        supporters = min(self._roto_remaining_supporters(state), deck)
+        if draws == 0 or supporters == 0 or required > draws:
+            return 0.0
+        denominator = comb(deck, draws)
+        miss = sum(
+            comb(supporters, successes) * comb(deck - supporters, draws - successes)
+            for successes in range(min(required, supporters + 1))
+            if 0 <= draws - successes <= deck - supporters
+        )
+        return max(0.0, min(1.0, 1.0 - miss / denominator))
+
+    def _roto_expected_value(self, state: GameState, required: int) -> tuple[float, float]:
+        """Return expected Roto value and its probability of closing the deficit."""
+        player = self._own_player(state)
+        if player is None or required <= 0:
+            return 0.0, 0.0
+        probability = self._roto_hit_probability(state, required)
+        prize_value = self._active_target_prize_value(state)
+        ko_value = 600.0 + prize_value * 200.0
+        deck_risk = max(0, 8 - int(player.deck_count)) * 100.0
+        action_cost = 450.0
+        return probability * ko_value - action_cost - deck_risk, probability
 
     def _all_own_pokemon_are_rocket(self, state: GameState) -> bool:
         """Return whether Ariana draws to eight from only public card metadata."""
@@ -2988,7 +3029,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
-                    and self._roto_can_improve_rocket_line(state)
+                    and self._scorer._roto_stick_is_needed(state)
                 )
             )
             if roto:
