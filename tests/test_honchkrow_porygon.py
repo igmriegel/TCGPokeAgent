@@ -1380,6 +1380,27 @@ def test_roto_is_needed_for_a_direct_supporter_deficit() -> None:
     assert scorer._roto_stick_is_needed(state)
 
 
+def test_roto_probability_uses_four_revealed_cards() -> None:
+    """Roto's expected value must model its four-card reveal."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}],
+                deck_count=20,
+                discard=[{"id": 1216}] * 15,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+
+    roto_probability = scorer._roto_hit_probability(state, 1)
+    four_card_probability = scorer._supporter_hit_probability(state, 4, 1)
+
+    assert roto_probability == four_card_probability
+
+
 def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(

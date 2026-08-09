@@ -1027,7 +1027,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return max(0.0, min(1.0, 1.0 - miss / denominator))
 
     def _roto_hit_probability(self, state: GameState, required: int) -> float:
-        """Estimate the chance that four Roto cards contain enough Supporters."""
+        """Estimate the chance that Roto's four revealed cards close the deficit."""
         return self._supporter_hit_probability(state, 4, required)
 
     def _roto_expected_value(self, state: GameState, required: int) -> tuple[float, float]:
@@ -3232,6 +3232,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     )
 
         if (
+            self._scorer._own_bench_count(state) == 0
+            and not self._scorer._articuno_is_needed(state)
+        ):
+            development = matching(
+                lambda candidate: (
+                    candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                    and self._scorer._metadata_int(candidate.card, "cardType") == 0
+                    and self._scorer._feature_int(candidate, "card_id")
+                    in {MURKROW, PORYGON, HONCHKROW, PORYGON2, ARTICUNO}
+                )
+            )
+            if development:
+                self._turn_ledger.canonical_exception = "empty_bench_development"
+                return (
+                    DecisionPhase.PLAY_POKEMON.value,
+                    "canonical_develop_empty_bench",
+                    development,
+                )
+
+        if (
             self._switch_commitment is not None
             and self._active_matches_switch_commitment(state)
             and (state.supporter_played or not self._scorer._ariana_is_safe_and_useful(state))
@@ -3459,7 +3479,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Allow Roto only after the Factory stage and when it closes supporter damage."""
         if self._roto_proton_only_mode(state):
             return True
-        needed = self._turn_ledger.supporters_needed_for_ko
+        if not self._scorer._card_in_hand(state, ROTO_STICK):
+            return False
+        needed = self._turn_ledger.supporters_needed_for_ko or (
+            self._scorer._supporters_needed_for_ko(state)
+        )
         available = self._scorer._supporters_in_hand(state)
         return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
 
@@ -4295,6 +4319,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
             return not (
                 self._scorer._roto_stick_is_needed(state)
+                or (
+                    self._uses_expert_turn_loop
+                    and self._canonical_roto_is_productive(state)
+                )
                 or (
                     self._uses_expert_rounds_1_3
                     and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
