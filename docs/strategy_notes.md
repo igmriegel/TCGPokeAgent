@@ -821,3 +821,24 @@ replays:
       - "A generic resource ranking allowed Ultra Ball and later supporter discards to outrank preservation of a known KO line."
 acceptance: "Focused regression tests pass; bilateral replay evaluation remains required and no statistical promotion is claimed."
 ```
+
+## Replay 91239077 — Prize economy and Alakazam attack distinction for T-034
+
+```yaml
+replay: "91239077"
+task: "T-034"
+observed_facts:
+  - "The owner identified a sequencing divergence involving Giovanni, Fezandipiti, Porygon2, and the Alakazam matchup."
+  - "The reviewed matchup distinguishes Alakazam's Powerful Hand from Kadabra's Super Psy Bolt."
+confirmed_technical_changes:
+  - "Visible two-Prize targets are scored by remaining HP and available damage, with Fezandipiti receiving an auditable economic-KO reason when reachable."
+  - "The selected public effect target is retained by serial/card identity across subsequent EFFECT_TARGET prompts."
+  - "Powerful Hand is detected from attack metadata; Kadabra line evidence remains matchup evidence but does not activate Articuno protection."
+  - "Archer remains gated by an own-KO transition and is not coupled to Super Psy Bolt."
+  - "Visible Enhanced Hammer risk preserves uncommitted Rocket/Ignition Energy."
+causal_divergence: "unknown pending replay-level end-to-end trace"
+hypotheses:
+  - "Earlier target scoring could prefer a generic low-HP target without modeling the economic multi-Prize line."
+  - "Earlier Alakazam evidence could conflate visible evolution-line identity with the specific hand-size attack threat."
+acceptance: "Focused regressions pass; replay revalidation and controlled gameplay evidence remain required. This record is not tied to a replay ID at runtime."
+```
