@@ -692,6 +692,33 @@ def test_petrel_factory_dominates_one_card_ariana_draw() -> None:
     assert agent.turn_ledger.petrel_factory_opportunities == 1
 
 
+def test_petrel_target_scoring_accepts_non_ariana_supporter() -> None:
+    """Petrel target evaluation must cover Proton and the other Supporters."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": PETREL}],
+                hand_count=1,
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ]
+    )
+    candidate = Candidate(
+        0,
+        {"type": SelectContext.TO_HAND.value, "sourceCardId": PETREL},
+        OptionType.CARD,
+        card={"cardType": 3, "cardId": PROTON},
+        features={"card_id": PROTON},
+    )
+
+    _, reasons = scorer._card_selection_score(state, candidate, SelectContext.TO_HAND)
+
+    assert "petrel_target_any_supporter" in reasons
+
+
 def test_factory_in_play_keeps_ariana_available_for_comparison() -> None:
     """An active Factory removes the Petrel-to-Stadium advantage."""
     agent = HonchkrowPorygonAgent(_profile())

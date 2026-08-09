@@ -464,7 +464,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return 1700.0, ["petrel_factory_two_card_draw"]
             if self._petrel_is_emergency(state):
                 return 820.0, ["petrel_emergency_ariana_search"]
-            return -900.0, ["avoid_petrel_generic_supporter_search"]
+            return self._petrel_search_score(state)
         if card_id == ROTO_STICK:
             if self._roto_stick_is_needed(state):
                 return 760.0, ["roto_stick_closes_ko_line"]
@@ -668,19 +668,28 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return score, [reason]
         if context is SelectContext.SETUP_BENCH_POKEMON and card_id == MURKROW:
             return 2600.0, ["opening_bench_maximize_murkrow"]
+        if (
+            context is SelectContext.TO_HAND
+            and candidate.option.get("sourceCardId") == PETREL
+            and card_id in self._supporter_ids()
+        ):
+            if card_id == ARIANA and self._petrel_is_emergency(state):
+                return 1650.0, ["petrel_emergency_ariana"]
+            target = Candidate(
+                option_index=candidate.option_index,
+                option=candidate.option,
+                option_type=OptionType.PLAY,
+                card=candidate.card,
+                features={"card_id": card_id},
+            )
+            score, reasons = self._play_score(state, target)
+            return score, ["petrel_target_any_supporter", *reasons]
         if context is SelectContext.TO_HAND and card_id == PROTON:
             if self._proton_setup_is_useful(state):
                 return 1800.0, ["select_proton_for_early_setup"]
         if context is SelectContext.TO_HAND and card_id == HONCHKROW:
             if self._pokepad_honchkrow_is_useful(state, candidate):
                 return 1750.0, ["select_honchkrow_for_attack_or_hand_refresh"]
-        if context is SelectContext.TO_HAND and card_id == ARIANA:
-            if candidate.option.get("sourceCardId") == PETREL and self._petrel_is_emergency(state):
-                return 1650.0, ["petrel_emergency_ariana"]
-            if candidate.option.get("sourceCardId") == PETREL:
-                if self._ariana_is_safe_and_useful(state):
-                    return 1200.0, ["petrel_exact_ariana"]
-                return -1800.0, ["avoid_petrel_generic_ariana"]
         is_effect_target = context is not None and context.value == "EFFECT_TARGET"
         if context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH} or is_effect_target:
             if is_effect_target and card_id not in {
@@ -1003,6 +1012,34 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and player.deck_count - 2 >= self._elective_draw_reserve(state)
         )
 
+    def _petrel_search_score(self, state: GameState) -> tuple[float, list[str]]:
+        """Score Petrel by the best Supporter target it can legally access."""
+        target_scores: list[tuple[float, int, list[str]]] = []
+        for target_id in (ARIANA, ARCHER, GIOVANNI, PROTON):
+            card = self.catalog.get_card(str(target_id)) or {
+                "cardType": 3,
+                "cardId": target_id,
+            }
+            target = Candidate(
+                option_index=-1,
+                option={"type": OptionType.PLAY.value, "cardId": target_id},
+                option_type=OptionType.PLAY,
+                card=card,
+                features={"card_id": target_id},
+            )
+            score, reasons = self._play_score(state, target)
+            target_scores.append((score, target_id, reasons))
+        best_score, target_id, reasons = max(target_scores, default=(-2000.0, 0, []))
+        if best_score <= -1500.0:
+            return -900.0, ["petrel_without_useful_supporter_target"]
+        target_card = self.catalog.get_card(str(target_id)) or {}
+        target_name = target_card.get("name", str(target_id))
+        return best_score - 100.0, [
+            "petrel_search_any_supporter",
+            f"petrel_target_{target_name}",
+            *reasons,
+        ]
+
     def _ariana_is_safe_and_useful(self, state: GameState) -> bool:
         """Reject Ariana when it cannot draw safely or improve the visible hand."""
         player = self._own_player(state)
@@ -1152,10 +1189,16 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             >= self._supporters_needed_for_ko(state)
         )
 
-    def _archer_is_safe_and_useful(self, state: GameState, candidate: Candidate) -> bool:
-        """Use Archer after any public own KO when its redraw is safe."""
+    def _archer_can_draw_five(self, state: GameState) -> bool:
+        """Return whether Archer can legally complete its draw-five effect."""
         player = self._own_player(state)
         if player is None or player.deck_count + max(0, player.hand_count - 1) < 5:
+            return False
+        return True
+
+    def _archer_is_safe_and_useful(self, state: GameState, candidate: Candidate) -> bool:
+        """Use Archer after any public own KO when its redraw is feasible."""
+        if not self._archer_can_draw_five(state):
             return False
         prior_ko = self._own_ko_observed or self._truthy(
             candidate.option, "eligibleAfterKo", "ownKo", "beneficial"
@@ -3008,16 +3051,42 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.canonical_exception = "immediate_win"
             return DecisionPhase.ATTACK_PRIORITY.value, "canonical_immediate_win", immediate
 
-        archer = matching(
-            lambda candidate: (
-                candidate.option_type is OptionType.PLAY
-                and self._scorer._feature_int(candidate, "card_id") == ARCHER
-                and self._scorer._archer_is_safe_and_useful(state, candidate)
+        if self._scorer._own_ko_observed:
+            post_ko_supporters = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id")
+                    in {ARIANA, ARCHER, GIOVANNI, PETREL, PROTON}
+                )
             )
-        )
-        if archer:
-            self._turn_ledger.canonical_exception = "post_ko_collapse_recovery"
-            return DecisionPhase.PLAY_SUPPORTER.value, "canonical_archer_after_own_ko", archer
+            if post_ko_supporters:
+                by_index = {candidate.option_index: candidate for candidate in candidates}
+                ranked: list[tuple[float, Selection]] = []
+                for selection in post_ko_supporters:
+                    supporter = next(
+                        (
+                            by_index[index]
+                            for index in selection.indices
+                            if index in by_index
+                            and by_index[index].option_type is OptionType.PLAY
+                            and self._scorer._feature_int(by_index[index], "card_id")
+                            in {ARIANA, ARCHER, GIOVANNI, PETREL, PROTON}
+                        ),
+                        None,
+                    )
+                    if supporter is None:
+                        continue
+                    score, _ = self._scorer._play_score(state, supporter)
+                    ranked.append((score, selection))
+                best_score = max((score for score, _ in ranked), default=-float("inf"))
+                best = [selection for score, selection in ranked if score == best_score]
+                if best:
+                    self._turn_ledger.canonical_exception = "post_ko_supporter_comparison"
+                    return (
+                        DecisionPhase.PLAY_SUPPORTER.value,
+                        "canonical_post_ko_best_supporter",
+                        best,
+                    )
 
         if (
             self._switch_commitment is not None
