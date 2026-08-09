@@ -1947,6 +1947,24 @@ def test_deck_reserve_experiment_preserves_three_natural_draws() -> None:
     assert agent._scorer._elective_draw_reserve(state) == DECK_OUT_EXPERIMENTAL_RESERVE
 
 
+def test_rocket_feathers_horizon_never_justifies_partial_mega_attack() -> None:
+    """Mega Abomasnow requires the visible KO in the current attack."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energy_card_ids=[ROCKET_ENERGY]),
+                hand=[{"id": ARIANA}] * 5,
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+        ]
+    )
+    candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+
+    assert not agent._rocket_feathers_has_horizon(state, candidate)
+
+
 def test_energy_units_count_rocket_and_ignition_as_multi_unit_cards() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     pokemon = PokemonState(

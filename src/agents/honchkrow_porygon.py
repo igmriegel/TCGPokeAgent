@@ -3768,6 +3768,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a non-lethal Rocket Feathers line preserves a next KO."""
+        if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
+            return False
         target_hp = self._target_hp(state, candidate)
         damage = self._candidate_damage(state, candidate)
         remaining = max(0, target_hp - damage)
