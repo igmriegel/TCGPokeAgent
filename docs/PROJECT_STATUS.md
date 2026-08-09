@@ -70,7 +70,8 @@ interval is -0.62 to +10.62 points. The candidate remains experimental.
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon policy
-`supporter_resource_v2` is now the default and CABT comparison baseline. The
+`expert_turn_loop` is now the canonical implementation, consolidating the
+ratified `supporter_resource_v2` and `expert_rounds_1_3_v1` rules. The
 post-audit 300-match run finished 249W/51L (83.0%), with zero execution
 failures and 12 audited deck-out losses. The historical 200-match reference
 finished 162W/38L (81.0%) with 26 audited deck-out losses; the win-rate
@@ -164,7 +165,8 @@ The post-promotion package was rebuilt from commit `f22a24f` with policy
    documentation change.
 8. Use the post-audit 300-match policy at commit `d5f42c5` as the CABT
    comparison `baseline`; preserve the committed-switch policy as
-   `legacy_baseline` for historical regression comparisons.
+   `legacy_baseline` for historical regression comparisons. The executable
+   canonical policy is `expert_turn_loop`.
 9. Keep the existing submission `55304212` as historical remote evidence; the
    new turn-planning package is submitted for observation but is not promoted.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
