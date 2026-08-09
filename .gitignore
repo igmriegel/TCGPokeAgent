@@ -48,6 +48,7 @@ reports/honchkrow_turn_loop_v2/cabt_screening_*/candidate.json
 reports/honchkrow_turn_loop_v2/cabt_screening_*/comparison/baseline_report.json
 reports/honchkrow_turn_loop_v2/cabt_screening_*/comparison/candidate_report.json
 reports/*_fulltrace_*.json
+reports/*_fulltrace_*.md
 reports/*_telemetry_*.json
 reports/*_diagnostics_*.json
 reports/*_ignition_terminal_*.json
