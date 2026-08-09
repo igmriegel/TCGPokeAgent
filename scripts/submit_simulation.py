@@ -122,21 +122,6 @@ def _submission_env() -> dict[str, str]:
         A copy of the current environment suitable for the Kaggle CLI.
     """
     env = os.environ.copy()
-    if not env.get("KAGGLE_API_TOKEN"):
-        config_dir = env.get("KAGGLE_CONFIG_DIR")
-        config_root = Path(config_dir).expanduser() if config_dir else Path.home() / ".kaggle"
-        if config_root.resolve() == PROJECT_ROOT.resolve():
-            config_root = Path.home() / ".kaggle"
-        candidates = (
-            config_root / "access_token",
-            config_root / "kaggle.json",
-            PROJECT_ROOT / "kaggle.json",
-        )
-        for credential_path in candidates:
-            token = _read_kaggle_token(credential_path)
-            if token:
-                env["KAGGLE_API_TOKEN"] = token
-                break
     config_dir = env.get("KAGGLE_CONFIG_DIR")
     if config_dir is None:
         return env
@@ -154,24 +139,6 @@ def _submission_env() -> dict[str, str]:
             flush=True,
         )
     return env
-
-
-def _read_kaggle_token(path: Path) -> str | None:
-    """Read a Kaggle API token from a token file or legacy JSON credentials."""
-    try:
-        content = path.read_text(encoding="utf-8").strip()
-    except OSError:
-        return None
-    if not content:
-        return None
-    if path.name == "access_token":
-        return content
-    try:
-        credentials = json.loads(content)
-    except json.JSONDecodeError:
-        return None
-    token = credentials.get("key") if isinstance(credentials, dict) else None
-    return token if isinstance(token, str) and token else None
 
 
 def _write_receipt(archive: Path, digest: str, message: str) -> Path:
@@ -247,13 +214,9 @@ def main(argv: list[str] | None = None) -> int:
         for command in commands:
             _run(command)
         if args.package_kind == "honchkrow_porygon" and args.agent_mode != "expert_turn_loop":
-            raise RuntimeError(
-                "honchkrow_porygon package requires --agent-mode expert_turn_loop"
-            )
+            raise RuntimeError("honchkrow_porygon package requires --agent-mode expert_turn_loop")
         if args.package_kind == "standard" and args.agent_mode == "expert_turn_loop":
-            raise RuntimeError(
-                "expert_turn_loop requires --package-kind honchkrow_porygon"
-            )
+            raise RuntimeError("expert_turn_loop requires --package-kind honchkrow_porygon")
         package_backend = args.agent_mode if args.agent_mode != "expert_turn_loop" else "heuristic"
         _run(_package_command(args.package_kind, archive, package_backend))
         _run([python, "-m", "src.eval.validation", "--package", str(archive)])

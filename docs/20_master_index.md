@@ -76,6 +76,7 @@ Read these before changing runtime behavior:
   append-only expert answers, clarifications, and discovered implementation
   deltas.
 - [`25_rfl_experiments.md`](25_rfl_experiments.md) — learned-policy experiment runbook.
+- [`36_kaggle_submission_debug.md`](36_kaggle_submission_debug.md) — Kaggle authentication and stdout-debug submission procedure.
 
 ## Planning detail
 

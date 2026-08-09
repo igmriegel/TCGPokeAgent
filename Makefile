@@ -5,13 +5,6 @@ HONCHKROW_PORYGON_ARCHIVE ?= submissions/honchkrow_porygon_submission.tar.gz
 PACKAGE_BACKEND ?= heuristic
 MODEL_DIR ?=
 SUBMISSION_ARGS ?=
-KAGGLE_JSON ?= $(CURDIR)/kaggle.json
-
-ifneq ($(wildcard $(KAGGLE_JSON)),)
-KAGGLE_API_TOKEN ?= $(shell jq -r '.key // empty' "$(KAGGLE_JSON)" 2>/dev/null)
-export KAGGLE_API_TOKEN
-endif
-
 .PHONY: help build-abomasnow-package build-honchkrow-porygon-package submit-kaggle update-replays-reports
 
 help:

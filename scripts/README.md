@@ -25,10 +25,10 @@ scripts/submit_simulation.sh --dry-run
 ```
 
 The flow requires an authenticated Kaggle CLI and submits to
-`pokemon-tcg-ai-battle`. Use `kaggle auth login` or an API token under
-`~/.kaggle/`; do not point `KAGGLE_CONFIG_DIR` at the repository root for the
-submission step. When present, the ignored repository-root `kaggle.json` is
-automatically read as `KAGGLE_API_TOKEN` by the Python submission flow.
+`pokemon-tcg-ai-battle`. OAuth credentials created by the current CLI are
+stored in `~/.kaggle/credentials.json`. See
+[`docs/36_kaggle_submission_debug.md`](../docs/36_kaggle_submission_debug.md)
+for authentication diagnostics and the stdout-debug experiment.
 Successful uploads create a credential-free receipt under
 `reports/submissions/`.
 
@@ -42,9 +42,9 @@ scripts/submit_simulation.sh \
   --skip-smoke --yes
 ```
 
-Run the dedicated CABT smoke before this command. The submission flow reads
-the ignored root `kaggle.json` only to pass `KAGGLE_API_TOKEN` to the Kaggle
-process; it never prints, stores, or includes the token in an archive/report.
+Run the dedicated CABT smoke before this command. The OAuth credential remains
+outside the repository and is never printed, stored, or included in an
+archive/report.
 
 ## Gameplay smoke
 

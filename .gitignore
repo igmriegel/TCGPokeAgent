@@ -10,9 +10,6 @@ data/raw/
 .env
 .env.*
 !.env.example
-kaggle.json
-kaggle*.json
-!kaggle.json.example
 .kaggle/
 .credentials/
 credentials/

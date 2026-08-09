@@ -103,7 +103,7 @@ AGENT_MODE=heuristic docker compose run experiment
 ### Volumes
 
 - `./data:/app/data` — dataset and manifest persistence between executions
-- `./kaggle.json:/root/.kaggle/kaggle.json:ro` — API credentials
+- `KAGGLE_API_TOKEN` — optional one-shot token passed to the container
 - `./reports:/app/reports` — experiment reports accessible from host
 
 ## Quality tools
@@ -219,9 +219,8 @@ The `data/raw/` directory is in `.gitignore` — data is not versioned.
 
 ```bash
 kaggle auth login
-# Or copy an API token to ~/.kaggle/kaggle.json and restrict its permissions:
-# cp kaggle.json.example ~/.kaggle/kaggle.json
-# chmod 600 ~/.kaggle/kaggle.json
+# The current CLI stores OAuth credentials in ~/.kaggle/credentials.json.
+# A one-shot access token can also be supplied as KAGGLE_API_TOKEN.
 ```
 
 ### Data download

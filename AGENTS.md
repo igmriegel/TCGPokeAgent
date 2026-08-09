@@ -61,7 +61,7 @@ renumber.
 Dockerfile                       # Multi-stage build (agent / dev)
 docker-compose.yml               # Services: agent, experiment, download, dev
 .dockerignore
-kaggle.json.example              # Template for Kaggle API credentials
+kaggle OAuth credentials         # Stored outside the repository
 main.py                          # Entry point: stdin → stdout JSON agent
 src/
 ├── core/                        # Domain layer

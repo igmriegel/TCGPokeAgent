@@ -90,7 +90,7 @@ def _download_competition(
         cache_path = kagglehub.competition_download(comp_name)
     except Exception as e:
         print(f"  Download failed: {e}", file=sys.stderr)
-        print("  Ensure ~/.kaggle/kaggle.json is set up correctly", file=sys.stderr)
+        print("  Ensure Kaggle OAuth is configured with 'kaggle auth login'", file=sys.stderr)
         return False
 
     src_dir = Path(cache_path)

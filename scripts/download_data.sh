@@ -9,7 +9,7 @@ if [ "${1:-}" = "--check" ]; then
 fi
 
 echo "=== Downloading Kaggle datasets ==="
-echo "Make sure Kaggle is authenticated in ~/.kaggle (via 'kaggle auth login' or ~/.kaggle/kaggle.json)."
+echo "Make sure Kaggle is authenticated with 'kaggle auth login'."
 echo ""
 
 COMPETITION="all"
