@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import io
 import json
@@ -80,6 +81,15 @@ def _list_episodes(submission_id: str) -> list[dict[str, str]] | None:
 def main() -> int:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--submission-id",
+        action="append",
+        default=[],
+        help="Download only the specified completed submission ID; repeatable.",
+    )
+    args = parser.parse_args()
+
     submission_map: dict[str, str] = {}
     if SUBMISSION_MAP_PATH.exists():
         submission_map = json.loads(SUBMISSION_MAP_PATH.read_text())
@@ -95,7 +105,24 @@ def main() -> int:
         json.dumps(completed_submissions, indent=2) + "\n",
         encoding="utf-8",
     )
-    active = _active_submissions(submissions)
+    requested_ids = set(args.submission_id)
+    active = (
+        [submission for submission in submissions if submission.get("ref") in requested_ids]
+        if requested_ids
+        else _active_submissions(submissions)
+    )
+    if requested_ids:
+        found_ids = {submission.get("ref") for submission in active}
+        missing_ids = sorted(requested_ids - found_ids)
+        if missing_ids:
+            raise ValueError(f"unknown submission IDs: {', '.join(missing_ids)}")
+        incomplete_ids = [
+            submission.get("ref", "unknown")
+            for submission in active
+            if submission.get("status") != "SubmissionStatus.COMPLETE"
+        ]
+        if incomplete_ids:
+            raise ValueError(f"submission IDs are not complete: {', '.join(incomplete_ids)}")
     print(
         "Active replay window: "
         + ", ".join(submission.get("ref", "unknown") for submission in active)

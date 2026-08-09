@@ -48,6 +48,12 @@ def main() -> int:
                     "executed_action": decision.get("executed_action"),
                     "generated_action": decision.get("generated_action"),
                     "result_matches_replay": decision.get("result_matches_submission"),
+                    "decision_phase": decision.get("decision_phase"),
+                    "reasons": decision.get("reasons"),
+                    "visible_state": decision.get("visible_state"),
+                    "original_options": decision.get("original_options"),
+                    "legal_selection": decision.get("legal_selection"),
+                    "fallback_used": decision.get("fallback_used"),
                     "decision_trace": decision.get("decision_trace"),
                 }
                 stream.write(json.dumps(record, sort_keys=True) + "\n")

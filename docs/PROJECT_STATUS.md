@@ -89,6 +89,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Area | Current evidence | Decision |
 |---|---|---|
 | Submission `55333874` replay audit | 26 isolated replays, 8W/18L; 1,434/1,434 decisions reproduced; zero invalid/fallback/exception; rating 357.2 at 2026-08-08T01:13:52-03:00 | Audit complete; retain immutable package SHA-256 `f6a7c94e…4fac` as technical reference |
+| Submission `55374047` replay audit | 28 isolated replays, 14W/14L; 1,614/1,614 decisions reproduced; zero invalid/fallback/exception; 28/28 explicit terminal reasons | Diagnostic reference only; its 3 deck-outs feed T-026 and its P0 sequencing review remains open |
 | Replay-fix candidate gate | Screening: baseline 251/300, A 254/300, B 247/300; final baseline 840/1000, A 862/1000; independent difference CI95 [-0.92, +5.32] points | No promotion; no package built or uploaded |
 | Quality | 297 tests pass; scoped Ruff, mypy, and pre-commit gates pass for the HLV2 implementation | Green for the implemented scope |
 | Official turn loop | Explicit `expert_turn_loop` variant, public tactical ledger, canonical stage machine, and comparison tooling | Promoted after 200 bilateral CABT matches; historical HLV2 artifacts remain audit references |
@@ -213,7 +214,8 @@ The recommended order is:
 4. retain terminal-cause extraction from CABT's visualizer snapshot; use the
    resolved attack/discard sequence audit to determine whether remaining
    deck-outs are preventable before rerunning a candidate at 1,000 matches;
-5. monitor the new turn-planning submission and collect its remote replays;
+5. use the exact `55374047` package trace to identify a first causal,
+   replay-supported T-026 resource or objective defect before adding a rule;
 6. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 7. validate Rule Box/PrizeMap and PrizeCheck transitions;
 8. rebuild the replay dataset and close the release checklist.
