@@ -1930,6 +1930,80 @@ def test_canonical_turn_loop_factory_precedes_roto_after_supporter(monkeypatch) 
     assert [selection.indices for selection in eligible] == [(1,)]
 
 
+def test_canonical_turn_loop_commits_rocket_murkrow_to_same_turn_evolution() -> None:
+    """Rocket on Murkrow is followed by evolution of that exact serial."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=9),
+                bench=[PokemonState(PORYGON, 60, 60, serial=10)],
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    rocket = _candidate(
+        0,
+        OptionType.ATTACH,
+        card_id=ROCKET_ENERGY,
+        card={"cardType": 6},
+    )
+    rocket.features.update({"target_card_id": MURKROW, "target_serial": 9})
+    evolve = _candidate(1, OptionType.EVOLVE, card_id=HONCHKROW)
+    evolve.features["target_serial"] = 9
+    selections = [Selection((0,), (OptionType.ATTACH,)), Selection((1,), (OptionType.EVOLVE,))]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, [rocket, evolve])
+    assert reason == "canonical_attach_rocket_then_evolve"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, [evolve])
+    assert reason == "canonical_evolve_rocket_murkrow"
+    assert [choice.indices for choice in choices] == [(1,)]
+
+
+def test_canonical_turn_loop_expires_rocket_murkrow_commitment_on_turn_change() -> None:
+    """Rocket commitment must not leak into later turns."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=9),
+                bench=[PokemonState(PORYGON, 60, 60, serial=10)],
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    rocket = _candidate(
+        0,
+        OptionType.ATTACH,
+        card_id=ROCKET_ENERGY,
+        card={"cardType": 6},
+    )
+    rocket.features.update({"target_card_id": MURKROW, "target_serial": 9})
+    evolve = _candidate(1, OptionType.EVOLVE, card_id=HONCHKROW)
+    evolve.features["target_serial"] = 9
+    selections = [Selection((0,), (OptionType.ATTACH,)), Selection((1,), (OptionType.EVOLVE,))]
+
+    agent._main_phase_selections(state, selections, [rocket, evolve])
+
+    next_turn_state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=9),
+                bench=[PokemonState(PORYGON, 60, 60, serial=10)],
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    reason, choices = agent._main_phase_selections(next_turn_state, selections, [evolve])[1:]
+    assert reason != "canonical_evolve_rocket_murkrow"
+    assert [choice.indices for choice in choices] == [(1,)]
+
+
 def test_canonical_ultra_ball_requires_ariana(monkeypatch) -> None:
     """Ultra Ball is blocked unless Ariana can convert the hand reduction."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
@@ -2011,6 +2085,45 @@ def test_deck_reserve_v2_blocks_roto_that_would_consume_the_reserve(
 
     state.players[0].deck_count = DECK_OUT_EXPERIMENTAL_RESERVE + 4
     assert v2._canonical_roto_is_productive(state)
+
+
+def test_expert_turn_loop_blocks_roto_when_the_deck_is_already_on_reserve(
+    monkeypatch,
+) -> None:
+    """The canonical loop preserves the deck reserve before revealing Roto-Stick."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=4), PlayerState()])
+    monkeypatch.setattr(agent, "_roto_can_improve_rocket_line", lambda _state: True)
+
+    assert not agent._canonical_roto_is_productive(state)
+    assert agent.turn_ledger.resource_guard == "preserve_roto_for_deck_reserve"
+
+    state.players[0].deck_count = 5
+    assert agent._canonical_roto_is_productive(state)
+
+
+def test_expert_turn_loop_blocks_night_stretcher_when_the_deck_is_already_on_reserve(
+    monkeypatch,
+) -> None:
+    """The canonical loop preserves the deck reserve before recovering Night Stretcher."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                hand=[{"id": NIGHT_STRETCHER}],
+                discard=[{"id": PORYGON}],
+                deck_count=1,
+            ),
+            PlayerState(),
+        ]
+    )
+    monkeypatch.setattr(agent._scorer, "_night_stretcher_is_productive", lambda _state: True)
+
+    assert not agent._canonical_night_stretcher_is_productive(state)
+    assert agent.turn_ledger.resource_guard == "preserve_night_stretcher_for_deck_reserve"
+
+    state.players[0].deck_count = 2
+    assert agent._canonical_night_stretcher_is_productive(state)
 
 
 def test_rocket_feathers_horizon_never_justifies_partial_mega_attack() -> None:

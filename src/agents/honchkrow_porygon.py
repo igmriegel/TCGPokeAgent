@@ -323,6 +323,14 @@ class EvolutionKoCommitment:
 
 
 @dataclass(slots=True)
+class RocketEvolutionCommitment:
+    """Bind a Rocket attachment to the same-turn Murkrow evolution."""
+
+    turn: int
+    murkrow_serial: int | None
+
+
+@dataclass(slots=True)
 class AttackSequence:
     """Record a committed attack until its intermediate prompts resolve."""
 
@@ -497,7 +505,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return -2200.0, ["reserve_miracle_headset"]
             return 700.0, ["miracle_headset_ko_or_emergency_line"]
         if card_id == NIGHT_STRETCHER:
-            if not self._night_stretcher_is_productive(state):
+            if not self._canonical_night_stretcher_is_productive(state):
                 return -2200.0, ["night_stretcher_without_immediate_play"]
             return 1300.0, ["night_stretcher_hand_reduction_before_ariana"]
         if card_id == ARCHER:
@@ -2067,6 +2075,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._attack_sequence: AttackSequence | None = None
         self._switch_commitment: SwitchCommitment | None = None
         self._evolution_ko_commitment: EvolutionKoCommitment | None = None
+        self._rocket_evolution_commitment: RocketEvolutionCommitment | None = None
         self._headset_turn: int | None = None
         self._roto_turn: int | None = None
         self._transceiver_turn: int | None = None
@@ -2257,6 +2266,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._attack_sequence = None
         self._switch_commitment = None
         self._evolution_ko_commitment = None
+        self._rocket_evolution_commitment = None
         self._headset_turn = None
         self._roto_turn = None
         self._transceiver_turn = None
@@ -2460,6 +2470,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.roto_sticks_played += 1
                 self._match_ledger.roto_sticks_played += 1
                 self._turn_ledger.roto_preserved_reason = "played_to_improve_rocket_feathers"
+                self._turn_ledger.draw_sequence.append("roto")
                 self._roto_turn = parsed.state.turn
                 if self._uses_expert_turn_loop:
                     self._turn_ledger.stage = CanonicalTurnStage.HEADSET.value
@@ -2468,6 +2479,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 if ignition_plan is not None:
                     self._switch_commitment = ignition_plan
                     self._match_ledger.ignition_attachments += 1
+            if (
+                self._rocket_evolution_commitment is not None
+                and candidate.option_type is OptionType.ATTACH
+                and card_id == ROCKET_ENERGY
+            ):
+                self._turn_ledger.stage = CanonicalTurnStage.DEVELOP.value
             if (
                 self._uses_expert_turn_loop
                 and candidate.option_type
@@ -3296,7 +3313,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._feature_int(candidate, "card_id") == NIGHT_STRETCHER
-                and self._scorer._night_stretcher_is_productive(state)
+                and self._canonical_night_stretcher_is_productive(state)
             )
         )
         if night_stretcher:
@@ -3354,6 +3371,62 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     "canonical_execute_ignition_attack",
                     committed_attack,
                 )
+
+        rocket_commitment = self._rocket_evolution_commitment
+        if rocket_commitment is not None:
+            if rocket_commitment.turn != state.turn:
+                self._rocket_evolution_commitment = None
+                rocket_commitment = None
+            else:
+                player = self._scorer._own_player(state)
+                active = player.active if player is not None else None
+                if (
+                    active is None
+                    or rocket_commitment.murkrow_serial is not None
+                    and active.serial != rocket_commitment.murkrow_serial
+                ):
+                    self._rocket_evolution_commitment = None
+                    rocket_commitment = None
+        if rocket_commitment is not None:
+            evolution = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.EVOLVE
+                    and self._scorer._feature_int(candidate, "card_id") == HONCHKROW
+                    and self._scorer._feature_int(candidate, "target_serial")
+                    == rocket_commitment.murkrow_serial
+                )
+            )
+            if evolution:
+                self._rocket_evolution_commitment = None
+                return DecisionPhase.EVOLVE.value, "canonical_evolve_rocket_murkrow", evolution
+            self._rocket_evolution_commitment = None
+
+        player = self._scorer._own_player(state)
+        murkrow = player.active if player is not None else None
+        rocket_attach = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.ATTACH
+                and self._scorer._feature_int(candidate, "card_id") == ROCKET_ENERGY
+                and self._scorer._feature_int(candidate, "target_card_id") == MURKROW
+                and murkrow is not None
+                and self._scorer._feature_int(candidate, "target_serial") == murkrow.serial
+                and any(
+                    item.option_type is OptionType.EVOLVE
+                    and self._scorer._feature_int(item, "card_id") == HONCHKROW
+                    and self._scorer._feature_int(item, "target_serial") == murkrow.serial
+                    for item in candidates
+                )
+            )
+        )
+        if rocket_attach:
+            self._rocket_evolution_commitment = RocketEvolutionCommitment(
+                state.turn, murkrow.serial
+            )
+            return (
+                DecisionPhase.ATTACH_PRIORITY.value,
+                "canonical_attach_rocket_then_evolve",
+                rocket_attach,
+            )
 
         stage = self._turn_ledger.stage
         if stage in {"", "observe", CanonicalTurnStage.DEVELOP.value}:
@@ -3568,6 +3641,23 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         return self._scorer._ultra_ball_is_productive(state)
 
+    def _canonical_night_stretcher_is_productive(self, state: GameState) -> bool:
+        """Keep Night Stretcher available when the deck is already on reserve."""
+        if not self._scorer._night_stretcher_is_productive(state):
+            return False
+        if self.policy_variant not in {
+            "expert_turn_loop",
+            "expert_turn_loop_deck_reserve_v2",
+        }:
+            return True
+        player = self._scorer._own_player(state)
+        if player is None:
+            return False
+        if int(player.deck_count) <= self._scorer._elective_draw_reserve(state):
+            self._turn_ledger.resource_guard = "preserve_night_stretcher_for_deck_reserve"
+            return False
+        return True
+
     def _canonical_roto_is_productive(self, state: GameState) -> bool:
         """Allow Roto only after the Factory stage and when it closes supporter damage."""
         if self._roto_proton_only_mode(state):
@@ -3576,7 +3666,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         player = self._scorer._own_player(state)
         if (
-            self.policy_variant == "expert_turn_loop_deck_reserve_v2"
+            self.policy_variant
+            in {
+                "expert_turn_loop",
+                "expert_turn_loop_deck_reserve_v2",
+            }
             and player is not None
             and player.deck_count
             < self._scorer._elective_draw_reserve(state) + ROTO_STICK_REVEAL_COUNT
@@ -4467,7 +4561,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 return not self._v3_miracle_headset_is_useful(state)
             return not self._scorer._miracle_headset_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
-            return not self._scorer._night_stretcher_is_productive(state)
+            return not self._canonical_night_stretcher_is_productive(state)
         if candidate.option_type is OptionType.PLAY and card_id == ARCHER:
             return not self._scorer._archer_is_safe_and_useful(state, candidate)
         if candidate.option_type is OptionType.PLAY and card_id == PROTON:
@@ -5073,7 +5167,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if card_id == FACTORY:
             return not bool(state.stadium) and self._scorer._own_player(state) is not None
         if card_id == NIGHT_STRETCHER:
-            return self._scorer._night_stretcher_is_productive(state)
+            return self._canonical_night_stretcher_is_productive(state)
         if card_id == MIRACLE_HEADSET:
             return self._scorer._miracle_headset_is_useful(state)
         if card_id == ULTRA_BALL:
