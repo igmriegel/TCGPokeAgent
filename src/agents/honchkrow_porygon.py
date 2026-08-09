@@ -171,6 +171,8 @@ class TurnTacticalLedger:
     canonical_violations: int = 0
     factory_effects_activated: int = 0
     headset_reason: str = ""
+    end_options_visible: int = 0
+    end_with_productive_line: int = 0
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -242,6 +244,8 @@ class TurnTacticalLedger:
         self.canonical_violations = 0
         self.factory_effects_activated = 0
         self.headset_reason = ""
+        self.end_options_visible = 0
+        self.end_with_productive_line = 0
 
 
 @dataclass(slots=True)
@@ -697,6 +701,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if context is SelectContext.TO_HAND and card_id == PROTON:
             if self._proton_setup_is_useful(state):
                 return 1800.0, ["select_proton_for_early_setup"]
+        if (
+            context is SelectContext.TO_HAND
+            and candidate.option.get("sourceCardId") == POKE_PAD
+            and self._own_field_count(state) <= 1
+            and card_id in {MURKROW, PORYGON}
+        ):
+            return 2900.0, ["select_basic_for_no_pokemon_survival"]
         if context is SelectContext.TO_HAND and card_id == HONCHKROW:
             if self._pokepad_honchkrow_is_useful(state, candidate):
                 return 1750.0, ["select_honchkrow_for_attack_or_hand_refresh"]
@@ -2370,6 +2381,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         else:
             self._turn_ledger.pre_draw_ko_candidates = ko_candidates
         decision = super().decide(observation)
+        self._record_end_telemetry(parsed.state, parsed.candidates, decision.selection)
         if not self._uses_expert_turn_loop:
             self._set_turn_stage(
                 str(getattr(self.last_decision, "decision_phase", "") or "observe").casefold()
@@ -2660,6 +2672,23 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
         self._turn_ledger.deck_reserve = player.deck_count if player is not None else 0
 
+    def _record_end_telemetry(
+        self,
+        state: GameState,
+        candidates: Sequence[Candidate],
+        selection: Selection,
+    ) -> None:
+        """Record visible productive lines whenever the policy selects END."""
+        end_candidates = [
+            candidate for candidate in candidates if candidate.option_type is OptionType.END
+        ]
+        self._turn_ledger.end_options_visible += int(bool(end_candidates))
+        selected_end = any(
+            candidate.option_index in selection.indices for candidate in end_candidates
+        )
+        if selected_end and self._scorer._productive_line_available(state):
+            self._turn_ledger.end_with_productive_line += 1
+
     def _set_turn_stage(self, stage: str) -> None:
         """Move the public turn ledger to a new observable decision stage."""
         if stage == self._turn_ledger.stage:
@@ -2747,9 +2776,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._active_target_prize_value(state) >= prizes_remaining
         ):
             return TurnObjective.WIN_NOW
-        if self._scorer._own_field_count(state) <= 1 and self._scorer._proton_setup_is_useful(
-            state
-        ):
+        if self._scorer._own_field_count(state) <= 1:
             return TurnObjective.PREVENT_NO_POKEMON_LOSS
         if lethal or self._evolution_ko_commitment is not None:
             return TurnObjective.HIGHEST_PRIZE_KO
@@ -3230,6 +3257,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         "canonical_post_ko_best_supporter",
                         best,
                     )
+
+        if self._scorer._own_field_count(state) <= 1:
+            survivor = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._metadata_int(candidate.card, "cardType") == 0
+                    and self._scorer._feature_int(candidate, "card_id") in {MURKROW, PORYGON}
+                )
+            )
+            if survivor:
+                self._turn_ledger.canonical_exception = "prevent_no_pokemon_loss"
+                return (
+                    DecisionPhase.PLAY_POKEMON.value,
+                    "canonical_play_backup_basic",
+                    survivor,
+                )
 
         if self._scorer._own_bench_count(
             state

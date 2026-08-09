@@ -657,6 +657,73 @@ def test_expert_turn_loop_ledger_uses_only_public_turn_facts() -> None:
     assert ledger.deck_reserve == 17
 
 
+def test_backup_basic_precedes_resource_actions_when_only_one_pokemon_remains() -> None:
+    """A playable Basic creates a Bench before lower-priority resource actions."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80)),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    backup = _candidate(0, OptionType.PLAY, card_id=PORYGON, card={"cardType": 0})
+    ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    end = _candidate(2, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.PLAY,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [backup, ariana, end],
+    )
+
+    assert phase == DecisionPhase.PLAY_POKEMON.value
+    assert reason == "canonical_play_backup_basic"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_poke_pad_selects_backup_basic_when_board_could_collapse() -> None:
+    """Poké Pad search favors a Basic backup over an evolution on a one-Pokémon board."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80)),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    backup = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "sourceCardId": POKE_PAD, "cardId": PORYGON},
+        OptionType.CARD,
+        features={"card_id": PORYGON},
+    )
+
+    score, reasons = agent._scorer._card_selection_score(state, backup, SelectContext.TO_HAND)
+
+    assert score == 2900.0
+    assert reasons == ["select_basic_for_no_pokemon_survival"]
+
+
+def test_end_telemetry_marks_visible_productive_line() -> None:
+    """The tactical ledger exposes END decisions that abandon a visible productive line."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80), hand=[{"id": PORYGON}]),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    end = _candidate(0, OptionType.END)
+
+    agent._record_end_telemetry(state, [end], Selection((0,), (OptionType.END,)))
+
+    assert agent.turn_ledger.end_options_visible == 1
+    assert agent.turn_ledger.end_with_productive_line == 1
+
+
 def test_expert_deceit_is_only_a_low_hand_no_supporter_survival_line() -> None:
     """Deceit may find Ariana only when the hand cannot otherwise progress."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
