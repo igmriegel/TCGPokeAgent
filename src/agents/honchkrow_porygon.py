@@ -1975,6 +1975,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "supporter_resource_v2",
                 "expert_rounds_1_3_v1",
                 "expert_turn_loop",
+                "expert_turn_loop_no_ultra_ball_test",
                 "supporter_resource_v2_replay_fix_v1",
                 "expert_rounds_1_3_replay_fix_v1",
             }
@@ -1991,6 +1992,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
+            "expert_turn_loop_no_ultra_ball_test",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2003,6 +2005,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
+            "expert_turn_loop_no_ultra_ball_test",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2014,6 +2017,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
+            "expert_turn_loop_no_ultra_ball_test",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -2024,13 +2028,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return self.policy_variant in {
             "expert_rounds_1_3_v1",
             "expert_turn_loop",
+            "expert_turn_loop_no_ultra_ball_test",
             "expert_rounds_1_3_replay_fix_v1",
         }
 
     @property
     def _uses_expert_turn_loop(self) -> bool:
         """Return whether the official Owner-defined turn loop is active."""
-        return self.policy_variant == "expert_turn_loop"
+        return self.policy_variant in {
+            "expert_turn_loop",
+            "expert_turn_loop_no_ultra_ball_test",
+        }
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -4062,6 +4070,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
                 )
             )
+        if (
+            self.policy_variant == "expert_turn_loop_no_ultra_ball_test"
+            and candidate.option_type in {OptionType.PLAY, OptionType.CARD}
+            and card_id == ULTRA_BALL
+        ):
+            self._turn_ledger.resource_guard = "experimental_block_ultra_ball_play_or_search"
+            return True
         if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
             return self._ignition_attack_plan(state, candidate) is None
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:

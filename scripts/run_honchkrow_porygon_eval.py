@@ -168,6 +168,7 @@ POLICY_VARIANTS = (
     "supporter_resource_v2",
     "expert_rounds_1_3_v1",
     "expert_turn_loop",
+    "expert_turn_loop_no_ultra_ball_test",
     "supporter_resource_v2_replay_fix_v1",
     "expert_rounds_1_3_replay_fix_v1",
 )
