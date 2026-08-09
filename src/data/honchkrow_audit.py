@@ -94,7 +94,19 @@ def _as_int(value: Any, default: int = 0) -> int:
 
 def _option_type(option: Mapping[str, Any]) -> str:
     """Return a normalized option type for mixed CABT traces."""
-    return str(option.get("type", "")).upper()
+    value = option.get("type", "")
+    if isinstance(value, int):
+        return {
+            7: "PLAY",
+            8: "ATTACH",
+            9: "EVOLVE",
+            10: "ABILITY",
+            11: "DISCARD",
+            12: "RETREAT",
+            13: "ATTACK",
+            14: "END",
+        }.get(value, str(value))
+    return str(value).upper()
 
 
 def _attack_id(option: Mapping[str, Any]) -> int | None:
@@ -151,11 +163,17 @@ def audit_opportunities(matches: Iterable[Any]) -> list[OpportunityAudit]:
         if not isinstance(decisions, list):
             continue
         pending: list[Any] = []
+        pending_attack_turn: int | None = None
         for decision in decisions + [None]:
+            if decision is None:
+                if pending:
+                    audits.append(_build_opportunity(episode_id, opportunity_id, pending, []))
+                    opportunity_id += 1
+                continue
             options = getattr(decision, "options", []) if decision is not None else []
             if isinstance(decision, Mapping):
                 options = decision.get("options", [])
-            selected = _selected_options(decision) if decision is not None else []
+            selected = _selected_options(decision)
             attack_options = [
                 option
                 for option in options
@@ -174,17 +192,55 @@ def audit_opportunities(matches: Iterable[Any]) -> list[OpportunityAudit]:
                 _attack_id(option) in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}
                 for option in attack_options
             )
+            decision_turn = _as_int(
+                decision.get("turn")
+                if isinstance(decision, Mapping)
+                else getattr(decision, "turn", None),
+                -1,
+            )
+            if (
+                pending
+                and pending_attack_turn is not None
+                and decision_turn >= 0
+                and decision_turn != pending_attack_turn
+            ):
+                audits.append(_build_opportunity(episode_id, opportunity_id, pending, []))
+                opportunity_id += 1
+                pending = []
+                pending_attack_turn = None
+            has_pending_attack = any(
+                any(
+                    _attack_id(option) in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}
+                    for option in _selected_options(item)
+                )
+                for item in pending
+            )
+            if pending and is_rocket and has_pending_attack:
+                audits.append(_build_opportunity(episode_id, opportunity_id, pending, []))
+                opportunity_id += 1
+                pending = []
+                pending_attack_turn = None
             if is_rocket or is_setup or missed_end or pending:
-                if is_rocket or is_setup or missed_end:
-                    pending.append(decision)
-            if pending and (
-                selected_attacks or decision is None or (not is_rocket and not is_setup)
+                pending.append(decision)
+                if is_rocket:
+                    pending_attack_turn = decision_turn if decision_turn >= 0 else None
+                    has_pending_attack = True
+            effects = (
+                decision.get("transition", {})
+                if isinstance(decision, Mapping)
+                else getattr(decision, "transition", {})
+            )
+            if (
+                has_pending_attack
+                and isinstance(effects, Mapping)
+                and (bool(effects.get("target_ko")) or _as_int(effects.get("target_damage"), 0) > 0)
             ):
                 audits.append(
                     _build_opportunity(episode_id, opportunity_id, pending, selected_attacks)
                 )
                 opportunity_id += 1
                 pending = []
+                pending_attack_turn = None
     return audits
 
 
@@ -195,6 +251,13 @@ def _build_opportunity(
     selected_attacks: list[Mapping[str, Any]],
 ) -> OpportunityAudit:
     """Build one audit record from grouped setup and attack decisions."""
+    if not selected_attacks:
+        selected_attacks = [
+            option
+            for decision in decisions
+            for option in _selected_options(decision)
+            if _attack_id(option) is not None
+        ]
     first = decisions[0]
     before = getattr(first, "telemetry_before", {}) if first is not None else {}
     if isinstance(first, Mapping):

@@ -59,6 +59,26 @@ def test_discard_preparation_and_attack_are_one_opportunity() -> None:
     assert audits[0].decision_indices == (0, 1)
 
 
+def test_attack_followed_by_raw_card_discard_resolves_the_same_opportunity() -> None:
+    """CABT emits Rocket Feathers' Supporter discard after the attack choice."""
+    attack = _decision(0, [{"type": 13, "attackId": 1285}], [0])
+    attack["turn"] = 7
+    discard = _decision(
+        1,
+        [{"type": 3, "cardId": 1216}, {"type": 3, "cardId": 1217}],
+        [0, 1],
+        {"target_damage": 350, "target_ko": True},
+    )
+    discard["turn"] = 7
+
+    audits = audit_opportunities([{"events": [attack, discard]}])
+
+    assert len(audits) == 1
+    assert audits[0].result == "KO"
+    assert audits[0].observed_damage == 350
+    assert audits[0].decision_indices == (0, 1)
+
+
 def test_r_command_requires_eighteen_discarded_supporters() -> None:
     """R Command with fewer than eighteen Supporters is marked not ready."""
     record = _decision(
