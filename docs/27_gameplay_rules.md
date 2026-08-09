@@ -200,7 +200,18 @@ Porygon2. Unsupported Articuno is sacrificial and is preferred over discarding
 Energy. Poké Pad may fetch Honchkrow when it enables an attack or reduces a large
 hand for Ariana, while Porygon2 is not benched before the opening line.
 Transceiver fetches Proton during early setup even when Ariana is already in
-hand, provided a positive target remains.
+hand, provided a positive target remains. When Dragapult evidence is public
+(Dreepy, Drakloak, or Dragapult ex), Articuno is a required defensive setup
+target: place it before nonessential evolution, keep it on the Bench, and do
+not promote it unless the simulator forces the switch. The protection applies
+to Basic Team Rocket Pokémon, so eager evolution can remove the relevant
+protection window.
+
+Ultra Ball must be held when its discard would consume a productive recovery
+card or another scarce resource without creating a concrete search/evolution
+line. Factory is not played merely because it is available; before a
+Supporter has been played, it requires a playable Supporter or an explicit
+same-turn conversion.
 
 ### GR-023 — Productive terminal and promotion ordering
 
@@ -213,10 +224,13 @@ Ignition when needed and execute the committed attack. Giovanni has precedence
 over paid retreat when the opponent has no Bench, using post-Giovanni hand and
 discard counts for Rocket Feathers and R Command damage.
 
-Miracle Headset is legal only when exactly two recoverable Team Rocket
-Supporters complete an immediate Honchkrow Knock Out. Its nested selection must
-take exactly two Supporters and avoid another Ariana when Ariana is already in
-hand. Guaranteed Knock Outs and KO-enabling discards precede development,
+Miracle Headset normally remains reserved for exactly two recoverable Team
+Rocket Supporters completing an immediate Honchkrow Knock Out. After hand
+disruption, an emergency exception allows it with at most two cards, no
+playable Supporter, and Ariana in the discard, so Ariana can restore the hand
+and enable Factory. Its nested selection must take exactly two Supporters and
+avoid another Ariana when Ariana is already in hand. Guaranteed Knock Outs and
+KO-enabling discards precede development,
 search, Energy, retreat, and `END`. Stadium plays are an explicit phase before
 Supporters. Roto Stick is reserved until fetching a Supporter can close a Knock
 Out line. Ariana remains protected unless the discard is marked as required by

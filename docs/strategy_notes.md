@@ -787,3 +787,37 @@ hypotheses:
   - "Ignoring Energy attachments in PrizeMap could overvalue a target."
 acceptance: "Replay revalidation and bilateral evaluation are still required; this change is not statistically promoted."
 ```
+
+## Replays 91192258 and 91193154 — resource and Dragapult evidence for T-034
+
+```yaml
+task: "T-034"
+replays:
+  - id: "91192258"
+    observed_facts:
+      - "The owner reports Ultra Ball was played despite consuming a scarce recovery resource without a necessary conversion line."
+      - "Factory was placed while no playable Supporter was available, so its draw ability could not be used productively."
+      - "After Petrel -> Ariana and Factory drew another Ariana plus Transceiver, Transceiver searched another Ariana despite two already being in hand."
+    implemented_rules:
+      - "Ultra Ball is blocked when its required discard would consume productive Night Stretcher without a concrete search/evolution conversion."
+      - "Factory requires a playable Supporter or an explicit same-turn conversion before it is placed."
+      - "Transceiver rejects redundant Ariana selection when at least two Rocket Supporters are already in hand."
+      - "END remains legal when those resource lines are not productive."
+  - id: "91193154"
+    observed_facts:
+      - "Dreepy (119) was publicly visible from the opening sequence, establishing Dragapult effect-threat evidence."
+      - "The owner reports that Articuno was not established on the Bench early enough and was later promoted into a losing position."
+      - "After Unfair Stamp, Miracle Headset could recover Ariana from the discard and restore the reduced hand before Factory."
+      - "Munkidori (112) has 110 HP; one Rocket Feathers Supporter deals 60 x 2 = 120 against its weakness."
+      - "The raw replay records Proton selecting Articuno (card 414) at step 10, so the search target itself is not the confirmed causal defect."
+    implemented_rules:
+      - "When Dragapult evidence is public, Articuno is prioritized before nonessential evolution, kept on the Bench, and not promoted voluntarily."
+      - "Miracle Headset has a reduced-hand Ariana recovery exception when no Supporter has a productive current line."
+      - "KO planning uses shared weakness damage and counts the Headset recovery horizon before rejecting a one-Supporter KO."
+    causal_divergence: "The replay facts establish sequencing and resource-conversion failures; the exact downstream cause of Articuno not protecting the board remains an end-to-end trace question."
+    hypotheses:
+      - "The Proton selection was correct, but subsequent field filling or promotion consumed the protection window."
+      - "The previous planner treated Headset primarily as a two-Supporter KO tool and did not model the Ariana -> Factory recovery horizon."
+      - "A generic resource ranking allowed Ultra Ball and later supporter discards to outrank preservation of a known KO line."
+acceptance: "Focused regression tests pass; bilateral replay evaluation remains required and no statistical promotion is claimed."
+```

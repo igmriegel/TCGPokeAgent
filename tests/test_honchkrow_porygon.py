@@ -1944,6 +1944,198 @@ def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
     assert [selection.indices for selection in eligible] == [(1,)]
 
 
+def test_91192258_holds_ultra_ball_and_factory_without_a_playable_supporter() -> None:
+    """The replay state rejects both resource plays when neither converts this turn."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[
+                    {"id": FACTORY},
+                    {"id": ULTRA_BALL},
+                    {"id": NIGHT_STRETCHER},
+                    {"id": ARCHER},
+                ],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(119, 70, 70)),
+        ]
+    )
+    factory = _candidate(0, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4})
+    ultra_ball = _candidate(1, OptionType.PLAY, card_id=ULTRA_BALL, card={"cardType": 1})
+    end = _candidate(2, OptionType.END)
+    selections = [
+        Selection((i,), (OptionType.PLAY if i < 2 else OptionType.END,)) for i in range(3)
+    ]
+
+    assert agent._candidate_is_forbidden(state, factory, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, ultra_ball, SelectContext.MAIN)
+    phase, reason, choices = agent._main_phase_selections(
+        state, selections, [factory, ultra_ball, end]
+    )
+    assert phase == DecisionPhase.END.value
+    assert reason == "end"
+    assert [selection.indices for selection in choices] == [(2,)]
+
+
+def test_transceiver_rejects_a_third_ariana_when_two_are_already_in_hand() -> None:
+    """Transceiver should remain available for a missing supporter or future setup."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[PlayerState(hand=[{"id": ARIANA}, {"id": ARCHER}], deck_count=20), PlayerState()]
+    )
+    candidate = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "sourceCardId": TRANSCEIVER},
+        OptionType.CARD,
+        card={"cardType": 3},
+        features={"card_id": ARIANA},
+    )
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+
+
+def test_dragapult_line_prioritizes_articuno_and_holds_evolution() -> None:
+    """Public Dreepy evidence establishes the Articuno-before-evolution branch."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": ARTICUNO}, {"id": HONCHKROW}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(119, 70, 70)),
+        ]
+    )
+    articuno = _candidate(0, OptionType.PLAY, card_id=ARTICUNO, card={"cardType": 0})
+    evolution = _candidate(1, OptionType.EVOLVE, card_id=HONCHKROW, card={"cardType": 0})
+    end = _candidate(2, OptionType.END)
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.EVOLVE,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [articuno, evolution, end],
+    )
+    assert phase == DecisionPhase.PLAY_POKEMON.value
+    assert reason == "canonical_articuno_before_evolution"
+    assert [selection.indices for selection in choices] == [(0,)]
+    assert agent._candidate_is_forbidden(state, evolution, SelectContext.MAIN)
+
+
+def test_dragapult_line_keeps_articuno_on_the_bench() -> None:
+    """Articuno is a protection resource, not a preferred promoted attacker."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                bench=[PokemonState(ARTICUNO, 100, 100)],
+            ),
+            PlayerState(active=PokemonState(119, 70, 70)),
+        ]
+    )
+    promote = Candidate(
+        0,
+        {"type": OptionType.CARD.value},
+        OptionType.CARD,
+        features={"card_id": ARTICUNO},
+    )
+    assert agent._candidate_is_forbidden(state, promote, SelectContext.TO_ACTIVE)
+
+
+def test_proton_selection_is_forced_to_articuno_against_dragapult() -> None:
+    """When Proton reveals the tech, the defensive target outranks generic setup."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80)),
+            PlayerState(active=PokemonState(119, 70, 70)),
+        ]
+    )
+    candidates = [
+        Candidate(
+            0,
+            {"type": OptionType.CARD.value, "sourceCardId": PROTON},
+            OptionType.CARD,
+            features={"card_id": MURKROW},
+        ),
+        Candidate(
+            1,
+            {"type": OptionType.CARD.value, "sourceCardId": PROTON},
+            OptionType.CARD,
+            features={"card_id": ARTICUNO},
+        ),
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state,
+        [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))],
+        candidates,
+        SelectContext.TO_HAND,
+    )
+    assert [selection.indices for selection in filtered] == [(1,)]
+
+
+def test_headset_recovers_ariana_after_unfair_stamp_reduces_hand() -> None:
+    """Ariana recovery is allowed when Headset is the only productive recovery line."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": PETREL}, {"id": ARCHER}],
+                hand_count=2,
+                discard=[{"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(112, 110, 110)),
+        ]
+    )
+    assert scorer._miracle_headset_emergency_is_useful(state)
+
+
+def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:
+    """Munkidori's 110 HP is covered by one 60-damage supporter attack at weakness."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(112, 110, 110)),
+        ]
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    assert scorer._attack_damage(state, attack, 60) == 120
+    assert scorer._supporters_needed_for_ko(state) == 1
+
+
+def test_replay_facts_for_91193154_preserve_the_proton_articuno_nuance() -> None:
+    """The replay records Proton selecting Articuno while Dreepy was publicly visible."""
+    replay = json.loads((ROOT / "data/raw/kaggle/kaggle_gameplay_runs/91193154.json").read_text())
+    frame = replay["steps"][10][1]
+    assert frame["action"] == [3]
+    assert any(log.get("cardId") == PROTON for log in frame["observation"]["logs"])
+    assert any(
+        log.get("cardId") == ARTICUNO
+        for step in replay["steps"]
+        for player_frame in step
+        for log in player_frame.get("observation", {}).get("logs", [])
+        if isinstance(log, dict)
+    )
+    assert any(
+        log.get("cardId") == 119
+        for step in replay["steps"]
+        for player_frame in step
+        for log in player_frame.get("observation", {}).get("logs", [])
+        if isinstance(log, dict)
+    )
+
+
 def test_rocket_feathers_discards_exactly_six_for_mega_abomasnow_ko() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
