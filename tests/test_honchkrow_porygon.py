@@ -1791,6 +1791,8 @@ def test_elective_draw_reserves_natural_draw_outside_mega_matchup() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(players=[PlayerState(deck_count=1), PlayerState()])
     assert scorer._elective_draw_reserve(state) == 1
+    state.players[0].hand_count = 6
+    assert scorer._elective_draw_reserve(state) == 3
     state.players[1].active = PokemonState(MEGA_ABOMASNOW_EX, 350, 350)
     assert scorer._elective_draw_reserve(state) == MEGA_ABOMASNOW_DECK_RESERVE
 

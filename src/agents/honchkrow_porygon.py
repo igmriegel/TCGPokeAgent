@@ -1176,6 +1176,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _elective_draw_reserve(self, state: GameState) -> int:
         """Keep a natural draw available after elective draw effects."""
         if self._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
+            player = self._own_player(state)
+            if (
+                player is not None
+                and int(player.deck_count) <= 4
+                and int(player.hand_count) >= 6
+            ):
+                return 3
             return 1
         if self._active_has_committed_mega_abomasnow_ko(state):
             return 0
