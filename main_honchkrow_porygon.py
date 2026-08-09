@@ -33,7 +33,7 @@ _DECK_PATH = _ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
 if not _DECK_PATH.is_file():
     _DECK_PATH = _ROOT / "deck.csv"
 _PROFILE_PATH = _ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
-POLICY_VARIANT = "expert_turn_loop_v2"
+POLICY_VARIANT = "expert_turn_loop"
 _agent: AgentPolicy | None = None
 _deck: list[int] | None = None
 

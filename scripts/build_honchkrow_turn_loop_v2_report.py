@@ -90,8 +90,8 @@ def build_bundle(
     candidate = _load(candidate_path)
     if baseline.get("policy_variant") != "supporter_resource_v2":
         raise ValueError("baseline report must use supporter_resource_v2")
-    if candidate.get("policy_variant") != "expert_turn_loop_v2":
-        raise ValueError("candidate report must use expert_turn_loop_v2")
+    if candidate.get("policy_variant") != "expert_turn_loop":
+        raise ValueError("candidate report must use expert_turn_loop")
     output_dir.mkdir(parents=True, exist_ok=True)
     statistical = compare(baseline_path, candidate_path)
     baseline_total = int(statistical["sample_sizes"]["baseline"])
@@ -120,7 +120,7 @@ def build_bundle(
     comparison = {
         "schema": "honchkrow_turn_loop_v2_comparison_v1",
         "baseline_variant": "supporter_resource_v2",
-        "candidate_variant": "expert_turn_loop_v2",
+        "candidate_variant": "expert_turn_loop",
         "statistical": statistical,
         "tactical": tactical,
         "gates": gates,

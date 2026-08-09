@@ -167,7 +167,7 @@ POLICY_VARIANTS = (
     "supporter_lethal_v1",
     "supporter_resource_v2",
     "expert_rounds_1_3_v1",
-    "expert_turn_loop_v2",
+    "expert_turn_loop",
     "supporter_resource_v2_replay_fix_v1",
     "expert_rounds_1_3_replay_fix_v1",
 )
@@ -650,7 +650,7 @@ def run_stream(
         "agent": "honchkrow_porygon",
         "policy_variant": next(
             (match["policy_variant"] for match in summaries),
-            "supporter_resource_v2",
+            "expert_turn_loop",
         ),
         "opponent": "cabt.random_agent",
         "matches_per_side": matches_per_side,
@@ -699,7 +699,7 @@ def main() -> None:
     parser.add_argument(
         "--policy-variant",
         choices=POLICY_VARIANTS,
-        default="supporter_resource_v2",
+        default="expert_turn_loop",
         help="Honchkrow/Porygon policy variant to evaluate.",
     )
     parser.add_argument("--output", type=Path, required=True)

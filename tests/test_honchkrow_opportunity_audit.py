@@ -122,9 +122,9 @@ def test_promoted_baseline_and_legacy_policy_are_named() -> None:
     )
     expert_fix = HonchkrowPorygonAgent(profile, "expert_rounds_1_3_replay_fix_v1")
     assert expert_fix._uses_expert_rounds_1_3
-    expert_turn_loop = HonchkrowPorygonAgent(profile, "expert_turn_loop_v2")
-    assert expert_turn_loop.policy_variant == "expert_turn_loop_v2"
-    assert expert_turn_loop._uses_expert_turn_loop_v2
+    expert_turn_loop = HonchkrowPorygonAgent(profile, "expert_turn_loop")
+    assert expert_turn_loop.policy_variant == "expert_turn_loop"
+    assert expert_turn_loop._uses_expert_turn_loop
     assert expert_turn_loop._uses_expert_rounds_1_3
 
 

@@ -38,7 +38,7 @@ def summarize(baseline_path: Path, candidate_path: Path, output_dir: Path) -> di
     candidate = _load(candidate_path)
     if baseline.get("variant") != "supporter_resource_v2":
         raise ValueError("unexpected replay baseline variant")
-    if candidate.get("variant") != "expert_turn_loop_v2":
+    if candidate.get("variant") != "expert_turn_loop":
         raise ValueError("unexpected replay candidate variant")
     divergences = [
         decision

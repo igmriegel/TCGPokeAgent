@@ -71,6 +71,19 @@ class TurnObjective(StrEnum):
     ATTACK_OR_CONTROL = "attack_or_control"
 
 
+class CanonicalTurnStage(StrEnum):
+    """Ordered stages of the Owner-defined turn loop."""
+
+    DEVELOP = "develop"
+    SEARCH = "search"
+    CALCULATE = "calculate"
+    SUPPORTER = "supporter"
+    FACTORY = "factory"
+    ROTO = "roto"
+    HEADSET = "headset"
+    ATTACK = "attack"
+
+
 @dataclass(slots=True)
 class TurnTacticalLedger:
     """Public, turn-scoped tactical evidence for the dedicated policy.
@@ -142,6 +155,10 @@ class TurnTacticalLedger:
     lethal_lines_converted: int = 0
     miracle_headsets_played: int = 0
     miracle_supporters_recovered: int = 0
+    canonical_exception: str = ""
+    canonical_violations: int = 0
+    factory_effects_activated: int = 0
+    headset_reason: str = ""
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -208,6 +225,10 @@ class TurnTacticalLedger:
         self.lethal_lines_converted = 0
         self.miracle_headsets_played = 0
         self.miracle_supporters_recovered = 0
+        self.canonical_exception = ""
+        self.canonical_violations = 0
+        self.factory_effects_activated = 0
+        self.headset_reason = ""
 
 
 @dataclass(slots=True)
@@ -1571,6 +1592,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         configured_variant = policy_variant or os.environ.get(
             "HONCHKROW_POLICY_VARIANT", "supporter_resource_v2"
         )
+        configured_variant = {
+            "canonical_turn_loop_v1": "expert_turn_loop",
+            "expert_turn_loop_v2": "expert_turn_loop",
+        }.get(configured_variant, configured_variant)
         self.policy_variant = (
             configured_variant
             if configured_variant
@@ -1583,7 +1608,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 "supporter_lethal_v1",
                 "supporter_resource_v2",
                 "expert_rounds_1_3_v1",
-                "expert_turn_loop_v2",
+                "expert_turn_loop",
                 "supporter_resource_v2_replay_fix_v1",
                 "expert_rounds_1_3_replay_fix_v1",
             }
@@ -1599,7 +1624,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_lethal_v1",
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
-            "expert_turn_loop_v2",
+            "expert_turn_loop",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -1611,7 +1636,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             "supporter_lethal_v1",
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
-            "expert_turn_loop_v2",
+            "expert_turn_loop",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -1622,7 +1647,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return self.policy_variant in {
             "supporter_resource_v2",
             "expert_rounds_1_3_v1",
-            "expert_turn_loop_v2",
+            "expert_turn_loop",
             "supporter_resource_v2_replay_fix_v1",
             "expert_rounds_1_3_replay_fix_v1",
         }
@@ -1632,14 +1657,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Return whether the first three ratified interview rounds are active."""
         return self.policy_variant in {
             "expert_rounds_1_3_v1",
-            "expert_turn_loop_v2",
+            "expert_turn_loop",
             "expert_rounds_1_3_replay_fix_v1",
         }
 
     @property
-    def _uses_expert_turn_loop_v2(self) -> bool:
-        """Return whether the dedicated expert turn-loop candidate is active."""
-        return self.policy_variant == "expert_turn_loop_v2"
+    def _uses_expert_turn_loop(self) -> bool:
+        """Return whether the official Owner-defined turn loop is active."""
+        return self.policy_variant == "expert_turn_loop"
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -1764,15 +1789,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         else:
             self._turn_ledger.pre_draw_ko_candidates = ko_candidates
         decision = super().decide(observation)
-        self._set_turn_stage(
-            str(getattr(self.last_decision, "decision_phase", "") or "observe").casefold()
-        )
+        if not self._uses_expert_turn_loop:
+            self._set_turn_stage(
+                str(getattr(self.last_decision, "decision_phase", "") or "observe").casefold()
+            )
         by_index = {candidate.option_index: candidate for candidate in parsed.candidates}
         for index in decision.selection.indices:
             candidate = by_index.get(index)
             if candidate is None:
                 continue
             card_id = self._scorer._feature_int(candidate, "card_id")
+            if (
+                self._uses_expert_turn_loop
+                and self._headset_turn == parsed.state.turn
+                and card_id in {ARIANA, ARCHER, GIOVANNI, PETREL, PROTON}
+            ):
+                self._turn_ledger.miracle_supporters_recovered += 1
             if self._evolution_ko_commitment is not None:
                 if candidate.option_type is OptionType.PLAY and card_id == POKE_PAD:
                     self._evolution_ko_commitment.stage = "select_honchkrow"
@@ -1794,11 +1826,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.roto_sticks_played += 1
                 self._turn_ledger.roto_preserved_reason = "played_to_improve_rocket_feathers"
                 self._roto_turn = parsed.state.turn
+                if self._uses_expert_turn_loop:
+                    self._turn_ledger.stage = CanonicalTurnStage.HEADSET.value
             if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
                 ignition_plan = self._ignition_attack_plan(parsed.state, candidate)
                 if ignition_plan is not None:
                     self._switch_commitment = ignition_plan
                     self._match_ledger.ignition_attachments += 1
+            if self._uses_expert_turn_loop and candidate.option_type in {
+                OptionType.PLAY,
+                OptionType.EVOLVE,
+            } and card_id in {MURKROW, PORYGON, HONCHKROW, PORYGON2, ARTICUNO}:
+                self._turn_ledger.stage = CanonicalTurnStage.DEVELOP.value
             if candidate.option_type is OptionType.PLAY and card_id == TRANSCEIVER:
                 self._turn_ledger.transceiver_proton_in_hand = self._scorer._card_in_hand(
                     parsed.state, PROTON
@@ -1817,12 +1856,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 ) and self._scorer._proton_setup_is_useful(parsed.state):
                     self._turn_ledger.ariana_with_required_proton += 1
                 self._turn_ledger.draw_sequence.append("ariana")
+                if self._uses_expert_turn_loop:
+                    self._turn_ledger.stage = CanonicalTurnStage.FACTORY.value
             elif candidate.option_type is OptionType.PLAY and card_id == PETREL:
                 if self._scorer._petrel_factory_is_superior(parsed.state):
                     self._turn_ledger.petrel_factory_conversions += 1
                     self._match_ledger.petrel_factory_conversions += 1
             elif candidate.option_type is OptionType.PLAY and card_id == FACTORY:
                 self._turn_ledger.draw_sequence.append("factory")
+                if self._uses_expert_turn_loop:
+                    self._turn_ledger.stage = (
+                        CanonicalTurnStage.FACTORY.value
+                        if self._turn_ledger.supporter_played
+                        else CanonicalTurnStage.SUPPORTER.value
+                    )
+            elif self._uses_expert_turn_loop and self._is_factory_effect_candidate(
+                candidate, parsed.state
+            ):
+                self._turn_ledger.factory_effects_activated += 1
+                self._turn_ledger.draw_sequence.append("factory_effect")
+                self._turn_ledger.stage = CanonicalTurnStage.ROTO.value
             elif candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
                 self._turn_ledger.draw_sequence.append("night_stretcher")
             elif (
@@ -1843,7 +1896,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             elif candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
                 self._turn_ledger.miracle_headsets_played += 1
                 self._headset_turn = parsed.state.turn
+                if self._uses_expert_turn_loop:
+                    self._turn_ledger.stage = CanonicalTurnStage.ATTACK.value
             elif candidate.option_type is OptionType.ATTACK:
+                if self._uses_expert_turn_loop:
+                    self._turn_ledger.stage = CanonicalTurnStage.ATTACK.value
                 if self._scorer._attack_id(candidate) == TORMENT and (
                     self._evolution_ko_commitment is not None
                     or any(
@@ -2026,7 +2083,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 continue
             card_id = self._scorer._feature_int(candidate, "card_id")
             source_id = self._scorer._metadata_int(candidate.option, "sourceCardId")
-            if self._uses_expert_turn_loop_v2:
+            if self._uses_expert_turn_loop:
                 if candidate.option_type is OptionType.RETREAT:
                     return "retreat"
                 if candidate.option_type is OptionType.PLAY:
@@ -2191,6 +2248,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         candidates: Sequence[Candidate],
     ) -> tuple[str, str, list[Selection]]:
         """Apply the persistent objective before lower-priority MAIN actions."""
+        if self._uses_expert_turn_loop:
+            return self._canonical_main_phase_selections(state, selections, candidates)
         safe = self._filter_forbidden_selections(state, selections, candidates, SelectContext.MAIN)
         by_index = {candidate.option_index: candidate for candidate in candidates}
         if not self._turn_ledger.objective:
@@ -2311,7 +2370,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if factory_play:
                 reason = (
                     "factory_drawn_by_ariana"
-                    if self._uses_expert_turn_loop_v2 and state.supporter_played
+                    if self._uses_expert_turn_loop and state.supporter_played
                     else "stadium_before_ariana"
                 )
                 return DecisionPhase.STADIUM.value, reason, factory_play
@@ -2502,6 +2561,217 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if attacks:
             return DecisionPhase.ATTACK.value, "post_draw_best_damage", attacks
         return super()._main_phase_selections(state, safe, candidates)
+
+    def _canonical_main_phase_selections(
+        self,
+        state: GameState,
+        selections: Sequence[Selection],
+        candidates: Sequence[Candidate],
+    ) -> tuple[str, str, list[Selection]]:
+        """Select only actions belonging to the current canonical turn stage."""
+        safe = self._filter_forbidden_selections(state, selections, candidates, SelectContext.MAIN)
+        by_index = {candidate.option_index: candidate for candidate in candidates}
+
+        def matching(predicate: Any) -> list[Selection]:
+            return [
+                selection
+                for selection in safe
+                if any(
+                    predicate(candidate)
+                    for index in selection.indices
+                    if (candidate := by_index.get(index)) is not None
+                )
+            ]
+
+        immediate = matching(
+            lambda candidate: candidate.option_type is OptionType.ATTACK
+            and self._attack_wins_game(state, candidate)
+        )
+        if immediate:
+            self._turn_ledger.canonical_exception = "immediate_win"
+            return DecisionPhase.ATTACK_PRIORITY.value, "canonical_immediate_win", immediate
+
+        stage = self._turn_ledger.stage
+        if stage in {"", "observe", CanonicalTurnStage.DEVELOP.value}:
+            self._turn_ledger.stage = CanonicalTurnStage.DEVELOP.value
+            development = matching(
+                lambda candidate: candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                and self._scorer._metadata_int(candidate.card, "cardType") == 0
+                and self._scorer._feature_int(candidate, "card_id")
+                in {MURKROW, PORYGON, HONCHKROW, PORYGON2, ARTICUNO}
+            )
+            if development:
+                return DecisionPhase.PLAY_POKEMON.value, "canonical_develop_board", development
+            self._turn_ledger.stage = CanonicalTurnStage.SEARCH.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.SEARCH.value:
+            search = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == ULTRA_BALL
+                and self._canonical_ultra_ball_is_productive(state)
+            )
+            if search:
+                return DecisionPhase.PLAY_ITEMS.value, "canonical_search_with_ariana", search
+            self._turn_ledger.stage = CanonicalTurnStage.CALCULATE.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.CALCULATE.value:
+            self._refresh_public_turn_facts(state)
+            self._turn_ledger.stage = CanonicalTurnStage.SUPPORTER.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.SUPPORTER.value:
+            factory_in_hand = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == FACTORY
+                and (
+                    state.supporter_played
+                    or self._scorer._factory_play_is_useful(state)
+                )
+            )
+            if factory_in_hand:
+                return (
+                    DecisionPhase.STADIUM.value,
+                    (
+                        "canonical_place_factory_drawn_by_supporter"
+                        if state.supporter_played
+                        else "canonical_place_factory_before_supporter"
+                    ),
+                    factory_in_hand,
+                )
+            giovanni = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == GIOVANNI
+                and self._canonical_giovanni_is_productive(state)
+            )
+            if giovanni:
+                return (
+                    DecisionPhase.PLAY_SUPPORTER.value,
+                    "canonical_giovanni_prize_target",
+                    giovanni,
+                )
+            ariana = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == ARIANA
+                and self._scorer._ariana_is_safe_and_useful(state)
+            )
+            if ariana:
+                return (
+                    DecisionPhase.PLAY_SUPPORTER.value,
+                    "canonical_ariana_resource_engine",
+                    ariana,
+                )
+            proton = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == PROTON
+                and self._scorer._proton_setup_is_useful(state)
+            )
+            if proton:
+                return DecisionPhase.PLAY_SUPPORTER.value, "canonical_proton_setup", proton
+            blocked_roto = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
+                and self._scorer._supporters_in_hand(state) == 0
+                and self._roto_setup_mode(state)
+            )
+            if blocked_roto:
+                self._turn_ledger.canonical_exception = "roto_without_playable_supporter"
+                return (
+                    DecisionPhase.PLAY_ITEMS.value,
+                    "canonical_roto_supporter_block",
+                    blocked_roto,
+                )
+            self._turn_ledger.stage = CanonicalTurnStage.FACTORY.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.FACTORY.value:
+            factory = matching(
+                lambda candidate: self._is_factory_effect_candidate(candidate, state)
+                and self._scorer._factory_is_useful(state)
+            )
+            if factory:
+                return DecisionPhase.UTILITY.value, "canonical_factory_after_supporter", factory
+            self._turn_ledger.stage = CanonicalTurnStage.ROTO.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.ROTO.value:
+            roto = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
+                and self._canonical_roto_is_productive(state)
+            )
+            if roto:
+                return DecisionPhase.PLAY_ITEMS.value, "canonical_roto_after_factory", roto
+            self._turn_ledger.stage = CanonicalTurnStage.HEADSET.value
+
+        if self._turn_ledger.stage == CanonicalTurnStage.HEADSET.value:
+            headset = matching(
+                lambda candidate: candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == MIRACLE_HEADSET
+                and self._canonical_headset_is_useful(state)
+            )
+            if headset:
+                return DecisionPhase.PLAY_ITEMS.value, "canonical_headset_contextual", headset
+            self._turn_ledger.stage = CanonicalTurnStage.ATTACK.value
+
+        lethal = matching(
+            lambda candidate: candidate.option_type is OptionType.ATTACK
+            and self._variant_attack_is_lethal(state, candidate)
+        )
+        if lethal:
+            return DecisionPhase.ATTACK_PRIORITY.value, "canonical_attack_lethal", lethal
+        self._turn_ledger.canonical_exception = "legal_fallback"
+        return super()._main_phase_selections(state, safe, candidates)
+
+    def _canonical_ultra_ball_is_productive(self, state: GameState) -> bool:
+        """Require Ariana and a measurable hand-reduction benefit for Ultra Ball."""
+        if not self._scorer._card_in_hand(state, ARIANA):
+            return False
+        return self._scorer._ultra_ball_is_productive(state)
+
+    def _canonical_roto_is_productive(self, state: GameState) -> bool:
+        """Allow Roto only after the Factory stage and when it closes supporter damage."""
+        needed = self._turn_ledger.supporters_needed_for_ko
+        available = self._scorer._supporters_in_hand(state)
+        return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
+
+    def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
+        """Require a public two/three-Prize or final-Prize bench target."""
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if player is None or opponent is None or not opponent.bench:
+            return False
+        prizes_left = len(player.prize)
+        for pokemon in opponent.bench:
+            prize_value = int(
+                getattr(
+                    pokemon,
+                    "effective_prize_value",
+                    self._scorer.catalog.get_traits(str(pokemon.card_id)).base_prize_value,
+                )
+            )
+            if prize_value >= 2 or prize_value >= prizes_left:
+                required = max(1, (max(0, int(pokemon.hp)) + 59) // 60)
+                if (
+                    self._scorer._supporters_in_hand(state)
+                    >= required
+                ):
+                    self._turn_ledger.supporters_needed_for_ko = required
+                    return True
+        return False
+
+    def _canonical_headset_is_useful(self, state: GameState) -> bool:
+        """Choose Headset when its contextual Ariana/Giovanni score is positive."""
+        discard = self._scorer._rocket_supporters_in_discard(state)
+        hand = self._scorer._supporters_in_hand(state)
+        needed = max(1, self._turn_ledger.supporters_needed_for_ko)
+        ariana_score = (100 if hand < needed else 0) + (30 if discard < needed else 0)
+        giovanni_score = 0
+        if self._canonical_giovanni_is_productive(state):
+            giovanni_score = 120 + min(60, discard * 10)
+        if giovanni_score > ariana_score:
+            self._turn_ledger.headset_reason = "giovanni_prize_target"
+        elif ariana_score > 0:
+            self._turn_ledger.headset_reason = "ariana_hand_deficit"
+        else:
+            self._turn_ledger.headset_reason = ""
+        return max(ariana_score, giovanni_score) > 0
 
     def _attack_wins_game(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether an attack explicitly or arithmetically takes the last Prizes."""
@@ -2763,6 +3033,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         if (candidate := by_index.get(index)) is not None
                     )
                 ]
+                if self._uses_expert_turn_loop and self._turn_ledger.headset_reason:
+                    preferred_id = (
+                        GIOVANNI
+                        if self._turn_ledger.headset_reason == "giovanni_prize_target"
+                        else ARIANA
+                    )
+                    preferred = [
+                        selection
+                        for selection in (without_duplicate_ariana or exact_two)
+                        if any(
+                            self._scorer._feature_int(candidate, "card_id") == preferred_id
+                            for index in selection.indices
+                            if (candidate := by_index.get(index)) is not None
+                        )
+                    ]
+                    if preferred:
+                        self._turn_ledger.resource_guard = (
+                            f"headset_prefers_{self._turn_ledger.headset_reason}"
+                        )
+                        return preferred
                 self._turn_ledger.resource_guard = "headset_recovers_two_supporters"
                 return without_duplicate_ariana or exact_two
         if (

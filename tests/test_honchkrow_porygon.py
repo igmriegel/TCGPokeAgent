@@ -93,7 +93,7 @@ def test_dedicated_deck_and_profile_are_bound() -> None:
     assert len(deck) == 60
     assert deck[:4] == [463] * 4
     assert profile.deck_id == "honchkrow_porygon"
-    assert entrypoint.POLICY_VARIANT == "expert_turn_loop_v2"
+    assert entrypoint.POLICY_VARIANT == "expert_turn_loop"
     assert entrypoint._build_agent().policy_variant == entrypoint.POLICY_VARIANT
 
 
@@ -470,7 +470,7 @@ def test_expert_replan_checkpoints_exclude_proton_and_poke_pad() -> None:
 
 def test_expert_turn_loop_replans_after_board_search_supporter_and_retreat() -> None:
     """The dedicated turn loop invalidates every public state-changing plan."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(turn=3, players=[PlayerState(), PlayerState()])
     basic = _candidate(0, OptionType.PLAY, card_id=MURKROW, card={"cardType": 0})
     search = _candidate(1, OptionType.PLAY, card_id=POKE_PAD, card={"cardType": 2})
@@ -506,7 +506,7 @@ def test_expert_turn_loop_replans_after_board_search_supporter_and_retreat() -> 
 
 def test_expert_turn_loop_ledger_uses_only_public_turn_facts() -> None:
     """Plan arithmetic is refreshed from the current factual zones."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         turn=5,
         energy_attached=False,
@@ -1379,7 +1379,7 @@ def test_draw_first_prefers_factory_before_ariana_and_nonwinning_attack() -> Non
 
 def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() -> None:
     """A Factory drawn by Ariana is placed before its productive draw effect."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_v2")
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         turn=4,
         supporter_played=True,
@@ -1403,7 +1403,7 @@ def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() 
 
     _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
 
-    assert reason == "factory_drawn_by_ariana"
+    assert reason == "canonical_place_factory_drawn_by_supporter"
     assert [selection.indices for selection in eligible] == [(0,)]
     state.stadium = str(FACTORY)
     state.stadium_played = True
@@ -1413,8 +1413,41 @@ def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() 
         [Selection((2,), (OptionType.ABILITY,))],
         [factory_effect],
     )
-    assert effect_reason == "factory_after_ariana_and_roto"
+    assert effect_reason == "canonical_factory_after_supporter"
     assert [selection.indices for selection in effect_choices] == [(2,)]
+
+
+def test_canonical_turn_loop_factory_precedes_roto_after_supporter(monkeypatch) -> None:
+    """The canonical stage machine must activate Factory before Roto-Stick."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent.turn_ledger.stage = "factory"
+    state = GameState(
+        turn=4,
+        supporter_played=True,
+        stadium=[{"id": FACTORY}],
+        players=[PlayerState(active=PokemonState(HONCHKROW, 130, 130)), PlayerState()],
+    )
+    monkeypatch.setattr(agent._scorer, "_factory_is_useful", lambda _state: True)
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ROTO_STICK),
+        _candidate(1, OptionType.ABILITY, card_id=FACTORY),
+    ]
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,)) for candidate in candidates
+    ]
+    _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
+    assert reason == "canonical_factory_after_supporter"
+    assert [selection.indices for selection in eligible] == [(1,)]
+
+
+def test_canonical_ultra_ball_requires_ariana(monkeypatch) -> None:
+    """Ultra Ball is blocked unless Ariana can convert the hand reduction."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(players=[PlayerState(hand=[{"id": ULTRA_BALL}]), PlayerState()])
+    monkeypatch.setattr(agent._scorer, "_ultra_ball_is_productive", lambda _state: True)
+    assert not agent._canonical_ultra_ball_is_productive(state)
+    state.players[0].hand.append({"id": ARIANA})
+    assert agent._canonical_ultra_ball_is_productive(state)
 
 
 def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -> None:

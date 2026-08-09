@@ -31,7 +31,7 @@ def test_bundle_is_hold_before_independent_final_gate(tmp_path) -> None:
     baseline = tmp_path / "baseline.json"
     candidate = tmp_path / "candidate.json"
     baseline.write_text(json.dumps(_report("supporter_resource_v2", 7, 3)))
-    candidate.write_text(json.dumps(_report("expert_turn_loop_v2", 8, 2)))
+    candidate.write_text(json.dumps(_report("expert_turn_loop", 8, 2)))
     output = tmp_path / "run"
 
     comparison = build_bundle(baseline, candidate, output, "baseline command", "candidate command")

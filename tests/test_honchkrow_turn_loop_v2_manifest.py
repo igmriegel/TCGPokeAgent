@@ -14,7 +14,7 @@ def test_manifest_freezes_baseline_candidate_and_public_corpus(tmp_path) -> None
 
     assert manifest == build_manifest()
     assert manifest["baseline_variant"] == "supporter_resource_v2"
-    assert manifest["candidate_variant"] == "expert_turn_loop_v2"
+    assert manifest["candidate_variant"] == "expert_turn_loop"
     assert manifest["immutable_inputs"]["deck_or_profile_changes_allowed"] is False
     assert manifest["historical_corpus"]["submission_id"] == 55333874
     assert manifest["historical_corpus"]["episode_count"] == 26

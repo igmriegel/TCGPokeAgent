@@ -23,7 +23,7 @@ def test_replay_summary_keeps_divergence_counterfactual_local(tmp_path) -> None:
     candidate.write_text(
         json.dumps(
             {
-                "variant": "expert_turn_loop_v2",
+                "variant": "expert_turn_loop",
                 "summary": {"decisions": 1, "divergences": 1},
                 "decisions": [
                     {

@@ -4,8 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 OUTPUT="${1:-submissions/honchkrow_porygon_submission.tar.gz}"
-POLICY_VARIANT="${2:-expert_turn_loop_v2}"
-EVIDENCE_CORPUS="${3:-55333874:26-replays}"
+POLICY_VARIANT="${2:-expert_turn_loop}"
+EVIDENCE_CORPUS="${3:-55344354:36-replays}"
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
 

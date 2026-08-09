@@ -78,7 +78,7 @@ def build_manifest() -> dict[str, Any]:
     return {
         "schema": "honchkrow_turn_loop_v2_foundation_manifest_v1",
         "baseline_variant": "supporter_resource_v2",
-        "candidate_variant": "expert_turn_loop_v2",
+        "candidate_variant": "expert_turn_loop",
         "source": {
             "commit": _git("rev-parse", "HEAD"),
             "worktree_dirty": bool(dirty_paths),
