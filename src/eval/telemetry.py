@@ -254,6 +254,9 @@ def aggregate_decisions(matches: Sequence[Any]) -> dict[str, Any]:
             tactical["end_with_productive_line"] += int(
                 turn_ledger.get("end_with_productive_line", 0) or 0
             )
+            tactical["end_only_after_filter"] += int(
+                turn_ledger.get("end_only_after_filter", 0) or 0
+            )
         if match.decisions:
             match_ledger = getattr(match.decisions[-1], "tactical", {}).get("match_ledger", {})
             for key in (

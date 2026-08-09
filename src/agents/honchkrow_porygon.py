@@ -173,6 +173,7 @@ class TurnTacticalLedger:
     headset_reason: str = ""
     end_options_visible: int = 0
     end_with_productive_line: int = 0
+    end_only_after_filter: int = 0
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -246,6 +247,7 @@ class TurnTacticalLedger:
         self.headset_reason = ""
         self.end_options_visible = 0
         self.end_with_productive_line = 0
+        self.end_only_after_filter = 0
 
 
 @dataclass(slots=True)
@@ -3979,6 +3981,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     if self._rocket_supporter_count(selection, by_index) == 0
                 ]
         safe = super()._filter_forbidden_selections(state, selections, candidates, context)
+        if context is SelectContext.MAIN:
+            original_has_non_end = any(
+                any(
+                    by_index.get(index) is not None
+                    and by_index[index].option_type is not OptionType.END
+                    for index in selection.indices
+                )
+                for selection in selections
+            )
+            safe_has_non_end = any(
+                any(
+                    by_index.get(index) is not None
+                    and by_index[index].option_type is not OptionType.END
+                    for index in selection.indices
+                )
+                for selection in safe
+            )
+            if original_has_non_end and not safe_has_non_end:
+                self._turn_ledger.end_only_after_filter += 1
         committed = [
             selection
             for selection in safe

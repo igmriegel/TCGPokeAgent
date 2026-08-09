@@ -106,6 +106,7 @@ def test_aggregate_decisions_reports_turn_planning_tactical_counters() -> None:
                 "no_pokemon_risk": True,
                 "end_options_visible": 1,
                 "end_with_productive_line": 1,
+                "end_only_after_filter": 1,
             },
             "match_ledger": {
                 "petrel_factory_opportunities": 1,
@@ -126,4 +127,5 @@ def test_aggregate_decisions_reports_turn_planning_tactical_counters() -> None:
     assert aggregate["tactical_counters"]["petrel_factory_conversions"] == 1
     assert aggregate["tactical_counters"]["poke_pad_ko_misses"] == 1
     assert aggregate["tactical_counters"]["end_with_productive_line"] == 1
+    assert aggregate["tactical_counters"]["end_only_after_filter"] == 1
     assert aggregate["ariana_events"] == [{"turn": 3, "marginal_draw": 1, "supporters_in_hand": 8}]

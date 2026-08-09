@@ -724,6 +724,24 @@ def test_end_telemetry_marks_visible_productive_line() -> None:
     assert agent.turn_ledger.end_with_productive_line == 1
 
 
+def test_filter_telemetry_marks_main_prompt_collapsed_to_end() -> None:
+    """The tactical ledger distinguishes a filter collapse from a naturally empty turn."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(players=[PlayerState(deck_count=2, hand_count=2), PlayerState()])
+    ultra_ball = _candidate(0, OptionType.PLAY, card_id=ULTRA_BALL, card={"cardType": 1})
+    end = _candidate(1, OptionType.END)
+
+    safe = agent._filter_forbidden_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [ultra_ball, end],
+        SelectContext.MAIN,
+    )
+
+    assert [selection.indices for selection in safe] == [(1,)]
+    assert agent.turn_ledger.end_only_after_filter == 1
+
+
 def test_expert_deceit_is_only_a_low_hand_no_supporter_survival_line() -> None:
     """Deceit may find Ariana only when the hand cannot otherwise progress."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
