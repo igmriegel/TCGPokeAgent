@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-AGENT_MODE="${1:-baseline}"
+AGENT_MODE="${1:-expert_turn_loop}"
 CONFIG="${2:-configs/eval_full.yaml}"
 
 echo "=== Full evaluation: ${AGENT_MODE} (${CONFIG}) ==="

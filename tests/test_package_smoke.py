@@ -67,4 +67,29 @@ def test_extracted_hdi_package_declares_and_runs_backend(tmp_path) -> None:
     assert manifest["backend_version"] == "hdi-v1"
     assert manifest["deck_id"] == "mega_abomasnow_kyogre"
     assert len(manifest["package_payload_sha256"]) == 64
+
+
+def test_extracted_expert_turn_loop_package_uses_revised_policy(tmp_path) -> None:
+    root = Path(__file__).parents[1]
+    archive = tmp_path / "submission_expert_turn_loop.tar.gz"
+
+    subprocess.run(
+        [str(root / "scripts" / "build_package.sh"), str(archive), "expert_turn_loop"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    validation = validate_package_archive(archive)
+    with tarfile.open(archive) as package:
+        names = {member.name.removeprefix("./") for member in package.getmembers()}
+        manifest_file = package.extractfile("package_manifest.json")
+        assert manifest_file is not None
+        manifest = json.load(manifest_file)
+
+    assert validation["backend"] == "expert_turn_loop"
+    assert validation["cabt_file_agent"] == "passed"
+    assert manifest["deck_id"] == "honchkrow_porygon"
+    assert "src/agents/honchkrow_porygon.py" in names
+    assert "src/artifacts/deck_profile_honchkrow_porygon.json" in names
     assert archive.with_name(archive.name + ".sha256").is_file()

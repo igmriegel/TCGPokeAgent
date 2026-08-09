@@ -291,7 +291,7 @@ class MatchRunner:
         from src.agents.factory import build_agent, load_deck
 
         root = Path(__file__).parents[2]
-        deck = load_deck(root)
+        deck = load_deck(root, mode)
 
         def with_deck(policy: Any) -> AgentCallable:
             def wrapped(observation: dict[str, Any]) -> list[int]:

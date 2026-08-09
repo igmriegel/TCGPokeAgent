@@ -8,7 +8,7 @@ BACKEND="${2:-heuristic}"
 MODEL_DIR="${3:-}"
 
 case "${BACKEND}" in
-    heuristic|hdi_v1|xgboost_ranker|lightgbm_ranker) ;;
+    heuristic|expert_turn_loop|hdi_v1|xgboost_ranker|lightgbm_ranker) ;;
     *) echo "Unsupported package backend: ${BACKEND}" >&2; exit 2 ;;
 esac
 
@@ -20,11 +20,18 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 mkdir -p "$(dirname "${OUTPUT}")"
 
 cp main.py "${TMPDIR}/"
-cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"
+if [[ "${BACKEND}" == "expert_turn_loop" ]]; then
+    cp src/artifacts/deck_team_rocket_murkrow.csv "${TMPDIR}/deck.csv"
+else
+    cp src/artifacts/deck.csv "${TMPDIR}/deck.csv"
+fi
 mkdir -p "${TMPDIR}/src/agents" "${TMPDIR}/src/core" "${TMPDIR}/src/ranking"
 mkdir -p "${TMPDIR}/src/artifacts"
 if [[ -f src/artifacts/deck_profile.json ]]; then
     cp src/artifacts/deck_profile.json "${TMPDIR}/src/artifacts/"
+fi
+if [[ "${BACKEND}" == "expert_turn_loop" ]]; then
+    cp src/artifacts/deck_profile_honchkrow_porygon.json "${TMPDIR}/src/artifacts/"
 fi
 cp src/__init__.py "${TMPDIR}/src/"
 cp src/agents/__init__.py "${TMPDIR}/src/agents/"
@@ -32,6 +39,9 @@ cp src/agents/baseline.py "${TMPDIR}/src/agents/"
 cp src/agents/factory.py "${TMPDIR}/src/agents/"
 cp src/agents/hdi.py "${TMPDIR}/src/agents/"
 cp src/agents/heuristic.py "${TMPDIR}/src/agents/"
+if [[ "${BACKEND}" == "expert_turn_loop" ]]; then
+    cp src/agents/honchkrow_porygon.py "${TMPDIR}/src/agents/"
+fi
 cp src/agents/search.py "${TMPDIR}/src/agents/"
 cp src/core/*.py "${TMPDIR}/src/core/"
 cp src/ranking/__init__.py "${TMPDIR}/src/ranking/"
@@ -113,7 +123,10 @@ manifest = {
     "feature_schema_sha256": schema_sha,
     "dataset_id": model.get("dataset_id"),
     "split_ids": model.get("split_ids", {}),
-    "deck_id": model.get("deck_id", "mega_abomasnow_kyogre"),
+    "deck_id": model.get(
+        "deck_id",
+        "honchkrow_porygon" if backend == "expert_turn_loop" else "mega_abomasnow_kyogre",
+    ),
     "deck_sha256": deck_sha,
     "parameters": model.get("parameters", {}),
     "metrics": {

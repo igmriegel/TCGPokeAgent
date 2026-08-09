@@ -6,6 +6,10 @@ cd "$(dirname "$0")/.."
 OUTPUT="${1:-submissions/honchkrow_porygon_submission.tar.gz}"
 POLICY_VARIANT="${2:-expert_turn_loop}"
 EVIDENCE_CORPUS="${3:-55344354:36-replays}"
+if [[ "${POLICY_VARIANT}" != "expert_turn_loop" ]]; then
+    echo "The official Honchkrow/Porygon package only supports expert_turn_loop" >&2
+    exit 2
+fi
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "${TMPDIR}"' EXIT
 

@@ -37,7 +37,7 @@ def main() -> None:
     """Run the gameplay smoke matrix and print aggregate action metrics."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--matches", type=int, default=10)
-    parser.add_argument("--agent-mode", default="heuristic")
+    parser.add_argument("--agent-mode", default="expert_turn_loop")
     parser.add_argument("--opponent", default="random")
     args = parser.parse_args()
     if args.matches < 1:

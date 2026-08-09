@@ -31,14 +31,14 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--agent-mode",
-        default="heuristic",
-        choices=("baseline", "heuristic", "hdi_v1", "rfl"),
+        default="expert_turn_loop",
+        choices=("baseline", "heuristic", "expert_turn_loop", "hdi_v1", "rfl"),
         help="Agent mode used by the smoke gate.",
     )
     parser.add_argument(
         "--package-kind",
         choices=("standard", "honchkrow_porygon"),
-        default="standard",
+        default="honchkrow_porygon",
         help="Package builder to use; prevents rebuilding a dedicated deck as standard.",
     )
     parser.add_argument(
@@ -223,7 +223,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for command in commands:
             _run(command)
-        package_backend = args.agent_mode if args.agent_mode == "hdi_v1" else "heuristic"
+        if args.package_kind == "honchkrow_porygon" and args.agent_mode != "expert_turn_loop":
+            raise RuntimeError(
+                "honchkrow_porygon package requires --agent-mode expert_turn_loop"
+            )
+        if args.package_kind == "standard" and args.agent_mode == "expert_turn_loop":
+            raise RuntimeError(
+                "expert_turn_loop requires --package-kind honchkrow_porygon"
+            )
+        package_backend = args.agent_mode if args.agent_mode != "expert_turn_loop" else "heuristic"
         _run(_package_command(args.package_kind, archive, package_backend))
         _run([python, "-m", "src.eval.validation", "--package", str(archive)])
     except (OSError, RuntimeError) as error:

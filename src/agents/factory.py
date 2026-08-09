@@ -17,6 +17,7 @@ SUPPORTED_AGENT_MODES = frozenset(
     {
         "baseline",
         "heuristic",
+        "expert_turn_loop",
         "hdi_v1",
         "hybrid",
         "rfl",
@@ -39,24 +40,37 @@ def normalize_agent_mode(mode: str | None) -> str:
         ValueError: If the mode is not explicitly supported.
     """
     normalized = (mode or "heuristic").strip().casefold()
-    aliases = {"xgboost": "xgboost_ranker", "lightgbm": "lightgbm_ranker"}
+    aliases = {
+        "xgboost": "xgboost_ranker",
+        "lightgbm": "lightgbm_ranker",
+        "honchkrow_porygon": "expert_turn_loop",
+    }
     normalized = aliases.get(normalized, normalized)
     if normalized not in SUPPORTED_AGENT_MODES:
         raise ValueError(f"unsupported agent mode: {mode}")
     return normalized
 
 
-def load_deck(root: str | Path) -> list[int]:
+def load_deck(root: str | Path, mode: str | None = None) -> list[int]:
     """Load the canonical 60-card deck from a repository or package root.
 
     Args:
         root: Repository or extracted package root.
+        mode: Optional policy mode used to select a mode-specific deck.
 
     Returns:
         Ordered positive card identifiers.
     """
     project_root = Path(root)
-    deck_path = project_root / "src" / "artifacts" / "deck.csv"
+    normalized = (mode or "").strip().casefold() or None
+    if normalized == "honchkrow_porygon":
+        normalized = "expert_turn_loop"
+    if normalized == "expert_turn_loop":
+        deck_path = project_root / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
+        if not deck_path.is_file():
+            deck_path = project_root / "deck.csv"
+    else:
+        deck_path = project_root / "src" / "artifacts" / "deck.csv"
     if not deck_path.is_file():
         deck_path = project_root / "deck.csv"
     cards = [line.strip() for line in deck_path.read_text(encoding="utf-8").splitlines()]
@@ -68,16 +82,28 @@ def load_deck(root: str | Path) -> list[int]:
     return deck
 
 
-def load_deck_profile(root: str | Path) -> DeckProfile | None:
+def load_deck_profile(root: str | Path, mode: str | None = None) -> DeckProfile | None:
     """Load the optional declarative profile associated with the active deck.
 
     Args:
         root: Repository or extracted package root.
+        mode: Optional policy mode used to select a mode-specific profile.
 
     Returns:
         Valid deck profile or ``None`` when no compatible asset is present.
     """
-    path = Path(root) / "src" / "artifacts" / "deck_profile.json"
+    project_root = Path(root)
+    normalized = (mode or "").strip().casefold() or None
+    if normalized == "honchkrow_porygon":
+        normalized = "expert_turn_loop"
+    profile_name = (
+        "deck_profile_honchkrow_porygon.json"
+        if normalized == "expert_turn_loop"
+        else "deck_profile.json"
+    )
+    path = project_root / "src" / "artifacts" / profile_name
+    if not path.is_file() and normalized == "expert_turn_loop":
+        path = project_root / "src" / "artifacts" / "deck_profile.json"
     if not path.is_file():
         return None
     try:
@@ -109,12 +135,18 @@ def build_agent(
     """
     normalized = normalize_agent_mode(mode or os.environ.get("AGENT_MODE"))
     project_root = Path(root)
-    profile = load_deck_profile(project_root)
+    profile = load_deck_profile(project_root, normalized)
     weights, feature_flags = _heuristic_config(project_root)
     if normalized == "baseline":
         return BaselineAgent()
     if normalized == "hdi_v1":
         return HdiAgent(profile)
+    if normalized == "expert_turn_loop":
+        from src.agents.honchkrow_porygon import HonchkrowPorygonAgent
+
+        if profile is None:
+            raise ValueError("expert_turn_loop requires the Honchkrow/Porygon deck profile")
+        return HonchkrowPorygonAgent(profile, "expert_turn_loop")
     heuristic = HeuristicAgent(weights, feature_flags, profile)
     if normalized == "heuristic":
         return heuristic

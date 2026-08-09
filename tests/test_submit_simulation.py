@@ -51,12 +51,26 @@ def test_hdi_mode_is_available_to_guarded_submission_pipeline() -> None:
     assert args.agent_mode == "hdi_v1"
 
 
+def test_submission_defaults_to_expert_turn_loop_dedicated_package() -> None:
+    args = _parser().parse_args([])
+
+    assert args.agent_mode == "expert_turn_loop"
+    assert args.package_kind == "honchkrow_porygon"
+
+
 def test_dedicated_package_kind_uses_dedicated_builder(tmp_path: Path) -> None:
     archive = tmp_path / "honchkrow.tar.gz"
     assert _package_command("honchkrow_porygon", archive, "heuristic") == [
         "scripts/build_honchkrow_porygon_package.sh",
         str(archive),
     ]
+
+
+def test_standard_package_rejects_expert_turn_loop() -> None:
+    args = _parser().parse_args(["--agent-mode", "expert_turn_loop", "--package-kind", "standard"])
+
+    assert args.agent_mode == "expert_turn_loop"
+    assert args.package_kind == "standard"
 
 
 def test_submission_env_ignores_repo_root_kaggle_config_dir(

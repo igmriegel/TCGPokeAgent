@@ -78,7 +78,7 @@ def main() -> None:
     """Parse arguments, run smoke matches, and fail on any engine failure."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--matches", type=int, default=20)
-    parser.add_argument("--agent-mode", default="baseline")
+    parser.add_argument("--agent-mode", default="expert_turn_loop")
     args = parser.parse_args()
     completed, failures = run_smoke(args.matches, args.agent_mode)
     print(f"cabt smoke: {completed} completed, {failures} failed")

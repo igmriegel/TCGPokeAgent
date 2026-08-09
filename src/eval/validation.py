@@ -178,7 +178,13 @@ def _validate_package_manifest(root: Path, archive_size: int) -> dict[str, Any]:
     except json.JSONDecodeError as error:
         raise PreflightError("package manifest is invalid JSON") from error
     backend = manifest.get("backend")
-    if backend not in {"heuristic", "hdi_v1", "xgboost_ranker", "lightgbm_ranker"}:
+    if backend not in {
+        "heuristic",
+        "expert_turn_loop",
+        "hdi_v1",
+        "xgboost_ranker",
+        "lightgbm_ranker",
+    }:
         raise PreflightError("package manifest declares an unsupported backend")
     required = {
         "backend_version",
@@ -208,7 +214,7 @@ def _validate_package_manifest(root: Path, archive_size: int) -> dict[str, Any]:
         raise PreflightError("package deck hash mismatch")
     if _package_payload_sha256(root) != manifest["package_payload_sha256"]:
         raise PreflightError("package payload hash mismatch")
-    if backend in {"heuristic", "hdi_v1"}:
+    if backend in {"heuristic", "expert_turn_loop", "hdi_v1"}:
         return manifest
     model_dir = root / "model"
     model_file = manifest.get("model_file")
@@ -227,7 +233,7 @@ def _validate_package_manifest(root: Path, archive_size: int) -> dict[str, Any]:
 
 def _run_ranker_smoke(root: Path, manifest: Mapping[str, Any]) -> str:
     backend = manifest.get("backend", "heuristic")
-    if backend in {"heuristic", "hdi_v1"}:
+    if backend in {"heuristic", "expert_turn_loop", "hdi_v1"}:
         return "not-applicable"
     smoke = """
 import json

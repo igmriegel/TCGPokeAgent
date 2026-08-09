@@ -7,7 +7,7 @@ services:
     image: pokemon-tcg-engine:latest
     stdin_open: true
     environment:
-      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - AGENT_MODE=${AGENT_MODE:-expert_turn_loop}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
@@ -19,7 +19,7 @@ services:
       target: agent
     image: pokemon-tcg-engine:latest
     environment:
-      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - AGENT_MODE=${AGENT_MODE:-expert_turn_loop}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     command:
       - python
@@ -28,7 +28,7 @@ services:
         from src.experiments.orchestrator import run_experiment;
         from src.config.loader import load_config;
         config = load_config('${EVAL_CONFIG:-eval_full}');
-        run_experiment(name='docker_${AGENT_MODE:-baseline}', config=config, output_dir='reports')
+        run_experiment(name='docker_${AGENT_MODE:-expert_turn_loop}', config=config, output_dir='reports')
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro
       - ./data:/app/data
@@ -58,7 +58,7 @@ services:
     image: pokemon-tcg-engine:dev
     stdin_open: true
     environment:
-      - AGENT_MODE=${AGENT_MODE:-baseline}
+      - AGENT_MODE=${AGENT_MODE:-expert_turn_loop}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./kaggle.json:/home/app/.kaggle/kaggle.json:ro

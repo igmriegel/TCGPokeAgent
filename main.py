@@ -63,7 +63,7 @@ def _project_root() -> Path:
 
 
 def _load_deck() -> list[int]:
-    return load_deck(_project_root())
+    return load_deck(_project_root(), _configured_agent_mode())
 
 
 def _build_agent() -> AgentPolicy:
@@ -88,7 +88,7 @@ def _configured_agent_mode() -> str:
 
 def _load_deck_profile() -> Any:
     """Load the optional declarative strategy bundled with the active deck."""
-    return load_deck_profile(_project_root())
+    return load_deck_profile(_project_root(), _configured_agent_mode())
 
 
 def agent_policy(observation: dict[str, Any]) -> list[int]:

@@ -22,7 +22,7 @@ COPY --chown=app:app kaggle.json.example /home/app/.kaggle/kaggle.json.example
 
 USER app
 
-ENV AGENT_MODE=baseline
+ENV AGENT_MODE=expert_turn_loop
 ENV LOG_LEVEL=INFO
 
 FROM base AS agent

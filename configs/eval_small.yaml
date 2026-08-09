@@ -1,2 +1,3 @@
 include: default.yaml
+agent: expert_turn_loop
 runs: 10

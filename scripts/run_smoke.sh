@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-AGENT_MODE="${1:-baseline}"
+AGENT_MODE="${1:-expert_turn_loop}"
 SEED="${2:-42}"
 
 echo "=== Smoke test: ${AGENT_MODE} (seed ${SEED}) ==="

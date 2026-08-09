@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-SUBMISSION_ARCHIVE ?= submissions/submission.tar.gz
+SUBMISSION_ARCHIVE ?= submissions/honchkrow_expert_turn_loop.tar.gz
 HONCHKROW_PORYGON_ARCHIVE ?= submissions/honchkrow_porygon_submission.tar.gz
 PACKAGE_BACKEND ?= heuristic
 MODEL_DIR ?=
@@ -28,7 +28,7 @@ build-honchkrow-porygon-package:
 	scripts/build_honchkrow_porygon_package.sh "$(HONCHKROW_PORYGON_ARCHIVE)"
 
 submit-kaggle:
-	scripts/submit_simulation.sh --archive "$(SUBMISSION_ARCHIVE)" $(SUBMISSION_ARGS)
+	scripts/submit_simulation.sh --archive "$(SUBMISSION_ARCHIVE)" --package-kind honchkrow_porygon --agent-mode expert_turn_loop $(SUBMISSION_ARGS)
 
 update-replays-reports:
 	scripts/download_all_replays.sh
