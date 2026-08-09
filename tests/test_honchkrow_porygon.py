@@ -2382,6 +2382,35 @@ def test_rocket_energy_enabling_murkrow_attack_is_not_forbidden() -> None:
     assert not agent._candidate_is_forbidden(state, rocket, SelectContext.MAIN)
 
 
+def test_last_rocket_energy_enabling_murkrow_attack_is_not_forbidden() -> None:
+    """The last visible Energy may be attached when it enables Murkrow's attack."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=22),
+                hand=[{"id": ROCKET_ENERGY}],
+            ),
+            PlayerState(active=PokemonState(999, 80, 80)),
+        ]
+    )
+    rocket = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value, "enablesAttack": True},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": ROCKET_ENERGY,
+            "target_card_id": MURKROW,
+            "target_serial": 22,
+            "target_energy_count": 0,
+            "target_is_active": True,
+        },
+    )
+
+    assert not agent._candidate_is_forbidden(state, rocket, SelectContext.MAIN)
+
+
 def test_articuno_in_hand_does_not_block_development_without_a_legal_play() -> None:
     """Unavailable Articuno cannot freeze the development stage against Dragapult."""
     agent = HonchkrowPorygonAgent(_profile())

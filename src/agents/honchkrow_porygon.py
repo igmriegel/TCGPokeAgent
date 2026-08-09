@@ -4329,8 +4329,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 and self._ignition_attack_plan(state, candidate) is None
             ):
                 return True
+            rocket_murkrow_attack = bool(
+                energy_id == ROCKET_ENERGY
+                and target_id == MURKROW
+                and candidate.option.get("enablesAttack", candidate.option.get("enables", False))
+            )
             if self._only_energy_in_hand(state) and not (
-                energy_id == IGNITION_ENERGY and self._ignition_attack_plan(state, candidate)
+                (energy_id == IGNITION_ENERGY and self._ignition_attack_plan(state, candidate))
+                or rocket_murkrow_attack
             ):
                 return True
             return False
