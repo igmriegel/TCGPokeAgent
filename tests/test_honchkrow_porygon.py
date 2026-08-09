@@ -1076,6 +1076,40 @@ def test_v3_headset_recovers_exactly_two_nonduplicate_supporters_for_ko() -> Non
     assert [selection.indices for selection in filtered] == [(1, 2)]
 
 
+def test_v3_headset_recovers_one_supporter_when_only_one_is_available() -> None:
+    """Headset recovery is capped at two but may complete a one-card KO line."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                discard=[{"id": ARCHER}],
+            ),
+            PlayerState(active=PokemonState(721, 50, 50)),
+        ],
+    )
+    headset = _candidate(0, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    assert not agent._candidate_is_forbidden(state, headset, SelectContext.MAIN)
+    agent._headset_turn = 5
+    candidates = [
+        Candidate(
+            0,
+            {"type": OptionType.CARD.value},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": ARCHER},
+        )
+    ]
+    filtered = agent._filter_forbidden_selections(
+        state,
+        [Selection((), ()), Selection((0,), (OptionType.CARD,))],
+        candidates,
+        SelectContext.TO_HAND,
+    )
+    assert [selection.indices for selection in filtered] == [(0,)]
+
+
 def test_ignition_energy_is_restricted_to_active_or_promotion_target() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     candidate = _candidate(
@@ -1127,6 +1161,89 @@ def test_pokepad_searches_honchkrow_for_attack_or_ariana_hand_refresh() -> None:
         card={"cardType": 0},
     )
     assert not agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+
+
+def test_archer_requires_public_own_ko_and_collapsing_board() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 10, 80),
+                hand=[{"id": ARIANA}] * 2,
+                deck_count=20,
+                bench_max=0,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100), hand_count=6),
+        ]
+    )
+    assert not scorer._archer_is_safe_and_useful(state, candidate)
+    scorer.set_own_ko_observed(True)
+    assert scorer._archer_is_safe_and_useful(state, candidate)
+
+
+def test_archer_is_not_a_substitute_for_a_winning_attack() -> None:
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    scorer.set_own_ko_observed(True)
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]), hand_count=2),
+            PlayerState(active=PokemonState(999, 100, 100), hand_count=6),
+        ]
+    )
+    assert not scorer._archer_is_safe_and_useful(state, candidate)
+
+
+def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=2,
+        your_index=1,
+        first_player=0,
+        raw={"episodeId": 91190470},
+        players=[PlayerState(), PlayerState(hand=[{"id": ROTO_STICK}], deck_count=30)],
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((PROTON, ARIANA))
+    ]
+    selections = [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))]
+    count, choices = agent._roto_recovery_selections(state, selections, candidates) or (0, [])
+    assert count == 1
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_special_roto_can_be_burned_without_selecting_a_supporter() -> None:
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=2,
+        your_index=1,
+        first_player=0,
+        raw={"episodeId": 91190470},
+        players=[PlayerState(), PlayerState(hand=[{"id": ROTO_STICK}], deck_count=30)],
+    )
+    candidates = [
+        Candidate(
+            0,
+            {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": ARIANA},
+        )
+    ]
+    count, choices = agent._roto_recovery_selections(state, [Selection((), ())], candidates) or (
+        1,
+        [],
+    )
+    assert count == 0
+    assert [selection.indices for selection in choices] == [()]
 
 
 def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
