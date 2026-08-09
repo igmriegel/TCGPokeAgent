@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import os
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -11,7 +12,10 @@ from src.core import (
     AgentPolicy,
     AttackPlan,
     Candidate,
+    CandidateTrace,
     CardCatalog,
+    DecisionStageTrace,
+    DecisionTrace,
     DeckDefinition,
     DeckProfile,
     DefaultParser,
@@ -1239,6 +1243,9 @@ class HeuristicAgent(AgentPolicy):
             Complete policy decision including alternatives, features, and latency.
         """
         started = time.perf_counter()
+        objective_before = str(
+            getattr(getattr(self, "_turn_ledger", None), "objective", "") or ""
+        )
         parsed = self._parser.parse(observation)
         self._update_alakazam_matchup(observation, parsed.state)
         self._scorer.set_energy_context(parsed.state)
@@ -1246,7 +1253,12 @@ class HeuristicAgent(AgentPolicy):
         prize_map = self._prize_map_builder.build(parsed.state)
         self._scorer.set_strategic_context(prize_check, prize_map)
         if parsed.max_count == 0:
-            return self._record_empty_decision(started)
+            return self._record_empty_decision(started, parsed, objective_before)
+        candidate_selections = [
+            Selection((candidate.option_index,), (candidate.option_type,))
+            for candidate in parsed.candidates
+        ]
+        stages: list[DecisionStageTrace] = []
         selections = self._generator.generate(
             parsed.candidates,
             parsed.min_count,
@@ -1255,18 +1267,34 @@ class HeuristicAgent(AgentPolicy):
             parsed.remain_damage_counter,
         )
         if not selections:
-            return self._record_empty_decision(started)
+            return self._record_empty_decision(started, parsed, objective_before)
+        stages.append(self._trace_stage("generate", candidate_selections, selections))
+        before_filter = selections
         selections = self._filter_dangerous_shuffle_supporters(
             parsed.state, selections, parsed.candidates
         )
+        stages.append(
+            self._trace_stage("filter_dangerous_shuffle_supporters", before_filter, selections)
+        )
+        before_filter = selections
         selections = self._filter_forbidden_selections(
             parsed.state, selections, parsed.candidates, parsed.select_context
         )
+        stages.append(self._trace_stage("filter_forbidden", before_filter, selections))
         decision_phase = ""
         decision_phase_reason = ""
         if parsed.select_context is SelectContext.MAIN:
+            before_phase = selections
             decision_phase, decision_phase_reason, selections = self._main_phase_selections(
                 parsed.state, selections, parsed.candidates
+            )
+            stages.append(
+                self._trace_stage(
+                    "main_phase",
+                    before_phase,
+                    selections,
+                    decision_phase_reason,
+                )
             )
         contextualized = [
             Selection(
@@ -1302,6 +1330,10 @@ class HeuristicAgent(AgentPolicy):
                 decision_phase = winning_phase.value
             if not decision_phase_reason:
                 decision_phase_reason = winning_phase_reason
+        stages.append(self._trace_stage("rank", contextualized, [row.selection for row in ranked]))
+        objective_after = str(
+            getattr(getattr(self, "_turn_ledger", None), "objective", "") or ""
+        )
         result = PolicyDecision(
             selection=ranked[0].selection,
             ranked=tuple(ranked),
@@ -1312,6 +1344,13 @@ class HeuristicAgent(AgentPolicy):
             model_backend=str(getattr(ranker, "backend", "heuristic")),
             model_version=str(getattr(ranker, "model_version", "heuristic-v1")),
             duration_ms=(time.perf_counter() - started) * 1000.0,
+            trace=self._build_trace(
+                parsed,
+                stages,
+                ranked,
+                objective_before,
+                objective_after,
+            ),
         )
         self._last_decision = result
         return result
@@ -1367,7 +1406,12 @@ class HeuristicAgent(AgentPolicy):
             return any(HeuristicAgent._contains_alakazam_card(item) for item in value)
         return False
 
-    def _record_empty_decision(self, started: float) -> PolicyDecision:
+    def _record_empty_decision(
+        self,
+        started: float,
+        parsed: Any | None = None,
+        objective_before: str = "",
+    ) -> PolicyDecision:
         selection = Selection(indices=(), option_types=())
         result = PolicyDecision(
             selection=selection,
@@ -1379,9 +1423,72 @@ class HeuristicAgent(AgentPolicy):
             model_backend=str(getattr(self._ranker, "backend", "heuristic")),
             model_version=str(getattr(self._ranker, "model_version", "heuristic-v1")),
             duration_ms=(time.perf_counter() - started) * 1000.0,
+            trace=(
+                self._build_trace(parsed, [], (), objective_before, objective_before)
+                if parsed is not None
+                else None
+            ),
         )
         self._last_decision = result
         return result
+
+    @staticmethod
+    def _trace_stage(
+        name: str,
+        before: Sequence[Selection],
+        after: Sequence[Selection],
+        reason: str = "",
+    ) -> DecisionStageTrace:
+        """Record a population transition without renumbering simulator indices."""
+        before_ids = tuple(selection.indices for selection in before)
+        after_ids = tuple(selection.indices for selection in after)
+        after_set = set(after_ids)
+        removed = tuple(
+            selection_id for selection_id in before_ids if selection_id not in after_set
+        )
+        return DecisionStageTrace(name, before_ids, after_ids, removed, reason)
+
+    def _build_trace(
+        self,
+        parsed: Any,
+        stages: Sequence[DecisionStageTrace],
+        ranked: Sequence[Any],
+        objective_before: str,
+        objective_after: str,
+    ) -> DecisionTrace:
+        """Build a stable, JSON-friendly trace for the current policy call."""
+        candidates = tuple(
+            CandidateTrace(
+                option_index=int(candidate.option_index),
+                option_type=candidate.option_type.value,
+                option=dict(candidate.option),
+                card=dict(candidate.card or {}),
+                attack=dict(candidate.attack or {}),
+            )
+            for candidate in parsed.candidates
+        )
+        ranked_scores = tuple(
+            (tuple(row.selection.indices), float(row.score), tuple(row.reasons))
+            for row in ranked
+        )
+        context = parsed.select_context.value if parsed.select_context is not None else ""
+        return DecisionTrace(
+            schema_version="decision-trace-v1",
+            select_context=context,
+            min_count=int(parsed.min_count),
+            max_count=int(parsed.max_count),
+            remain_energy_cost=int(parsed.remain_energy_cost),
+            remain_damage_counter=int(parsed.remain_damage_counter),
+            candidates=candidates,
+            stages=tuple(stages),
+            ranked_scores=ranked_scores,
+            selected_indices=tuple(ranked[0].selection.indices) if ranked else (),
+            objective_before=objective_before,
+            objective_after=objective_after,
+            policy_variant=str(getattr(self, "policy_variant", "")),
+            source_commit=os.environ.get("AGENT_SOURCE_COMMIT", ""),
+            package_sha256=os.environ.get("AGENT_PACKAGE_SHA256", ""),
+        )
 
     def _main_phase_selections(
         self,

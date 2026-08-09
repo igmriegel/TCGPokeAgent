@@ -32,7 +32,12 @@ from src.data.honchkrow_audit import audit_opportunities  # noqa: E402
 from src.eval.telemetry import public_snapshot, transition  # noqa: E402
 
 PROFILE_PATH = ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
-DECK_PATH = ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"
+DECK_PATH = Path(
+    os.environ.get(
+        "HONCHKROW_DECK_PATH",
+        str(ROOT / "src" / "artifacts" / "deck_team_rocket_murkrow.csv"),
+    )
+)
 TERMINATION_REASONS = {1: "all_prizes_taken", 2: "deck_out", 3: "no_pokemon_in_play"}
 ROCKET_SUPPORTERS = {1216, 1217, 1218, 1219, 1220}
 
@@ -99,6 +104,42 @@ def _terminal_snapshot(environment: Any) -> Mapping[str, Any]:
             if isinstance(current, Mapping) and isinstance(current.get("players"), list):
                 return current
     return {}
+
+
+def _terminal_public_candidates(environment: Any) -> list[dict[str, Any]]:
+    """Collect public result and reason fields from every retained CABT step."""
+    candidates: list[dict[str, Any]] = []
+    for step_index, step in enumerate(getattr(environment, "steps", [])):
+        if not isinstance(step, list):
+            continue
+        for player_index, player_step in enumerate(step):
+            observation = (
+                player_step.get("observation") if isinstance(player_step, Mapping) else None
+            )
+            if not isinstance(observation, Mapping):
+                continue
+            current = observation.get("current")
+            if not isinstance(current, Mapping):
+                continue
+            logs = observation.get("logs", [])
+            reason_codes = [
+                event.get("reason")
+                for event in logs
+                if isinstance(logs, list)
+                and isinstance(event, Mapping)
+                and isinstance(event.get("reason"), int)
+            ]
+            candidates.append(
+                {
+                    "step": step_index,
+                    "player": player_index,
+                    "turn": current.get("turn"),
+                    "result": current.get("result"),
+                    "your_index": current.get("yourIndex"),
+                    "reason_codes": reason_codes,
+                }
+            )
+    return candidates
 
 
 def _terminal_reason(environment: Any, current: Mapping[str, Any]) -> tuple[int | None, str, bool]:
@@ -318,8 +359,11 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "deck_reserve": ledger.deck_reserve,
             "deck_risk": ledger.deck_risk,
             "roto_sticks_played": ledger.roto_sticks_played,
+            "roto_sticks_played_total": match_ledger.roto_sticks_played,
             "roto_supporters_revealed": ledger.roto_supporters_revealed,
             "roto_supporters_selected": ledger.roto_supporters_selected,
+            "roto_supporters_revealed_total": match_ledger.roto_supporters_revealed,
+            "roto_supporters_selected_total": match_ledger.roto_supporters_selected,
             "roto_damage_acquired": ledger.roto_damage_acquired,
             "roto_preserved_reason": ledger.roto_preserved_reason,
             "transceiver_proton_in_hand": ledger.transceiver_proton_in_hand,
@@ -350,6 +394,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "lethal_lines_converted": ledger.lethal_lines_converted,
             "miracle_headsets_played": ledger.miracle_headsets_played,
             "miracle_supporters_recovered": ledger.miracle_supporters_recovered,
+            "r_command_terminal_opportunities": match_ledger.r_command_terminal_opportunities,
             "porygon_terminal_opportunities": match_ledger.porygon_terminal_opportunities,
             "porygon_terminal_conversions": match_ledger.porygon_terminal_conversions,
             "ignition_attachments": match_ledger.ignition_attachments,
@@ -368,6 +413,11 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "decision_phase_reason": getattr(policy_decision, "decision_phase_reason", ""),
             "selection_reasons": list(
                 getattr(getattr(policy_decision, "selection", None), "reasons", ())
+            ),
+            "decision_trace": (
+                asdict(policy_decision.trace)
+                if getattr(policy_decision, "trace", None) is not None
+                else None
             ),
             "state_before": dict(current),
             "telemetry_before": telemetry_before,
@@ -395,7 +445,10 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         if reward is not None and reward < 0
         else "draw"
     )
-    current = last_current or _terminal_snapshot(environment)
+    terminal_current = _terminal_snapshot(environment)
+    terminal_snapshot_source = "environment_steps" if terminal_current else "last_observation"
+    current = terminal_current or last_current
+    terminal_public_candidates = _terminal_public_candidates(environment)
     if pending_event is not None:
         telemetry_after = public_snapshot(current)
         pending_event["state_after"] = dict(current)
@@ -431,6 +484,9 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         "termination_reason_code": reason_code,
         "termination_reason_explicit": reason_explicit,
         "termination_reason_inferred": inferred_reason,
+        "terminal_snapshot_source": terminal_snapshot_source,
+        "terminal_public_result": current.get("result"),
+        "terminal_public_candidates": terminal_public_candidates,
         "terminal_turn": int(current.get("turn", 0) or 0),
         "terminal": terminal,
         "terminal_opponent": _terminal_counts(current, 1 - side),
@@ -444,14 +500,15 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "retreats": sum(12 in event["selected_types"] for event in events),
             "attacks": sum(bool(event["selected_attack_ids"]) for event in events),
             "fallbacks": sum(event["fallback_used"] for event in events),
-            "roto_sticks_played": sum(event["roto_sticks_played"] for event in events),
-            "roto_supporters_revealed": sum(event["roto_supporters_revealed"] for event in events),
-            "roto_supporters_selected": sum(event["roto_supporters_selected"] for event in events),
+            "roto_sticks_played": agent.match_ledger.roto_sticks_played,
+            "roto_supporters_revealed": agent.match_ledger.roto_supporters_revealed,
+            "roto_supporters_selected": agent.match_ledger.roto_supporters_selected,
             "second_supporter_attempts": sum(
                 event["second_supporter_attempts"] for event in events
             ),
             "rocket_lethal_lines": sum(event["lethal_lines_executed"] for event in events),
             "miracle_headsets_played": sum(event["miracle_headsets_played"] for event in events),
+            "r_command_terminal_opportunities": agent.match_ledger.r_command_terminal_opportunities,
             "porygon_terminal_opportunities": agent.match_ledger.porygon_terminal_opportunities,
             "porygon_terminal_conversions": agent.match_ledger.porygon_terminal_conversions,
             "ignition_attachments": agent.match_ledger.ignition_attachments,

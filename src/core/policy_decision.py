@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .selection import Selection
 
@@ -31,6 +31,49 @@ class SelectionFeatures:
 
 
 @dataclass(frozen=True, slots=True)
+class CandidateTrace:
+    """Actor-visible candidate facts preserved for one audit trace."""
+
+    option_index: int
+    option_type: str
+    option: dict[str, Any]
+    card: dict[str, Any]
+    attack: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionStageTrace:
+    """Selection population before and after one policy stage."""
+
+    name: str
+    before: tuple[tuple[int, ...], ...]
+    after: tuple[tuple[int, ...], ...]
+    removed: tuple[tuple[int, ...], ...]
+    reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionTrace:
+    """JSON-friendly explanation of one policy decision."""
+
+    schema_version: str
+    select_context: str
+    min_count: int
+    max_count: int
+    remain_energy_cost: int
+    remain_damage_counter: int
+    candidates: tuple[CandidateTrace, ...]
+    stages: tuple[DecisionStageTrace, ...]
+    ranked_scores: tuple[tuple[tuple[int, ...], float, tuple[str, ...]], ...]
+    selected_indices: tuple[int, ...]
+    objective_before: str = ""
+    objective_after: str = ""
+    policy_variant: str = ""
+    source_commit: str = ""
+    package_sha256: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class PolicyDecision:
     """Complete internal result for one externally compatible policy call.
 
@@ -55,3 +98,4 @@ class PolicyDecision:
     model_backend: str
     model_version: str
     duration_ms: float
+    trace: DecisionTrace | None = None

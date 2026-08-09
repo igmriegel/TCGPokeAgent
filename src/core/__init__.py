@@ -24,7 +24,13 @@ from .interfaces import (
 )
 from .parsed_decision import ParsedDecision
 from .parser import DefaultParser
-from .policy_decision import PolicyDecision, SelectionFeatures
+from .policy_decision import (
+    CandidateTrace,
+    DecisionStageTrace,
+    DecisionTrace,
+    PolicyDecision,
+    SelectionFeatures,
+)
 from .prize import (
     CardAvailability,
     PrizeChecker,
@@ -56,11 +62,14 @@ __all__ = [
     "CardCatalog",
     "CardAvailability",
     "CardTraits",
+    "CandidateTrace",
     "Candidate",
     "DefaultParser",
     "DefaultSelectionGenerator",
     "DeckDefinition",
     "DeckProfile",
+    "DecisionStageTrace",
+    "DecisionTrace",
     "EngineError",
     "ErrorCategory",
     "ExecutionStatus",

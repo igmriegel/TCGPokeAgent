@@ -251,6 +251,10 @@ class MatchTacticalLedger:
     own_prizes_remaining: int = 0
     target_prize_value: int = 0
     projected_porygon_damage: int = 0
+    roto_sticks_played: int = 0
+    roto_supporters_revealed: int = 0
+    roto_supporters_selected: int = 0
+    r_command_terminal_opportunities: int = 0
     porygon_terminal_opportunities: int = 0
     porygon_terminal_conversions: int = 0
     porygon_terminal_misses: int = 0
@@ -274,6 +278,10 @@ class MatchTacticalLedger:
         self.own_prizes_remaining = 0
         self.target_prize_value = 0
         self.projected_porygon_damage = 0
+        self.roto_sticks_played = 0
+        self.roto_supporters_revealed = 0
+        self.roto_supporters_selected = 0
+        self.r_command_terminal_opportunities = 0
         self.porygon_terminal_opportunities = 0
         self.porygon_terminal_conversions = 0
         self.porygon_terminal_misses = 0
@@ -2196,7 +2204,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._scorer._r_command_wins_game(parsed.state)
             and terminal_signature != self._match_ledger.last_terminal_signature
         ):
-            self._match_ledger.porygon_terminal_opportunities += 1
+            self._match_ledger.r_command_terminal_opportunities += 1
+            porygon_line = any(
+                candidate.option_type is OptionType.ATTACK
+                and self._scorer._attack_id(candidate) == R_COMMAND
+                for candidate in attacks
+            ) or any(
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._porygon2_terminal_promotion_available(
+                    parsed.state, candidate
+                )
+                for candidate in parsed.candidates
+            )
+            if porygon_line:
+                self._match_ledger.porygon_terminal_opportunities += 1
             self._match_ledger.last_terminal_signature = terminal_signature
         damage = {
             self._scorer._attack_id(candidate): self._candidate_damage(parsed.state, candidate)
@@ -2260,6 +2281,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     self._turn_ledger.second_supporter_attempts += 1
             if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
                 self._turn_ledger.roto_sticks_played += 1
+                self._match_ledger.roto_sticks_played += 1
                 self._turn_ledger.roto_preserved_reason = "played_to_improve_rocket_feathers"
                 self._roto_turn = parsed.state.turn
                 if self._uses_expert_turn_loop:
@@ -3609,6 +3631,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if roto_exact is not None:
                 self._turn_ledger.roto_supporters_revealed = roto_exact[0]
                 self._turn_ledger.roto_supporters_selected = roto_exact[0]
+                self._match_ledger.roto_supporters_revealed += roto_exact[0]
+                self._match_ledger.roto_supporters_selected += roto_exact[0]
                 self._turn_ledger.roto_damage_acquired = roto_exact[0] * 60
                 self._turn_ledger.resource_guard = "select_all_roto_supporters"
                 return roto_exact[1]

@@ -188,7 +188,9 @@ def _selection_is_legal(select: Mapping[str, Any], action: Any) -> bool:
     )
 
 
-def _decision_details(agent: Any) -> tuple[str, list[str], bool, dict[str, Any]]:
+def _decision_details(
+    agent: Any,
+) -> tuple[str, list[str], bool, dict[str, Any], dict[str, Any] | None]:
     """Extract stable policy reasons and public tactical telemetry."""
     decision = getattr(agent, "last_decision", None)
     selection = getattr(decision, "selection", None)
@@ -202,13 +204,22 @@ def _decision_details(agent: Any) -> tuple[str, list[str], bool, dict[str, Any]]
         value = getattr(agent, name, None)
         if value is not None and is_dataclass(value):
             tactical[name] = asdict(cast(Any, value))
-    return phase, reasons, bool(getattr(decision, "fallback_used", False)), tactical
+    trace = getattr(decision, "trace", None)
+    trace_payload = asdict(trace) if is_dataclass(trace) else None
+    return phase, reasons, bool(getattr(decision, "fallback_used", False)), tactical, trace_payload
 
 
 def _import_policy(package_root: Path | None, variant: str) -> tuple[Any, list[int], str]:
     """Import either the immutable package policy or an explicit local variant."""
     os.environ.pop("HONCHKROW_POLICY_VARIANT", None)
     if package_root is not None:
+        manifest_path = package_root / "package_manifest.json"
+        if manifest_path.is_file():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            os.environ["AGENT_SOURCE_COMMIT"] = str(manifest.get("source_commit", ""))
+            os.environ["AGENT_PACKAGE_SHA256"] = str(
+                manifest.get("package_payload_sha256", "")
+            )
         sys.path.insert(0, str(package_root))
         spec = importlib.util.spec_from_file_location("submitted_main", package_root / "main.py")
         if spec is None or spec.loader is None:
@@ -280,7 +291,7 @@ def _run_worker(
                 fallback_exception = f"{type(error).__name__}: {error}"
                 minimum = max(0, int(select.get("minCount", 0) or 0))
                 generated = list(range(minimum))
-            phase, reasons, fallback_used, tactical = _decision_details(agent)
+            phase, reasons, fallback_used, tactical, decision_trace = _decision_details(agent)
             executed = list(executed) if isinstance(executed, list) else []
             generated = list(generated)
             matches = generated == executed
@@ -311,6 +322,7 @@ def _run_worker(
                     "fallback_used": fallback_used,
                     "fallback_exception": fallback_exception,
                     "tactical": tactical,
+                    "decision_trace": decision_trace,
                     "counterfactual_scope": "single_decision_only" if not matches else None,
                     "outcome_inference_prohibited": not matches,
                 }
