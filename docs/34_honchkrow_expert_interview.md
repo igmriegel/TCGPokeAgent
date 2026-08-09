@@ -54,7 +54,7 @@ follow CABT while the document preserves the divergence.
 | Supporter search | Team Rocket's Transceiver | 4 | Target follows the persistent turn objective |
 | Top-deck selection | Roto-Stick | 4 | Used for a nonlethal ready-Honchkrow line; every revealed Supporter is taken |
 | Recovery | Night Stretcher / Miracle Headset | 3 / 1 | Stretcher requires an immediately playable Pokémon; Headset prefers exactly two Supporters |
-| Stadium | Team Rocket's Factory | 3 | Play before Ariana; activate after a Rocket Supporter and productive Roto-Stick |
+| Stadium | Team Rocket's Factory | 3 | Play before Ariana; activate after a Rocket Supporter and before productive Roto-Stick |
 | Energy | Team Rocket's Energy / Ignition Energy | 4 / 4 | Rocket supplies two Darkness/Psychic units; Ignition supplies three Colorless on Evolutions and expires |
 
 ## Current decision model

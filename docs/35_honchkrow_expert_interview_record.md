@@ -972,3 +972,29 @@ The deck-facts block at the top of this document already matches the expert's
 view: Rocket fuels Murkrow/Honchkrow, Ignition never sits on Porygon, and
 Articuno is never energised except the narrow retreat escape. The earlier
 HS-014 agreement already forbids Rocket on Porygon2, so R4-D01 is consistent.
+
+### HI-040 — Normal Factory/Ariana/Roto sequence
+
+```yaml
+question_id: "HI-040"
+expert_rule: "After development and productive search, play Factory, then Ariana, activate Factory, then use productive Roto-Stick before attacking."
+strength: "MUST"
+when:
+  - "Normal MAIN turn without an immediate win, forced prompt, or hard resource guard"
+priority_above:
+  - "Generic Stadium-after-Supporter ordering"
+priority_below:
+  - "Immediate game-winning action, mandatory nested selection, and explicit deck-reserve guard"
+exceptions:
+  - "If Ariana draws Factory, play that Factory immediately after Ariana and activate it before Roto-Stick when the draw remains safe."
+counterexample: "Delaying a Factory drawn by Ariana to a later turn forfeits its same-turn draw conversion."
+hidden_information_policy: "Use only public hand, stadium, Supporter, and deck-reserve facts."
+required_state: ["Factory in hand or drawn by Ariana", "Ariana in hand", "Factory effect legality", "Roto-Stick legality", "deck reserve"]
+telemetry: ["canonical_place_factory_before_supporter", "canonical_ariana_resource_engine", "canonical_factory_after_supporter", "canonical_roto_after_factory", "canonical_place_factory_drawn_by_supporter"]
+golden_tests: ["Factory before Ariana", "Factory effect before Roto", "Factory drawn by Ariana"]
+status: "RATIFIED"
+```
+
+The Owner ratified this sequence on 2026-08-09. The canonical turn-loop
+implementation already follows it; the paired Factory/Ariana/Factory-effect/
+Roto regression protects the normal line and its post-Ariana Factory exception.

@@ -1859,6 +1859,54 @@ def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() 
     assert [selection.indices for selection in effect_choices] == [(2,)]
 
 
+def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monkeypatch) -> None:
+    """The Owner-ratified normal draw sequence is preserved across replans."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": FACTORY}, {"id": ARIANA}, {"id": ROTO_STICK}],
+                hand_count=3,
+                deck_count=12,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    factory_play = _candidate(0, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4})
+    ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    roto = _candidate(2, OptionType.PLAY, card_id=ROTO_STICK)
+    factory_effect = _candidate(3, OptionType.ABILITY, card_id=FACTORY)
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,))
+        for candidate in [factory_play, ariana, roto, factory_effect]
+    ]
+    monkeypatch.setattr(agent, "_canonical_roto_is_productive", lambda _state: True)
+
+    _, reason, choices = agent._main_phase_selections(
+        state, selections, [factory_play, ariana, roto]
+    )
+    assert reason == "canonical_place_factory_before_supporter"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+    state.stadium = [{"id": FACTORY}]
+    state.stadium_played = True
+    _, reason, choices = agent._main_phase_selections(state, selections, [ariana, roto])
+    assert reason == "canonical_ariana_resource_engine"
+    assert [choice.indices for choice in choices] == [(1,)]
+
+    state.supporter_played = True
+    _, reason, choices = agent._main_phase_selections(state, selections, [factory_effect, roto])
+    assert reason == "canonical_factory_after_supporter"
+    assert [choice.indices for choice in choices] == [(3,)]
+
+    agent.turn_ledger.stage = "roto"
+    _, reason, choices = agent._main_phase_selections(state, selections, [roto])
+    assert reason == "canonical_roto_after_factory"
+    assert [choice.indices for choice in choices] == [(2,)]
+
+
 def test_canonical_turn_loop_factory_precedes_roto_after_supporter(monkeypatch) -> None:
     """The canonical stage machine must activate Factory before Roto-Stick."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
