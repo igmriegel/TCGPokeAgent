@@ -1288,6 +1288,24 @@ def test_archer_remains_eligible_when_a_winning_attack_exists() -> None:
     assert scorer._archer_is_safe_and_useful(state, candidate)
 
 
+def test_roto_does_not_become_needed_only_after_own_ko() -> None:
+    """A KO window belongs to Archer and must not independently authorize Roto-Stick."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    scorer.set_own_ko_observed(True)
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+
+    assert not scorer._roto_stick_is_needed(state)
+
+
 def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(

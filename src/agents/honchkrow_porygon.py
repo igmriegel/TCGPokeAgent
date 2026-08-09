@@ -952,11 +952,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         hand = self._supporters_in_hand(state)
         if hand >= needed:
             return False
-        return bool(
-            self._rocket_supporters_in_discard(state)
-            or self._card_in_hand(state, ARIANA)
-            or self._own_ko_observed
-        )
+        return bool(self._rocket_supporters_in_discard(state) or self._card_in_hand(state, ARIANA))
 
     def _all_own_pokemon_are_rocket(self, state: GameState) -> bool:
         """Return whether Ariana draws to eight from only public card metadata."""
@@ -3263,11 +3259,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         needed = self._turn_ledger.supporters_needed_for_ko
         available = self._scorer._supporters_in_hand(state)
-        return self._roto_can_improve_rocket_line(state) or (
-            self._scorer._own_ko_observed
-            and available < max(needed, 1)
-            and self._scorer._card_in_hand(state, ROTO_STICK)
-        )
+        return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
 
     def _articuno_is_reachable(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
         """Return whether Articuno is already present or reachable in this prompt."""
@@ -3450,9 +3442,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         target_hp = self._scorer._raw_opponent_hp(state)
         current_damage = self._scorer._supporters_in_hand(state) * 60
-        return current_damage < target_hp or (
-            self._scorer._own_ko_observed and self._scorer._card_in_hand(state, ARIANA)
-        )
+        return current_damage < target_hp
 
     def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a non-lethal Rocket Feathers line preserves a next KO."""
