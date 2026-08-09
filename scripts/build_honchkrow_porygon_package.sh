@@ -76,8 +76,8 @@ for path in sorted(item for item in root.rglob('*') if item.is_file()):
     payload_hash.update(b'\0')
     payload_hash.update(path.read_bytes())
 manifest = {
-    "backend": "heuristic",
-    "backend_version": "builtin",
+    "backend": "expert_turn_loop",
+    "backend_version": "expert-turn-loop",
     "dataset_id": None,
     "deck_id": "honchkrow_porygon",
     "deck_sha256": sha256((root / "deck.csv").read_bytes()).hexdigest(),

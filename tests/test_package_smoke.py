@@ -93,3 +93,24 @@ def test_extracted_expert_turn_loop_package_uses_revised_policy(tmp_path) -> Non
     assert "src/agents/honchkrow_porygon.py" in names
     assert "src/artifacts/deck_profile_honchkrow_porygon.json" in names
     assert archive.with_name(archive.name + ".sha256").is_file()
+
+
+def test_dedicated_expert_package_manifest_identifies_backend(tmp_path) -> None:
+    root = Path(__file__).parents[1]
+    archive = tmp_path / "honchkrow_expert_turn_loop.tar.gz"
+
+    subprocess.run(
+        [str(root / "scripts" / "build_honchkrow_porygon_package.sh"), str(archive)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    with tarfile.open(archive) as package:
+        manifest_file = package.extractfile("package_manifest.json")
+        assert manifest_file is not None
+        manifest = json.load(manifest_file)
+
+    assert manifest["backend"] == "expert_turn_loop"
+    assert manifest["backend_version"] == "expert-turn-loop"
+    assert manifest["policy_variant"] == "expert_turn_loop"
