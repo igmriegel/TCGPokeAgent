@@ -64,6 +64,7 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
         remains unobservable in the historical package.
     """
     audit = _load_mapping(audit_dir / "audit.json")
+    replay_hashes = _load_mapping(audit_dir / "replay_hashes.json")
     queue = json.loads((audit_dir / "review_queue.json").read_text(encoding="utf-8"))
     if not isinstance(queue, list):
         raise ValueError("expected review queue list")
@@ -115,6 +116,11 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
         )
     reproduction = audit.get("reproduction", {})
     submission = audit.get("submission", {})
+    submission_id = submission.get("submission_id")
+    replay_dir = ROOT / "replays" / "remote" / str(submission_id)
+    expected_replays = replay_hashes.get("replay_sha256", {})
+    expected_names = set(expected_replays) if isinstance(expected_replays, Mapping) else set()
+    available_names = {path.name for path in replay_dir.glob("episode-*-replay.json")}
     return {
         "schema": "t034_root_cause_report_v1",
         "task": "T-034",
@@ -132,11 +138,14 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
             "missing_historical_candidate_trace": any(
                 not item["decision_trace_available"] for item in findings
             ),
+            "raw_replay_corpus_available": expected_names.issubset(available_names),
+            "missing_raw_replays": sorted(expected_names - available_names),
         },
         "representative_findings": findings,
         "next_action": (
-            "Obtain Owner playbook judgment for each representative record, then add a "
-            "candidate/filter/score trace to the next package before changing policy behavior."
+            "Restore the hash-verified raw corpus, obtain Owner playbook judgment for each "
+            "representative record, then add a candidate/filter/score trace to the next package "
+            "before changing policy behavior."
         ),
     }
 
@@ -168,6 +177,13 @@ def _markdown(report: Mapping[str, Any]) -> str:
             "It does not imply an alternate match result. The historic package "
             "exposed phase and reason labels, but no candidate/filter/score trace, "
             "so a deeper internal causal claim would be speculative.",
+            "",
+            "The hash-listed historical raw replay corpus is "
+            + (
+                "available."
+                if report["evidence_boundary"]["raw_replay_corpus_available"]
+                else "not available locally."
+            ),
             "",
             f"Next action: {report['next_action']}",
             "",

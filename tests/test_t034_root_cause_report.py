@@ -33,6 +33,10 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
         ),
         encoding="utf-8",
     )
+    (audit_dir / "replay_hashes.json").write_text(
+        json.dumps({"replay_sha256": {"episode-1-replay.json": "hash"}}),
+        encoding="utf-8",
+    )
     (audit_dir / "decision_ledger.jsonl").write_text(
         json.dumps(
             {
@@ -56,3 +60,4 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
     assert report["representative_findings"][0]["first_causal_divergence"] == (
         "unidentifiable_missing_submitted_candidate_trace"
     )
+    assert not report["evidence_boundary"]["raw_replay_corpus_available"]
