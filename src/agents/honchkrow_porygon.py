@@ -1819,25 +1819,29 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and self._rocket_supporters_in_discard(state) >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
         )
 
+    def _attack_has_committed_ko(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether a resource-intensive attack converts into the current KO."""
+        target = self._target_opponent_pokemon(state, candidate)
+        if target is None:
+            return True
+        attack_id = self._attack_id(candidate)
+        if attack_id not in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}:
+            return True
+        target_hp = max(0, int(target.hp))
+        if attack_id == ROCKET_FEATHERS:
+            base_damage = self._supporters_in_hand(state) * 60
+        elif attack_id == R_COMMAND:
+            base_damage = self._rocket_supporters_in_discard(state) * 20
+        else:
+            base_damage = 100
+        damage = self._attack_damage(state, candidate, base_damage, target)
+        return damage >= target_hp > 0
+
     def _attack_has_committed_mega_abomasnow_ko(
         self, state: GameState, candidate: Candidate
     ) -> bool:
-        """Reject partial attacks into Mega Abomasnow unless they take the KO."""
-        target = self._target_opponent_pokemon(state, candidate)
-        if target is None or target.card_id != MEGA_ABOMASNOW_EX:
-            return True
-        attack_id = self._attack_id(candidate)
-        if attack_id == ROCKET_FEATHERS:
-            return bool(
-                self._supporters_in_hand(state) >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
-            )
-        if attack_id == R_COMMAND:
-            return bool(
-                self._rocket_supporters_in_discard(state) >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
-            )
-        if attack_id == HAMMER_IN:
-            return self._raw_opponent_hp(state) <= 100
-        return bool(self._candidate_visible_damage(candidate) >= self._raw_opponent_hp(state) > 0)
+        """Compatibility alias for the generic committed-KO predicate."""
+        return self._attack_has_committed_ko(state, candidate)
 
     def _candidate_visible_damage(self, candidate: Candidate) -> int:
         """Return deterministic damage declared by a legal attack candidate."""
@@ -3552,21 +3556,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if target_hp <= 0:
             return False
         attack_id = self._scorer._attack_id(candidate)
-        if attack_id == ROCKET_FEATHERS:
-            return (
-                self._scorer._supporters_in_hand(state) >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
-                if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-                else self._candidate_damage(state, candidate) >= target_hp
-            )
-        if attack_id == R_COMMAND:
-            return (
-                self._scorer._rocket_supporters_in_discard(state)
-                >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
-                if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-                else self._candidate_damage(state, candidate) >= target_hp
-            )
-        if attack_id == HAMMER_IN:
-            return self._scorer._raw_opponent_hp(state) <= 100
+        if attack_id in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}:
+            return self._candidate_damage(state, candidate) >= target_hp
         return self._candidate_damage(state, candidate) >= target_hp
 
     def _supporters_required_for_candidate(self, state: GameState, candidate: Candidate) -> int:
@@ -3666,9 +3657,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         player = self._scorer._own_player(state)
         active = self._scorer._own_active(state)
         ready = bool(
-            active and len(active.energies) >= self._scorer._attack_energy_target(HONCHKROW)
+            active
+            and self._scorer._energy_units_for_pokemon(active)
+            >= self._scorer._attack_energy_target(HONCHKROW)
         )
-        deck_safe = bool(player and player.deck_count > MEGA_ABOMASNOW_DECK_RESERVE)
+        deck_safe = bool(
+            player and player.deck_count > self._scorer._elective_draw_reserve(state)
+        )
         return remaining <= next_turn_supporters * 60 and ready and deck_safe
 
     def _is_safe_pre_draw_hand_reduction(self, state: GameState, candidate: Candidate) -> bool:
@@ -3928,7 +3923,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             selection
             for selection in safe
             if not any(
-                self._violates_mega_abomasnow_commitment(state, by_index.get(index), context)
+                self._violates_attack_commitment(state, by_index.get(index), context)
                 for index in selection.indices
             )
         ]
@@ -4096,25 +4091,31 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if (candidate := by_index.get(index)) is not None
         )
 
-    def _violates_mega_abomasnow_commitment(
+    def _violates_attack_commitment(
         self,
         state: GameState,
         candidate: Candidate | None,
         context: SelectContext | None,
     ) -> bool:
-        """Return whether an optional action spends resources without a 350-HP KO."""
-        if candidate is None or self._scorer._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
+        """Return whether an optional action spends attack resources without a KO horizon."""
+        if candidate is None:
+            return False
+        if (
+            not self._uses_expert_turn_loop
+            and self._scorer._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX
+        ):
             return False
         if candidate.option_type is OptionType.ATTACK:
-            if (
-                self.policy_variant in {"ko_priority_v1", "ko_priority_v2_strict"}
-                and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
-                and not self._variant_attack_is_lethal(state, candidate)
+            attack_id = self._scorer._attack_id(candidate)
+            if attack_id not in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}:
+                return False
+            if self._variant_attack_is_lethal(state, candidate):
+                return False
+            if attack_id == ROCKET_FEATHERS and self._rocket_feathers_has_horizon(
+                state, candidate
             ):
-                if self.policy_variant == "ko_priority_v2_strict":
-                    return True
-                return not self._rocket_feathers_has_horizon(state, candidate)
-            return not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
+                return False
+            return True
         if candidate.option_type is OptionType.RETREAT:
             return not self._retreat_enables_committed_mega_abomasnow_ko(state)
         return bool(
@@ -4253,8 +4254,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._evolution_ko_commitment is not None
         ):
             return True
-        if candidate.option_type is OptionType.ATTACK and not (
-            self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
+        if (
+            candidate.option_type is OptionType.ATTACK
+            and (
+                self._uses_expert_turn_loop
+                or self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
+            )
+            and not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
+            and not (
+                self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+                and self._rocket_feathers_has_horizon(state, candidate)
+            )
         ):
             self._turn_ledger.resource_guard = "mega_abomasnow_requires_committed_ko"
             return True

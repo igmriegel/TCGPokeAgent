@@ -304,7 +304,9 @@ def test_supporter_lethal_variant_discards_exact_required_count_including_last_s
     state = GameState(
         players=[
             PlayerState(
-                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                active=PokemonState(
+                    HONCHKROW, 130, 130, energies=[{"id": ROCKET_ENERGY}, {"id": ROCKET_ENERGY}]
+                ),
                 hand=[{"id": ARIANA}, {"id": ARCHER}],
             ),
             PlayerState(active=PokemonState(999, 60, 60)),
@@ -2167,6 +2169,47 @@ def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
     assert phase == DecisionPhase.END.value
     assert reason == "end"
     assert [selection.indices for selection in eligible] == [(1,)]
+
+
+def test_expert_loop_rejects_unconvertible_rocket_line_against_any_target() -> None:
+    """The generic resource guard rejects a nonlethal 350 HP line outside the matchup rule."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 350, 350)),
+        ]
+    )
+    feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+
+    assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+
+
+def test_expert_loop_keeps_partial_rocket_line_with_next_ko_horizon() -> None:
+    """The generic guard preserves a partial line that leaves a one-turn KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(
+                    HONCHKROW,
+                    130,
+                    130,
+                    energies=[{"id": ROCKET_ENERGY}, {"id": ROCKET_ENERGY}],
+                ),
+                hand=[{"id": ARIANA}] * 2,
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 150, 150)),
+        ]
+    )
+    feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+
+    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
 
 
 def test_91192258_holds_ultra_ball_and_factory_without_a_playable_supporter() -> None:
