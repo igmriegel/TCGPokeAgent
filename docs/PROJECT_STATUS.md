@@ -99,7 +99,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
-| Deck-reserve v2 screen | 200 bilateral CABT matches: 168W/32L, zero execution failures, explicit terminal reasons, zero partial Mega attacks, and 2 deck-out losses | Do not promote; the Roto reserve guard fixed one observed consumption path but did not eliminate long-game deck-outs |
+| Deck-reserve v2 screen | 200 bilateral CABT matches: 168W/32L, zero execution failures, explicit terminal reasons, zero partial Mega attacks, and 2 deck-out losses | Do not promote; one loss had no low-deck lethal attack and one converted low-deck KOs before deck-out, so neither supports a new late-game attack rule |
 | Mega Abomasnow fix smoke | 40 bilateral games vs CABT `random_agent`: 34W/0D/6L, zero execution failures | Operationally green; not sufficient for promotion |
 | Kaggle stable candidate | `55088176`: 539.2 public score | Keep as remote reference |
 | Kaggle HDI v1 experiment | `55119505`: 490.4 public score, -48.8 versus reference | Regression; do not promote |
