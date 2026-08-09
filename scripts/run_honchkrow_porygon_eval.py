@@ -21,8 +21,6 @@ if str(ROOT) not in sys.path:
 
 from src.agents.honchkrow_porygon import (  # noqa: E402
     MEGA_ABOMASNOW_EX,
-    MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS,
-    MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS,
     R_COMMAND,
     ROCKET_FEATHERS,
     HonchkrowPorygonAgent,
@@ -83,6 +81,28 @@ def _active(player: Mapping[str, Any]) -> Mapping[str, Any]:
 def _supporter_count(cards: Any) -> int:
     """Count visible Team Rocket Supporters."""
     return sum(_card_id(card) in ROCKET_SUPPORTERS for card in cards if isinstance(cards, list))
+
+
+def _is_partial_mega_abomasnow_attack(
+    target: Mapping[str, Any],
+    selected_attacks: list[Any],
+    hand_supporters: int,
+    discard_supporters: int,
+) -> bool:
+    """Return whether a selected Rocket attack misses the visible Mega KO.
+
+    The tactical rule is based on current visible HP, not Mega Abomasnow's
+    printed 350 HP: a damaged Mega remains a valid exact-lethal target.
+    """
+    if _card_id(target) != MEGA_ABOMASNOW_EX:
+        return False
+    target_hp = int(target.get("hp", 0) or 0)
+    return bool(
+        ROCKET_FEATHERS in selected_attacks
+        and hand_supporters * 60 < target_hp
+        or R_COMMAND in selected_attacks
+        and discard_supporters * 20 < target_hp
+    )
 
 
 def _option_type(option: Mapping[str, Any]) -> int | str | None:
@@ -288,14 +308,11 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         ]
         hand_supporters = _supporter_count(own.get("hand", []))
         discard_supporters = _supporter_count(own.get("discard", []))
-        partial = bool(
-            _card_id(target) == MEGA_ABOMASNOW_EX
-            and (
-                ROCKET_FEATHERS in selected_attacks
-                and hand_supporters < MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
-                or R_COMMAND in selected_attacks
-                and discard_supporters < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
-            )
+        partial = _is_partial_mega_abomasnow_attack(
+            target,
+            selected_attacks,
+            hand_supporters,
+            discard_supporters,
         )
         selected_types = [
             _option_type(option) for option in selected if isinstance(option, Mapping)
@@ -591,7 +608,8 @@ def run(
             for match in matches
         ),
         "unresolved_terminal_reasons": sum(
-            match["termination_reason"] == "unknown" for match in matches
+            match["result"] == "loss" and match["termination_reason"] == "unknown"
+            for match in matches
         ),
         "losses": len(losses),
         "losses_by_reason": dict(Counter(match["termination_reason"] for match in losses)),
@@ -736,7 +754,8 @@ def run_stream(
                 match["termination_reason_explicit"] for match in summaries
             ),
             "unresolved_terminal_reasons": sum(
-                match["termination_reason"] == "unknown" for match in summaries
+                match["result"] == "loss" and match["termination_reason"] == "unknown"
+                for match in summaries
             ),
             "losses": len(losses),
             "losses_by_reason": dict(Counter(match["termination_reason"] for match in losses)),
