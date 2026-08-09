@@ -31,6 +31,7 @@ from src.core.archetype import (  # noqa: E402
 )
 
 COMPETITION = "pokemon-tcg-ai-battle"
+DISABLED_REPORT_PATH = Path("perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 SUBMISSION_METADATA_CACHE_PATH = Path("data/raw/kaggle/submission_metadata.json")
 
@@ -436,6 +437,10 @@ def generate_report(
         deck_filter: Optional case-insensitive substring matched against the
             controlled player's derived deck label.
     """
+    if output_path.resolve() == DISABLED_REPORT_PATH.resolve():
+        print(f"Report generation disabled: {output_path}")
+        return
+
     raw_results = []
     mapped_episode_count = Counter()
     parsed_episode_count = Counter()

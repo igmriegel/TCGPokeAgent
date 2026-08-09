@@ -31,7 +31,7 @@
 | `scripts/download_data.sh --check` | Verify official dataset manifest |
 | `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions |
-| `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replay JSON files |
+| `scripts/generate_investigation_report.sh` | Generate active HTML investigation reports; the legacy Abomasnow output is disabled |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
 | `scripts/audit_turn_planning.py` | Audit Ariana, Proton, Transceiver, Petrel/Factory, and proven Poké Pad KO patterns in JSONL traces |
 | `scripts/build_package.sh submissions/submission.tar.gz` | Build the explicit submission allowlist |
@@ -51,7 +51,7 @@
 | Command | Purpose |
 |---|---|
 | `uv run --frozen python scripts/download_all_replays.py` | Download all available Kaggle replays into the local mirror |
-| `uv run --frozen python scripts/generate_investigation_report.py` | Build the HTML investigation report from replay JSON files |
+| `uv run --frozen python scripts/generate_investigation_report.py` | Build an active HTML investigation report; the legacy Abomasnow output is disabled |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
 | `uv run --frozen python scripts/audit_turn_planning.py <trace.jsonl.gz> --output <report.json>` | Emit tactical counters and bounded factual examples from a CABT trace |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |

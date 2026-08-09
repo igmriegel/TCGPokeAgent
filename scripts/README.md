@@ -97,7 +97,9 @@ scripts/generate_investigation_report.sh
 
 This reads replays from `data/raw/kaggle/kaggle_gameplay_runs/`, analyzes
 them using the CG SDK for card metadata, and generates
-`perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html`.
+The legacy aggregate output `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html`
+is disabled. Use a submission-specific output path or `--deck-filter` for an
+active report.
 
 The report includes:
 - Executive summary (W/L, win rate, avg turns)

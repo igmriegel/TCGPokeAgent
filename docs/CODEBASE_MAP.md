@@ -70,7 +70,7 @@ been captured in one frozen report.
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
 | `scripts/audit_turn_planning.py` | Detect setup-Supporter and proven Honchkrow evolution-KO patterns | Active; consumes plain or gzip JSONL CABT traces and emits bounded evidence |
-| `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active; produces `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html` |
+| `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active for submission/deck-filtered outputs; legacy Abomasnow output disabled |
 | `scripts/analyze_replays.py` | Build aggregate replay damage and failure diagnostics | Active; produces versioned JSON diagnostics |
 
 Post-hoc annotations describe human review of agent games. They are not live
@@ -102,7 +102,7 @@ release evidence. Promotion requires the holdout and package gates in
 | Native CABT bindings | `cg/` | Vendored package runtime |
 | Agent/evaluation profiles | `configs/` | Executable flat schema |
 | Operational commands | `scripts/` | Active; inventory in `scripts/README.md` |
-| Investigation reports | `perf_reports/` | Generated HTML; `INVESTIGATION_REPORT_ABOMASNOW.html` is canonical |
+| Investigation reports | `perf_reports/` | Generated HTML; legacy `INVESTIGATION_REPORT_ABOMASNOW.html` generation disabled |
 | Raw/derived evidence | `data/`, `reports/`, `replays/`, `runs/` | Generated/versioned according to persistence contracts |
 
 ## Dead and dormant code policy
