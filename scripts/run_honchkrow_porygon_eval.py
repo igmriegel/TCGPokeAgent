@@ -111,6 +111,29 @@ def _option_type(option: Mapping[str, Any]) -> int | str | None:
     return value if isinstance(value, (int, str)) and not isinstance(value, bool) else None
 
 
+def _selected_card_ids(selected: list[Mapping[str, Any]], hand: object) -> list[int]:
+    """Resolve public card IDs for selected options without changing their indices.
+
+    CABT main-phase play options frequently contain only a hand index. The
+    public hand snapshot provides the corresponding card ID, which makes a
+    low-deck search trace attributable without inferring hidden information.
+    """
+    hand_cards = hand if isinstance(hand, list) else []
+    card_ids: list[int] = []
+    for option in selected:
+        card_id = _card_id(option)
+        hand_index = option.get("index")
+        if (
+            card_id == 0
+            and isinstance(hand_index, int)
+            and 0 <= hand_index < len(hand_cards)
+            and _option_type(option) in {7, 8}
+        ):
+            card_id = _card_id(hand_cards[hand_index])
+        card_ids.append(card_id)
+    return card_ids
+
+
 def _visualized_terminal_snapshot(environment: Any) -> tuple[Mapping[str, Any], list[Any]]:
     """Return CABT's final visualizer snapshot and its terminal event log."""
     steps = getattr(environment, "steps", [])
@@ -370,6 +393,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         selected_types = [
             _option_type(option) for option in selected if isinstance(option, Mapping)
         ]
+        selected_card_ids = _selected_card_ids(selected, own.get("hand"))
         ledger = agent.turn_ledger
         match_ledger = agent.match_ledger
         policy_decision = agent.last_decision
@@ -407,6 +431,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "attack_ids": attacks,
             "selected_indices": result,
             "selected_types": selected_types,
+            "selected_card_ids": selected_card_ids,
             "selected_attack_ids": selected_attacks,
             "duration_ms": round(elapsed_ms, 3),
             "resource_guard": ledger.resource_guard,
@@ -712,6 +737,82 @@ def run(
     }
 
 
+def _load_stream_checkpoint(trace_path: Path, seed_base: int, total: int) -> list[dict[str, Any]]:
+    """Load and validate the contiguous completed prefix of a streamed run."""
+    if not trace_path.exists():
+        return []
+    matches: list[dict[str, Any]] = []
+    for line in trace_path.read_text(encoding="utf-8").splitlines():
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError(f"invalid streamed match record: {trace_path}")
+        matches.append(value)
+    if len(matches) > total:
+        raise ValueError(f"streamed trace exceeds requested total: {trace_path}")
+    for ordinal, match in enumerate(matches):
+        expected_match_id = f"honchkrow_{seed_base + ordinal // 2}_{ordinal % 2}"
+        if match.get("match_id") != expected_match_id:
+            raise ValueError(f"streamed trace does not match requested seed order: {trace_path}")
+    return matches
+
+
+def _accumulate_stream_match(
+    match: Mapping[str, Any],
+    summaries: list[dict[str, Any]],
+    outcomes: Counter[str],
+    reasons: Counter[str],
+    statuses: Counter[str],
+    telemetry: Counter[str],
+    guards: Counter[str],
+    opportunities: Counter[str],
+) -> None:
+    """Add one completed trace record to streamed aggregate metrics."""
+    outcomes[str(match["result"])] += 1
+    reasons[str(match["termination_reason"])] += 1
+    statuses[str(match["status"])] += 1
+    match_telemetry = match["telemetry"]
+    if not isinstance(match_telemetry, Mapping):
+        raise ValueError("streamed match telemetry is invalid")
+    telemetry.update(
+        {key: value for key, value in match_telemetry.items() if isinstance(value, int)}
+    )
+    events = match.get("events", [])
+    if not isinstance(events, list):
+        raise ValueError("streamed match events are invalid")
+    telemetry.update(
+        {
+            "observed_target_damage": sum(
+                int(event.get("transition", {}).get("target_damage", 0) or 0)
+                for event in events
+                if isinstance(event, Mapping)
+            ),
+            "observed_target_kos": sum(
+                bool(event.get("transition", {}).get("target_ko", False))
+                for event in events
+                if isinstance(event, Mapping)
+            ),
+            "own_active_kos_taken": sum(
+                bool(event.get("transition", {}).get("own_active_ko", False))
+                for event in events
+                if isinstance(event, Mapping)
+            ),
+        }
+    )
+    resource_guards = match_telemetry.get("resource_guards", {})
+    if isinstance(resource_guards, Mapping):
+        guards.update(resource_guards)
+    match_opportunities = match.get("opportunities", [])
+    if isinstance(match_opportunities, list):
+        opportunities.update(
+            str(item["category"])
+            for item in match_opportunities
+            if isinstance(item, Mapping) and isinstance(item.get("category"), str)
+        )
+    summary = {key: value for key, value in match.items() if key != "events"}
+    summary["event_count"] = len(events)
+    summaries.append(summary)
+
+
 def run_stream(
     matches_per_side: int,
     seed_base: int,
@@ -723,6 +824,7 @@ def run_stream(
     progress_path = output.with_suffix(output.suffix + ".progress.json")
     trace_path.parent.mkdir(parents=True, exist_ok=True)
     total = matches_per_side * 2
+    completed_matches = _load_stream_checkpoint(trace_path, seed_base, total)
     summaries: list[dict[str, Any]] = []
     outcomes: Counter[str] = Counter()
     reasons: Counter[str] = Counter()
@@ -730,54 +832,31 @@ def run_stream(
     telemetry: Counter[str] = Counter()
     guards: Counter[str] = Counter()
     opportunities: Counter[str] = Counter()
-    with trace_path.open("w", encoding="utf-8") as trace:
-        for index in range(matches_per_side):
-            for side in (0, 1):
-                match = _run_match(seed_base + index, side, policy_variant)
-                trace.write(json.dumps(match, sort_keys=True) + "\n")
-                trace.flush()
-                outcomes[match["result"]] += 1
-                reasons[match["termination_reason"]] += 1
-                statuses[match["status"]] += 1
-                telemetry.update(
-                    {
-                        key: value
-                        for key, value in match["telemetry"].items()
-                        if isinstance(value, int)
-                    }
-                )
-                telemetry.update(
-                    {
-                        "observed_target_damage": sum(
-                            int(event.get("transition", {}).get("target_damage", 0) or 0)
-                            for event in match["events"]
-                        ),
-                        "observed_target_kos": sum(
-                            bool(event.get("transition", {}).get("target_ko", False))
-                            for event in match["events"]
-                        ),
-                        "own_active_kos_taken": sum(
-                            bool(event.get("transition", {}).get("own_active_ko", False))
-                            for event in match["events"]
-                        ),
-                    }
-                )
-                guards.update(match["telemetry"]["resource_guards"])
-                opportunities.update(item["category"] for item in match["opportunities"])
-                summary = {key: value for key, value in match.items() if key != "events"}
-                summary["event_count"] = len(match["events"])
-                summaries.append(summary)
-                completed = len(summaries)
-                progress = {
-                    "completed": completed,
-                    "total": total,
-                    "remaining": total - completed,
-                    "outcomes": dict(outcomes),
-                    "last_match_id": match["match_id"],
-                }
-                progress_path.write_text(
-                    json.dumps(progress, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-                )
+    for match in completed_matches:
+        _accumulate_stream_match(
+            match, summaries, outcomes, reasons, statuses, telemetry, guards, opportunities
+        )
+    with trace_path.open("a", encoding="utf-8") as trace:
+        for ordinal in range(len(completed_matches), total):
+            seed = seed_base + ordinal // 2
+            side = ordinal % 2
+            match = _run_match(seed, side, policy_variant)
+            trace.write(json.dumps(match, sort_keys=True) + "\n")
+            trace.flush()
+            _accumulate_stream_match(
+                match, summaries, outcomes, reasons, statuses, telemetry, guards, opportunities
+            )
+            completed = len(summaries)
+            progress = {
+                "completed": completed,
+                "total": total,
+                "remaining": total - completed,
+                "outcomes": dict(outcomes),
+                "last_match_id": match["match_id"],
+            }
+            progress_path.write_text(
+                json.dumps(progress, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
     compressed_trace_path = output.with_suffix(".jsonl.gz")
     with (
         trace_path.open("rb") as source,

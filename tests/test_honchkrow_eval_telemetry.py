@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
+
+import pytest
 
 from scripts.run_honchkrow_porygon_eval import (
     _is_partial_mega_abomasnow_attack,
+    _load_stream_checkpoint,
+    _selected_card_ids,
     _terminal_reason,
     _terminal_snapshot,
 )
@@ -25,6 +30,36 @@ def test_underfunded_mega_attack_remains_partial() -> None:
 
     assert _is_partial_mega_abomasnow_attack(target, [ROCKET_FEATHERS], 4, 0)
     assert _is_partial_mega_abomasnow_attack(target, [R_COMMAND], 0, 17)
+
+
+def test_selected_card_ids_resolve_main_phase_hand_indices() -> None:
+    """Low-deck telemetry attributes a selected play to its public hand card."""
+    options = [{"type": 7, "index": 1}, {"type": 14}]
+    selected = [options[0], options[1]]
+
+    assert _selected_card_ids(selected, [{"id": 1216}, {"id": 1152}]) == [1152, 0]
+
+
+def test_stream_checkpoint_requires_the_requested_contiguous_seed_order(tmp_path) -> None:
+    """A resumable stream cannot silently mix results from another run."""
+    trace_path = tmp_path / "trace.jsonl"
+    trace_path.write_text(
+        "\n".join(
+            [
+                json.dumps({"match_id": "honchkrow_99_0"}),
+                json.dumps({"match_id": "honchkrow_99_1"}),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert _load_stream_checkpoint(trace_path, 99, 4) == [
+        {"match_id": "honchkrow_99_0"},
+        {"match_id": "honchkrow_99_1"},
+    ]
+    with pytest.raises(ValueError, match="seed order"):
+        _load_stream_checkpoint(trace_path, 100, 4)
 
 
 def test_terminal_snapshot_prefers_visualizer_post_resolution_state() -> None:
