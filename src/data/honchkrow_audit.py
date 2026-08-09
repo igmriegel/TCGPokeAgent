@@ -103,6 +103,20 @@ def _attack_id(option: Mapping[str, Any]) -> int | None:
     return _as_int(value, -1) if value is not None else None
 
 
+def _rocket_feathers_supporters_for_ko(target_card_id: int | None, target_hp: int) -> int:
+    """Return the Supporter count required for a Rocket Feathers KO."""
+    if target_card_id == MEGA_ABOMASNOW:
+        return 6
+    return max(1, (max(0, target_hp) + 59) // 60)
+
+
+def _r_command_supporters_for_ko(target_card_id: int | None, target_hp: int) -> int:
+    """Return the discarded Supporter count required for an R Command KO."""
+    if target_card_id == MEGA_ABOMASNOW:
+        return 18
+    return max(1, (max(0, target_hp) + 19) // 20)
+
+
 def _selected_options(decision: Any) -> list[Mapping[str, Any]]:
     """Resolve selected options while preserving their original indices."""
     options = getattr(decision, "options", None)
@@ -240,9 +254,15 @@ def _build_opportunity(
         for decision in decisions
         for option in _selected_options(decision)
     )
+    rocket_required = _rocket_feathers_supporters_for_ko(
+        _as_int(target.get("card_id"), 0) or None, target_hp
+    )
+    r_command_required = _r_command_supporters_for_ko(
+        _as_int(target.get("card_id"), 0) or None, target_hp
+    )
     lethal = any(
-        (_attack_id(option) == ROCKET_FEATHERS and hand >= 6)
-        or (_attack_id(option) == R_COMMAND and discard >= 18)
+        (_attack_id(option) == ROCKET_FEATHERS and hand >= rocket_required)
+        or (_attack_id(option) == R_COMMAND and discard >= r_command_required)
         or (_attack_id(option) == HAMMER_IN and target_hp <= 100)
         for option in all_options
     )
@@ -255,7 +275,7 @@ def _build_opportunity(
     elif not selected_attacks and "END" in selected_types and lethal:
         category = OpportunityCategory.END_WITH_LETHAL_LINE
     elif chosen_id != ROCKET_FEATHERS and any(
-        _attack_id(option) == ROCKET_FEATHERS and hand >= 6 for option in all_options
+        _attack_id(option) == ROCKET_FEATHERS and hand >= rocket_required for option in all_options
     ):
         category = OpportunityCategory.MISSED_LETHAL_ROCKET_FEATHERS
     elif chosen_id != HAMMER_IN and any(
@@ -270,7 +290,7 @@ def _build_opportunity(
             if horizon
             else OpportunityCategory.PARTIAL_DAMAGE_WITHOUT_KO_HORIZON
         )
-    elif chosen_id == ROCKET_FEATHERS and hand < 6:
+    elif chosen_id == ROCKET_FEATHERS and hand < rocket_required:
         category = OpportunityCategory.PARTIAL_LINE_UNDERFUNDED
     elif _as_int(own.get("deck_count"), 0) <= 0 and observed:
         category = OpportunityCategory.DECK_OUT_AFTER_CONSUMPTION

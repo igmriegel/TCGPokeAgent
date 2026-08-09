@@ -74,6 +74,39 @@ def test_r_command_requires_eighteen_discarded_supporters() -> None:
     assert audits[0].category == OpportunityCategory.R_COMMAND_NOT_READY
 
 
+def test_rocket_feathers_uses_target_hp_for_lethal_threshold() -> None:
+    """Two Supporters are lethal against a 90 HP target, not underfunded."""
+    record = _decision(
+        0,
+        [{"type": "ATTACK", "attackId": 1285}],
+        [0],
+        {"target_damage": 90, "target_ko": True},
+    )
+    record["telemetry_before"]["own"]["hand_supporters"] = 2  # type: ignore[index]
+    record["telemetry_before"]["opponent"]["active"] = {"card_id": 722, "hp": 90}  # type: ignore[index]
+
+    audits = audit_opportunities([{"events": [record]}])
+
+    assert audits[0].lethal_line_available
+    assert audits[0].category == OpportunityCategory.UNRESOLVED_SEQUENCE
+
+
+def test_rocket_feathers_remains_underfunded_against_350_hp() -> None:
+    """Six Supporters remain necessary for a 350 HP Rocket Feathers KO."""
+    record = _decision(
+        0,
+        [{"type": "ATTACK", "attackId": 1285}],
+        [0],
+        {"target_damage": 300, "target_ko": False},
+    )
+    record["telemetry_before"]["own"]["hand_supporters"] = 5  # type: ignore[index]
+
+    audits = audit_opportunities([{"events": [record]}])
+
+    assert not audits[0].lethal_line_available
+    assert audits[0].category == OpportunityCategory.PARTIAL_LINE_UNDERFUNDED
+
+
 def test_end_with_lethal_attack_is_explicitly_classified() -> None:
     """An END chosen beside a lethal attack remains a single audited group."""
     record = _decision(
