@@ -3407,24 +3407,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
         player = self._scorer._own_player(state)
         murkrow = player.active if player is not None else None
+        murkrow_serial = murkrow.serial if murkrow is not None else None
         rocket_attach = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.ATTACH
                 and self._scorer._feature_int(candidate, "card_id") == ROCKET_ENERGY
                 and self._scorer._feature_int(candidate, "target_card_id") == MURKROW
-                and murkrow is not None
-                and self._scorer._feature_int(candidate, "target_serial") == murkrow.serial
+                and murkrow_serial is not None
+                and self._scorer._feature_int(candidate, "target_serial") == murkrow_serial
                 and any(
                     item.option_type is OptionType.EVOLVE
                     and self._scorer._feature_int(item, "card_id") == HONCHKROW
-                    and self._scorer._feature_int(item, "target_serial") == murkrow.serial
+                    and self._scorer._feature_int(item, "target_serial") == murkrow_serial
                     for item in candidates
                 )
             )
         )
         if rocket_attach:
             self._rocket_evolution_commitment = RocketEvolutionCommitment(
-                state.turn, murkrow.serial
+                state.turn, murkrow_serial
             )
             return (
                 DecisionPhase.ATTACH_PRIORITY.value,
