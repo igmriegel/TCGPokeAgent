@@ -403,8 +403,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                     if self._powerful_hand_threat(state):
                         reasons.append("articuno_powerful_hand_protection")
                     return 920.0, reasons
-                if self._articuno_hand_reduction_needed(state, candidate):
-                    return 260.0, ["play_articuno_to_reduce_hand"]
                 return -1500.0, ["preserve_articuno_until_needed"]
             if card_id == HONCHKROW:
                 return 620.0, ["develop_primary_honchkrow"]
@@ -664,7 +662,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             setup_active_scores = {
                 MURKROW: (3000.0, "opening_active_murkrow"),
                 PORYGON: (2000.0, "opening_active_porygon"),
-                ARTICUNO: (1000.0, "opening_active_articuno_fallback"),
             }
             if card_id in setup_active_scores:
                 score, reason = setup_active_scores[card_id]
@@ -748,7 +745,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             SelectContext.TO_FIELD,
             SelectContext.TO_HAND,
         }:
-            if self._articuno_is_needed(state) or self._own_field_count(state) < 2:
+            if self._articuno_is_needed(state):
                 return 700.0, ["select_articuno_matchup_tech"]
             return -1500.0, ["avoid_articuno_without_matchup_need"]
         if context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
@@ -776,18 +773,11 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return int(player.active is not None) + sum(pokemon is not None for pokemon in player.bench)
 
     def _articuno_is_needed(self, state: GameState) -> bool:
-        """Return whether public matchup evidence justifies Articuno."""
+        """Return whether the visible matchup justifies preserving Articuno."""
         visible = self._visible_opponent_card_ids(state)
-        return bool(
-            visible
-            & {
-                DREEPY,
-                DRAKLOAK,
-                DRAGAPULT_EX,
-            }
-            or self._opponent_has_effect_threat(state)
-            or self._powerful_hand_threat(state)
-        )
+        dragapult_line = bool(visible & {DREEPY, DRAKLOAK, DRAGAPULT_EX})
+        alakazam_line = self._powerful_hand_threat(state)
+        return dragapult_line or alakazam_line
 
     def _powerful_hand_threat(self, state: GameState) -> bool:
         """Return whether a visible Alakazam exposes the hand-size attack."""
@@ -1871,35 +1861,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             for event in logs
         )
 
-    def _opponent_has_effect_threat(self, state: GameState) -> bool:
-        opponent = self._opponent_player(state)
-        if opponent is None:
-            return False
-        for pokemon in [opponent.active, *opponent.bench]:
-            if pokemon is None or not isinstance(pokemon.card_id, int):
-                continue
-            card = self.catalog.get_card(str(pokemon.card_id)) or {}
-            for attack_id in card.get("attacks", []):
-                attack = self.catalog.get_attack(str(attack_id)) or {}
-                text = str(attack.get("text", "")).casefold()
-                if any(
-                    marker in text
-                    for marker in (
-                        "prevent",
-                        "can't use",
-                        "cant use",
-                        "discard",
-                        "poison",
-                        "paraly",
-                        "confus",
-                        "asleep",
-                        "damage counter",
-                        "switch",
-                    )
-                ):
-                    return True
-        return False
-
     def _rocket_supporters_in_discard(self, state: GameState) -> int:
         player = self._own_player(state)
         if player is None:
@@ -2211,9 +2172,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 for candidate in attacks
             ) or any(
                 candidate.option_type is OptionType.PLAY
-                and self._scorer._porygon2_terminal_promotion_available(
-                    parsed.state, candidate
-                )
+                and self._scorer._porygon2_terminal_promotion_available(parsed.state, candidate)
                 for candidate in parsed.candidates
             )
             if porygon_line:
@@ -3131,7 +3090,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     and (
                         not self._scorer._articuno_is_needed(state)
                         or self._scorer._articuno_is_on_field(state)
-                        or not self._articuno_is_available(state, candidates)
+                        or not self._articuno_should_precede_development(state, candidates)
                         or self._scorer._feature_int(candidate, "card_id") == ARTICUNO
                     )
                 )
@@ -3321,8 +3280,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._card_in_hand(state, ROTO_STICK)
         )
 
-    def _articuno_is_available(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
-        """Return whether the current legal prompt can still place Articuno."""
+    def _articuno_is_reachable(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
+        """Return whether Articuno is already present or reachable in this prompt."""
         if self._scorer._articuno_is_on_field(state):
             return True
         return any(
@@ -3330,6 +3289,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and candidate.option_type in {OptionType.PLAY, OptionType.CARD}
             for candidate in candidates
         ) or self._scorer._card_in_hand(state, ARTICUNO)
+
+    def _articuno_should_precede_development(
+        self, state: GameState, candidates: Sequence[Candidate]
+    ) -> bool:
+        """Return whether matchup protection must precede normal evolution."""
+        return (
+            self._scorer._articuno_is_needed(state)
+            and not self._scorer._articuno_is_on_field(state)
+            and self._articuno_is_reachable(state, candidates)
+        )
 
     def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
         """Require a public two/three-Prize or final-Prize bench target."""
