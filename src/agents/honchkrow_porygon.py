@@ -620,6 +620,12 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return super()._card_selection_score(state, candidate, context)
             if is_effect_target:
                 return self._giovanni_target_score(state, candidate)
+            if card_id == ARTICUNO and self._articuno_is_needed(state):
+                if self._promotion_line_is_lethal(
+                    state, HONCHKROW
+                ) or self._promotion_line_is_lethal(state, PORYGON2):
+                    return -2600.0, ["keep_articuno_benched_for_defense"]
+                return 900.0, ["promote_articuno_only_without_better_attacker"]
             if card_id == HONCHKROW and self._pokemon_is_ready(state, candidate):
                 if self._r_command_is_best_damage_line(state):
                     return 800.0, ["defer_honchkrow_to_r_command"]
@@ -639,6 +645,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 if self._r_command_is_best_damage_line(state):
                     return 1800.0, ["promote_porygon2_best_r_command"]
                 return 1250.0, ["promote_ready_porygon2"]
+            if card_id == PORYGON2 and self._promotion_line_is_lethal(state, PORYGON2):
+                return 5200.0, ["promote_porygon2_projected_r_command_ko"]
             if card_id == PORYGON2 and self._porygon2_terminal_promotion_available(
                 state, candidate
             ):
@@ -691,9 +699,19 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _articuno_is_needed(self, state: GameState) -> bool:
         """Return whether public matchup evidence justifies Articuno."""
-        return (
-            self._visible_opponent_card_ids(state) & {DREEPY, DRAKLOAK, DRAGAPULT_EX, 741, 742, 743}
-            != set()
+        visible = self._visible_opponent_card_ids(state)
+        return bool(
+            visible
+            & {
+                DREEPY,
+                DRAKLOAK,
+                DRAGAPULT_EX,
+                741,
+                742,
+                743,
+            }
+            or self._opponent_has_effect_threat(state)
+            or self.alakazam_matchup_confirmed
         )
 
     def _articuno_is_on_field(self, state: GameState) -> bool:
@@ -837,7 +855,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return any(self._card_id_from_value(card) == card_id for card in self._hand_cards(state))
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
-        return self._supporters_needed_for_ko(state) > self._supporters_in_hand(state)
+        needed = self._supporters_needed_for_ko(state)
+        hand = self._supporters_in_hand(state)
+        if hand >= needed:
+            return False
+        return bool(
+            self._rocket_supporters_in_discard(state)
+            or self._card_in_hand(state, ARIANA)
+            or self._own_ko_observed
+        )
 
     def _all_own_pokemon_are_rocket(self, state: GameState) -> bool:
         """Return whether Ariana draws to eight from only public card metadata."""
@@ -969,6 +995,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         player = self._own_player(state)
         if player is None or player.deck_count == 0 or player.hand_count < 3:
             return False
+        if self._headset_line_is_lethal(state):
+            return False
         useful_target = (
             self._proton_targets_exist(state)
             or self._has_murkrow_ready_to_evolve(state)
@@ -1008,15 +1036,31 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return False
         discarded = self._rocket_supporters_in_discard(state)
         needed = self._supporters_needed_for_ko(state) - self._supporters_in_hand(state)
-        return (
-            discarded >= 2
-            and needed >= 2
+        return bool(
+            discarded >= 1
+            and needed > 0
+            and min(2, discarded) >= needed
             or (
                 self._supporters_in_hand(state) == 0
                 and any(self._card_id_from_value(card) == ARIANA for card in player.discard)
                 and self._ariana_draw_count(state) > player.hand_count
             )
             or self._miracle_headset_emergency_is_useful(state)
+        )
+
+    def _headset_line_is_lethal(self, state: GameState) -> bool:
+        """Return whether Miracle Headset supplies the missing Rocket damage."""
+        if not self._card_in_hand(state, MIRACLE_HEADSET):
+            return False
+        active = self._own_active(state)
+        if active is None or active.card_id != HONCHKROW:
+            return False
+        recoverable = min(2, self._rocket_supporters_in_discard(state))
+        return (
+            recoverable > 0
+            and self._supporters_in_hand(state) < self._supporters_needed_for_ko(state)
+            and self._supporters_in_hand(state) + recoverable
+            >= self._supporters_needed_for_ko(state)
         )
 
     def _board_is_collapsing(self, state: GameState) -> bool:
@@ -1368,6 +1412,51 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         """Return the minimum 60-damage supporter count for the active target."""
         hp = self._effective_opponent_hp(state)
         return (hp + 59) // 60 if hp > 0 else 0
+
+    def _promotion_line_is_lethal(self, state: GameState, card_id: int) -> bool:
+        """Return whether a visible promotion can attack lethally this turn."""
+        player = self._own_player(state)
+        opponent = self._opponent_player(state)
+        target = opponent.active if opponent is not None else None
+        if player is None or target is None:
+            return False
+        pokemon = next(
+            (
+                item
+                for item in [player.active, *player.bench]
+                if item is not None and item.card_id == card_id
+            ),
+            None,
+        )
+        if pokemon is None:
+            return False
+        energy = self._energy_units_for_pokemon(pokemon)
+        if not state.energy_attached:
+            energy += self._energy_units_in_hand(state, IGNITION_ENERGY)
+        if card_id == PORYGON2:
+            return energy >= self._attack_energy_target(
+                PORYGON2
+            ) and self._rocket_supporters_in_discard(state) * 20 >= max(0, int(target.hp))
+        if card_id == HONCHKROW:
+            return energy >= self._attack_energy_target(HONCHKROW) and self._supporters_in_hand(
+                state
+            ) * 60 >= max(0, int(target.hp))
+        return False
+
+    def _energy_units_in_hand(self, state: GameState, card_id: int | None = None) -> int:
+        """Count attachable attack-energy units in the visible hand."""
+        total = 0
+        for card in self._hand_cards(state):
+            current = self._card_id_from_value(card)
+            if card_id is not None and current != card_id:
+                continue
+            if current == ROCKET_ENERGY:
+                total += 2
+            elif current == IGNITION_ENERGY:
+                total += 3
+            elif self._is_energy_card(current, self.catalog.get_card(str(current))):
+                total += 1
+        return total
 
     def _r_command_is_best_damage_line(self, state: GameState) -> bool:
         """Return whether public discard makes Porygon2 the best current attacker."""
@@ -1789,6 +1878,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return self._match_ledger
 
     def _update_alakazam_matchup(self, observation: Mapping[str, Any], state: GameState) -> None:
+        """Preserve generic Alakazam evidence before applying deck-specific history."""
+        super()._update_alakazam_matchup(observation, state)
         logs = observation.get("logs", [])
         used_previous_turn = False
         if isinstance(logs, list):
@@ -2834,6 +2925,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     and self._scorer._metadata_int(candidate.card, "cardType") == 0
                     and self._scorer._feature_int(candidate, "card_id")
                     in {MURKROW, PORYGON, HONCHKROW, PORYGON2, ARTICUNO}
+                    and (
+                        not self._scorer._articuno_is_needed(state)
+                        or self._scorer._articuno_is_on_field(state)
+                        or not self._articuno_is_available(state, candidates)
+                        or self._scorer._feature_int(candidate, "card_id") == ARTICUNO
+                    )
                 )
             )
             if development:
@@ -3015,7 +3112,21 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         needed = self._turn_ledger.supporters_needed_for_ko
         available = self._scorer._supporters_in_hand(state)
-        return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
+        return self._roto_can_improve_rocket_line(state) or (
+            self._scorer._own_ko_observed
+            and available < max(needed, 1)
+            and self._scorer._card_in_hand(state, ROTO_STICK)
+        )
+
+    def _articuno_is_available(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
+        """Return whether the current legal prompt can still place Articuno."""
+        if self._scorer._articuno_is_on_field(state):
+            return True
+        return any(
+            self._scorer._feature_int(candidate, "card_id") == ARTICUNO
+            and candidate.option_type in {OptionType.PLAY, OptionType.CARD}
+            for candidate in candidates
+        ) or self._scorer._card_in_hand(state, ARTICUNO)
 
     def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
         """Require a public two/three-Prize or final-Prize bench target."""
@@ -3045,7 +3156,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         hand = self._scorer._supporters_in_hand(state)
         needed = self._turn_ledger.supporters_needed_for_ko
         recoverable = min(2, discard)
-        if recoverable == 0 or hand + recoverable < needed:
+        if recoverable == 0 or hand >= needed or hand + recoverable < needed:
             self._turn_ledger.headset_reason = ""
             return False
         active = self._scorer._own_active(state)
@@ -3172,13 +3283,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         player = self._scorer._own_player(state)
         if active is None or player is None:
             return False
-        if active.card_id != HONCHKROW or len(active.energies) < 2:
+        if active.card_id != HONCHKROW or self._scorer._energy_units_for_pokemon(active) < 2:
             return False
         if player.deck_count <= self._scorer._elective_draw_reserve(state):
             return False
         target_hp = self._scorer._raw_opponent_hp(state)
         current_damage = self._scorer._supporters_in_hand(state) * 60
-        return current_damage < target_hp
+        return current_damage < target_hp or (
+            self._scorer._own_ko_observed and self._scorer._card_in_hand(state, ARIANA)
+        )
 
     def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a non-lethal Rocket Feathers line preserves a next KO."""
@@ -3215,6 +3328,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> list[Selection]:
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if (
+            context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH}
+            and self._scorer._articuno_is_needed(state)
+            and (
+                self._scorer._promotion_line_is_lethal(state, HONCHKROW)
+                or self._scorer._promotion_line_is_lethal(state, PORYGON2)
+            )
+        ):
+            non_articuno = [
+                selection
+                for selection in selections
+                if not any(
+                    by_index.get(index) is not None
+                    and self._scorer._feature_int(by_index[index], "card_id") == ARTICUNO
+                    for index in selection.indices
+                )
+            ]
+            if non_articuno:
+                self._turn_ledger.resource_guard = "preserve_articuno_for_matchup_defense"
+                selections = non_articuno
         if context is SelectContext.TO_HAND and self._scorer._articuno_is_needed(state):
             proton_articuno = {
                 candidate.option_index
