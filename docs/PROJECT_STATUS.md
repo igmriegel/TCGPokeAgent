@@ -112,8 +112,8 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
 | Human gameplay capture | No live human match captured | HD0–HD5 remain deferred |
 | Heuristic priority fixes | Honchkrow/Porygon Proton/Supporter/Energy/Articuno/promotion/terminal-line rules plus Stadium ordering | Implemented; committed-switch subset validated in 400 matches per policy |
-| Turn-planning P0 | Persistent objective, own-turn derivation, setup-aware Proton/Transceiver, marginal Ariana/Petrel comparison, proven Poké Pad evolution-KO commitment, and Factory/Ariana/Roto sequencing | Implementation complete; T-029 is now ready for bilateral CABT validation and deck-out corrective iteration remains pending under T-030 |
-| Turn-planning 600-run gate | `bb38f95`: 257W/43L; candidate: 259W/41L; +0.67 pp, independent 95% interval [-4.89, +6.22]; zero operational failures | Do not promote: deck-out losses increased from 28 to 32 and non-inferiority was not established |
+| Turn-planning P0 | Persistent objective, own-turn derivation, setup-aware Proton/Transceiver, marginal Ariana/Petrel comparison, proven Poké Pad evolution-KO commitment, and Factory/Ariana/Roto sequencing | Implementation complete; the rerun was operationally clean, the Owner approved promotion, and T-030 is closed |
+| Turn-planning rerun gate | `bb38f95`: 257W/43L; candidate: 253W/47L; +1.33 pp, independent 95% interval [-4.58, +7.25]; zero operational failures | Owner-approved promotion accepted as the release baseline; the rerun cleared execution and reduced deck-out losses from 12 to 9 |
 | Mega Abomasnow KO policy | Six-Supporter Rocket Feathers, eighteen-Supporter R Command, exact lethal discard, draw reserve, and justified retreat guards | Locally validated with zero partial Mega Abomasnow attacks in both 400-match samples |
 | Committed switching and recovery | Exact-serial promotion, Giovanni before paid retreat, projected Ignition damage, forced Porygon2 attack, and exact two-Supporter Miracle Headset recovery | Promoted baseline; 0/44 retreats without same-turn attack and 106/106 exact Headset recoveries |
 | CABT 200-match telemetry audit | 156W/0D/44L, zero execution failures; 152 no-Pokémon endings, 40 deck-outs, 8 unresolved pre-terminal states; zero partial Mega Abomasnow attacks | Instrumentation complete; resolve remaining terminal-state gap and eliminate deck-outs under T-026 |
@@ -186,9 +186,9 @@ The post-promotion package was rebuilt from commit `f22a24f` with policy
 14. Do not use McNemar or nominal `(seed, agent_side)` episode conversion for
     CABT 1.32.2 reports: the environment does not forward the configured seed
     into `battle_start`, so these samples are independent.
-15. Keep T-030 open: the turn-planning candidate removed the target tactical
-    violations but failed the mandatory deck-out and statistical promotion
-    gates in its first 300-match-per-policy comparison.
+15. Treat T-030 as closed: the turn-planning rerun removed the execution
+    errors, reduced deck-out losses, and the Owner approved promotion of the
+    candidate as the release baseline.
 16. Use only the 26 replays from submission `55333874` as evidence for its
     strategy audit; older replay corpora remain context only.
 17. Keep unproven strategic root causes as `unknown` and treat replay

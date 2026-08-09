@@ -2058,6 +2058,23 @@ def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -
     )
     assert scorer._night_stretcher_is_productive(evolve_state)
 
+
+def test_canonical_night_stretcher_scoring_uses_the_productive_recovery_line() -> None:
+    """Canonical Night Stretcher scoring must not crash on the deck-reserve path."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(discard=[{"id": PORYGON}], bench_max=1, deck_count=18),
+            PlayerState(),
+        ]
+    )
+    candidate = _candidate(0, OptionType.PLAY, card_id=NIGHT_STRETCHER, card={"cardType": 2})
+
+    score, reasons = scorer._play_score(state, candidate)
+
+    assert score > 0
+    assert "night_stretcher_hand_reduction_before_ariana" in reasons
+
     blocked_state = GameState(
         players=[
             PlayerState(

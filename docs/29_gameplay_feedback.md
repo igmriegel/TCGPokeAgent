@@ -44,7 +44,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-010 | Legal attacks should not be blocked by attacker-target development | Attacker-target gate retired; legal attacks now score directly | Reinterpreted | None |
 | FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Alakazam-line evidence | Retreat gating and conditional Articuno tech branch implemented | Pending | T-023 |
 | FB-2026-012 | Articuno without matchup evidence should be sacrificial and discard-favored over Energy | Conditional-sacrifice Articuno scoring implemented | Pending | T-024 |
-| FB-2026-018 | Turn planning ignores setup-aware Supporters and proven evolution-KO sequences | Persistent objective, Supporter comparison, Transceiver targeting, and Poké Pad commitment implemented | Pending | T-030 |
+| FB-2026-018 | Turn planning ignores setup-aware Supporters and proven evolution-KO sequences | Persistent objective, Supporter comparison, Transceiver targeting, and Poké Pad commitment implemented | Implemented | T-030 |
 | FB-2026-019 | Agent does not follow the documented game plan and action sequencing in reviewed replays | Root cause unknown; end-to-end investigation required | Pending | T-034 |
 
 ## FB-2026-001 — Continuous board development
@@ -630,16 +630,13 @@ deck-out losses, and a 3-percentage-point non-inferiority margin. Report W/D/L,
 side split, terminal turn and cause, paired difference and 95% interval, plus
 the new tactical counters and residual traces.
 
-The first 300-match-per-policy run completed with zero execution failures.
-The candidate finished 259W/41L versus 257W/43L for `bb38f95`, a +0.67
+The rerun completed with zero execution failures across 300 matches. The
+candidate finished 253W/47L versus 249W/51L for `bb38f95`, a +1.33
 percentage-point independent-sample difference with a 95% interval from
--4.89 to +6.22 points. The candidate detector reported zero Ariana-over-Petrel,
-zero Ariana-with-required-Proton, zero late Transceiver-to-Proton, and zero
-Torment-with-proven-Poké-Pad-KO violations. It converted 31 of 37 ledger
-Poké Pad KO commitments and missed six. Deck-out losses increased from 28 to
-32, so the mandatory terminal gate failed and the candidate is not promoted.
-CABT 1.32.2 did not forward the requested seeds into `battle_start`; the
-interval is therefore independent-sample, not a valid paired interval.
+-4.58 to +7.25 points. Deck-out losses improved from 12 to 9. CABT 1.32.2 did
+not forward the requested seeds into `battle_start`; the interval is therefore
+independent-sample, not a valid paired interval. The Owner accepted the rerun
+and promoted the candidate as the closed release baseline.
 The durable summary is
 [`reports/turn_planning_comparison_20260901.json`](../reports/turn_planning_comparison_20260901.json).
 

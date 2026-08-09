@@ -1239,6 +1239,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and not self._own_bench_full(state)
         )
 
+    def _canonical_night_stretcher_is_productive(self, state: GameState) -> bool:
+        """Return the canonical Night Stretcher predicate used by scoring."""
+        return self._night_stretcher_is_productive(state)
+
     def _has_porygon_ready_to_evolve(self, state: GameState) -> bool:
         player = self._own_player(state)
         return bool(

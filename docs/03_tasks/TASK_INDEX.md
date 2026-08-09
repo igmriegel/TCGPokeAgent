@@ -19,10 +19,10 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 6 |
+| In progress | 5 |
 | Ready | 21 |
 | Deferred | 8 |
-| Total open | 35 |
+| Total open | 34 |
 
 ## Active release queue
 
@@ -52,7 +52,6 @@ documents to these totals.
 | T-027 | P1 | `READY` | Measure opponent-sample variance for identical-package submissions | Remote evaluation variance | Compare submissions `55320796` and `55320706` across two distinct opponent samples; report opponent composition, win rate, variance, and confidence intervals before attributing differences to the package |
 | T-028 | P0 | `IN_PROGRESS` | Convert every Ignition attachment into a same-turn attack and prioritize game-winning Porygon2 promotion | FB-2026-016, H2A | Run terminal Porygon2, Prize-race, Ignition-commitment, and no-wasted-energy gates, then evaluate the promoted policy against CABT |
 | T-029 | P0 | `READY` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
-| T-030 | P0 | `IN_PROGRESS` | Enforce persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | FB-2026-018, H2A | Eliminate the 32 versus 28 deck-out-loss regression, then rerun the frozen comparison |
 | T-031 | P0 | `DEFERRED` | Ratify the complete Honchkrow/Porygon strategy with expert interview evidence and produce an implementation-ready plan | Honchkrow expert audit | Resume at Round 4 in `docs/34_honchkrow_expert_interview.md`; keep `expert_rounds_1_3_v1` experimental until comparison evidence is recorded |
 | T-033 | P0 | `DONE` | Implement and independently qualify the official `expert_turn_loop` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Promoted after 200 bilateral CABT matches with 88.0% wins, zero operational failures, and no deck-out regression |
 | T-034 | P0 | `READY` | Explain and eliminate the Owner-observed divergence from the documented game plan and action sequencing | FB-2026-019 | Select representative failing replays, verify exact package provenance, and trace each first causal divergence from documented intent through parse, objective, candidate, scoring, filtering, commitment, fallback, and final selection |
@@ -71,7 +70,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-030, T-034 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-029, T-034 |
 | HLV2 | [HLV2-001–HLV2-025](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) |
 
 ## Deferred queue
@@ -94,6 +93,7 @@ This table prevents roadmap work from existing without an executable owner.
 | T-010 | Reconcile remote scores and retain `55088176` as reference | Score correction in `strategy_notes.md` |
 | T-022 | Reinterpreted attacker-target gate; legal attacks are no longer blocked by board target | Policy revision in `docs/27_gameplay_rules.md` and `docs/29_gameplay_feedback.md` |
 | T-025 | Promoted the Honchkrow/Porygon committed-switch, Giovanni, Miracle Headset, and projected Porygon2/Ignition policy as the development baseline | 264 tests; two independent 200-match blocks per policy; 0/44 unconverted retreats; `reports/honchkrow_v3_retreat_guard_audit_20260807.md` |
+| T-030 | Owner-approved promotion of persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | `reports/turn_planning_comparison_20260809_rerun.json`; 300-match rerun: 253W/47L, 9 deck-outs, zero operational failures |
 | T-032 | Audited submission `55333874`, reproduced 1,434 decisions, froze 26 replay hashes, screened two candidates, and completed the independent final gate | `reports/replay_audits/55333874/`; no candidate promoted and no package built |
 | FB001-A2 | Pre-terminal ordering layer | `e268c96`, focused gameplay tests |
 | FB001-A3 | Generic Pokémon play before attack with open Bench | `e268c96`, replay regression |

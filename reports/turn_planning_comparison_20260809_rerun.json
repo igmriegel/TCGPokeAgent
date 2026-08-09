@@ -1,0 +1,44 @@
+{
+  "report_type": "honchkrow_turn_planning_independent_comparison_v2",
+  "control_revision": "bb38f95",
+  "candidate": "expert_turn_loop",
+  "requested_seed_base": 20260901,
+  "matches_per_policy": 300,
+  "matches_per_side": 150,
+  "pairing_valid": false,
+  "pairing_limitation": "CABT 1.32.2 does not forward the configured seed into battle_start.",
+  "control": {
+    "wins": 249,
+    "draws": 0,
+    "losses": 51,
+    "win_rate": 0.83,
+    "execution_failures": 0,
+    "deck_out_losses": 12,
+    "no_pokemon_losses_observed_in_last_public_snapshot": 0,
+    "terminal_turn_median": 9,
+    "by_side": {
+      "0": {"wins": 126, "draws": 0, "losses": 24, "terminal_turn_median": 9},
+      "1": {"wins": 123, "draws": 0, "losses": 27, "terminal_turn_median": 10}
+    }
+  },
+  "candidate_result": {
+    "wins": 253,
+    "draws": 0,
+    "losses": 47,
+    "win_rate": 0.8433333333,
+    "execution_failures": 0,
+    "deck_out_losses": 9,
+    "no_pokemon_losses_observed_in_last_public_snapshot": 0,
+    "terminal_turn_median": 9,
+    "by_side": {
+      "0": {"wins": 131, "draws": 0, "losses": 19, "terminal_turn_median": 9},
+      "1": {"wins": 122, "draws": 0, "losses": 28, "terminal_turn_median": 10}
+    }
+  },
+  "win_rate_difference_points": 1.3333333333,
+  "independent_difference_ci95_points": [-4.5816490247, 7.2483156914],
+  "noninferiority_margin_points": -3.0,
+  "noninferiority_established": false,
+  "mandatory_gate_failures": [],
+  "classification": "owner_promoted_operationally"
+}
