@@ -4,17 +4,17 @@
 > and lifecycle; [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md) owns work
 > status; [`27_gameplay_rules.md`](27_gameplay_rules.md) owns active policy.
 
-**Last reviewed:** 2026-08-03
+**Last reviewed:** 2026-08-08
 
 ## Summary
 
 | State | Count |
 |---|---:|
-| Recorded | 12 |
+| Recorded | 13 |
 | Implemented | 11 |
 | Validated | 0 |
 | Rejected | 0 |
-| Open implementation/validation actions | 11 |
+| Open implementation/validation actions | 12 |
 
 `IMPLEMENTED` means code and focused tests exist. `VALIDATED` additionally
 requires the frozen gameplay gate. No feedback item below is eligible for a
@@ -45,6 +45,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Alakazam-line evidence | Retreat gating and conditional Articuno tech branch implemented | Pending | T-023 |
 | FB-2026-012 | Articuno without matchup evidence should be sacrificial and discard-favored over Energy | Conditional-sacrifice Articuno scoring implemented | Pending | T-024 |
 | FB-2026-018 | Turn planning ignores setup-aware Supporters and proven evolution-KO sequences | Persistent objective, Supporter comparison, Transceiver targeting, and Poké Pad commitment implemented | Pending | T-030 |
+| FB-2026-019 | Agent does not follow the documented game plan and action sequencing in reviewed replays | Root cause unknown; end-to-end investigation required | Pending | T-034 |
 
 ## FB-2026-001 — Continuous board development
 
@@ -563,14 +564,19 @@ execution failures or deck-out rate.
 but played Ariana before the Stadium and used Roto-Stick before Ariana. The
 reviewed order is Factory, Ariana, Roto-Stick, Factory draw effect.
 
-**Accepted rule:** When no immediate winning attack supersedes the engine
-sequence, play Factory first, play Ariana second, use Roto-Stick third when it
-improves the attack line, and activate the Factory draw effect afterward.
-Skip Roto-Stick when it is not productive. Deck reserves remain mandatory.
+**Superseded rule:** The earlier Factory-first/Ariana/Roto ordering is retained
+as historical evidence for the v2 replay. It is not the current contract.
 
-**Implemented foundation:** Dedicated MAIN-phase ordering for Stadium play,
-Ariana, Roto-Stick, and Factory activation, with the previous Ariana-first
-fixture updated to the reviewed order.
+**Current canonical rule:** Complete development, search, calculation and the
+supporter stage in order. After the supporter resolves, activate Factory's
+two-card effect, recalculate, and only then use Roto-Stick when the supporter
+deficit remains. Roto before the supporter is allowed only when no playable
+supporter is in hand and Roto can make the supporter stage possible.
+
+**Implemented foundation:** `expert_turn_loop` persists the canonical stage
+across prompts, records exceptions, enforces the Ultra Ball/Ariana gate, and
+applies contextual Ariana/Giovanni scoring for Miracle Headset. Historical
+suffixed variant names remain compatibility aliases only.
 
 ### Gate
 
@@ -636,6 +642,43 @@ CABT 1.32.2 did not forward the requested seeds into `battle_start`; the
 interval is therefore independent-sample, not a valid paired interval.
 The durable summary is
 [`reports/turn_planning_comparison_20260901.json`](../reports/turn_planning_comparison_20260901.json).
+
+## FB-2026-019 — Agent does not follow the documented game plan and sequencing
+
+**Priority:** P0
+
+**Status:** `CAPTURED`; root cause unknown
+
+**Source:** direct replay review by Igor, Project Owner
+
+### Original feedback
+
+Igor reviewed agent replays and identified that the agent is not following the
+game plan and sequencing he documented and instructed. This requires a deep
+investigation into why the runtime behavior diverges from the intended playbook.
+
+### Accepted scope
+
+Treat the observed strategic divergence as established Owner feedback, while
+keeping every technical explanation unproven until supported by evidence.
+For representative replay decisions, compare the documented intended action
+sequence with the exact submitted policy's decision path: observation parsing,
+public state, legal candidates, stored objective, heuristic scores, hard
+filters, commitments, fallback behavior, and returned simulator indices.
+Classify each mismatch and identify the first causal divergence rather than
+only the final incorrect action.
+
+Existing unit tests, successful replay reproduction, legal outputs, or match
+win rate do not close this feedback because they do not independently prove
+compliance with the Owner's playbook.
+
+### Gate
+
+T-034: produce a replay-linked root-cause report, implement separately approved
+corrections, and validate the intended plan and ordering on focused replay
+regressions plus a controlled gameplay sample. This issue remains visible in
+`AGENTS.md` and `PROJECT_STATUS.md` until Igor explicitly accepts closure based
+on the resulting replay evidence.
 
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and

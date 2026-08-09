@@ -9,7 +9,33 @@
 **Code baseline:** `main`; exact revisions are preserved in Git and release
 manifests rather than copied into this self-changing status page
 
-**Current release:** `expert_turn_loop_v2` submitted from canonical commit
+## IMPORTANT ISSUE — Owner-observed strategy divergence
+
+**Status:** Open P0; must be reviewed at the start of every work session.
+
+Project Owner Igor reviewed agent replays and verified that the agent is not
+following the documented game plan and action sequencing he provided. The
+technical cause is not yet established. Existing implementation claims,
+focused tests, replay reproduction, operational validity, and aggregate match
+results must not be treated as evidence that the intended strategy is being
+followed.
+
+The investigation must trace representative replay decisions end to end: the
+documented rule and intended sequence, parsed public state, generated legal
+selections, persistent turn objective, scoring and hard filters, commitment and
+fallback paths, selected option indices, and the exact packaged policy used in
+the replay. Record distinct divergence classes and their first causal decision
+before proposing fixes. Track execution and closure evidence under
+[`T-034`](03_tasks/TASK_INDEX.md) and the Owner feedback under
+[`FB-2026-019`](29_gameplay_feedback.md#fb-2026-019-agent-does-not-follow-the-documented-game-plan-and-sequencing).
+Only explicit Owner acceptance after replay-based validation can close this
+issue or remove its session-wide visibility.
+
+**Current release:** `expert_turn_loop` is the official implementation. The
+suffixed names are retained only as compatibility aliases for historical
+replays and manifests.
+
+Historical submission: `expert_turn_loop_v2` submitted from canonical commit
 `2c554dc`; the prior immutable package remains the rollback reference
 
 Submission `55333874` is `COMPLETE` at a dynamic public rating of 357.2,
@@ -64,9 +90,9 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Submission `55333874` replay audit | 26 isolated replays, 8W/18L; 1,434/1,434 decisions reproduced; zero invalid/fallback/exception; rating 357.2 at 2026-08-08T01:13:52-03:00 | Audit complete; retain immutable package SHA-256 `f6a7c94e…4fac` as technical reference |
 | Replay-fix candidate gate | Screening: baseline 251/300, A 254/300, B 247/300; final baseline 840/1000, A 862/1000; independent difference CI95 [-0.92, +5.32] points | No promotion; no package built or uploaded |
 | Quality | 297 tests pass; scoped Ruff, mypy, and pre-commit gates pass for the HLV2 implementation | Green for the implemented scope |
-| Expert turn loop v2 foundation | Explicit `expert_turn_loop_v2` variant, public tactical ledger, reproducible manifest, replay summary, and comparison tooling committed; baseline remains `supporter_resource_v2` | Implementation and replay evidence complete; statistical gate remains open after operational override |
+| Official turn loop | Explicit `expert_turn_loop` variant, public tactical ledger, canonical stage machine, and comparison tooling | Promoted after 200 bilateral CABT matches; historical HLV2 artifacts remain audit references |
 | Expert turn loop v2 CABT screening | 600 bilateral episodes per policy: baseline 511W/89L, candidate 518W/82L; both 600/600 operationally `ok`, equal 27 deck-out losses, +1.17 p.p. difference, 95% CI [-2.79, +5.12] p.p. | Statistical result `HOLD`; user authorized operational promotion with limitation recorded |
-| Expert turn loop v2 release | Default entrypoint and package builder now target `expert_turn_loop_v2`; prior package and `supporter_resource_v2` remain selectable for rollback | Package validated and canonical Kaggle receipt recorded |
+| Official turn loop release | Default entrypoint and package builder target `expert_turn_loop`; suffixed names remain compatibility aliases | Local package and CABT promotion validated; remote submission is separate |
 | Expert turn loop v2 submission | Canonical package SHA-256 `e90c6b87687c75a033348be2891dc1e6625af6c7e3be4acf9f1ff85718e31262`, receipt `20260808T073233Z-e90c6b87687c.json`, source commit `2c554dc` | Submitted successfully; retain statistical `HOLD` limitation and await remote score/replays |
 | Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
@@ -93,6 +119,22 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Documentation integrity | All `src` modules inventoried; internal links, task IDs, counts, and stale claims checked automatically | Living gate |
 
 ## Delivery status
+
+### Canonical sequencing corrective iteration
+
+The implementation now contains an explicit `expert_turn_loop` stage machine.
+It enforces development/search/calculation/supporter/Factory/Roto/
+Headset/attack order, the restricted pre-supporter Roto exception, the
+Ultra-Ball/Ariana gate, public Giovanni Prize targeting, and contextual Headset
+recovery. Multi-observation goldens and the bilateral 200-match gate remain
+required before promotion or package release.
+
+The official promotion comparison used 200 CABT matches per policy. The
+previous implementation achieved 171/200 wins (85.5%) and 8 deck-out losses;
+`expert_turn_loop` achieved 176/200 wins (88.0%) and 6 deck-out losses. Both
+policies completed all matches without operational failures. The observed
+increase was +2.5 percentage points, with 95% interval [-4.14, +9.14] points;
+the result supports operational promotion but is not statistically conclusive.
 
 | Track | Status | What is complete | What closes the track |
 |---|---|---|---|
@@ -144,7 +186,7 @@ promotion matrix have not run, so the release policy remains heuristic.
     divergences as single-decision counterfactuals without alternate-win claims.
 18. Do not promote either replay-fix candidate: B failed screening and A's
     final independent difference interval includes zero.
-19. The user explicitly authorized operational promotion of `expert_turn_loop_v2`
+19. The user explicitly authorized operational promotion of `expert_turn_loop`
     despite the screening `HOLD`; preserve the old package for rollback and do
     not describe this as statistically significant promotion.
 
@@ -153,17 +195,20 @@ promotion matrix have not run, so the release policy remains heuristic.
 The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
-1. review the prioritized `55333874` decision queue and gather independent
+1. investigate the Owner-observed game-plan and sequencing divergence under
+   T-034, starting from representative replay decisions and exact package
+   provenance;
+2. review the prioritized `55333874` decision queue and gather independent
    evidence before converting any uncertain finding into a heuristic;
-2. resume the Honchkrow/Porygon expert interview at Round 4 in
+3. resume the Honchkrow/Porygon expert interview at Round 4 in
    [`34_honchkrow_expert_interview.md`](34_honchkrow_expert_interview.md) and
    approve a decision-complete implementation plan before changing runtime behavior;
-3. close the remaining terminal-cause gap and rerun the promoted baseline at
+4. close the remaining terminal-cause gap and rerun the promoted baseline at
    1,000 matches;
-4. monitor the new turn-planning submission and collect its remote replays;
-5. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
-6. validate Rule Box/PrizeMap and PrizeCheck transitions;
-7. rebuild the replay dataset and close the release checklist.
+5. monitor the new turn-planning submission and collect its remote replays;
+6. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
+7. validate Rule Box/PrizeMap and PrizeCheck transitions;
+8. rebuild the replay dataset and close the release checklist.
 
 ## Evidence links
 

@@ -15,6 +15,20 @@ short search, and returns a `list[int]` of option indices.
 **MVP scope:** fixed deck, explicit heuristics, short search (≤100ms on MAIN),
 fallback for every SelectContext, 200-match evaluation gate.
 
+## IMPORTANT ISSUE — Read at the start of every session
+
+Project Owner Igor reviewed agent replays and observed that the agent is not
+following the documented game plan and action sequencing. Treat this as an
+unresolved P0 issue in every session until the Owner explicitly accepts closure
+based on replay evidence.
+
+Before changing gameplay behavior, read the current issue statement in
+`docs/PROJECT_STATUS.md` and task `T-034` in
+`docs/03_tasks/TASK_INDEX.md`. Do not assume that existing rules, focused tests,
+or aggregate win rates prove strategic compliance. Preserve the distinction
+between the Owner's verified observation and technical root causes, which are
+still unknown and require end-to-end investigation.
+
 ---
 
 ## Architecture (vertical slices)

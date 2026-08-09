@@ -10,9 +10,9 @@
 | Status | Count |
 |---|---:|
 | Done | 7 |
-| In progress | 3 |
+| In progress | 4 |
 | Ready | 4 |
-| Blocked by prerequisite | 11 |
+| Blocked by prerequisite | 10 |
 | Total | 25 |
 
 ## Tasks
@@ -35,8 +35,8 @@
 | HLV2-014 | S4 | `BLOCKED` | 003, 013 | Complete terminal promotion/Prize consistency gate |
 | HLV2-015 | S4 | `BLOCKED` | 008, 013 | Complete Giovanni/paid-retreat/wait precedence fixtures |
 | HLV2-016 | S4 | `BLOCKED` | 015 | Add explicit Confusion fixtures without text inference |
-| HLV2-017 | S5 | `BLOCKED` | 004–016 | Integrate all passed stages without changing baseline behavior |
-| HLV2-018 | S5 | `BLOCKED` | 017 | Emit and aggregate required public decision/match telemetry |
+| HLV2-017 | S5 | `DONE` | 004–016 | Integrate official `expert_turn_loop` without changing simulator indices |
+| HLV2-018 | S5 | `IN_PROGRESS` | 017 | Emit canonical stage, exception, Factory-effect and Headset-reason telemetry |
 | HLV2-019 | S6 | `BLOCKED` | 005–018 | Run complete unit/golden/lint/type/pre-commit gate |
 | HLV2-020 | S6 | `BLOCKED` | 017, 019 | Reproduce frozen 26-replay corpus for both policies |
 | HLV2-021 | S7 | `DONE` | 020 | Screening complete: 600 bilateral episodes per policy, zero execution failures, equal deck-out losses, no tactical counter regression; `reports/honchkrow_turn_loop_v2/cabt_screening_20260808/comparison/` |
@@ -70,4 +70,4 @@
   promotion gate passed. The prior package remains available for rollback.
 - HLV2 final 1,000-match block has not run; package build and remote submission
   remain a statistical follow-up, not a condition hidden from the release record.
-- Canonical release: `reports/honchkrow_turn_loop_v2/release_manifest.json`.
+- Official release: `expert_turn_loop`; historical HLV2 manifests remain audit artifacts.

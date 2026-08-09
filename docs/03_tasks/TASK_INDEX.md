@@ -19,8 +19,8 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 8 |
-| Ready | 18 |
+| In progress | 7 |
+| Ready | 19 |
 | Deferred | 8 |
 | Total open | 34 |
 
@@ -54,7 +54,8 @@ documents to these totals.
 | T-029 | P0 | `IN_PROGRESS` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
 | T-030 | P0 | `IN_PROGRESS` | Enforce persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | FB-2026-018, H2A | Eliminate the 32 versus 28 deck-out-loss regression, then rerun the frozen comparison |
 | T-031 | P0 | `DEFERRED` | Ratify the complete Honchkrow/Porygon strategy with expert interview evidence and produce an implementation-ready plan | Honchkrow expert audit | Resume at Round 4 in `docs/34_honchkrow_expert_interview.md`; keep `expert_rounds_1_3_v1` experimental until comparison evidence is recorded |
-| T-033 | P0 | `IN_PROGRESS` | Implement and independently qualify `expert_turn_loop_v2` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Operational promotion authorized; complete package submission and retain the statistical HOLD limitation |
+| T-033 | P0 | `DONE` | Implement and independently qualify the official `expert_turn_loop` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Promoted after 200 bilateral CABT matches with 88.0% wins, zero operational failures, and no deck-out regression |
+| T-034 | P0 | `READY` | Explain and eliminate the Owner-observed divergence from the documented game plan and action sequencing | FB-2026-019 | Select representative failing replays, verify exact package provenance, and trace each first causal divergence from documented intent through parse, objective, candidate, scoring, filtering, commitment, fallback, and final selection |
 
 ## Active-track coverage
 
@@ -69,7 +70,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-030 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028–T-030, T-034 |
 | HLV2 | [HLV2-001–HLV2-025](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) |
 
 ## Deferred queue
