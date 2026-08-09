@@ -768,3 +768,22 @@ comparison_reference:
 promotion_scope: "This is the local CABT comparison baseline. Kaggle submission and remote ranking require a separate decision."
 future_gate: "Use fresh independent CABT samples, preserve side splits, and report terminal-cause attribution before changing the baseline."
 ```
+
+## Replay 91191361 — Phantump/Trevenant evidence for T-034
+
+```yaml
+replay: "91191361"
+task: "T-034"
+observed_facts:
+  - "The reviewed game contains Phantump/Trevenant and a Splashing Dodge decision."
+  - "The owner-observed divergence is strategic sequencing, not an aggregate win-rate claim."
+implemented_scope:
+  - "Damage now compares numeric attacker energyType with defender weakness/resistance."
+  - "Splashing Dodge heads protection is tied to the Pokémon serial and expires after the next turn."
+  - "Legacy Energy reduces any Pokémon's effective Prize value by one, bounded at zero."
+causal_divergence: "unknown pending end-to-end replay trace"
+hypotheses:
+  - "A Darkness-only weakness/resistance shortcut could misvalue this matchup."
+  - "Ignoring Energy attachments in PrizeMap could overvalue a target."
+acceptance: "Replay revalidation and bilateral evaluation are still required; this change is not statistically promoted."
+```

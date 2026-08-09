@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Any, Iterable, Mapping, Sequence
 
 from .catalog import CardCatalog, CardTraits
+from .damage import calculate_damage, has_splashing_dodge_protection
 from .deck import DeckDefinition
 from .state import GameState, PokemonState
 
@@ -272,7 +273,6 @@ class PrizeMapBuilder:
 
         attacker = own.active if own is not None else None
         attacker_traits = self._traits(attacker)
-        attack_damage = self._best_attack_damage(attacker)
         targets: list[PrizeTarget] = []
         for zone, pokemon in [("active", opponent.active)] + [
             ("bench", item) for item in opponent.bench
@@ -287,6 +287,7 @@ class PrizeMapBuilder:
                 traits,
                 state,
             )
+            attack_damage = self._best_attack_damage_for_target(attacker, state, pokemon)
             effective_prizes = traits.base_prize_value
             if traits.prevents_prizes_when_ko_by_ex and attacker_traits.has_rule_box:
                 effective_prizes = 0
@@ -335,15 +336,35 @@ class PrizeMapBuilder:
         return self._catalog.get_traits(str(card_id or 0))
 
     def _best_attack_damage(self, pokemon: PokemonState | None) -> int:
+        return self._best_attack_damage_for_target(pokemon, None, None)
+
+    def _best_attack_damage_for_target(
+        self,
+        pokemon: PokemonState | None,
+        state: GameState | None,
+        defender: PokemonState | None,
+    ) -> int:
         if pokemon is None or pokemon.card_id is None:
             return 0
         card = self._catalog.get_card(str(pokemon.card_id)) or {}
+        attacker_type = card.get("energyType")
         damages = []
         for attack_id in card.get("attacks", []):
             attack = self._catalog.get_attack(str(attack_id)) or {}
             damage = attack.get("damage", 0)
             if isinstance(damage, int) and not isinstance(damage, bool):
-                damages.append(damage)
+                damages.append(
+                    calculate_damage(
+                        damage,
+                        attacker_type,
+                        self._catalog.get_card(str(defender.card_id)) if defender else None,
+                        prevented=bool(
+                            state
+                            and defender
+                            and has_splashing_dodge_protection(state.raw, defender.serial)
+                        ),
+                    )
+                )
         return max(damages, default=0)
 
     def _damage_prevented(
@@ -357,6 +378,8 @@ class PrizeMapBuilder:
         if defender_traits.prevents_damage_from_ex and attacker_traits.has_rule_box:
             return True
         if defender_traits.prevents_damage_from_ability and self._has_ability(attacker):
+            return True
+        if has_splashing_dodge_protection(state.raw, defender.serial):
             return True
         stadium = state.stadium
         stadium_cards = stadium if isinstance(stadium, list) else [stadium]
@@ -381,9 +404,16 @@ class PrizeMapBuilder:
 
     def _attached_prize_reduction(self, pokemon: PokemonState) -> int:
         reduction = 0
-        for tool in pokemon.tool_ids:
-            card_id = _card_id(tool)
+        attached_energies = pokemon.energy_card_ids if pokemon.energy_card_ids else pokemon.energies
+        for card in [*pokemon.tool_ids, *attached_energies]:
+            card_id = _card_id(card)
             reduction += self._catalog.get_traits(str(card_id)).prize_reduction_when_ko
+            metadata = self._catalog.get_card(str(card_id)) or {}
+            text = " ".join(
+                str(metadata.get(key, "")) for key in ("name", "text", "effect")
+            ).casefold()
+            if "legacy energy" in text:
+                reduction += 1
         return reduction
 
 
@@ -506,7 +536,10 @@ def _card_id(card: Any) -> int:
     if isinstance(card, int) and not isinstance(card, bool):
         return card
     if not isinstance(card, Mapping):
-        return 0
+        try:
+            return int(card)
+        except (TypeError, ValueError):
+            return 0
     value = card.get("id", card.get("cardId", 0))
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
 

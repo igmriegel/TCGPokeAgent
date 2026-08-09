@@ -23,6 +23,7 @@ from src.core import (
     SelectContext,
     Selection,
 )
+from src.core.damage import calculate_damage, has_splashing_dodge_protection, types_equal
 from src.ranking.features import SelectionFeatureExtractor
 
 MURKROW = 463
@@ -482,6 +483,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _attack_score(self, state: GameState, candidate: Candidate) -> tuple[float, list[str]]:
         attack_id = self._attack_id(candidate)
         target = self._target_opponent_pokemon(state, candidate)
+        if target is not None and has_splashing_dodge_protection(state.raw, target.serial):
+            return -5000.0, ["splashing_dodge_damage_prevented"]
         opponent_hp = max(0, int(target.hp)) if target is not None else self._raw_opponent_hp(state)
         explicit_damage = max(
             self._metadata_int(candidate.attack, "damage"),
@@ -558,17 +561,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         target = target or self._target_opponent_pokemon(state, candidate)
         if target is None:
             return base_damage
-        attack_id = self._attack_id(candidate)
-        # R Command is Colorless.  The Murkrow/Honchkrow attacks are Darkness.
-        if attack_id == R_COMMAND:
-            return base_damage
-        card = self.catalog.get_card(str(target.card_id)) or {}
-        damage = base_damage
-        if self._contains_type(card.get("weakness") or card.get("weaknesses"), "dark"):
-            damage *= 2
-        if self._contains_type(card.get("resistance") or card.get("resistances"), "dark"):
-            damage = max(0, damage - 20)
-        return damage
+        attacker = self._own_active(state)
+        attacker_card = self.catalog.get_card(str(attacker.card_id)) if attacker else None
+        attacker_type = (attacker_card or {}).get("energyType")
+        return calculate_damage(
+            base_damage,
+            attacker_type,
+            self.catalog.get_card(str(target.card_id)) or {},
+            prevented=has_splashing_dodge_protection(state.raw, target.serial),
+        )
 
     def _card_selection_score(
         self,
@@ -989,7 +990,9 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return 0
         card = self.catalog.get_card(str(target.card_id)) or {}
         weakness = card.get("weakness") or card.get("weaknesses")
-        if self._contains_type(weakness, "dark"):
+        attacker = self._own_active(state)
+        attacker_card = self.catalog.get_card(str(attacker.card_id)) if attacker else None
+        if types_equal(weakness, (attacker_card or {}).get("energyType")):
             return (max(0, int(target.hp)) + 1) // 2
         return max(0, int(target.hp))
 
@@ -1400,10 +1403,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         card = self.catalog.get_card(str(opponent.active.card_id)) or {}
         weakness = card.get("weakness") or card.get("weaknesses")
         resistance = card.get("resistance") or card.get("resistances")
-        if self._contains_type(weakness, "dark"):
+        attacker = self._own_active(state)
+        attacker_card = self.catalog.get_card(str(attacker.card_id)) if attacker else None
+        attacker_type = (attacker_card or {}).get("energyType")
+        if types_equal(weakness, attacker_type):
             hp = (hp + 1) // 2
-        if self._contains_type(resistance, "dark"):
-            hp += 20
+        if types_equal(resistance, attacker_type):
+            hp += 30
         return hp
 
     def _raw_opponent_hp(self, state: GameState) -> int:
@@ -3734,6 +3740,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if self._scorer._is_energy_card(card_id, candidate.card):
                 return True
             if self._scorer._is_rocket_supporter(card_id, candidate.card):
+                opponent = self._scorer._opponent_player(state)
+                protected = bool(
+                    opponent
+                    and opponent.active
+                    and has_splashing_dodge_protection(state.raw, opponent.active.serial)
+                )
+                if protected:
+                    self._turn_ledger.resource_guard = "preserve_supporter_against_splashing_dodge"
+                    return True
                 if (
                     self._uses_supporter_lethal_commitment
                     and self._attack_sequence is not None
@@ -4054,12 +4069,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if target is None:
             return max(0, base_damage)
         card = self._scorer.catalog.get_card(str(target.card_id)) or {}
-        damage = max(0, base_damage)
-        if self._scorer._contains_type(card.get("weakness") or card.get("weaknesses"), "dark"):
-            damage *= 2
-        if self._scorer._contains_type(card.get("resistance") or card.get("resistances"), "dark"):
-            damage = max(0, damage - 20)
-        return damage
+        attacker = self._scorer._own_active(state)
+        attacker_card = self._scorer.catalog.get_card(str(attacker.card_id)) if attacker else None
+        return calculate_damage(
+            base_damage,
+            (attacker_card or {}).get("energyType"),
+            card,
+            prevented=has_splashing_dodge_protection(state.raw, target.serial),
+        )
 
     def _retreat_enables_committed_mega_abomasnow_ko(self, state: GameState) -> bool:
         """Require retreat to exchange a nonlethal Active for an immediate KO."""

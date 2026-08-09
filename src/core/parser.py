@@ -121,6 +121,7 @@ class DefaultParser(ObservationParserInterface):
             raise ParseError("observation select must be a mapping or null")
 
         state = self._build_state(normalized)
+        state.raw["_logs"] = deepcopy(logs)
         candidates = self._build_candidates(normalized)
         select_type, select_context = self._parse_select_info(normalized)
         min_count, max_count, energy_cost, damage_counter = self._selection_fields(select)
