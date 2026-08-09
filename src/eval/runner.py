@@ -7,9 +7,12 @@ and replay analysis. It does not score decisions or aggregate statistics.
 
 from __future__ import annotations
 
+import contextlib
+import os
 import random
+import sys
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import asdict, dataclass, field, is_dataclass
 from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version
@@ -172,10 +175,12 @@ class MatchRunner:
         environment_factory: EnvironmentFactory | None = None,
         opponent: str = "random",
         decision_budget_ms: float = 100.0,
+        quiet_native_output: bool = True,
     ) -> None:
         self._environment_factory = environment_factory
         self.opponent = opponent
         self.decision_budget_ms = decision_budget_ms
+        self.quiet_native_output = quiet_native_output
 
     def run_match(self, seed: int, agent_mode: str, side: int) -> MatchRecord:
         """Run one seeded match, returning a record even when execution fails."""
@@ -185,11 +190,14 @@ class MatchRunner:
         decisions: list[DecisionRecord] = []
         try:
             with _SeededRandom(seed):
-                environment = self._make_environment(seed)
-                agent = self._instrument(self._agent_for_mode(agent_mode), decisions)
-                opponent = self._opponent_callable(self.opponent, agent_mode)
-                players = [agent, opponent] if side == 0 else [opponent, agent]
-                environment.run(players)
+                with _quiet_native_sdk_output(
+                    self.quiet_native_output and self._environment_factory is None
+                ):
+                    environment = self._make_environment(seed)
+                    agent = self._instrument(self._agent_for_mode(agent_mode), decisions)
+                    opponent = self._opponent_callable(self.opponent, agent_mode)
+                    players = [agent, opponent] if side == 0 else [opponent, agent]
+                    environment.run(players)
             statuses = [self._player_status(player) for player in environment.state]
             status = (
                 ExecutionStatus.OK
@@ -555,6 +563,25 @@ class MatchRunner:
             if isinstance(error, TimeoutError)
             else ErrorCategory.RUNTIME.value
         )
+
+
+@contextlib.contextmanager
+def _quiet_native_sdk_output(enabled: bool) -> Iterator[None]:
+    """Suppress noisy native CABT diagnostics without altering SDK state."""
+    if not enabled:
+        yield
+        return
+
+    sys.stderr.flush()
+    stderr_fd = os.dup(2)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            os.dup2(sink.fileno(), 2)
+            yield
+    finally:
+        sys.stderr.flush()
+        os.dup2(stderr_fd, 2)
+        os.close(stderr_fd)
 
 
 class _SeededRandom:
