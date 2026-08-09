@@ -112,7 +112,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Derived replay dataset | 31 matches, 2,047 decisions, 27 opponent decks | Stale; rebuild required |
 | Human gameplay capture | No live human match captured | HD0–HD5 remain deferred |
 | Heuristic priority fixes | Honchkrow/Porygon Proton/Supporter/Energy/Articuno/promotion/terminal-line rules plus Stadium ordering | Implemented; committed-switch subset validated in 400 matches per policy |
-| Turn-planning P0 | Persistent objective, own-turn derivation, setup-aware Proton/Transceiver, marginal Ariana/Petrel comparison, and proven Poké Pad evolution-KO commitment | Implementation and first frozen comparison complete; deck-out corrective iteration pending under T-030 |
+| Turn-planning P0 | Persistent objective, own-turn derivation, setup-aware Proton/Transceiver, marginal Ariana/Petrel comparison, proven Poké Pad evolution-KO commitment, and Factory/Ariana/Roto sequencing | Implementation complete; T-029 is now ready for bilateral CABT validation and deck-out corrective iteration remains pending under T-030 |
 | Turn-planning 600-run gate | `bb38f95`: 257W/43L; candidate: 259W/41L; +0.67 pp, independent 95% interval [-4.89, +6.22]; zero operational failures | Do not promote: deck-out losses increased from 28 to 32 and non-inferiority was not established |
 | Mega Abomasnow KO policy | Six-Supporter Rocket Feathers, eighteen-Supporter R Command, exact lethal discard, draw reserve, and justified retreat guards | Locally validated with zero partial Mega Abomasnow attacks in both 400-match samples |
 | Committed switching and recovery | Exact-serial promotion, Giovanni before paid retreat, projected Ignition damage, forced Porygon2 attack, and exact two-Supporter Miracle Headset recovery | Promoted baseline; 0/44 retreats without same-turn attack and 106/106 exact Headset recoveries |
@@ -128,9 +128,10 @@ promotion matrix have not run, so the release policy remains heuristic.
 The implementation now contains an explicit `expert_turn_loop` stage machine.
 It enforces development/search/calculation/supporter/Factory/Roto/
 Headset/attack order, the restricted pre-supporter Roto exception, the
-Ultra-Ball/Ariana gate, public Giovanni Prize targeting, and contextual Headset
-recovery. Multi-observation goldens and the bilateral 200-match gate remain
-required before promotion or package release.
+Ultra-Ball/Ariana gate, public Giovanni Prize targeting, contextual Headset
+recovery, and the ratified Factory/Ariana/Roto sequencing. Multi-observation
+goldens and the bilateral 200-match gate remain required before promotion or
+package release.
 
 The official promotion comparison used 200 CABT matches per policy. The
 previous implementation achieved 171/200 wins (85.5%) and 8 deck-out losses;

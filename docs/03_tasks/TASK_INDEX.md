@@ -3,7 +3,7 @@
 > Canonical executable backlog. Sprint documents define scope; this file owns
 > task status, priority, dependency, and next action.
 
-**Last reviewed:** 2026-08-08
+**Last reviewed:** 2026-08-09
 
 ## How to read this backlog
 
@@ -19,8 +19,8 @@ documents to these totals.
 
 | Queue | Count |
 |---|---:|
-| In progress | 7 |
-| Ready | 20 |
+| In progress | 6 |
+| Ready | 21 |
 | Deferred | 8 |
 | Total open | 35 |
 
@@ -51,7 +51,7 @@ documents to these totals.
 | T-026 | P0 | `IN_PROGRESS` | Eliminate Honchkrow/Porygon deck-out losses with committed 350-HP KO, draw-reserve, retreat, and terminal-cause guards | FB-2026-014, FB-2026-015, H2A | Run a new 200-match `deck_reserve_v2` trace with selected-card telemetry, then require a repeated search/reserve violation with no same-turn visible KO or Prize benefit before proposing a candidate; v13 confirms unguarded late Factory/Roto draw sequences, while v2's two prior deck-outs did not ignore a low-deck lethal attack |
 | T-027 | P1 | `READY` | Measure opponent-sample variance for identical-package submissions | Remote evaluation variance | Compare submissions `55320796` and `55320706` across two distinct opponent samples; report opponent composition, win rate, variance, and confidence intervals before attributing differences to the package |
 | T-028 | P0 | `IN_PROGRESS` | Convert every Ignition attachment into a same-turn attack and prioritize game-winning Porygon2 promotion | FB-2026-016, H2A | Run terminal Porygon2, Prize-race, Ignition-commitment, and no-wasted-energy gates, then evaluate the promoted policy against CABT |
-| T-029 | P0 | `IN_PROGRESS` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
+| T-029 | P0 | `READY` | Enforce Factory, Ariana, Roto-Stick, and Factory-effect sequencing | FB-2026-017, H2A | Run ordered draw-engine fixtures and confirm the sequence in bilateral CABT evaluation |
 | T-030 | P0 | `IN_PROGRESS` | Enforce persistent turn objectives, setup-aware Supporters, and proven Poké Pad evolution-KO lines | FB-2026-018, H2A | Eliminate the 32 versus 28 deck-out-loss regression, then rerun the frozen comparison |
 | T-031 | P0 | `DEFERRED` | Ratify the complete Honchkrow/Porygon strategy with expert interview evidence and produce an implementation-ready plan | Honchkrow expert audit | Resume at Round 4 in `docs/34_honchkrow_expert_interview.md`; keep `expert_rounds_1_3_v1` experimental until comparison evidence is recorded |
 | T-033 | P0 | `DONE` | Implement and independently qualify the official `expert_turn_loop` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Promoted after 200 bilateral CABT matches with 88.0% wins, zero operational failures, and no deck-out regression |
