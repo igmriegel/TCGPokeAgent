@@ -85,9 +85,9 @@ commands.
 - generated run directories and reports do not overwrite an existing run ID;
 - policy logic remains in `src/`, not in shell wrappers;
 - submission never uploads without `--yes` or an affirmative prompt;
-- submission uses `KAGGLE_API_TOKEN`, `~/.kaggle/access_token`, or the ignored
-  repository-root `kaggle.json` fallback without printing or persisting the
-  credential;
+- submission uses `KAGGLE_API_TOKEN`, `~/.kaggle/access_token`, home
+  `~/.kaggle/kaggle.json`, or the ignored repository-root `kaggle.json` fallback
+  without printing or persisting the credential;
 - successful uploads write a credential-free receipt;
 - generated data and reports follow the persistence contracts.
 

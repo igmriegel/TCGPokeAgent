@@ -123,15 +123,20 @@ def _submission_env() -> dict[str, str]:
     """
     env = os.environ.copy()
     if not env.get("KAGGLE_API_TOKEN"):
-        local_credentials = PROJECT_ROOT / "kaggle.json"
-        try:
-            credentials = json.loads(local_credentials.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            credentials = {}
-        token = credentials.get("key") if isinstance(credentials, dict) else None
-        if isinstance(token, str) and token:
-            env["KAGGLE_API_TOKEN"] = token
-            print("Using the ignored repository kaggle.json as KAGGLE_API_TOKEN.", flush=True)
+        config_dir = env.get("KAGGLE_CONFIG_DIR")
+        config_root = Path(config_dir).expanduser() if config_dir else Path.home() / ".kaggle"
+        if config_root.resolve() == PROJECT_ROOT.resolve():
+            config_root = Path.home() / ".kaggle"
+        candidates = (
+            config_root / "access_token",
+            config_root / "kaggle.json",
+            PROJECT_ROOT / "kaggle.json",
+        )
+        for credential_path in candidates:
+            token = _read_kaggle_token(credential_path)
+            if token:
+                env["KAGGLE_API_TOKEN"] = token
+                break
     config_dir = env.get("KAGGLE_CONFIG_DIR")
     if config_dir is None:
         return env
@@ -149,6 +154,24 @@ def _submission_env() -> dict[str, str]:
             flush=True,
         )
     return env
+
+
+def _read_kaggle_token(path: Path) -> str | None:
+    """Read a Kaggle API token from a token file or legacy JSON credentials."""
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not content:
+        return None
+    if path.name == "access_token":
+        return content
+    try:
+        credentials = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    token = credentials.get("key") if isinstance(credentials, dict) else None
+    return token if isinstance(token, str) and token else None
 
 
 def _write_receipt(archive: Path, digest: str, message: str) -> Path:

@@ -93,3 +93,31 @@ def test_submission_env_keeps_non_repo_kaggle_config_dir(
     env = _submission_env()
 
     assert env["KAGGLE_CONFIG_DIR"] == str(custom_config_dir)
+
+
+def test_submission_env_reads_home_access_token(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    config_dir = tmp_path / ".kaggle"
+    config_dir.mkdir()
+    (config_dir / "access_token").write_text("token-from-access-file\n")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("KAGGLE_API_TOKEN", raising=False)
+    monkeypatch.delenv("KAGGLE_CONFIG_DIR", raising=False)
+
+    assert _submission_env()["KAGGLE_API_TOKEN"] == "token-from-access-file"
+
+
+def test_submission_env_reads_home_legacy_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    config_dir = tmp_path / ".kaggle"
+    config_dir.mkdir()
+    (config_dir / "kaggle.json").write_text('{"username":"user","key":"legacy-key"}')
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("KAGGLE_API_TOKEN", raising=False)
+    monkeypatch.delenv("KAGGLE_CONFIG_DIR", raising=False)
+
+    assert _submission_env()["KAGGLE_API_TOKEN"] == "legacy-key"
