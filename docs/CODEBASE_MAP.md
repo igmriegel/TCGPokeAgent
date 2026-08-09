@@ -34,6 +34,7 @@
 | `src/core/selection.py`, `src/core/selection_generator.py` | Legal index combinations and validation | `tests/test_selection_generator.py` |
 | `src/core/state.py`, `src/core/belief.py` | Factual state and separate hidden-state hypotheses | parser and belief tests |
 | `src/core/deck.py`, `src/core/prize.py`, `src/core/strategy.py` | Deck roles, PrizeCheck/PrizeMap, strategic context | prize, heuristic, and RFL profile tests |
+| `src/core/damage.py` | Shared weakness, resistance, and temporary damage-prevention calculation | Honchkrow/Porygon strategy and PrizeMap tests |
 | `src/core/archetype.py` | Evolution-line deck archetypes and dominant terminal energy types | investigation report tests |
 | `src/core/types.py`, `src/core/exceptions.py`, `src/core/interfaces.py`, `src/core/feature_schema.py`, `src/core/__init__.py` | Shared enums, typed failures, feature contract, interfaces, exports | Imported throughout tests and runtime |
 
