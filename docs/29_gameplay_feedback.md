@@ -580,8 +580,9 @@ suffixed variant names remain compatibility aliases only.
 
 ### Gate
 
-T-029: ordered multi-observation fixtures, deck-out guard coverage, and a
-bilateral CABT evaluation confirming the sequence without execution failures.
+The sequencing obligation is already partially remediated in the closed
+turn-planning baseline. Keep the remaining evidence with the closed baseline;
+there is no standalone open T-029 task.
 
 ## FB-2026-018 — Persistent turn planning, setup Supporters, and evolution-KO lines
 
@@ -618,8 +619,8 @@ advantage. Ariana remains legal when its complete sequence is stronger. Proton
 remains legal in later turns only with a demonstrated survival or development
 gain. Poké Pad in hand alone is not evidence of an evolution-KO opportunity.
 
-**Rule and task:** GR-025, T-030. T-028 and T-029 remain open until their
-existing Ignition and ordered draw-engine gates are independently satisfied.
+**Rule and task:** GR-025, T-030. T-028 remains open until its existing
+Ignition gate is independently satisfied.
 
 ### Gate
 
