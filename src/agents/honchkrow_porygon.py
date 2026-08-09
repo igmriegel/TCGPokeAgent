@@ -628,6 +628,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             attacker_type,
             self.catalog.get_card(str(target.card_id)) or {},
             prevented=has_splashing_dodge_protection(state.raw, target.serial),
+            state_raw=state.raw,
+            defender_serial=target.serial,
         )
 
     def _card_selection_score(
@@ -4533,6 +4535,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             (attacker_card or {}).get("energyType"),
             card,
             prevented=has_splashing_dodge_protection(state.raw, target.serial),
+            state_raw=state.raw,
+            defender_serial=target.serial,
         )
 
     def _retreat_enables_committed_mega_abomasnow_ko(self, state: GameState) -> bool:

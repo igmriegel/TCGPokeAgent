@@ -363,6 +363,8 @@ class PrizeMapBuilder:
                             and defender
                             and has_splashing_dodge_protection(state.raw, defender.serial)
                         ),
+                        state_raw=state.raw if state else None,
+                        defender_serial=defender.serial if defender else None,
                     )
                 )
         return max(damages, default=0)
