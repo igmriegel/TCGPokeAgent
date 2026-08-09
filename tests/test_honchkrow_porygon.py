@@ -133,6 +133,95 @@ def test_honchkrow_and_porygon2_damage_scale_with_rocket_supporters() -> None:
     assert porygon_score >= 310
 
 
+def test_giovanni_economic_score_prioritizes_low_hp_two_prize_fezandipiti() -> None:
+    """A reachable two-Prize Fezandipiti is an economic Giovanni target."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+                prize=[None] * 3,
+            ),
+            PlayerState(
+                active=PokemonState(999, 120, 120),
+                bench=[PokemonState(140, 50, 120, serial=44)],
+            ),
+        ]
+    )
+    candidate = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "cardId": 140, "targetCardId": 140},
+        OptionType.CARD,
+        features={"card_id": 140, "target_card_id": 140, "target_serial": 44},
+    )
+
+    _, reasons = scorer._giovanni_target_score(state, candidate)
+
+    assert "economic_two_prize_ko" in reasons
+    assert "giovanni_fezandipiti_two_prize_ko" in reasons
+
+
+def test_effect_target_preserves_persistent_serial() -> None:
+    """A later effect prompt must keep the already selected public Pokémon."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    target = PokemonState(140, 50, 120, serial=44)
+    state = GameState(
+        players=[PlayerState(), PlayerState(active=PokemonState(999, 120, 120), bench=[target])]
+    )
+    scorer.set_persistent_target(target)
+    candidate = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "cardId": 140},
+        OptionType.CARD,
+        features={"card_id": 140, "target_card_id": 140, "target_serial": 0},
+    )
+
+    assert scorer._target_opponent_pokemon(state, candidate) is target
+
+
+def test_kadabra_super_psy_bolt_does_not_trigger_articuno_protection() -> None:
+    """Kadabra's fixed-damage attack is not the Alakazam hand-size threat."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    scorer.set_alakazam_matchup_confirmed()
+    state = GameState(players=[PlayerState(), PlayerState(active=PokemonState(742, 90, 90))])
+
+    assert not scorer._powerful_hand_threat(state)
+    assert not scorer._articuno_is_needed(state)
+
+
+def test_alakazam_powerful_hand_triggers_articuno_protection() -> None:
+    """Alakazam's hand-dependent attack still preserves the Articuno branch."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    scorer.set_alakazam_matchup_confirmed()
+    state = GameState(players=[PlayerState(), PlayerState(active=PokemonState(743, 120, 120))])
+
+    assert scorer._powerful_hand_threat(state)
+    assert scorer._articuno_is_needed(state)
+
+
+def test_visible_enhanced_hammer_preserves_uncommitted_special_energy() -> None:
+    """Rocket Energy stays in hand until it commits an attack line."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(PORYGON2, 120, 120)),
+            PlayerState(hand=[{"id": 1081}]),
+        ]
+    )
+    candidate = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value, "cardId": ROCKET_ENERGY},
+        OptionType.ATTACH,
+        card={"cardType": 5},
+        features={"card_id": ROCKET_ENERGY, "target_card_id": PORYGON2},
+    )
+
+    _, reasons = scorer._attachment_score(state, candidate)
+
+    assert reasons == ["preserve_energy_against_enhanced_hammer"]
+
+
 def test_articuno_is_not_selected_without_an_effect_threat() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     candidate = _candidate(
