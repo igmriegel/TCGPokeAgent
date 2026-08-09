@@ -3260,6 +3260,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         best,
                     )
 
+        night_stretcher = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == NIGHT_STRETCHER
+                and self._scorer._night_stretcher_is_productive(state)
+            )
+        )
+        if night_stretcher:
+            return (
+                DecisionPhase.PLAY_ITEMS.value,
+                "canonical_recover_playable_pokemon",
+                night_stretcher,
+            )
+
         if self._scorer._own_field_count(state) <= 1:
             survivor = matching(
                 lambda candidate: (

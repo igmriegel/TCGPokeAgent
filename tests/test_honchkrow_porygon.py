@@ -685,6 +685,39 @@ def test_backup_basic_precedes_resource_actions_when_only_one_pokemon_remains() 
     assert [selection.indices for selection in choices] == [(0,)]
 
 
+def test_expert_turn_loop_recovers_playable_pokemon_before_optional_draw() -> None:
+    """Night Stretcher recovery is a canonical action before draw-resource actions."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": NIGHT_STRETCHER}, {"id": ARIANA}],
+                discard=[{"id": PORYGON}],
+                deck_count=2,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    stretcher = _candidate(0, OptionType.PLAY, card_id=NIGHT_STRETCHER, card={"cardType": 1})
+    ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    end = _candidate(2, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.PLAY,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [stretcher, ariana, end],
+    )
+
+    assert phase == DecisionPhase.PLAY_ITEMS.value
+    assert reason == "canonical_recover_playable_pokemon"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
 def test_poke_pad_selects_backup_basic_when_board_could_collapse() -> None:
     """Poké Pad search favors a Basic backup over an evolution on a one-Pokémon board."""
     agent = HonchkrowPorygonAgent(_profile())
