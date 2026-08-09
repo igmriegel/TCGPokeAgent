@@ -3513,6 +3513,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     ),
                     factory_in_hand,
                 )
+            petrel_factory = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id") == PETREL
+                    and self._scorer._petrel_factory_is_superior(state)
+                )
+            )
+            if petrel_factory:
+                if self._turn_ledger.petrel_factory_opportunities == 0:
+                    self._turn_ledger.petrel_factory_opportunities = 1
+                    self._match_ledger.petrel_factory_opportunities += 1
+                return (
+                    DecisionPhase.PLAY_SUPPORTER.value,
+                    "petrel_factory_over_low_draw_ariana",
+                    petrel_factory,
+                )
             giovanni = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY

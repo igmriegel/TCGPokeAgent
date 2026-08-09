@@ -1859,6 +1859,35 @@ def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() 
     assert [selection.indices for selection in effect_choices] == [(2,)]
 
 
+def test_expert_turn_loop_prefers_petrel_factory_over_low_draw_ariana() -> None:
+    """Petrel supersedes Ariana when it creates the legal Factory line."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    hand = [{"id": PETREL}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))]
+    state = GameState(
+        turn=5,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=hand,
+                hand_count=8,
+                deck_count=30,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3}),
+        _candidate(1, OptionType.PLAY, card_id=PETREL, card={"cardType": 3}),
+    ]
+    selections = [Selection((index,), (OptionType.PLAY,)) for index in range(2)]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert reason == "petrel_factory_over_low_draw_ariana"
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.petrel_factory_opportunities == 1
+
+
 def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monkeypatch) -> None:
     """The Owner-ratified normal draw sequence is preserved across replans."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
