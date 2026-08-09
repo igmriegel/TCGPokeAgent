@@ -136,6 +136,10 @@ policies completed all matches without operational failures. The observed
 increase was +2.5 percentage points, with 95% interval [-4.14, +9.14] points;
 the result supports operational promotion but is not statistically conclusive.
 
+The post-promotion package was rebuilt from commit `f22a24f` with policy
+`expert_turn_loop`; extracted validation passed and its SHA-256 is
+`57a41e863aa8037f304fdf236aefb6e019216ae7ea8f4c817692d762609dc760`.
+
 | Track | Status | What is complete | What closes the track |
 |---|---|---|---|
 | MVP S0–S1 | Done | Environment, SDK, deck, wrapper, package smoke | None |
