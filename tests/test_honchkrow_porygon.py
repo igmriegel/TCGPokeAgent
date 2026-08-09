@@ -1956,8 +1956,8 @@ def test_porygon2_promotion_takes_the_last_prizes() -> None:
     ]
 
 
-def test_ignition_attachment_commits_the_same_turn_attack() -> None:
-    """Generic Ignition attachments must force the attack that they enable."""
+def test_ignition_attack_line_is_available_without_preempting_choice() -> None:
+    """An enabled Ignition line remains available without preempting other choices."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         turn=9,
@@ -1991,8 +1991,8 @@ def test_ignition_attachment_commits_the_same_turn_attack() -> None:
         [ignition, end],
     )
 
-    assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "ignition_requires_same_turn_attack"
+    assert phase != DecisionPhase.ATTACK_PRIORITY.value
+    assert reason != "ignition_requires_same_turn_attack"
     assert [selection.indices for selection in choices] == [(0,)]
     assert not agent._candidate_is_forbidden(state, ignition, SelectContext.MAIN)
 
@@ -2063,6 +2063,48 @@ def test_ignition_commitment_falls_back_to_any_legal_attack() -> None:
 
     assert phase == DecisionPhase.ATTACK_PRIORITY.value
     assert reason == "execute_committed_ignition_attack"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_ignition_hammer_line_uses_active_serial_when_area_flag_is_missing() -> None:
+    """Ignition must find Hammer In when CABT omits the active-area enum."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=9,
+        players=[
+            PlayerState(
+                active=PokemonState(
+                    HONCHKROW,
+                    130,
+                    130,
+                    serial=22,
+                    energies=[11],
+                    energy_card_ids=["15"],
+                ),
+                hand=[{"id": IGNITION_ENERGY}],
+            ),
+            PlayerState(active=PokemonState(999, 80, 120, serial=44)),
+        ],
+    )
+    ignition = _candidate(
+        0,
+        OptionType.ATTACH,
+        card_id=IGNITION_ENERGY,
+        card={"cardType": 6},
+    )
+    ignition.features.update(
+        {"target_card_id": HONCHKROW, "target_serial": 22, "target_is_active": False}
+    )
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.ATTACH,)), Selection((1,), (OptionType.END,))],
+        [ignition, end],
+    )
+
+    assert phase != DecisionPhase.ATTACK_PRIORITY.value
+    assert reason != "ignition_requires_same_turn_attack"
     assert [selection.indices for selection in choices] == [(0,)]
 
 

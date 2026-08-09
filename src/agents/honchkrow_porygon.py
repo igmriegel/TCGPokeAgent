@@ -1928,7 +1928,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         units = 0
         entries = getattr(pokemon, "energies", ()) or ()
         ids = getattr(pokemon, "energy_card_ids", ()) or ()
-        values = list(entries) if entries else list(ids)
+        values = list(ids) if ids else list(entries)
         for energy in values:
             if isinstance(energy, Mapping):
                 card_id = int(energy.get("id", energy.get("cardId", 0)) or 0)
@@ -1967,6 +1967,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if isinstance(card, Mapping):
             value = card.get("id", card.get("cardId", 0))
             return int(value) if isinstance(value, int) and not isinstance(value, bool) else 0
+        if isinstance(card, str) and card.isdigit():
+            return int(card)
         return 0
 
     def _proton_was_used_previous_turn(self, state: GameState) -> bool:
@@ -2971,20 +2973,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
                 return DecisionPhase.STADIUM.value, reason, factory_play
 
-        ignition = matching(
-            lambda candidate: (
-                candidate.option_type is OptionType.ATTACH
-                and self._scorer._feature_int(candidate, "card_id") == IGNITION_ENERGY
-                and self._ignition_attack_plan(state, candidate) is not None
-            )
-        )
-        if ignition:
-            return (
-                DecisionPhase.ATTACK_PRIORITY.value,
-                "ignition_requires_same_turn_attack",
-                ignition,
-            )
-
         if self._uses_supporter_lethal_commitment and not self._uses_expert_rounds_1_3:
             lethal_attacks = matching(
                 lambda candidate: (
@@ -3256,16 +3244,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     "canonical_execute_ignition_attack",
                     committed_attack,
                 )
-
-        ignition = matching(
-            lambda candidate: (
-                candidate.option_type is OptionType.ATTACH
-                and self._scorer._feature_int(candidate, "card_id") == IGNITION_ENERGY
-                and self._ignition_attack_plan(state, candidate) is not None
-            )
-        )
-        if ignition:
-            return DecisionPhase.ATTACK_PRIORITY.value, "canonical_ignition_before_attack", ignition
 
         stage = self._turn_ledger.stage
         if stage in {"", "observe", CanonicalTurnStage.DEVELOP.value}:
@@ -3631,7 +3609,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return None
         player = self._scorer._own_player(state)
         active = player.active if player is not None else None
-        if active is None or not bool(candidate.features.get("target_is_active", False)):
+        if active is None or not self._candidate_targets_active(candidate, active):
             return None
         target_id = self._scorer._feature_int(candidate, "target_card_id")
         if target_id and target_id != int(active.card_id):
@@ -3648,6 +3626,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             attack_id=attack_id,
             planned_damage=damage,
             requires_ignition=False,
+        )
+
+    @staticmethod
+    def _candidate_targets_active(candidate: Candidate, active: Any) -> bool:
+        """Resolve an active attachment target from CABT area or serial metadata."""
+        if bool(candidate.features.get("target_is_active", False)):
+            return True
+        target_serial = candidate.features.get("target_serial")
+        active_serial = getattr(active, "serial", None)
+        return (
+            isinstance(target_serial, int)
+            and isinstance(active_serial, int)
+            and target_serial > 0
+            and target_serial == active_serial
         )
 
     def _roto_can_improve_rocket_line(self, state: GameState) -> bool:
@@ -4225,10 +4217,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             energy_id = self._scorer._feature_int(candidate, "card_id")
             if energy_id == ROCKET_ENERGY and target_id == PORYGON2:
                 return True
-            if energy_id == IGNITION_ENERGY and not bool(
-                candidate.features.get("target_is_active", False)
-            ):
-                return True
+            if energy_id == IGNITION_ENERGY:
+                active = self._scorer._own_active(state)
+                if active is None or not self._candidate_targets_active(candidate, active):
+                    return True
             if target_id == ARTICUNO:
                 return True
             if (
