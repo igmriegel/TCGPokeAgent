@@ -467,7 +467,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return self._petrel_search_score(state)
         if card_id == ROTO_STICK:
             if self._roto_stick_is_needed(state):
-                return 760.0, ["roto_stick_closes_ko_line"]
+                return 980.0, ["roto_stick_closes_supporter_deficit"]
             return -1800.0, ["preserve_roto_stick_for_supporter_ko"]
         if card_id == MIRACLE_HEADSET:
             if not self._miracle_headset_is_useful(state):
@@ -957,11 +957,22 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return any(self._card_id_from_value(card) == card_id for card in self._hand_cards(state))
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
+        """Return whether Roto-Stick can address a real supporter damage deficit."""
+        if not self._card_in_hand(state, ROTO_STICK):
+            return False
         needed = self._supporters_needed_for_ko(state)
         hand = self._supporters_in_hand(state)
         if hand >= needed:
             return False
-        return bool(self._rocket_supporters_in_discard(state) or self._card_in_hand(state, ARIANA))
+        active = self._own_active(state)
+        player = self._own_player(state)
+        if active is None or player is None or active.card_id != HONCHKROW:
+            return False
+        if self._energy_units_for_pokemon(active) < 2:
+            return False
+        if player.deck_count <= self._elective_draw_reserve(state):
+            return False
+        return hand * 60 < self._raw_opponent_hp(state)
 
     def _all_own_pokemon_are_rocket(self, state: GameState) -> bool:
         """Return whether Ariana draws to eight from only public card metadata."""

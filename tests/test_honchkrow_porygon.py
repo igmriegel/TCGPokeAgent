@@ -139,7 +139,7 @@ def test_giovanni_economic_score_prioritizes_low_hp_two_prize_fezandipiti() -> N
     state = GameState(
         players=[
             PlayerState(
-                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                active=PokemonState(HONCHKROW, 130, 130),
                 hand=[{"id": ARIANA}],
                 prize=[None] * 3,
             ),
@@ -1322,7 +1322,7 @@ def test_roto_does_not_become_needed_only_after_own_ko() -> None:
     state = GameState(
         players=[
             PlayerState(
-                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                active=PokemonState(HONCHKROW, 130, 130),
                 hand=[{"id": ROTO_STICK}],
                 deck_count=20,
             ),
@@ -1331,6 +1331,23 @@ def test_roto_does_not_become_needed_only_after_own_ko() -> None:
     )
 
     assert not scorer._roto_stick_is_needed(state)
+
+
+def test_roto_is_needed_for_a_direct_supporter_deficit() -> None:
+    """Roto becomes a priority when a ready Honchkrow lacks KO supporters."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+
+    assert scorer._roto_stick_is_needed(state)
 
 
 def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
