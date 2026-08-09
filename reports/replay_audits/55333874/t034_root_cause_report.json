@@ -1,4 +1,12 @@
 {
+  "current_policy_reexecution": {
+    "available": true,
+    "decisions": 1434,
+    "exceptions": 0,
+    "fallbacks": 0,
+    "interpretation": "The current policy was evaluated on historical observations only; a different action is not an alternate match result.",
+    "traced_decisions": 1434
+  },
   "evidence_boundary": {
     "alternate_outcome_claims": false,
     "missing_historical_candidate_trace": true,
@@ -7,7 +15,7 @@
     "raw_replay_corpus_available": true,
     "strategic_root_cause": "unknown"
   },
-  "next_action": "Restore the hash-verified raw corpus, obtain Owner playbook judgment for each representative record, then add a candidate/filter/score trace to the next package before changing policy behavior.",
+  "next_action": "Obtain Owner playbook judgment for each representative record; only then approve a focused regression or runtime policy correction.",
   "package_provenance": {
     "archive_sha256": "f6a7c94e7cc94e6507c9db965f29845b141ae0b047e504e839884067547e4fac",
     "matched_decisions": 1434,
@@ -21,6 +29,13 @@
       ],
       "class": "roto_opening_setup_or_survival",
       "counterfactual_scope": "single_decision_only",
+      "current_policy_action": [
+        7
+      ],
+      "current_policy_first_causal_stage": "canonical_articuno_before_evolution",
+      "current_policy_phase_reason": [
+        "canonical_articuno_before_evolution"
+      ],
       "decision_phase": "ATTACH_PRIORITY",
       "decision_reasons": [
         "attach_completes_active_attack"
@@ -31,6 +46,7 @@
       "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
       "legal": true,
       "outcome_inference_prohibited": true,
+      "playbook_rule": "GR-022 public Dragapult evidence requires Articuno setup.",
       "step": 14,
       "submitted_action": [
         1
@@ -43,6 +59,13 @@
       ],
       "class": "deceit_searches_ariana_survival_line",
       "counterfactual_scope": "single_decision_only",
+      "current_policy_action": [
+        1
+      ],
+      "current_policy_first_causal_stage": "canonical_attack_pressure",
+      "current_policy_phase_reason": [
+        "canonical_attack_pressure"
+      ],
       "decision_phase": "ATTACK",
       "decision_reasons": [
         "post_draw_best_damage"
@@ -53,6 +76,7 @@
       "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
       "legal": true,
       "outcome_inference_prohibited": true,
+      "playbook_rule": "GR-022 restricts Deceit to a decisive line.",
       "step": 111,
       "submitted_action": [
         1
@@ -65,6 +89,13 @@
       ],
       "class": "factory_after_ariana_and_roto",
       "counterfactual_scope": "single_decision_only",
+      "current_policy_action": [
+        6
+      ],
+      "current_policy_first_causal_stage": "canonical_factory_after_supporter",
+      "current_policy_phase_reason": [
+        "canonical_factory_after_supporter"
+      ],
       "decision_phase": "ATTACK_PRIORITY",
       "decision_reasons": [
         "supporter_lethal_attack"
@@ -75,6 +106,7 @@
       "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
       "legal": true,
       "outcome_inference_prohibited": true,
+      "playbook_rule": "GR-023 activates Factory after a Rocket Supporter.",
       "step": 168,
       "submitted_action": [
         7
@@ -87,6 +119,13 @@
       ],
       "class": "ariana_before_factory",
       "counterfactual_scope": "single_decision_only",
+      "current_policy_action": [
+        2
+      ],
+      "current_policy_first_causal_stage": "canonical_post_ko_best_supporter",
+      "current_policy_phase_reason": [
+        "canonical_post_ko_best_supporter"
+      ],
       "decision_phase": "ATTACK_PRIORITY",
       "decision_reasons": [
         "supporter_lethal_attack"
@@ -97,6 +136,7 @@
       "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
       "legal": true,
       "outcome_inference_prohibited": true,
+      "playbook_rule": "GR-023 separates Factory play from its later activation.",
       "step": 86,
       "submitted_action": [
         4

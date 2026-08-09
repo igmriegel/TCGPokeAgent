@@ -60,4 +60,5 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
     assert report["representative_findings"][0]["first_causal_divergence"] == (
         "unidentifiable_missing_submitted_candidate_trace"
     )
+    assert report["representative_findings"][0]["playbook_rule"].startswith("GR-022")
     assert not report["evidence_boundary"]["raw_replay_corpus_available"]

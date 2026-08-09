@@ -15,6 +15,12 @@ REPRESENTATIVE_REASONS = (
     "factory_after_ariana_and_roto",
     "ariana_before_factory",
 )
+PLAYBOOK_RULES = {
+    "roto_opening_setup_or_survival": "GR-022 public Dragapult evidence requires Articuno setup.",
+    "deceit_searches_ariana_survival_line": "GR-022 restricts Deceit to a decisive line.",
+    "factory_after_ariana_and_roto": "GR-023 activates Factory after a Rocket Supporter.",
+    "ariana_before_factory": "GR-023 separates Factory play from its later activation.",
+}
 
 
 def _load_mapping(path: Path) -> dict[str, Any]:
@@ -53,7 +59,7 @@ def _load_ledger(path: Path) -> dict[tuple[int, int], dict[str, Any]]:
     return records
 
 
-def build_report(audit_dir: Path) -> dict[str, Any]:
+def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[str, Any]:
     """Create a replay-linked T-034 report without strategic inference.
 
     Args:
@@ -69,6 +75,20 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
     if not isinstance(queue, list):
         raise ValueError("expected review queue list")
     ledger = _load_ledger(audit_dir / "decision_ledger.jsonl")
+    current_ledger: dict[tuple[int, int], Mapping[str, Any]] = {}
+    current_summary: Mapping[str, Any] = {}
+    if current_traces is not None:
+        current = _load_mapping(current_traces)
+        current_summary = current.get("summary", {})
+        decisions = current.get("decisions", [])
+        if isinstance(decisions, list):
+            current_ledger = {
+                (item["episode_id"], item["step"]): item
+                for item in decisions
+                if isinstance(item, Mapping)
+                and isinstance(item.get("episode_id"), int)
+                and isinstance(item.get("step"), int)
+            }
     findings: list[dict[str, Any]] = []
     for reason in REPRESENTATIVE_REASONS:
         queue_item = next(
@@ -91,6 +111,17 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
         if not isinstance(episode_id, int) or not isinstance(step, int):
             continue
         record = ledger.get((episode_id, step), {})
+        current_record = current_ledger.get((episode_id, step), {})
+        current_trace = current_record.get("decision_trace")
+        stages = current_trace.get("stages", []) if isinstance(current_trace, Mapping) else []
+        main_stage = next(
+            (
+                stage
+                for stage in stages
+                if isinstance(stage, Mapping) and stage.get("name") == "main_phase"
+            ),
+            {},
+        )
         trace_available = isinstance(record.get("decision_trace"), Mapping)
         findings.append(
             {
@@ -112,6 +143,10 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
                 ),
                 "counterfactual_scope": "single_decision_only",
                 "outcome_inference_prohibited": True,
+                "playbook_rule": PLAYBOOK_RULES[reason],
+                "current_policy_action": current_record.get("generated_action"),
+                "current_policy_phase_reason": current_record.get("reasons"),
+                "current_policy_first_causal_stage": main_stage.get("reason"),
             }
         )
     reproduction = audit.get("reproduction", {})
@@ -142,10 +177,22 @@ def build_report(audit_dir: Path) -> dict[str, Any]:
             "missing_raw_replays": sorted(expected_names - available_names),
         },
         "representative_findings": findings,
+        "current_policy_reexecution": {
+            "available": current_traces is not None,
+            "decisions": current_summary.get("decisions"),
+            "traced_decisions": sum(
+                isinstance(item.get("decision_trace"), Mapping) for item in current_ledger.values()
+            ),
+            "fallbacks": current_summary.get("fallbacks"),
+            "exceptions": current_summary.get("exceptions"),
+            "interpretation": (
+                "The current policy was evaluated on historical observations only; "
+                "a different action is not an alternate match result."
+            ),
+        },
         "next_action": (
-            "Restore the hash-verified raw corpus, obtain Owner playbook judgment for each "
-            "representative record, then add a candidate/filter/score trace to the next package "
-            "before changing policy behavior."
+            "Obtain Owner playbook judgment for each representative record; only then approve "
+            "a focused regression or runtime policy correction."
         ),
     }
 
@@ -162,13 +209,14 @@ def _markdown(report: Mapping[str, Any]) -> str:
         f"Immutable package: `{provenance['archive_sha256']}`; reproduction: "
         f"{provenance['matched_decisions']}/{provenance['reproduced_decisions']} decisions.",
         "",
-        "| Class | Replay | Submitted action | Internal first cause |",
-        "|---|---|---|---|",
+        "| Class | Replay | Submitted action | Current action | Current causal stage |",
+        "|---|---|---|---|---|",
     ]
     for finding in report["representative_findings"]:
         lines.append(
             f"| `{finding['class']}` | `{finding['episode_id']}:{finding['step']}` | "
-            f"`{finding['submitted_action']}` | `{finding['first_causal_divergence']}` |"
+            f"`{finding['submitted_action']}` | `{finding['current_policy_action']}` | "
+            f"`{finding['current_policy_first_causal_stage']}` |"
         )
     lines.extend(
         [
@@ -185,6 +233,8 @@ def _markdown(report: Mapping[str, Any]) -> str:
                 else "not available locally."
             ),
             "",
+            report["current_policy_reexecution"]["interpretation"],
+            "",
             f"Next action: {report['next_action']}",
             "",
         ]
@@ -197,8 +247,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--audit-dir", type=Path, default=DEFAULT_AUDIT_DIR)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--current-traces", type=Path)
     args = parser.parse_args()
-    report = build_report(args.audit_dir)
+    report = build_report(args.audit_dir, args.current_traces)
     output = args.output or args.audit_dir / "t034_root_cause_report.json"
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     output.with_suffix(".md").write_text(_markdown(report), encoding="utf-8")
