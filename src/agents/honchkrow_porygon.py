@@ -3520,6 +3520,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
         if lethal:
             return DecisionPhase.ATTACK_PRIORITY.value, "canonical_attack_lethal", lethal
+        pressure_attack = matching(lambda candidate: candidate.option_type is OptionType.ATTACK)
+        if pressure_attack:
+            return (
+                DecisionPhase.ATTACK_PRIORITY.value,
+                "canonical_attack_pressure",
+                pressure_attack,
+            )
         self._turn_ledger.canonical_exception = "legal_fallback"
         return super()._main_phase_selections(state, safe, candidates)
 

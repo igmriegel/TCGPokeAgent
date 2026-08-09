@@ -2329,6 +2329,33 @@ def test_expert_loop_keeps_partial_rocket_line_against_non_mega_target() -> None
     assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
 
 
+def test_expert_turn_loop_uses_legal_partial_attack_as_pressure() -> None:
+    """A legal nonlethal attack is the canonical final action against normal targets."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 350, 350)),
+        ]
+    )
+    feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.ATTACK,)), Selection((1,), (OptionType.END,))],
+        [feathers, end],
+    )
+
+    assert phase == DecisionPhase.ATTACK_PRIORITY.value
+    assert reason == "canonical_attack_pressure"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
 def test_rocket_energy_enabling_murkrow_attack_is_not_forbidden() -> None:
     """Rocket Energy may build an active Murkrow that can attack this turn."""
     agent = HonchkrowPorygonAgent(_profile())
