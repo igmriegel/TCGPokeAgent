@@ -1156,35 +1156,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             >= self._supporters_needed_for_ko(state)
         )
 
-    def _board_is_collapsing(self, state: GameState) -> bool:
-        """Return whether a local KO leaves no safe public continuation."""
-        player = self._own_player(state)
-        if player is None:
-            return False
-        hand_count = max(player.hand_count, len(player.hand or ()))
-        if self._own_field_count(state) > 1 or hand_count > 3:
-            return False
-        if self._own_bench_count(state) > 0:
-            return False
-        if self._proton_setup_is_useful(state):
-            return False
-        return not self._honchkrow_ready_to_attack(state)
-
     def _archer_is_safe_and_useful(self, state: GameState, candidate: Candidate) -> bool:
-        """Use Archer only after a public KO when its redraw is safe and useful."""
+        """Use Archer after any public own KO when its redraw is safe."""
         player = self._own_player(state)
         if player is None or player.deck_count + max(0, player.hand_count - 1) < 5:
             return False
         prior_ko = self._own_ko_observed or self._truthy(
             candidate.option, "eligibleAfterKo", "ownKo", "beneficial"
         )
-        hand_count = max(player.hand_count, len(player.hand or ()))
-        meaningful_disruption = self._opponent_hand_count(state) > 3 or hand_count <= 3
-        return prior_ko and meaningful_disruption and self._board_is_collapsing(state)
-
-    def _opponent_hand_count(self, state: GameState) -> int:
-        opponent = self._opponent_player(state)
-        return opponent.hand_count if opponent is not None else 0
+        return prior_ko
 
     @staticmethod
     def _is_energy_card(card_id: int, card: Mapping[str, Any] | None) -> bool:
@@ -1921,6 +1901,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._roto_turn: int | None = None
         self._transceiver_turn: int | None = None
         self._previous_own_pokemon_keys: tuple[tuple[int, int | None], ...] | None = None
+        self._previous_opponent_prize_count: int | None = None
         self._own_ko_turn: int | None = None
         self._special_roto_proton_only = False
         self._match_ledger = MatchTacticalLedger()
@@ -2052,6 +2033,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._roto_turn = None
         self._transceiver_turn = None
         self._previous_own_pokemon_keys = None
+        self._previous_opponent_prize_count = None
         self._own_ko_turn = None
         self._special_roto_proton_only = False
         self._match_ledger.reset()
@@ -2092,10 +2074,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> None:
         """Derive an own-KO event only from consecutive public snapshots."""
         current = self._own_pokemon_keys(state)
+        opponent = self._scorer._opponent_player(state)
+        opponent_prize_count = len(opponent.prize) if opponent is not None else 0
         if self._previous_own_pokemon_keys is not None:
-            if len(current) < len(self._previous_own_pokemon_keys):
+            opponent_took_prize = (
+                self._previous_opponent_prize_count is not None
+                and opponent_prize_count < self._previous_opponent_prize_count
+            )
+            if len(current) < len(self._previous_own_pokemon_keys) or opponent_took_prize:
                 self._own_ko_turn = state.turn
         self._previous_own_pokemon_keys = current
+        self._previous_opponent_prize_count = opponent_prize_count
         self._special_roto_proton_only = self._contains_replay_id(observation, 91190470) or (
             self._contains_replay_id(state.raw, 91190470)
         )

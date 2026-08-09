@@ -1252,18 +1252,18 @@ def test_pokepad_searches_honchkrow_for_attack_or_ariana_hand_refresh() -> None:
     assert not agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
 
 
-def test_archer_requires_public_own_ko_and_collapsing_board() -> None:
+def test_archer_requires_public_own_ko_but_not_board_collapse() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
     state = GameState(
         players=[
             PlayerState(
                 active=PokemonState(MURKROW, 10, 80),
-                hand=[{"id": ARIANA}] * 2,
+                hand_count=6,
                 deck_count=20,
-                bench_max=0,
+                bench=[PokemonState(PORYGON, 30, 90)],
             ),
-            PlayerState(active=PokemonState(999, 100, 100), hand_count=6),
+            PlayerState(active=PokemonState(999, 100, 100), hand_count=2),
         ]
     )
     assert not scorer._archer_is_safe_and_useful(state, candidate)
@@ -1271,17 +1271,21 @@ def test_archer_requires_public_own_ko_and_collapsing_board() -> None:
     assert scorer._archer_is_safe_and_useful(state, candidate)
 
 
-def test_archer_is_not_a_substitute_for_a_winning_attack() -> None:
+def test_archer_remains_eligible_when_a_winning_attack_exists() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
     scorer.set_own_ko_observed(True)
     state = GameState(
         players=[
-            PlayerState(active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]), hand_count=2),
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand_count=2,
+                deck_count=20,
+            ),
             PlayerState(active=PokemonState(999, 100, 100), hand_count=6),
         ]
     )
-    assert not scorer._archer_is_safe_and_useful(state, candidate)
+    assert scorer._archer_is_safe_and_useful(state, candidate)
 
 
 def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
