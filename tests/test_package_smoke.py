@@ -114,3 +114,8 @@ def test_dedicated_expert_package_manifest_identifies_backend(tmp_path) -> None:
     assert manifest["backend"] == "expert_turn_loop"
     assert manifest["backend_version"] == "expert-turn-loop"
     assert manifest["policy_variant"] == "expert_turn_loop"
+    assert manifest["parameters"]["consolidated_policy_variants"] == [
+        "supporter_resource_v2",
+        "expert_rounds_1_3_v1",
+        "expert_turn_loop",
+    ]
