@@ -13,6 +13,6 @@ Immutable package: `f6a7c94e7cc94e6507c9db965f29845b141ae0b047e504e839884067547e
 
 Each candidate difference is a single-decision review prompt only. It does not imply an alternate match result. The historic package exposed phase and reason labels, but no candidate/filter/score trace, so a deeper internal causal claim would be speculative.
 
-The hash-listed historical raw replay corpus is not available locally.
+The hash-listed historical raw replay corpus is available.
 
 Next action: Restore the hash-verified raw corpus, obtain Owner playbook judgment for each representative record, then add a candidate/filter/score trace to the next package before changing policy behavior.
