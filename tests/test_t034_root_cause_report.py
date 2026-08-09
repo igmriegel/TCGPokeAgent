@@ -39,18 +39,19 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
     )
     (audit_dir / "decision_ledger.jsonl").write_text(
         json.dumps(
-            {
-                "episode_id": 1,
-                "step": 2,
-                "turn": 3,
-                "executed_action": [1],
-                "decision_trace": None,
-                "legal_selection": True,
-                "fallback_used": False,
-            }
-        )
-        + "\n",
-        encoding="utf-8",
+                {
+                    "episode_id": 1,
+                    "step": 2,
+                    "turn": 3,
+                    "executed_action": [1],
+                    "decision_trace": None,
+                    "legal_selection": True,
+                    "fallback_used": False,
+                    "visible_state": {"own": {}, "opponent": {}},
+                }
+            )
+            + "\n",
+            encoding="utf-8",
     )
 
     report = build_report(audit_dir)
@@ -61,4 +62,9 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
         "unidentifiable_missing_submitted_candidate_trace"
     )
     assert report["representative_findings"][0]["playbook_rule"].startswith("GR-022")
+    assert report["representative_findings"][0]["trace_coverage"]["parsed_public_state"][
+        "available"
+    ]
+    assert "objective" in report["representative_findings"][0]["trace_gaps"]
+    assert "filtering" in report["representative_findings"][0]["trace_gaps"]
     assert not report["evidence_boundary"]["raw_replay_corpus_available"]

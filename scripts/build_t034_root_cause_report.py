@@ -21,6 +21,17 @@ PLAYBOOK_RULES = {
     "factory_after_ariana_and_roto": "GR-023 activates Factory after a Rocket Supporter.",
     "ariana_before_factory": "GR-023 separates Factory play from its later activation.",
 }
+TRACE_LAYERS = (
+    "documented_intent",
+    "parsed_public_state",
+    "objective",
+    "candidate_generation",
+    "scoring",
+    "filtering",
+    "commitment",
+    "fallback",
+    "final_selection",
+)
 
 
 def _load_mapping(path: Path) -> dict[str, Any]:
@@ -57,6 +68,71 @@ def _load_ledger(path: Path) -> dict[tuple[int, int], dict[str, Any]]:
         if isinstance(episode_id, int) and isinstance(step, int):
             records[(episode_id, step)] = value
     return records
+
+
+def _trace_coverage(record: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """Summarize which replay layers are observable in one ledger record.
+
+    Args:
+        record: Decision ledger entry for one replay step.
+
+    Returns:
+        Layer-by-layer evidence coverage that stays conservative about missing
+        internal traces.
+    """
+    fallback_used = bool(record.get("fallback_used"))
+    has_public_state = isinstance(record.get("visible_state"), Mapping)
+    has_selection = record.get("executed_action") is not None
+    has_counterfactual = isinstance(record.get("reasons"), list) or isinstance(
+        record.get("generated_action"), list
+    )
+    coverage: dict[str, dict[str, Any]] = {
+        "documented_intent": {
+            "available": True,
+            "evidence": ["playbook_rule"],
+        },
+        "parsed_public_state": {
+            "available": has_public_state,
+            "evidence": (
+                ["visible_state", "original_options", "select_context", "select_type"]
+                if has_public_state
+                else []
+            ),
+        },
+        "objective": {
+            "available": False,
+            "evidence": [],
+        },
+        "candidate_generation": {
+            "available": has_counterfactual,
+            "evidence": ["candidate_action", "submitted_action"] if has_counterfactual else [],
+        },
+        "scoring": {
+            "available": False,
+            "evidence": [],
+        },
+        "filtering": {
+            "available": False,
+            "evidence": [],
+        },
+        "commitment": {
+            "available": False,
+            "evidence": [],
+        },
+        "fallback": {
+            "available": fallback_used,
+            "evidence": ["fallback_used"] if fallback_used else [],
+        },
+        "final_selection": {
+            "available": has_selection,
+            "evidence": (
+                ["generated_action", "executed_action", "legal_selection"]
+                if has_selection
+                else []
+            ),
+        },
+    }
+    return {name: coverage[name] for name in TRACE_LAYERS}
 
 
 def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[str, Any]:
@@ -123,6 +199,7 @@ def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[st
             {},
         )
         trace_available = isinstance(record.get("decision_trace"), Mapping)
+        trace_coverage = _trace_coverage(record)
         findings.append(
             {
                 "class": reason,
@@ -147,6 +224,10 @@ def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[st
                 "current_policy_action": current_record.get("generated_action"),
                 "current_policy_phase_reason": current_record.get("reasons"),
                 "current_policy_first_causal_stage": main_stage.get("reason"),
+                "trace_coverage": trace_coverage,
+                "trace_gaps": [
+                    name for name, layer in trace_coverage.items() if not layer["available"]
+                ],
             }
         )
     reproduction = audit.get("reproduction", {})
@@ -213,11 +294,17 @@ def _markdown(report: Mapping[str, Any]) -> str:
         "|---|---|---|---|---|",
     ]
     for finding in report["representative_findings"]:
+        trace_coverage = finding["trace_coverage"]
         lines.append(
             f"| `{finding['class']}` | `{finding['episode_id']}:{finding['step']}` | "
             f"`{finding['submitted_action']}` | `{finding['current_policy_action']}` | "
             f"`{finding['current_policy_first_causal_stage']}` |"
         )
+        available_layers = [
+            layer for layer, details in trace_coverage.items() if details["available"]
+        ]
+        lines.append(f"- Trace coverage: {', '.join(available_layers) or 'none'}.")
+        lines.append(f"- Trace gaps: {', '.join(finding['trace_gaps']) or 'none'}.")
     lines.extend(
         [
             "",

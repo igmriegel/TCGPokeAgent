@@ -51,6 +51,65 @@
       "submitted_action": [
         1
       ],
+      "trace_coverage": {
+        "candidate_generation": {
+          "available": true,
+          "evidence": [
+            "candidate_action",
+            "submitted_action"
+          ]
+        },
+        "commitment": {
+          "available": false,
+          "evidence": []
+        },
+        "documented_intent": {
+          "available": true,
+          "evidence": [
+            "playbook_rule"
+          ]
+        },
+        "fallback": {
+          "available": false,
+          "evidence": []
+        },
+        "filtering": {
+          "available": false,
+          "evidence": []
+        },
+        "final_selection": {
+          "available": true,
+          "evidence": [
+            "generated_action",
+            "executed_action",
+            "legal_selection"
+          ]
+        },
+        "objective": {
+          "available": false,
+          "evidence": []
+        },
+        "parsed_public_state": {
+          "available": true,
+          "evidence": [
+            "visible_state",
+            "original_options",
+            "select_context",
+            "select_type"
+          ]
+        },
+        "scoring": {
+          "available": false,
+          "evidence": []
+        }
+      },
+      "trace_gaps": [
+        "objective",
+        "scoring",
+        "filtering",
+        "commitment",
+        "fallback"
+      ],
       "turn": 2
     },
     {
@@ -80,6 +139,65 @@
       "step": 111,
       "submitted_action": [
         1
+      ],
+      "trace_coverage": {
+        "candidate_generation": {
+          "available": true,
+          "evidence": [
+            "candidate_action",
+            "submitted_action"
+          ]
+        },
+        "commitment": {
+          "available": false,
+          "evidence": []
+        },
+        "documented_intent": {
+          "available": true,
+          "evidence": [
+            "playbook_rule"
+          ]
+        },
+        "fallback": {
+          "available": false,
+          "evidence": []
+        },
+        "filtering": {
+          "available": false,
+          "evidence": []
+        },
+        "final_selection": {
+          "available": true,
+          "evidence": [
+            "generated_action",
+            "executed_action",
+            "legal_selection"
+          ]
+        },
+        "objective": {
+          "available": false,
+          "evidence": []
+        },
+        "parsed_public_state": {
+          "available": true,
+          "evidence": [
+            "visible_state",
+            "original_options",
+            "select_context",
+            "select_type"
+          ]
+        },
+        "scoring": {
+          "available": false,
+          "evidence": []
+        }
+      },
+      "trace_gaps": [
+        "objective",
+        "scoring",
+        "filtering",
+        "commitment",
+        "fallback"
       ],
       "turn": 10
     },
@@ -111,6 +229,65 @@
       "submitted_action": [
         7
       ],
+      "trace_coverage": {
+        "candidate_generation": {
+          "available": true,
+          "evidence": [
+            "candidate_action",
+            "submitted_action"
+          ]
+        },
+        "commitment": {
+          "available": false,
+          "evidence": []
+        },
+        "documented_intent": {
+          "available": true,
+          "evidence": [
+            "playbook_rule"
+          ]
+        },
+        "fallback": {
+          "available": false,
+          "evidence": []
+        },
+        "filtering": {
+          "available": false,
+          "evidence": []
+        },
+        "final_selection": {
+          "available": true,
+          "evidence": [
+            "generated_action",
+            "executed_action",
+            "legal_selection"
+          ]
+        },
+        "objective": {
+          "available": false,
+          "evidence": []
+        },
+        "parsed_public_state": {
+          "available": true,
+          "evidence": [
+            "visible_state",
+            "original_options",
+            "select_context",
+            "select_type"
+          ]
+        },
+        "scoring": {
+          "available": false,
+          "evidence": []
+        }
+      },
+      "trace_gaps": [
+        "objective",
+        "scoring",
+        "filtering",
+        "commitment",
+        "fallback"
+      ],
       "turn": 18
     },
     {
@@ -140,6 +317,65 @@
       "step": 86,
       "submitted_action": [
         4
+      ],
+      "trace_coverage": {
+        "candidate_generation": {
+          "available": true,
+          "evidence": [
+            "candidate_action",
+            "submitted_action"
+          ]
+        },
+        "commitment": {
+          "available": false,
+          "evidence": []
+        },
+        "documented_intent": {
+          "available": true,
+          "evidence": [
+            "playbook_rule"
+          ]
+        },
+        "fallback": {
+          "available": false,
+          "evidence": []
+        },
+        "filtering": {
+          "available": false,
+          "evidence": []
+        },
+        "final_selection": {
+          "available": true,
+          "evidence": [
+            "generated_action",
+            "executed_action",
+            "legal_selection"
+          ]
+        },
+        "objective": {
+          "available": false,
+          "evidence": []
+        },
+        "parsed_public_state": {
+          "available": true,
+          "evidence": [
+            "visible_state",
+            "original_options",
+            "select_context",
+            "select_type"
+          ]
+        },
+        "scoring": {
+          "available": false,
+          "evidence": []
+        }
+      },
+      "trace_gaps": [
+        "objective",
+        "scoring",
+        "filtering",
+        "commitment",
+        "fallback"
       ],
       "turn": 12
     }
