@@ -61,6 +61,7 @@
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |
 | `uv run --frozen python scripts/analyze_replays.py REPLAY_DIR --output REPORT.json` | Rebuild per-replay damage, KO, resource, and loss diagnostics recursively |
 | `uv run --frozen python scripts/audit_submission_55333874.py` | Reproduce the immutable submitted policy over its 26-replay isolated corpus, emit the decision ledger and review bundle, and incorporate completed CABT candidate gates |
+| `uv run --frozen python scripts/build_t034_root_cause_report.py` | Build the conservative replay-linked T-034 evidence report; it preserves unknown internal causes when the immutable package lacks candidate traces |
 | `uv run --frozen python scripts/audit_recent_submission_prompts.py --output REPORT.json` | Reproduce the current policy on curated isolated prompts from the two latest submissions without alternate-outcome inference |
 | `uv run --frozen python scripts/create_honchkrow_turn_loop_v2_manifest.py` | Freeze the HLV2 baseline/candidate identities, deck/profile/lock hashes, CABT SDK pin, source state, and 26-replay corpus |
 | `uv run --frozen python scripts/build_honchkrow_turn_loop_v2_report.py BASELINE CANDIDATE OUTPUT_DIR` | Build the complete independent HLV2 comparison bundle and emit `HOLD` until every final gate is evidenced |

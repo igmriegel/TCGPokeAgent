@@ -1,0 +1,108 @@
+{
+  "evidence_boundary": {
+    "alternate_outcome_claims": false,
+    "missing_historical_candidate_trace": true,
+    "owner_feedback_established": true,
+    "strategic_root_cause": "unknown"
+  },
+  "next_action": "Obtain Owner playbook judgment for each representative record, then add a candidate/filter/score trace to the next package before changing policy behavior.",
+  "package_provenance": {
+    "archive_sha256": "f6a7c94e7cc94e6507c9db965f29845b141ae0b047e504e839884067547e4fac",
+    "matched_decisions": 1434,
+    "reproduced_decisions": 1434,
+    "submission_id": 55333874
+  },
+  "representative_findings": [
+    {
+      "candidate_action": [
+        5
+      ],
+      "class": "roto_opening_setup_or_survival",
+      "counterfactual_scope": "single_decision_only",
+      "decision_phase": "ATTACH_PRIORITY",
+      "decision_reasons": [
+        "attach_completes_active_attack"
+      ],
+      "decision_trace_available": false,
+      "episode_id": 90813277,
+      "fallback_used": false,
+      "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
+      "legal": true,
+      "outcome_inference_prohibited": true,
+      "step": 14,
+      "submitted_action": [
+        1
+      ],
+      "turn": 2
+    },
+    {
+      "candidate_action": [
+        0
+      ],
+      "class": "deceit_searches_ariana_survival_line",
+      "counterfactual_scope": "single_decision_only",
+      "decision_phase": "ATTACK",
+      "decision_reasons": [
+        "post_draw_best_damage"
+      ],
+      "decision_trace_available": false,
+      "episode_id": 90816581,
+      "fallback_used": false,
+      "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
+      "legal": true,
+      "outcome_inference_prohibited": true,
+      "step": 111,
+      "submitted_action": [
+        1
+      ],
+      "turn": 10
+    },
+    {
+      "candidate_action": [
+        6
+      ],
+      "class": "factory_after_ariana_and_roto",
+      "counterfactual_scope": "single_decision_only",
+      "decision_phase": "ATTACK_PRIORITY",
+      "decision_reasons": [
+        "supporter_lethal_attack"
+      ],
+      "decision_trace_available": false,
+      "episode_id": 90816581,
+      "fallback_used": false,
+      "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
+      "legal": true,
+      "outcome_inference_prohibited": true,
+      "step": 168,
+      "submitted_action": [
+        7
+      ],
+      "turn": 18
+    },
+    {
+      "candidate_action": [
+        2
+      ],
+      "class": "ariana_before_factory",
+      "counterfactual_scope": "single_decision_only",
+      "decision_phase": "ATTACK_PRIORITY",
+      "decision_reasons": [
+        "supporter_lethal_attack"
+      ],
+      "decision_trace_available": false,
+      "episode_id": 90822434,
+      "fallback_used": false,
+      "first_causal_divergence": "unidentifiable_missing_submitted_candidate_trace",
+      "legal": true,
+      "outcome_inference_prohibited": true,
+      "step": 86,
+      "submitted_action": [
+        4
+      ],
+      "turn": 12
+    }
+  ],
+  "schema": "t034_root_cause_report_v1",
+  "status": "OPEN",
+  "task": "T-034"
+}
