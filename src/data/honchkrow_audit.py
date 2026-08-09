@@ -44,6 +44,16 @@ class OpportunityCategory:
     RETREAT_WITHOUT_KO_CONVERSION = "RETREAT_WITHOUT_KO_CONVERSION"
 
 
+class DeckOutTraceCategory:
+    """Evidence-based classifications for the final low-deck decisions."""
+
+    CONVERTED_KO_THEN_DECK_OUT = "CONVERTED_KO_THEN_DECK_OUT"
+    LETHAL_ATTACK_NOT_SELECTED = "LETHAL_ATTACK_NOT_SELECTED"
+    NO_ATTACK_AVAILABLE = "NO_ATTACK_AVAILABLE"
+    ATTACK_SELECTED_WITHOUT_KO = "ATTACK_SELECTED_WITHOUT_KO"
+    NO_LOW_DECK_DECISION = "NO_LOW_DECK_DECISION"
+
+
 @dataclass(frozen=True, slots=True)
 class OpportunityAudit:
     """Audit one complete Rocket attack opportunity, including setup prompts.
@@ -242,6 +252,69 @@ def audit_opportunities(matches: Iterable[Any]) -> list[OpportunityAudit]:
                 pending = []
                 pending_attack_turn = None
     return audits
+
+
+def classify_deck_out_trace(events: Iterable[Mapping[str, Any]]) -> str:
+    """Classify whether a terminal low-deck trace retained a legal attack conversion.
+
+    The CABT trace emits Rocket attack selection before its mandatory discard
+    prompt. A target KO can therefore appear on a later event in the same
+    turn. This classifier follows that public sequence without inferring an
+    alternative winner.
+    """
+    records = [event for event in events if isinstance(event, Mapping)]
+    low_deck = [
+        (index, event)
+        for index, event in enumerate(records)
+        if 1 <= _as_int(event.get("deck_count"), 0) <= 2
+    ]
+    if not low_deck:
+        return DeckOutTraceCategory.NO_LOW_DECK_DECISION
+    converted_ko = False
+    selected_without_ko = False
+    no_attack_available = False
+    for index, event in low_deck:
+        attack_ids = event.get("attack_ids", [])
+        selected_attack_ids = event.get("selected_attack_ids", [])
+        attacks_available = isinstance(attack_ids, list) and bool(attack_ids)
+        attacks_selected = isinstance(selected_attack_ids, list) and bool(selected_attack_ids)
+        target_hp = _as_int(event.get("target_hp"), 0)
+        hand_supporters = _as_int(event.get("hand_supporters"), 0)
+        discard_supporters = _as_int(event.get("discard_supporters"), 0)
+        lethal_attack_available = any(
+            (attack_id == ROCKET_FEATHERS and hand_supporters * 60 >= target_hp > 0)
+            or (attack_id == R_COMMAND and discard_supporters * 20 >= target_hp > 0)
+            or (attack_id == HAMMER_IN and target_hp <= 100)
+            for attack_id in attack_ids
+            if isinstance(attack_id, int)
+        )
+        if not attacks_available or not lethal_attack_available:
+            no_attack_available = True
+            continue
+        if not attacks_selected:
+            return DeckOutTraceCategory.LETHAL_ATTACK_NOT_SELECTED
+        turn = _as_int(event.get("turn"), -1)
+        same_turn = records[index:]
+        if turn >= 0:
+            same_turn = [item for item in same_turn if _as_int(item.get("turn"), -1) == turn]
+        if any(
+            bool(
+                item.get("transition", {}).get("target_ko")
+                if isinstance(item.get("transition", {}), Mapping)
+                else False
+            )
+            for item in same_turn
+        ):
+            converted_ko = True
+        else:
+            selected_without_ko = True
+    if converted_ko:
+        return DeckOutTraceCategory.CONVERTED_KO_THEN_DECK_OUT
+    if selected_without_ko:
+        return DeckOutTraceCategory.ATTACK_SELECTED_WITHOUT_KO
+    if no_attack_available:
+        return DeckOutTraceCategory.NO_ATTACK_AVAILABLE
+    return DeckOutTraceCategory.NO_LOW_DECK_DECISION
 
 
 def _build_opportunity(

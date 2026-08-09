@@ -26,7 +26,7 @@ from src.agents.honchkrow_porygon import (  # noqa: E402
     HonchkrowPorygonAgent,
 )
 from src.core import DeckDefinition, DeckProfile  # noqa: E402
-from src.data.honchkrow_audit import audit_opportunities  # noqa: E402
+from src.data.honchkrow_audit import audit_opportunities, classify_deck_out_trace  # noqa: E402
 from src.eval.telemetry import public_snapshot, transition  # noqa: E402
 
 PROFILE_PATH = ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
@@ -532,6 +532,9 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
     inferred_reason = _inferred_reason(current, loser_side)
     if not reason_explicit:
         reason = inferred_reason
+    deck_out_trace_category = (
+        classify_deck_out_trace(events) if result == "loss" and reason == "deck_out" else ""
+    )
     terminal = _terminal_counts(current, side)
     opportunities = [
         asdict(opportunity) for opportunity in audit_opportunities([{"events": events}])
@@ -557,6 +560,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         "termination_reason_code": reason_code,
         "termination_reason_explicit": reason_explicit,
         "termination_reason_inferred": inferred_reason,
+        "deck_out_trace_category": deck_out_trace_category,
         "terminal_snapshot_source": terminal_snapshot_source,
         "terminal_public_result": current.get("result"),
         "terminal_public_candidates": terminal_public_candidates,
@@ -668,6 +672,13 @@ def run(
         "deck_out_losses": sum(
             match["result"] == "loss" and match["termination_reason"] == "deck_out"
             for match in matches
+        ),
+        "deck_out_trace_categories": dict(
+            Counter(
+                match["deck_out_trace_category"]
+                for match in matches
+                if match["deck_out_trace_category"]
+            )
         ),
         "partial_attack_matches": sum(
             match["telemetry"]["partial_mega_abomasnow_attacks"] > 0 for match in matches
@@ -814,6 +825,13 @@ def run_stream(
             "deck_out_losses": sum(
                 match["result"] == "loss" and match["termination_reason"] == "deck_out"
                 for match in summaries
+            ),
+            "deck_out_trace_categories": dict(
+                Counter(
+                    match["deck_out_trace_category"]
+                    for match in summaries
+                    if match["deck_out_trace_category"]
+                )
             ),
             "partial_attack_matches": sum(
                 match["telemetry"]["partial_mega_abomasnow_attacks"] > 0 for match in summaries

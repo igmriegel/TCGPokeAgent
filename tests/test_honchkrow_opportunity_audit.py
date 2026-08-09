@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from src.agents.honchkrow_porygon import HonchkrowPorygonAgent
 from src.data.honchkrow_audit import (
+    DeckOutTraceCategory,
     OpportunityCategory,
     audit_opportunities,
+    classify_deck_out_trace,
 )
 
 
@@ -77,6 +79,46 @@ def test_attack_followed_by_raw_card_discard_resolves_the_same_opportunity() -> 
     assert audits[0].result == "KO"
     assert audits[0].observed_damage == 350
     assert audits[0].decision_indices == (0, 1)
+
+
+def test_deck_out_trace_retains_a_ko_resolved_by_follow_up_discard() -> None:
+    """A low-deck Rocket choice is not preventable when its discard gets the KO."""
+    events = [
+        {
+            "turn": 7,
+            "deck_count": 1,
+            "target_hp": 350,
+            "hand_supporters": 6,
+            "attack_ids": [1285],
+            "selected_attack_ids": [1285],
+        },
+        {
+            "turn": 7,
+            "deck_count": 1,
+            "attack_ids": [],
+            "selected_attack_ids": [],
+            "transition": {"target_ko": True},
+        },
+        {"turn": 9, "deck_count": 0, "attack_ids": [], "selected_attack_ids": []},
+    ]
+
+    assert classify_deck_out_trace(events) == DeckOutTraceCategory.CONVERTED_KO_THEN_DECK_OUT
+
+
+def test_deck_out_trace_flags_an_ended_turn_with_a_lethal_attack() -> None:
+    """A legal lethal attack that was not selected is a preventable terminal signal."""
+    events = [
+        {
+            "turn": 7,
+            "deck_count": 2,
+            "target_hp": 90,
+            "hand_supporters": 2,
+            "attack_ids": [1285],
+            "selected_attack_ids": [],
+        }
+    ]
+
+    assert classify_deck_out_trace(events) == DeckOutTraceCategory.LETHAL_ATTACK_NOT_SELECTED
 
 
 def test_r_command_requires_eighteen_discarded_supporters() -> None:
