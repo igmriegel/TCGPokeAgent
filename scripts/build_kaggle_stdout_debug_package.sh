@@ -20,7 +20,7 @@ path = Path(sys.argv[1])
 source = path.read_text(encoding="utf-8")
 source = source.replace(
     "import logging\nimport sys\n",
-    "import logging\nimport sys\nfrom dataclasses import asdict, is_dataclass\n",
+    "import logging\nimport sys\n",
     1,
 )
 source = source.replace(
@@ -28,19 +28,69 @@ source = source.replace(
     """_deck: list[int] | None = None
 
 
+def _compact_debug_trace(decision: object) -> dict[str, object]:
+    trace = getattr(decision, "trace", None)
+    candidates = []
+    for candidate in getattr(trace, "candidates", ()):
+        card = getattr(candidate, "card", {}) or {}
+        candidates.append(
+            {
+                "index": getattr(candidate, "option_index", -1),
+                "type": getattr(candidate, "option_type", ""),
+                "card_id": card.get("cardId", card.get("id")),
+                "card_name": card.get("name"),
+            }
+        )
+    stages = []
+    for stage in getattr(trace, "stages", ()):
+        stages.append(
+            {
+                "name": getattr(stage, "name", ""),
+                "before_count": len(getattr(stage, "before", ())),
+                "after_count": len(getattr(stage, "after", ())),
+                "removed_count": len(getattr(stage, "removed", ())),
+                "reason": getattr(stage, "reason", ""),
+            }
+        )
+    ranked = []
+    for row in getattr(trace, "ranked_scores", ())[:5]:
+        ranked.append(
+            {
+                "indices": row[0],
+                "score": row[1],
+                "reasons": row[2][:4],
+            }
+        )
+    return {
+        "schema_version": "debug-decision-compact-v1",
+        "decision_phase": getattr(decision, "decision_phase", ""),
+        "decision_phase_reason": getattr(decision, "decision_phase_reason", ""),
+        "fallback_used": getattr(decision, "fallback_used", False),
+        "model_backend": getattr(decision, "model_backend", ""),
+        "duration_ms": getattr(decision, "duration_ms", 0.0),
+        "select_context": getattr(trace, "select_context", "") if trace else "",
+        "bounds": {
+            "min_count": getattr(trace, "min_count", 0) if trace else 0,
+            "max_count": getattr(trace, "max_count", 0) if trace else 0,
+            "remain_energy_cost": getattr(trace, "remain_energy_cost", 0) if trace else 0,
+            "remain_damage_counter": getattr(trace, "remain_damage_counter", 0) if trace else 0,
+        },
+        "selected_indices": getattr(trace, "selected_indices", ()) if trace else (),
+        "objective": {
+            "before": getattr(trace, "objective_before", "") if trace else "",
+            "after": getattr(trace, "objective_after", "") if trace else "",
+        },
+        "candidates": candidates,
+        "stages": stages,
+        "top_ranked": ranked,
+    }
+
+
 def _emit_stdout_debug() -> None:
     decision = getattr(_agent, "last_decision", None)
     if decision is None:
         return
-    payload = {
-        "event": "debug_decision",
-        "decision_phase": decision.decision_phase,
-        "decision_phase_reason": decision.decision_phase_reason,
-        "fallback_used": decision.fallback_used,
-        "model_backend": decision.model_backend,
-        "duration_ms": decision.duration_ms,
-        "trace": asdict(decision.trace) if is_dataclass(decision.trace) else None,
-    }
+    payload = {"event": "debug_decision_compact", **_compact_debug_trace(decision)}
     print(json.dumps(payload, separators=(",", ":")), flush=True)
 """,
     1,
