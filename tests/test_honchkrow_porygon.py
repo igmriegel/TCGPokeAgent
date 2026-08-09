@@ -1947,6 +1947,24 @@ def test_deck_reserve_experiment_preserves_three_natural_draws() -> None:
     assert agent._scorer._elective_draw_reserve(state) == DECK_OUT_EXPERIMENTAL_RESERVE
 
 
+def test_deck_reserve_v2_blocks_roto_that_would_consume_the_reserve(
+    monkeypatch,
+) -> None:
+    """Roto's four-card reveal cannot leave fewer than three natural draws."""
+    state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=6), PlayerState()])
+    v1 = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v1")
+    v2 = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v2")
+    monkeypatch.setattr(v1, "_roto_can_improve_rocket_line", lambda _: True)
+    monkeypatch.setattr(v2, "_roto_can_improve_rocket_line", lambda _: True)
+
+    assert v1._canonical_roto_is_productive(state)
+    assert not v2._canonical_roto_is_productive(state)
+    assert v2.turn_ledger.resource_guard == "preserve_roto_for_deck_reserve"
+
+    state.players[0].deck_count = DECK_OUT_EXPERIMENTAL_RESERVE + 4
+    assert v2._canonical_roto_is_productive(state)
+
+
 def test_rocket_feathers_horizon_never_justifies_partial_mega_attack() -> None:
     """Mega Abomasnow requires the visible KO in the current attack."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
