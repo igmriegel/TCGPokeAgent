@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from scripts.run_honchkrow_porygon_eval import _is_partial_mega_abomasnow_attack
+from types import SimpleNamespace
+
+from scripts.run_honchkrow_porygon_eval import (
+    _is_partial_mega_abomasnow_attack,
+    _terminal_reason,
+    _terminal_snapshot,
+)
 from src.agents.honchkrow_porygon import MEGA_ABOMASNOW_EX, R_COMMAND, ROCKET_FEATHERS
 
 
@@ -19,3 +25,30 @@ def test_underfunded_mega_attack_remains_partial() -> None:
 
     assert _is_partial_mega_abomasnow_attack(target, [ROCKET_FEATHERS], 4, 0)
     assert _is_partial_mega_abomasnow_attack(target, [R_COMMAND], 0, 17)
+
+
+def test_terminal_snapshot_prefers_visualizer_post_resolution_state() -> None:
+    """The visualizer retains the result state omitted from the last observation."""
+    pre_terminal = {"result": -1, "players": [{}, {}]}
+    terminal = {"result": 1, "players": [{}, {}]}
+    environment = SimpleNamespace(
+        steps=[
+            [
+                {
+                    "visualize": [
+                        {
+                            "current": terminal,
+                            "logs": [{"type": "Result", "result": 1, "reason": 3}],
+                        }
+                    ],
+                    "observation": {"current": pre_terminal},
+                }
+            ]
+        ]
+    )
+
+    current, source, logs = _terminal_snapshot(environment)
+
+    assert current == terminal
+    assert source == "visualizer_terminal"
+    assert _terminal_reason(environment, current, logs) == (3, "no_pokemon_in_play", True)

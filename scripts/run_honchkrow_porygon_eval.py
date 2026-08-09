@@ -111,8 +111,32 @@ def _option_type(option: Mapping[str, Any]) -> int | str | None:
     return value if isinstance(value, (int, str)) and not isinstance(value, bool) else None
 
 
-def _terminal_snapshot(environment: Any) -> Mapping[str, Any]:
-    """Find the last public current state exposed by the environment."""
+def _visualized_terminal_snapshot(environment: Any) -> tuple[Mapping[str, Any], list[Any]]:
+    """Return CABT's final visualizer snapshot and its terminal event log."""
+    steps = getattr(environment, "steps", [])
+    if not isinstance(steps, list) or not steps or not isinstance(steps[0], list):
+        return {}, []
+    for player_step in steps[0]:
+        if not isinstance(player_step, Mapping):
+            continue
+        visualizer = player_step.get("visualize", [])
+        if not isinstance(visualizer, list) or not visualizer:
+            continue
+        terminal = visualizer[-1]
+        if not isinstance(terminal, Mapping):
+            continue
+        current = terminal.get("current")
+        logs = terminal.get("logs", [])
+        if isinstance(current, Mapping):
+            return current, logs if isinstance(logs, list) else []
+    return {}, []
+
+
+def _terminal_snapshot(environment: Any) -> tuple[Mapping[str, Any], str, list[Any]]:
+    """Find the final CABT state, preferring its post-resolution visualizer data."""
+    visualized_current, visualized_logs = _visualized_terminal_snapshot(environment)
+    if visualized_current:
+        return visualized_current, "visualizer_terminal", visualized_logs
     for step in reversed(getattr(environment, "steps", [])):
         if not isinstance(step, list):
             continue
@@ -122,8 +146,8 @@ def _terminal_snapshot(environment: Any) -> Mapping[str, Any]:
             )
             current = observation.get("current") if isinstance(observation, Mapping) else None
             if isinstance(current, Mapping) and isinstance(current.get("players"), list):
-                return current
-    return {}
+                return current, "environment_steps", []
+    return {}, "last_observation", []
 
 
 def _terminal_public_candidates(environment: Any) -> list[dict[str, Any]]:
@@ -159,11 +183,39 @@ def _terminal_public_candidates(environment: Any) -> list[dict[str, Any]]:
                     "reason_codes": reason_codes,
                 }
             )
+    visualized_current, visualized_logs = _visualized_terminal_snapshot(environment)
+    if visualized_current:
+        reason_codes = [
+            event.get("reason")
+            for event in visualized_logs
+            if isinstance(event, Mapping) and isinstance(event.get("reason"), int)
+        ]
+        candidates.append(
+            {
+                "step": "visualizer_terminal",
+                "player": None,
+                "turn": visualized_current.get("turn"),
+                "result": visualized_current.get("result"),
+                "your_index": visualized_current.get("yourIndex"),
+                "reason_codes": reason_codes,
+            }
+        )
     return candidates
 
 
-def _terminal_reason(environment: Any, current: Mapping[str, Any]) -> tuple[int | None, str, bool]:
+def _terminal_reason(
+    environment: Any,
+    current: Mapping[str, Any],
+    terminal_logs: list[Any],
+) -> tuple[int | None, str, bool]:
     """Extract the explicit CABT termination reason when available."""
+    for event in reversed(terminal_logs):
+        if not isinstance(event, Mapping) or "reason" not in event:
+            continue
+        raw = event.get("reason")
+        code = int(raw) if isinstance(raw, int) else None
+        reason = TERMINATION_REASONS.get(code, "unknown") if code is not None else "unknown"
+        return code, reason, code in TERMINATION_REASONS if code is not None else False
     for step in reversed(getattr(environment, "steps", [])):
         if not isinstance(step, list):
             continue
@@ -466,8 +518,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         if reward is not None and reward < 0
         else "draw"
     )
-    terminal_current = _terminal_snapshot(environment)
-    terminal_snapshot_source = "environment_steps" if terminal_current else "last_observation"
+    terminal_current, terminal_snapshot_source, terminal_logs = _terminal_snapshot(environment)
     current = terminal_current or last_current
     terminal_public_candidates = _terminal_public_candidates(environment)
     if pending_event is not None:
@@ -475,7 +526,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         pending_event["state_after"] = dict(current)
         pending_event["telemetry_after"] = telemetry_after
         pending_event["transition"] = transition(pending_event["telemetry_before"], telemetry_after)
-    reason_code, reason, reason_explicit = _terminal_reason(environment, current)
+    reason_code, reason, reason_explicit = _terminal_reason(environment, current, terminal_logs)
     loser_side = 1 - side if result == "win" else side
     inferred_reason = _inferred_reason(current, loser_side)
     if not reason_explicit:
