@@ -32,6 +32,8 @@ HONCHKROW = 891
 PORYGON = 473
 PORYGON2 = 474
 ARTICUNO = 414
+FROSLASS = 104
+GRIMMSNARL_EX = 648
 ARIANA = 1216
 ARCHER = 1217
 GIOVANNI = 1218
@@ -404,6 +406,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             if self._own_field_count(state) < 2 and card_id in {MURKROW, PORYGON}:
                 return 1800.0, ["opening_backup_pokemon"]
             if card_id == ARTICUNO:
+                if self._grimmsnarl_froslass_matchup(state):
+                    return -1800.0, ["avoid_articuno_against_grimmsnarl_froslass"]
                 if self._articuno_is_needed(state):
                     reasons = ["play_articuno_matchup_tech"]
                     if self._powerful_hand_threat(state):
@@ -789,10 +793,17 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _articuno_is_needed(self, state: GameState) -> bool:
         """Return whether the visible matchup justifies preserving Articuno."""
+        if self._grimmsnarl_froslass_matchup(state):
+            return False
         visible = self._visible_opponent_card_ids(state)
         dragapult_line = bool(visible & {DREEPY, DRAKLOAK, DRAGAPULT_EX})
         alakazam_line = self._powerful_hand_threat(state)
         return dragapult_line or alakazam_line
+
+    def _grimmsnarl_froslass_matchup(self, state: GameState) -> bool:
+        """Return whether both public Grimmsnarl and Froslass threats are visible."""
+        visible = self._visible_opponent_card_ids(state)
+        return {GRIMMSNARL_EX, FROSLASS}.issubset(visible)
 
     def _powerful_hand_threat(self, state: GameState) -> bool:
         """Return whether a visible Alakazam exposes the hand-size attack."""

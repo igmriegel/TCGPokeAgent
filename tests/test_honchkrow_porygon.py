@@ -12,7 +12,9 @@ from src.agents.honchkrow_porygon import (
     ARTICUNO,
     DECEIT,
     FACTORY,
+    FROSLASS,
     GIOVANNI,
+    GRIMMSNARL_EX,
     HACKING,
     HAMMER_IN,
     HONCHKROW,
@@ -198,6 +200,32 @@ def test_alakazam_powerful_hand_triggers_articuno_protection() -> None:
 
     assert scorer._powerful_hand_threat(state)
     assert scorer._articuno_is_needed(state)
+
+
+def test_grimmsnarl_froslass_matchup_avoids_articuno() -> None:
+    """The Grimmsnarl/Froslass damage-ping board must not receive Articuno."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 120, 120)),
+            PlayerState(
+                active=PokemonState(GRIMMSNARL_EX, 170, 170),
+                bench=[PokemonState(FROSLASS, 80, 80)],
+            ),
+        ]
+    )
+    candidate = _candidate(
+        0,
+        OptionType.CARD,
+        card_id=ARTICUNO,
+        card={"cardType": 0},
+    )
+
+    score, reasons = scorer._play_score(state, candidate)
+
+    assert score < 0
+    assert reasons == ["avoid_articuno_against_grimmsnarl_froslass"]
+    assert not scorer._articuno_is_needed(state)
 
 
 def test_visible_enhanced_hammer_preserves_uncommitted_special_energy() -> None:
