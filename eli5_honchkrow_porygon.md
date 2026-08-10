@@ -93,3 +93,88 @@ It tries to:
 - and attack only when the attack is part of a real KO line.
 
 So the whole idea is: "build the line, protect the resources, then cash it in."
+
+## Execution diagram
+
+```mermaid
+flowchart TD
+    A[Start: receive Observation] --> B[Read board, hand, discard, prizes, and visible matchup clues]
+    B --> C[Update turn ledger and match ledger]
+    C --> D[Identify the current phase and the line being built]
+    D --> E[Check which resources are already available]
+    E --> F[Generate every legal selection]
+    F --> G{Any legal selection?}
+
+    G -- No --> Z[Fallback selection for the current SelectContext]
+    G -- Yes --> H[Score each legal selection against the plan]
+
+    H --> I{What kind of action is this?}
+
+    I -- Setup / evolve --> J{Does it advance the planned attacker line?}
+    J -- Yes --> J1[Prefer Murkrow and Porygon setup first]
+    J -- Yes --> J2[Prefer the line that gets to Honchkrow or Porygon2 efficiently]
+    J -- No --> J3[Reject side plays that do not finish the line]
+
+    I -- Supporter / search / draw --> K{Does it secure the needed KO resources?}
+    K -- Yes --> K1[Reward Proton when it keeps the line moving]
+    K -- Yes --> K2[Reward Transceiver when it still fetches a useful Supporter]
+    K -- Yes --> K3[Reward Factory only after a legal draw conversion exists]
+    K -- Yes --> K4[Reward Petrel only when it improves the same turn]
+    K -- Yes --> K5[Reward Roto-Stick and Miracle Headset only when they close the exact Supporter gap]
+    K -- No --> K6[Lower score for Supporters that spend resources too early]
+
+    I -- Switch / retreat --> L{Does the move immediately improve the line?}
+    L -- Yes --> L1[Allow it only if the active attacker becomes better]
+    L -- No --> L2[Reject movement that only rearranges the board]
+
+    I -- Energy attach --> M{Does Ignition Energy complete a real attack this turn?}
+    M -- Yes --> M1[Reward the attach because it converts into an attack]
+    M -- No --> M2[Reject Ignition Energy if it does not lead to a same-turn attack]
+
+    I -- Attack --> N[Check whether the attack is a real KO line]
+    N --> N1{Is Mega Abomasnow ex the matchup?}
+    N1 -- Yes --> O[Require stricter exact KO conditions]
+    N1 -- No --> P[Use the normal KO line evaluation]
+    O --> O1{Do the Supporter counts meet the exact threshold?}
+    O1 -- Yes --> O2[Allow Rocket Feathers or R Command only if the KO is real now]
+    O1 -- No --> O3[Reject partial damage lines]
+    P --> P1{Does the attack take a real Knock Out?}
+    P1 -- Yes --> P2[Boost the selection strongly]
+    P1 -- No --> P3{Does it still advance the committed plan?}
+    P3 -- Yes --> P4[Keep only if the damage or disruption matters]
+    P3 -- No --> P5[Lower score for speculative attacks]
+
+    I -- Other / risky option --> Q{Does it spend resources without improving the plan?}
+    Q -- Yes --> Q1[Lower score for Hacking, Deceit, or early overuse of resources]
+    Q -- No --> Q2[Keep if it still fits the current phase]
+
+    H --> R{Does the choice preserve the turn plan?}
+    R -- Yes --> S[Keep selections that maintain the build-then-cash-in sequence]
+    R -- No --> T[Penalize actions that break the ledger or spend the finish too early]
+
+    J1 --> U[Pick the highest-scoring selection]
+    J2 --> U
+    J3 --> U
+    K1 --> U
+    K2 --> U
+    K3 --> U
+    K4 --> U
+    K5 --> U
+    K6 --> U
+    L1 --> U
+    L2 --> U
+    M1 --> U
+    M2 --> U
+    O2 --> U
+    O3 --> U
+    P2 --> U
+    P4 --> U
+    P5 --> U
+    Q1 --> U
+    Q2 --> U
+    S --> U
+    T --> U
+
+    U --> V[Return the option indices for the best selection]
+    Z --> V
+```

@@ -91,3 +91,64 @@ flowchart TD
         N3[The next MAIN prompt is re-evaluated from the new observation]
     end
 ```
+
+## Execution diagram
+
+```mermaid
+flowchart TD
+    A[Start: receive observation] --> B{select is None?}
+    B -- Yes --> C[Initialize deck and wait for the next prompt]
+    B -- No --> D[Parse observation into state, context, and legal options]
+
+    D --> E{Forced or nested choice?}
+    E -- Yes --> F[Resolve the required selection first]
+    E -- No --> G{Any legal selection available?}
+
+    G -- No --> H[Return deterministic fallback for this SelectContext]
+    G -- Yes --> I[Generate legal selections]
+
+    I --> J[Filter dangerous shuffle-supporter options]
+    J --> K{Select context}
+
+    K -- MAIN --> L[Run MAIN phase order]
+    K -- Other --> M[Use context-specific fallback or ranking]
+
+    L --> N{Immediate win available?}
+    N -- Yes --> O[Take the winning action]
+    N -- No --> P[Walk MAIN phases in order]
+
+    P --> P1{Can evolve now?}
+    P1 -- Yes --> P1A[Choose evolve actions first]
+    P1 -- No --> P2{Can attach meaningful Energy now?}
+    P2 -- Yes --> P2A[Attach Energy that matters most]
+    P2 -- No --> P3{Is opening Articuno Active?}
+    P3 -- Yes --> P3A[Keep Articuno sacrificial and attach elsewhere]
+    P3 -- No --> P4{Can play Pokemon for board development?}
+    P4 -- Yes --> P4A[Prefer setup Pokemon that improve the board]
+    P4 -- No --> P5{Can play Items that help setup?}
+    P5 -- Yes --> P5A[Use Items before Supporters]
+    P5 -- No --> P6{Can play Supporters that improve the line?}
+    P6 -- Yes --> P6A[Use Supporters after Items]
+    P6 -- No --> P7{Can attack now?}
+    P7 -- Yes --> P7A[Attack and end the turn]
+    P7 -- No --> P8[End only if nothing better remains]
+
+    P1A --> Q[Score the available options inside the phase]
+    P2A --> Q
+    P3A --> Q
+    P4A --> Q
+    P5A --> Q
+    P6A --> Q
+    P7A --> Q
+    P8 --> Q
+    M --> Q
+    O --> Q
+    F --> Q
+
+    Q --> R{Does the selection preserve the fixed phase order?}
+    R -- Yes --> S[Keep the option that best advances the current phase]
+    R -- No --> T[Reject actions that break the phase order]
+
+    S --> U[Return the chosen option indices]
+    T --> U
+```
