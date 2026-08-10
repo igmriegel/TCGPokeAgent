@@ -571,7 +571,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             HONCHKROW,
             PORYGON2,
         } and current_units + added_units >= self._attack_energy_target(target_id):
-            if target_id == HONCHKROW and self._supporters_in_hand(state) > 0:
+            if target_id == HONCHKROW and self._effective_supporters_in_hand(state) > 0:
                 return True
             if target_id == PORYGON2 and self._rocket_supporters_in_discard(state) > 0:
                 return True
@@ -603,14 +603,14 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             score += 1500.0
             reasons.append("honchkrow_guaranteed_ko")
         if attack_id == ROCKET_FEATHERS:
-            supporters = self._supporter_zone_counts(state)
-            damage = self._attack_damage(state, candidate, supporters["hand"] * 60, target)
+            effective_supporters = self._effective_supporters_in_hand(state)
+            damage = self._attack_damage(state, candidate, effective_supporters * 60, target)
             bonus = 700.0 if self._own_active_card_id(state) == HONCHKROW else 0.0
             reasons = ["honchkrow_rocket_feathers", "rocket_hand_damage"]
             if damage < self._effective_opponent_hp(state):
                 reasons.append("rocket_feathers_below_ko_threshold")
                 bonus -= 450.0
-            if supporters["hand"] == 0:
+            if effective_supporters == 0:
                 bonus -= 1000.0
             score = max(score, 300.0 + damage + bonus)
             if damage >= opponent_hp > 0:
@@ -686,7 +686,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             context is SelectContext.TO_HAND
             and candidate.option.get("sourceCardId") == TRANSCEIVER
             and card_id == ARIANA
-            and self._supporters_in_hand(state) >= 2
+            and self._effective_supporters_in_hand(state) >= 2
         ):
             return -2400.0, ["avoid_redundant_ariana_transceiver_search"]
         if context is SelectContext.SETUP_ACTIVE_POKEMON:
@@ -821,7 +821,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                     if self._discard_is_required_for_ko(state, candidate):
                         return 1550.0, ["discard_ariana_to_close_ko"]
                     return -500.0, ["preserve_ariana_until_last"]
-                if self._supporters_in_hand(state) <= 1:
+                if self._effective_supporters_in_hand(state) <= 1:
                     return -1000.0, ["preserve_last_supporter"]
                 return 220.0, ["discard_redundant_rocket_supporter"]
             if card_id in {MURKROW, HONCHKROW, PORYGON, PORYGON2, ARTICUNO}:
@@ -907,6 +907,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             ):
                 return True
             if card_id == PETREL and self._petrel_factory_is_superior(state):
+                return True
+            if card_id == TRANSCEIVER and self._roto_remaining_supporters(state) > 0:
                 return True
         return False
 
@@ -1060,7 +1062,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         """Return whether Roto-Stick has positive expected value for the KO line."""
         if self._reference_roto:
             needed = self._supporters_needed_for_ko(state)
-            hand = self._supporters_in_hand(state)
+            hand = self._effective_supporters_in_hand(state)
             return bool(
                 hand < needed
                 and (self._rocket_supporters_in_discard(state) or self._card_in_hand(state, ARIANA))
@@ -1068,7 +1070,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if not self._card_in_hand(state, ROTO_STICK):
             return False
         needed = self._supporters_needed_for_ko(state)
-        hand = self._supporters_in_hand(state)
+        hand = self._effective_supporters_in_hand(state)
         if hand >= needed:
             return False
         active = self._own_active(state)
@@ -1353,13 +1355,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if player is None or player.deck_count == 0:
             return False
         discarded = self._rocket_supporters_in_discard(state)
-        needed = self._supporters_needed_for_ko(state) - self._supporters_in_hand(state)
+        needed = self._supporters_needed_for_ko(state) - self._effective_supporters_in_hand(state)
         return bool(
             discarded >= 1
             and needed > 0
             and min(2, discarded) >= needed
             or (
-                self._supporters_in_hand(state) == 0
+                self._effective_supporters_in_hand(state) == 0
                 and any(self._card_id_from_value(card) == ARIANA for card in player.discard)
                 and self._ariana_draw_count(state) > player.hand_count
             )
@@ -1376,8 +1378,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         recoverable = min(2, self._rocket_supporters_in_discard(state))
         return (
             recoverable > 0
-            and self._supporters_in_hand(state) < self._supporters_needed_for_ko(state)
-            and self._supporters_in_hand(state) + recoverable
+            and self._effective_supporters_in_hand(state) < self._supporters_needed_for_ko(state)
+            and self._effective_supporters_in_hand(state) + recoverable
             >= self._supporters_needed_for_ko(state)
         )
 
@@ -1470,7 +1472,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         player = self._own_player(state)
         return bool(
             player
-            and self._supporters_in_hand(state) == 0
+            and self._effective_supporters_in_hand(state) == 0
             and player.hand_count <= 2
             and self._supporter_copies_remaining(state, ARIANA) > 0
         )
@@ -1590,7 +1592,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 continue
             energy = self._energy_units_for_pokemon(attacker)
             if attacker.card_id == HONCHKROW and energy >= self._attack_energy_target(HONCHKROW):
-                available = max(available, self._supporters_in_hand(state) * 60)
+                available = max(available, self._effective_supporters_in_hand(state) * 60)
             elif attacker.card_id == PORYGON2 and energy >= self._attack_energy_target(PORYGON2):
                 available = max(available, self._rocket_supporters_in_discard(state) * 20)
             elif attacker.card_id not in {MURKROW, PORYGON}:
@@ -1703,6 +1705,19 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 self.catalog.get_card(str(self._card_id_from_value(card))) or {},
             )
         )
+
+    def _effective_supporters_in_hand(self, state: GameState) -> int:
+        """Count visible supporters plus Transceiver when it can still fetch one."""
+        supporters = self._supporters_in_hand(state)
+        transceivers = sum(
+            1 for card in self._hand_cards(state) if self._card_id_from_value(card) == TRANSCEIVER
+        )
+        if transceivers == 0:
+            return supporters
+        remaining = self._roto_remaining_supporters(state)
+        if remaining <= 0:
+            return supporters
+        return supporters + min(transceivers, remaining)
 
     def _supporters_in_hand_after(
         self, excluded_card_id: int, state: GameState | None = None
@@ -1838,7 +1853,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return self._rocket_supporters_in_discard(state) >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
         opponent_hp = self._raw_opponent_hp(state)
         r_command = self._rocket_supporters_in_discard(state) * 20
-        feathers = self._supporters_in_hand(state) * 60
+        feathers = self._effective_supporters_in_hand(state) * 60
         hammer = 100
         if r_command >= opponent_hp > 0 and feathers < opponent_hp:
             return True
@@ -1898,7 +1913,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if card_id == HONCHKROW:
             feathers_ready = (
                 energy_count >= self._attack_energy_target(HONCHKROW)
-                and self._supporters_in_hand(state) >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
+                and self._effective_supporters_in_hand(state)
+                >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
             )
             hammer_ready = energy_count >= 3 and self._raw_opponent_hp(state) <= 100
             return feathers_ready or hammer_ready
@@ -1918,7 +1934,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return True
         target_hp = max(0, int(target.hp))
         if attack_id == ROCKET_FEATHERS:
-            base_damage = self._supporters_in_hand(state) * 60
+            base_damage = self._effective_supporters_in_hand(state) * 60
         elif attack_id == R_COMMAND:
             base_damage = self._rocket_supporters_in_discard(state) * 20
         else:
@@ -2001,7 +2017,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
         if not has_energy:
             return False
-        supporters = self._supporter_zone_counts(state)["hand"]
+        supporters = self._effective_supporters_in_hand(state)
         if self._own_active_card_id(state) in {HONCHKROW, PORYGON2} and supporters > 0:
             return self._supporters_needed_for_ko(state) <= supporters
         return (
@@ -2738,19 +2754,21 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         active = player.active if player is not None else None
         bench = [pokemon for pokemon in (player.bench if player is not None else []) if pokemon]
         supporters_in_hand = self._scorer._supporters_in_hand(state)
+        effective_supporters_in_hand = self._scorer._effective_supporters_in_hand(state)
         supporters_in_discard = self._scorer._rocket_supporters_in_discard(state)
         self._turn_ledger.supporters_in_hand = supporters_in_hand
         self._turn_ledger.supporters_in_discard = supporters_in_discard
-        self._turn_ledger.effective_supporters_in_hand = supporters_in_hand
+        self._turn_ledger.effective_supporters_in_hand = effective_supporters_in_hand
         recoverable = min(2, supporters_in_discard)
         if (
             self._scorer._card_in_hand(state, MIRACLE_HEADSET)
             and recoverable > 0
-            and supporters_in_hand + recoverable >= self._scorer._supporters_needed_for_ko(state)
+            and effective_supporters_in_hand + recoverable
+            >= self._scorer._supporters_needed_for_ko(state)
         ):
             self._turn_ledger.effective_supporters_in_hand += recoverable
         self._turn_ledger.supporters_needed_for_ko = self._scorer._supporters_needed_for_ko(state)
-        self._turn_ledger.rocket_feathers_damage = supporters_in_hand * 60
+        self._turn_ledger.rocket_feathers_damage = effective_supporters_in_hand * 60
         self._turn_ledger.r_command_damage = supporters_in_discard * 20
         self._turn_ledger.active_attacker_card_id = (
             int(active.card_id) if active is not None and isinstance(active.card_id, int) else None
@@ -2934,7 +2952,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
         if damage_per_supporter <= 0:
             return
-        supporters = self._scorer._supporters_in_hand(state)
+        supporters = self._scorer._effective_supporters_in_hand(state)
         required = (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
         if required <= 0 or supporters < required:
             return
@@ -2954,7 +2972,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         attack_id = self._scorer._attack_id(candidate)
         target = self._scorer._target_opponent_pokemon(state, candidate)
         if attack_id == ROCKET_FEATHERS:
-            base = self._scorer._supporters_in_hand(state) * 60
+            base = self._scorer._effective_supporters_in_hand(state) * 60
         elif attack_id == R_COMMAND:
             base = self._scorer._rocket_supporters_in_discard(state) * 20
         elif attack_id == HAMMER_IN:
@@ -3642,7 +3660,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
-                    and self._scorer._supporters_in_hand(state) == 0
+                    and self._scorer._effective_supporters_in_hand(state) == 0
                     and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
                 )
             )
@@ -3756,7 +3774,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         needed = self._turn_ledger.supporters_needed_for_ko or (
             self._scorer._supporters_needed_for_ko(state)
         )
-        available = self._scorer._supporters_in_hand(state)
+        available = self._scorer._effective_supporters_in_hand(state)
         return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
 
     def _articuno_is_reachable(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
@@ -3796,7 +3814,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             )
             if prize_value >= 2 or prize_value >= prizes_left:
                 required = max(1, (max(0, int(pokemon.hp)) + 59) // 60)
-                if self._scorer._supporters_in_hand(state) >= required:
+                if self._scorer._effective_supporters_in_hand(state) >= required:
                     self._turn_ledger.supporters_needed_for_ko = required
                     return True
         return False
@@ -3804,7 +3822,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     def _canonical_headset_is_useful(self, state: GameState) -> bool:
         """Choose Headset only when exactly two recoveries close a visible KO."""
         discard = self._scorer._rocket_supporters_in_discard(state)
-        hand = self._scorer._supporters_in_hand(state)
+        hand = self._scorer._effective_supporters_in_hand(state)
         needed = self._turn_ledger.supporters_needed_for_ko
         recoverable = min(2, discard)
         if recoverable == 0 or hand >= needed or hand + recoverable < needed:
@@ -3940,7 +3958,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if player.deck_count <= self._scorer._elective_draw_reserve(state):
             return False
         target_hp = self._scorer._raw_opponent_hp(state)
-        current_damage = self._scorer._supporters_in_hand(state) * 60
+        current_damage = self._scorer._effective_supporters_in_hand(state) * 60
         return current_damage < target_hp
 
     def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
@@ -3950,7 +3968,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         target_hp = self._target_hp(state, candidate)
         damage = self._candidate_damage(state, candidate)
         remaining = max(0, target_hp - damage)
-        supporters = self._scorer._supporters_in_hand(state)
+        supporters = self._scorer._effective_supporters_in_hand(state)
         next_turn_supporters = max(0, supporters - 1)
         player = self._scorer._own_player(state)
         active = self._scorer._own_active(state)
@@ -4095,7 +4113,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 for selection in selections
                 if self._rocket_supporter_count(selection, by_index) == required
             ]
-            available = self._scorer._supporters_in_hand(state)
+            available = self._scorer._effective_supporters_in_hand(state)
             if exact and required <= available:
                 self._turn_ledger.resource_guard = "discard_exact_supporters_for_rocket_ko"
                 self._turn_ledger.rocket_supporters_discarded = required
@@ -4313,7 +4331,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if by_card_id.get(PROTON):
                 wanted.add(by_card_id[PROTON][0])
             wanted.update(by_card_id.get(ARIANA, ()))
-            if not wanted and self._scorer._supporters_in_hand(state) == 0:
+            if not wanted and self._scorer._effective_supporters_in_hand(state) == 0:
                 if by_card_id.get(PETREL):
                     wanted.add(by_card_id[PETREL][0])
             exact = [
@@ -4603,7 +4621,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 state, candidate
             ):
                 return not self._rocket_feathers_has_horizon(state, candidate)
-            return self._scorer._supporters_in_hand(state) == 0
+            return self._scorer._effective_supporters_in_hand(state) == 0
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
             return not (
                 self._scorer._roto_stick_is_needed(state)
@@ -4629,7 +4647,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and context is SelectContext.TO_HAND
             and candidate.option.get("sourceCardId") == TRANSCEIVER
             and card_id == ARIANA
-            and self._scorer._supporters_in_hand(state) >= 2
+            and self._scorer._effective_supporters_in_hand(state) >= 2
         ):
             return True
         if candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
@@ -4783,7 +4801,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     state, candidate
                 ):
                     return True
-                if self._scorer._supporters_in_hand(state) <= 1:
+                if self._scorer._effective_supporters_in_hand(state) <= 1:
                     return True
         if context is SelectContext.TO_HAND and candidate.option.get("sourceCardId") == PETREL:
             return not self._petrel_target_is_useful(state, candidate)
@@ -4966,7 +4984,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             choices.append((attack_id, damage, requires_ignition))
 
         if pokemon.card_id == HONCHKROW:
-            supporters = self._scorer._supporters_in_hand(state) - int(giovanni_played)
+            supporters = self._scorer._effective_supporters_in_hand(state) - int(giovanni_played)
             mega_abomasnow = self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
             if supporters > 0 and (
                 not mega_abomasnow or supporters >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
@@ -5200,7 +5218,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         recoverable = min(2, discarded)
         if recoverable == 0:
             return False
-        supporters_after = self._scorer._supporters_in_hand(state) + recoverable
+        supporters_after = self._scorer._effective_supporters_in_hand(state) + recoverable
         damage = self._dark_attack_damage(state, supporters_after * 60)
         return damage >= max(0, int(opponent.active.hp)) > 0
 
@@ -5227,7 +5245,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if not opponent_bench:
             return not self._active_has_productive_attack(state)
         max_damage = max(
-            self._scorer._supporters_in_hand(state) * 60 * 2,
+            self._scorer._effective_supporters_in_hand(state) * 60 * 2,
             self._scorer._rocket_supporters_in_discard(state) * 20,
             100,
         )

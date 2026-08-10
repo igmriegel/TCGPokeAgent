@@ -280,6 +280,29 @@ def test_rocket_feathers_requires_supporter_in_hand() -> None:
     assert scorer._supporters_in_hand(state) == 0
 
 
+def test_transceiver_counts_as_one_supporter_only_when_deck_can_supply_one() -> None:
+    """Transceiver should count as a supporter-equivalent only when the deck can still search."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": TRANSCEIVER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 60, 60)),
+        ]
+    )
+    candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    assert scorer._effective_supporters_in_hand(state) == 1
+    assert not agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+    state.players[0].deck_count = 0
+    assert scorer._effective_supporters_in_hand(state) == 0
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+
+
 def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow() -> None:
     """The strict variant accepts the exact six-supporter Mega KO only."""
     agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v2_strict")
@@ -804,7 +827,9 @@ def test_petrel_prefers_ariana_over_ultra_ball(monkeypatch) -> None:
     )
     ultra_ball.option["sourceCardId"] = PETREL
 
-    ariana_score, ariana_reasons = scorer._card_selection_score(state, ariana, SelectContext.TO_HAND)
+    ariana_score, ariana_reasons = scorer._card_selection_score(
+        state, ariana, SelectContext.TO_HAND
+    )
     ultra_ball_score, ultra_ball_reasons = scorer._card_selection_score(
         state, ultra_ball, SelectContext.TO_HAND
     )
