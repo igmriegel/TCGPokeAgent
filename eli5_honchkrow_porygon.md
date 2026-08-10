@@ -132,7 +132,10 @@ flowchart TD
     M -- No --> M2[Reject Ignition Energy if it does not lead to a same-turn attack]
 
     I -- Attack --> N[Check whether the attack is a real KO line]
-    N --> N1{Is Mega Abomasnow ex the matchup?}
+    N --> N0{Does the line depend on counted Transceiver or Miracle Headset?}
+    N0 -- Yes --> N01[Force the resource play first]
+    N0 -- No --> N1{Is Mega Abomasnow ex the matchup?}
+    N01 --> N1
     N1 -- Yes --> O[Require stricter exact KO conditions]
     N1 -- No --> P[Use the normal KO line evaluation]
     O --> O1{Do the Supporter counts meet the exact threshold?}
@@ -165,6 +168,7 @@ flowchart TD
     L2 --> U
     M1 --> U
     M2 --> U
+    N01 --> U
     O2 --> U
     O3 --> U
     P2 --> U
