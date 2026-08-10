@@ -537,6 +537,12 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             target = 120
         elif target_id == ARTICUNO and self._articuno_is_needed(state):
             target = 170
+        if (
+            target_id == HONCHKROW
+            and self._own_active_card_id(state) == HONCHKROW
+            and self._energy_units_in_hand(state) > 0
+        ):
+            target += 700
         if energy_count >= self._attack_energy_target(target_id):
             return -500.0, ["avoid_energy_above_attack_plan"]
         energy_id = self._feature_int(candidate, "card_id")
@@ -1064,6 +1070,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
         """Return whether Roto-Stick has positive expected value for the KO line."""
+        if self._roto_can_close_r_command_line(state):
+            return True
         if self._reference_roto:
             needed = self._supporters_needed_for_ko(state)
             hand = self._effective_supporters_in_hand(state)
@@ -1887,6 +1895,27 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         prizes_needed = len(self._own_player(state).prize) if self._own_player(state) else 0
         prize_value = self._active_target_prize_value(state)
         return prizes_needed > 0 and prize_value >= prizes_needed
+
+    def _r_command_supporters_needed(self, state: GameState) -> int:
+        """Return the exact discard-supporter count needed for the visible KO."""
+        return (max(0, self._raw_opponent_hp(state)) + 19) // 20
+
+    def _roto_can_close_r_command_line(self, state: GameState) -> bool:
+        """Return whether Roto can provide the final supporter for Porygon2."""
+        active = self._own_active(state)
+        if (
+            active is None
+            or active.card_id != PORYGON2
+            or self._energy_units_for_pokemon(active) < self._attack_energy_target(PORYGON2)
+        ):
+            return False
+        needed = self._r_command_supporters_needed(state)
+        discard = self._rocket_supporters_in_discard(state)
+        return bool(
+            needed > discard
+            and needed - discard == 1
+            and self._roto_remaining_supporters(state) > 0
+        )
 
     def _porygon2_terminal_promotion_available(
         self, state: GameState, candidate: Candidate
@@ -3791,7 +3820,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._scorer._supporters_needed_for_ko(state)
         )
         available = self._scorer._effective_supporters_in_hand(state)
-        return self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
+        return (
+            self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
+        ) or self._scorer._roto_can_close_r_command_line(state)
 
     def _articuno_is_reachable(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
         """Return whether Articuno is already present or reachable in this prompt."""

@@ -1562,6 +1562,35 @@ def test_archer_remains_eligible_when_a_winning_attack_exists() -> None:
     assert scorer._archer_is_safe_and_useful(state, candidate)
 
 
+def test_honchkrow_energy_attachment_is_prioritized_before_archer() -> None:
+    """If Honchkrow can take a turn with energy in hand, attach before Archer."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    scorer.set_own_ko_observed(True)
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}]),
+                hand=[{"id": ROCKET_ENERGY}, {"id": ARCHER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    attach = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 5},
+        features={"card_id": ROCKET_ENERGY, "target_card_id": HONCHKROW},
+    )
+    archer = _candidate(1, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+
+    attach_score, _ = scorer._attachment_score(state, attach)
+    archer_score, _ = scorer._play_score(state, archer)
+
+    assert attach_score > archer_score
+
+
 def test_roto_does_not_become_needed_only_after_own_ko() -> None:
     """A KO window belongs to Archer and must not independently authorize Roto-Stick."""
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
@@ -1578,6 +1607,27 @@ def test_roto_does_not_become_needed_only_after_own_ko() -> None:
     )
 
     assert not scorer._roto_stick_is_needed(state)
+
+
+def test_roto_is_needed_when_one_more_discard_supporter_closes_r_command() -> None:
+    """Roto should close the final Porygon2 discard-supporter gap for a KO."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 150, 150, energies=[{}, {}, {}]),
+                hand=[{"id": ROTO_STICK}],
+                discard=[{"id": ARIANA}] * 16,
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 340, 340)),
+        ]
+    )
+
+    assert scorer._roto_can_close_r_command_line(state)
+    assert scorer._roto_stick_is_needed(state)
+    assert agent._canonical_roto_is_productive(state)
 
 
 def test_roto_is_needed_for_a_direct_supporter_deficit() -> None:
