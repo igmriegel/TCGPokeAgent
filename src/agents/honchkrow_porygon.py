@@ -1070,6 +1070,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _roto_stick_is_needed(self, state: GameState) -> bool:
         """Return whether Roto-Stick has positive expected value for the KO line."""
+        if self._roto_closes_visible_ko(state):
+            return True
         if self._roto_can_close_r_command_line(state):
             return True
         if self._reference_roto:
@@ -1094,6 +1096,38 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if player.deck_count <= self._elective_draw_reserve(state):
             return False
         return self._roto_expected_value(state, needed - hand)[0] > 0
+
+    def _roto_closes_visible_ko(self, state: GameState) -> bool:
+        """Return whether Roto can convert a visible partial line into a KO."""
+        active = self._own_active(state)
+        player = self._own_player(state)
+        if active is None or player is None or not self._card_in_hand(state, ROTO_STICK):
+            return False
+        deck_room = min(4, self._roto_remaining_supporters(state))
+        if deck_room <= 0:
+            return False
+        target_hp = self._raw_opponent_hp(state)
+        if target_hp <= 0:
+            return False
+        if active.card_id == HONCHKROW and self._energy_units_for_pokemon(active) >= 2:
+            needed = self._supporters_needed_for_ko(state)
+            hand = self._effective_supporters_in_hand(state)
+            return bool(
+                hand < needed
+                and (hand + deck_room) >= needed
+                and (hand + deck_room) * 60 >= target_hp
+            )
+        if active.card_id == PORYGON2 and self._energy_units_for_pokemon(
+            active
+        ) >= self._attack_energy_target(PORYGON2):
+            needed = self._r_command_supporters_needed(state)
+            discard = self._rocket_supporters_in_discard(state)
+            return bool(
+                discard < needed
+                and (discard + deck_room) >= needed
+                and (discard + deck_room) * 20 >= target_hp
+            )
+        return False
 
     def _roto_remaining_supporters(self, state: GameState) -> int:
         """Estimate Supporters remaining in the hidden deck from public zones."""
@@ -2950,6 +2984,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         ):
             return TurnObjective.WIN_NOW
         if self._scorer._own_field_count(state) <= 1:
+            if any(
+                candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                and self._scorer._feature_int(candidate, "card_id") == PORYGON2
+                and self._scorer._porygon2_terminal_promotion_available(state, candidate)
+                for candidate in candidates
+            ):
+                return TurnObjective.HIGHEST_PRIZE_KO
             return TurnObjective.PREVENT_NO_POKEMON_LOSS
         if lethal or self._evolution_ko_commitment is not None:
             return TurnObjective.HIGHEST_PRIZE_KO
@@ -3177,6 +3218,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
                 return DecisionPhase.STADIUM.value, reason, factory_play
 
+        energy_attachment = matching(
+            lambda candidate: self._energy_attachment_before_ariana_is_needed(state, candidate)
+        )
+        if energy_attachment:
+            return (
+                DecisionPhase.ATTACH_PRIORITY.value,
+                "attach_energy_before_ariana",
+                energy_attachment,
+            )
+
         if self._uses_supporter_lethal_commitment and not self._uses_expert_rounds_1_3:
             lethal_attacks = matching(
                 lambda candidate: (
@@ -3335,6 +3386,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if factory:
             return DecisionPhase.UTILITY.value, "factory_after_ariana_and_roto", factory
 
+        porygon_bench_evolution = matching(
+            lambda candidate: self._porygon_bench_evolution_is_preferred(state, candidate)
+        )
+        if porygon_bench_evolution:
+            return (
+                DecisionPhase.EVOLVE.value,
+                "protect_benched_porygon_before_exposed_active",
+                porygon_bench_evolution,
+            )
+
         productive_evolution = matching(
             lambda candidate: (
                 candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
@@ -3394,6 +3455,31 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.canonical_exception = "immediate_win"
             return DecisionPhase.ATTACK_PRIORITY.value, "canonical_immediate_win", immediate
 
+        factory_play = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == FACTORY
+                and self._scorer._factory_play_is_useful(state)
+            )
+        )
+        if factory_play:
+            reason = (
+                "canonical_place_factory_drawn_by_supporter"
+                if state.supporter_played
+                else "canonical_place_factory_before_supporter"
+            )
+            return DecisionPhase.STADIUM.value, reason, factory_play
+
+        energy_attachment = matching(
+            lambda candidate: self._energy_attachment_before_ariana_is_needed(state, candidate)
+        )
+        if energy_attachment:
+            return (
+                DecisionPhase.ATTACH_PRIORITY.value,
+                "canonical_attach_energy_before_supporter",
+                energy_attachment,
+            )
+
         if self._scorer._own_ko_observed:
             post_ko_supporters = matching(
                 lambda candidate: (
@@ -3430,6 +3516,21 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         "canonical_post_ko_best_supporter",
                         best,
                     )
+
+        porygon2_terminal = matching(
+            lambda candidate: (
+                candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                and self._scorer._feature_int(candidate, "card_id") == PORYGON2
+                and self._scorer._porygon2_terminal_promotion_available(state, candidate)
+            )
+        )
+        if porygon2_terminal:
+            self._turn_ledger.canonical_exception = "porygon2_terminal_promotion"
+            return (
+                DecisionPhase.EVOLVE.value,
+                "canonical_porygon2_terminal_promotion",
+                porygon2_terminal,
+            )
 
         night_stretcher = matching(
             lambda candidate: (
@@ -3551,6 +3652,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 rocket_attach,
             )
 
+        porygon_bench_evolution = matching(
+            lambda candidate: self._porygon_bench_evolution_is_preferred(state, candidate)
+        )
+        if porygon_bench_evolution:
+            self._turn_ledger.canonical_exception = "protect_benched_porygon"
+            return (
+                DecisionPhase.EVOLVE.value,
+                "canonical_protect_benched_porygon_before_exposed_active",
+                porygon_bench_evolution,
+            )
+
         stage = self._turn_ledger.stage
         if stage in {"", "observe", CanonicalTurnStage.DEVELOP.value}:
             self._turn_ledger.stage = CanonicalTurnStage.DEVELOP.value
@@ -3618,23 +3730,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     DecisionPhase.PLAY_ITEMS.value,
                     "canonical_emergency_headset_before_factory",
                     emergency_headset,
-                )
-            factory_in_hand = matching(
-                lambda candidate: (
-                    candidate.option_type is OptionType.PLAY
-                    and self._scorer._feature_int(candidate, "card_id") == FACTORY
-                    and (state.supporter_played or self._scorer._factory_play_is_useful(state))
-                )
-            )
-            if factory_in_hand:
-                return (
-                    DecisionPhase.STADIUM.value,
-                    (
-                        "canonical_place_factory_drawn_by_supporter"
-                        if state.supporter_played
-                        else "canonical_place_factory_before_supporter"
-                    ),
-                    factory_in_hand,
                 )
             petrel_factory = matching(
                 lambda candidate: (
@@ -3813,9 +3908,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and player is not None
             and player.deck_count
             < self._scorer._elective_draw_reserve(state) + ROTO_STICK_REVEAL_COUNT
-        ):
+            ):
             self._turn_ledger.resource_guard = "preserve_roto_for_deck_reserve"
             return False
+        if self._scorer._roto_closes_visible_ko(state):
+            return True
         needed = self._turn_ledger.supporters_needed_for_ko or (
             self._scorer._supporters_needed_for_ko(state)
         )
@@ -4037,6 +4134,39 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if self._scorer._metadata_int(candidate.card, "cardType") != 0:
             return False
         return card_id in {MURKROW, PORYGON} and not self._scorer._own_bench_full(state)
+
+    def _porygon_bench_evolution_is_preferred(
+        self, state: GameState, candidate: Candidate
+    ) -> bool:
+        """Return whether a bench Porygon evolution should outrank exposed active play."""
+        if candidate.option_type not in {OptionType.PLAY, OptionType.EVOLVE}:
+            return False
+        if self._scorer._feature_int(candidate, "card_id") != PORYGON2:
+            return False
+        player = self._scorer._own_player(state)
+        active = self._scorer._own_active(state)
+        if player is None or active is None or active.card_id != PORYGON:
+            return False
+        target_serial = self._scorer._feature_int(candidate, "target_serial")
+        if not target_serial:
+            return False
+        if active.serial is not None and target_serial == active.serial:
+            return False
+        return any(
+            pokemon is not None
+            and pokemon.card_id == PORYGON
+            and pokemon.serial == target_serial
+            for pokemon in player.bench
+        )
+
+    def _energy_attachment_before_ariana_is_needed(
+        self, state: GameState, candidate: Candidate
+    ) -> bool:
+        """Return whether an energy attachment must resolve before Ariana."""
+        return bool(
+            candidate.option_type is OptionType.ATTACH
+            and self._scorer._energy_attachment_is_committed(state, candidate)
+        )
 
     def _probabilistic_pre_draw_hand_reduction(
         self, state: GameState, candidate: Candidate

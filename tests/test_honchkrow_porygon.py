@@ -1252,6 +1252,93 @@ def test_v3_projects_ignition_before_promoting_porygon2() -> None:
     assert plan.requires_ignition
 
 
+def test_exposed_active_porygon_prefers_benched_porygon2_evolution() -> None:
+    """A threatened active Porygon should not block a safer bench evolution line."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON, 60, 60, serial=21)],
+            ),
+            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+        ]
+    )
+    exposed = _candidate(0, OptionType.EVOLVE, card_id=PORYGON2, card={"cardType": 0})
+    exposed.features.update({"target_card_id": PORYGON2, "target_serial": 10})
+    bench = _candidate(1, OptionType.EVOLVE, card_id=PORYGON2, card={"cardType": 0})
+    bench.features.update({"target_card_id": PORYGON2, "target_serial": 21})
+    end = _candidate(2, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.EVOLVE,)),
+            Selection((1,), (OptionType.EVOLVE,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [exposed, bench, end],
+    )
+
+    assert phase == DecisionPhase.EVOLVE.value
+    assert reason == "canonical_protect_benched_porygon_before_exposed_active"
+    assert [selection.indices for selection in choices] == [(1,)]
+
+
+def test_expert_turn_loop_promotes_porygon2_terminal_line_after_ko() -> None:
+    """A visible terminal Porygon2 line must outrank the backup basic survival line."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 18,
+                prize=[None],
+            ),
+            PlayerState(active=PokemonState(721, 40, 40, serial=30)),
+        ]
+    )
+    porygon2 = _candidate(0, OptionType.EVOLVE, card_id=PORYGON2, card={"cardType": 0})
+    porygon2.features.update({"target_card_id": PORYGON2, "target_serial": 22})
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.EVOLVE,)), Selection((1,), (OptionType.END,))],
+        [porygon2, end],
+    )
+
+    assert phase == DecisionPhase.EVOLVE.value
+    assert reason == "canonical_porygon2_terminal_promotion"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_v3_paid_retreat_targets_porygon2_terminal_line() -> None:
+    """Paid retreat should choose the Porygon2 switch when it converts into a KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 18,
+                prize=[None],
+            ),
+            PlayerState(active=PokemonState(721, 40, 40, serial=30)),
+        ]
+    )
+
+    plan = agent._paid_retreat_plan(state)
+
+    assert plan is not None
+    assert plan.target_card_id == PORYGON2
+    assert plan.attack_id == R_COMMAND
+    assert plan.requires_ignition
+
+
 def test_v3_commits_ignition_and_r_command_after_porygon2_promotion() -> None:
     """The selected Porygon2 line must force its Ignition attachment and attack."""
     from src.agents.honchkrow_porygon import SwitchCommitment
@@ -1645,6 +1732,31 @@ def test_roto_is_needed_for_a_direct_supporter_deficit() -> None:
     )
 
     assert scorer._roto_stick_is_needed(state)
+
+
+def test_roto_is_needed_when_it_closes_a_visible_ko(monkeypatch) -> None:
+    """Roto should outrank partial damage when it turns the line into a KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}, {"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 240, 240)),
+        ]
+    )
+    monkeypatch.setattr(
+        agent._scorer,
+        "_roto_expected_value",
+        lambda *_: (
+            _ for _ in ()
+        ).throw(AssertionError("Roto EV should not gate a visible KO line")),
+    )
+
+    assert agent._scorer._roto_stick_is_needed(state)
+    assert agent._canonical_roto_is_productive(state)
 
 
 def test_roto_probability_uses_four_revealed_cards() -> None:
@@ -2108,6 +2220,75 @@ def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monk
     _, reason, choices = agent._main_phase_selections(state, selections, [roto])
     assert reason == "canonical_roto_after_factory"
     assert [choice.indices for choice in choices] == [(2,)]
+
+
+def test_canonical_turn_loop_places_factory_before_post_ko_supporter() -> None:
+    """A Factory in hand must be played before a post-KO Supporter line."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent._scorer.set_own_ko_observed(True)
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": FACTORY}, {"id": ARCHER}, {"id": ARIANA}],
+                hand_count=3,
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    factory_play = _candidate(0, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4})
+    archer = _candidate(1, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    ariana = _candidate(2, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,))
+        for candidate in [factory_play, archer, ariana]
+    ]
+
+    _, reason, choices = agent._main_phase_selections(
+        state, selections, [factory_play, archer, ariana]
+    )
+
+    assert reason == "canonical_place_factory_before_supporter"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+
+def test_canonical_turn_loop_attaches_energy_before_ariana() -> None:
+    """An attack-enabling attachment must resolve before Ariana."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent._scorer.set_own_ko_observed(True)
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}]),
+                hand=[{"id": ROCKET_ENERGY}, {"id": ARCHER}, {"id": ARIANA}],
+                hand_count=3,
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 200, 200)),
+        ],
+    )
+    attach = _candidate(
+        0,
+        OptionType.ATTACH,
+        card_id=ROCKET_ENERGY,
+        card={"cardType": 5},
+        target_card_id=HONCHKROW,
+        target_serial=22,
+    )
+    archer = _candidate(1, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    ariana = _candidate(2, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+    selections = [
+        Selection((candidate.option_index,), (candidate.option_type,))
+        for candidate in [attach, archer, ariana]
+    ]
+
+    _, reason, choices = agent._main_phase_selections(state, selections, [attach, archer, ariana])
+
+    assert reason == "canonical_attach_energy_before_supporter"
+    assert [choice.indices for choice in choices] == [(0,)]
 
 
 def test_canonical_turn_loop_factory_precedes_roto_after_supporter(monkeypatch) -> None:
