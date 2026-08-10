@@ -781,6 +781,39 @@ def test_ultra_ball_prefers_porygon2_over_porygon_for_terminal_search(
     assert porygon_reasons == ["search_porygon_setup_line"]
 
 
+def test_petrel_prefers_ariana_over_ultra_ball(monkeypatch) -> None:
+    """Petrel should take Ariana ahead of Ultra Ball when Ariana is useful."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(players=[PlayerState(hand=[{"id": PETREL}]), PlayerState()])
+    monkeypatch.setattr(scorer, "_ariana_is_safe_and_useful", lambda _state: True)
+    monkeypatch.setattr(scorer, "_ultra_ball_is_productive", lambda _state: True)
+    monkeypatch.setattr(scorer, "_petrel_is_emergency", lambda _state: False)
+
+    ariana = _candidate(
+        0,
+        OptionType.CARD,
+        card_id=ARIANA,
+        card={"cardType": 3},
+    )
+    ariana.option["sourceCardId"] = PETREL
+    ultra_ball = _candidate(
+        1,
+        OptionType.CARD,
+        card_id=ULTRA_BALL,
+        card={"cardType": 1},
+    )
+    ultra_ball.option["sourceCardId"] = PETREL
+
+    ariana_score, ariana_reasons = scorer._card_selection_score(state, ariana, SelectContext.TO_HAND)
+    ultra_ball_score, ultra_ball_reasons = scorer._card_selection_score(
+        state, ultra_ball, SelectContext.TO_HAND
+    )
+
+    assert ariana_score > ultra_ball_score
+    assert ariana_reasons == ["petrel_take_ariana_for_hand_refresh"]
+    assert ultra_ball_reasons == ["petrel_prefers_ariana_over_ultra_ball"]
+
+
 def test_end_telemetry_marks_visible_productive_line() -> None:
     """The tactical ledger exposes END decisions that abandon a visible productive line."""
     agent = HonchkrowPorygonAgent(_profile())

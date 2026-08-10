@@ -202,6 +202,8 @@ hand for Ariana, while Porygon2 is not benched before the opening line.
 When a search effect offers multiple legal Pokémon targets, rank them by
 visible payoff: Porygon2 for a terminal or best-damage R Command line, then
 Articuno when matchup evidence is public, then Porygon or Murkrow for setup.
+When Petrel offers both Ariana and Ultra Ball, prefer Ariana unless Ultra Ball
+is the only card that creates a concrete same-turn conversion.
 Transceiver fetches Proton during early setup even when Ariana is already in
 hand, provided a positive target remains. When Dragapult evidence is public
 (Dreepy, Drakloak, or Dragapult ex), Articuno is a required defensive setup

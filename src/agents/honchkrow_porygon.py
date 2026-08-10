@@ -699,6 +699,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return score, [reason]
         if context is SelectContext.SETUP_BENCH_POKEMON and card_id == MURKROW:
             return 2600.0, ["opening_bench_maximize_murkrow"]
+        if context is SelectContext.TO_HAND and candidate.option.get("sourceCardId") == PETREL:
+            if card_id == ULTRA_BALL:
+                if self._ariana_is_safe_and_useful(state):
+                    return -900.0, ["petrel_prefers_ariana_over_ultra_ball"]
+                if self._ultra_ball_is_productive(state):
+                    return 650.0, ["petrel_ultra_ball_conversion_only"]
+                return -1600.0, ["petrel_ultra_ball_without_useful_conversion"]
+            if card_id == ARIANA and self._ariana_is_safe_and_useful(state):
+                return 1850.0, ["petrel_take_ariana_for_hand_refresh"]
         if (
             context is SelectContext.TO_HAND
             and candidate.option.get("sourceCardId") == PETREL
