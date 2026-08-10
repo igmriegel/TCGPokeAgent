@@ -54,6 +54,11 @@ stdout limit does not cut the JSON in the middle. It contains:
 The schema identifier is `debug-decision-compact-v1`. No credentials or full
 card text are included.
 
+This compact stdout trace is the canonical form used by the archived Kaggle
+debug capture, including files like `/home/igor/Downloads/91474032-1.json`.
+Keep it in the stdout-debug builder path. Do not move it into the normal
+submission entrypoint.
+
 ### Reading a replay decision
 
 For a replay JSON downloaded from Kaggle, prefer the replay inspector helper

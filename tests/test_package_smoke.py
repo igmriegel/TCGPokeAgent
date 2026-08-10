@@ -119,3 +119,27 @@ def test_dedicated_expert_package_manifest_identifies_backend(tmp_path) -> None:
         "expert_rounds_1_3_v1",
         "expert_turn_loop",
     ]
+
+
+def test_stdout_debug_package_injects_compact_trace(tmp_path) -> None:
+    root = Path(__file__).parents[1]
+    archive = tmp_path / "honchkrow_porygon_stdout_debug.tar.gz"
+
+    subprocess.run(
+        ["bash", str(root / "scripts" / "build_kaggle_stdout_debug_package.sh"), str(archive)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    with tarfile.open(archive) as package:
+        main_file = package.extractfile("main.py")
+        manifest_file = package.extractfile("package_manifest.json")
+        assert main_file is not None
+        assert manifest_file is not None
+        main_source = main_file.read().decode("utf-8")
+        manifest = json.load(manifest_file)
+
+    assert "def _emit_stdout_debug() -> None:" in main_source
+    assert "debug_decision_compact" in main_source
+    assert manifest["parameters"]["stdout_debug"] is True

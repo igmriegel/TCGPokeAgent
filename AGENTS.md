@@ -179,6 +179,13 @@ CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
 - Fallback must always be available (never let a parse failure crash the agent)
 - Catch and wrap external errors; don't let SDK exceptions propagate
 
+### Honchkrow stdout debug
+- The `debug_decision_compact` trace belongs to `scripts/build_kaggle_stdout_debug_package.sh`
+  and the extracted stdout-debug package only.
+- Do not remove, rename, or relocate that compact trace from the stdout-debug builder
+  without updating the archived Kaggle debug workflow, its documentation, and its tests.
+- Do not move that trace into the normal Honchkrow Kaggle entrypoint.
+
 ---
 
 ## Testing Conventions
