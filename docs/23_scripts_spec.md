@@ -54,6 +54,7 @@
 | `uv run --frozen python scripts/generate_investigation_report.py` | Build an active HTML investigation report; the legacy Abomasnow output is disabled |
 | `uv run --frozen python scripts/sync_replays.py` | Sync downloaded replays and refresh the submission map |
 | `uv run --frozen python scripts/audit_turn_planning.py <trace.jsonl.gz> --output <report.json>` | Emit tactical counters and bounded factual examples from a CABT trace |
+| `uv run --frozen python scripts/inspect_replay.py <replay.json> --turn N --player-index P` | Inspect Kaggle replay frames with stable coordinates, logs, and legal options |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
 | `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Build the compact stdout-debug package for auditable Kaggle decision traces |
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |

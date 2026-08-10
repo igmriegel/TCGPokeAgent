@@ -75,6 +75,28 @@ the JSON file, and allow the page to submit it to the competition visualizer.
 The visualizer is an external service; do not upload private observations or
 credentials.
 
+## Local replay inspection
+
+Use the replay inspector when you need a readable step-by-step trace instead
+of ad-hoc `jq` filters:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/inspect_replay.py \
+  replays/remote/55392121/episode-91484013-replay.json \
+  --turn 11 --player-index 0 \
+  --card-id 1216 --card-id 1257 --card-id 15
+```
+
+The helper prints each matching frame with:
+
+- the stable replay coordinates (`step`, `entry`, `turn`, `player`);
+- the recorded `action`;
+- the legal `options` with any resolved hand card or attack ID;
+- the visible `logs`, including drawn or played cards.
+
+Use `--format json` when you want machine-readable output for a follow-up
+filter or a note in a report.
+
 ## Download Kaggle replays
 
 Download replay files from all completed Kaggle submissions:

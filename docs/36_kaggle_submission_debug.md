@@ -56,7 +56,21 @@ card text are included.
 
 ### Reading a replay decision
 
-For a replay JSON downloaded from Kaggle, inspect the captured stdout records:
+For a replay JSON downloaded from Kaggle, prefer the replay inspector helper
+before falling back to raw JSON tools:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/inspect_replay.py \
+  replays/remote/55392121/episode-91484013-replay.json \
+  --turn 11 --player-index 0 \
+  --card-id 1216 --card-id 1257 --card-id 15
+```
+
+The helper prints the decision frame, visible logs, legal options, and the
+recorded action in one place. Use `--format json` when you need a structured
+payload for a report or a quick downstream filter.
+
+For legacy stdout-debug replays, inspect the captured stdout records:
 
 ```bash
 rg -n 'debug_decision_compact|canonical_|fallback_used|selected_indices' \
