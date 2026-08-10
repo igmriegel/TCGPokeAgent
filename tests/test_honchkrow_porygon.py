@@ -1678,6 +1678,32 @@ def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
     assert "select_proton_for_early_setup" in reasons
 
 
+def test_transceiver_is_preferred_over_petrel_for_ariana_when_both_are_available() -> None:
+    """Transceiver should convert into Ariana before Petrel spends the supporter slot."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        turn=6,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": TRANSCEIVER}, {"id": PETREL}],
+                deck_count=20,
+                bench=[PokemonState(721, 60, 60) for _ in range(8)],
+            ),
+            PlayerState(active=PokemonState(721, 60, 60)),
+        ]
+    )
+    transceiver = _candidate(0, OptionType.PLAY, card_id=TRANSCEIVER, card={"cardType": 2})
+    petrel = _candidate(1, OptionType.PLAY, card_id=PETREL, card={"cardType": 3})
+
+    transceiver_score, transceiver_reasons = scorer._play_score(state, transceiver)
+    petrel_score, petrel_reasons = scorer._play_score(state, petrel)
+
+    assert transceiver_score > petrel_score
+    assert "transceiver_ariana_preserves_petrel" in transceiver_reasons
+    assert "petrel_emergency_ariana_search" in petrel_reasons
+
+
 def test_porygon_is_not_benched_before_the_opening_pokemon() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     candidate = _candidate(0, OptionType.CARD, card_id=PORYGON2, card={"cardType": 0})

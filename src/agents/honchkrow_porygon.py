@@ -473,6 +473,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if card_id == TRANSCEIVER:
             if self._proton_setup_is_useful(state):
                 return 1200.0, ["transceiver_proton_early_game"]
+            if self._transceiver_is_better_than_petrel_for_ariana(state):
+                return 1550.0, ["transceiver_ariana_preserves_petrel"]
+            if self._ariana_is_safe_and_useful(state):
+                return 980.0, ["transceiver_ariana_resource_engine"]
             if self._proton_was_used_previous_turn(state):
                 return 690.0, ["transceiver_ariana_after_proton"]
             return 720.0, ["transceiver_proton_early_game"]
@@ -1200,6 +1204,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and player.deck_count - 2 >= self._elective_draw_reserve(state)
         )
 
+    def _transceiver_is_better_than_petrel_for_ariana(self, state: GameState) -> bool:
+        """Prefer Transceiver for Ariana when it preserves Petrel for a better line."""
+        return bool(
+            self._card_in_hand(state, TRANSCEIVER)
+            and self._card_in_hand(state, PETREL)
+            and self._ariana_is_safe_and_useful(state)
+            and not self._proton_setup_is_useful(state)
+        )
+
     def _petrel_search_score(self, state: GameState) -> tuple[float, list[str]]:
         """Score Petrel by the best Supporter target it can legally access."""
         target_scores: list[tuple[float, int, list[str]]] = []
@@ -1216,6 +1229,9 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 features={"card_id": target_id},
             )
             score, reasons = self._play_score(state, target)
+            if target_id == ARIANA and self._transceiver_is_better_than_petrel_for_ariana(state):
+                score -= 650.0
+                reasons = [*reasons, "prefer_transceiver_for_ariana"]
             target_scores.append((score, target_id, reasons))
         best_score, target_id, reasons = max(target_scores, default=(-2000.0, 0, []))
         if best_score <= -1500.0:
