@@ -741,6 +741,46 @@ def test_poke_pad_selects_backup_basic_when_board_could_collapse() -> None:
     assert reasons == ["select_basic_for_no_pokemon_survival"]
 
 
+def test_ultra_ball_prefers_porygon2_over_porygon_for_terminal_search(
+    monkeypatch,
+) -> None:
+    """Search should rank Porygon2 ahead of Porygon when the terminal line is live."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 80, 80, serial=11),
+                hand=[{"id": ULTRA_BALL}, {"id": ARIANA}],
+                prize=[None, None],
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    monkeypatch.setattr(scorer, "_r_command_wins_game", lambda _state: True)
+
+    porygon2 = _candidate(
+        0,
+        OptionType.CARD,
+        card_id=PORYGON2,
+        card={"cardType": 0},
+    )
+    porygon2.option["sourceCardId"] = ULTRA_BALL
+    porygon = _candidate(
+        1,
+        OptionType.CARD,
+        card_id=PORYGON,
+        card={"cardType": 0},
+    )
+    porygon.option["sourceCardId"] = ULTRA_BALL
+
+    porygon2_score, porygon2_reasons = scorer._search_target_priority_score(state, porygon2)
+    porygon_score, porygon_reasons = scorer._search_target_priority_score(state, porygon)
+
+    assert porygon2_score > porygon_score
+    assert porygon2_reasons == ["search_porygon2_game_winning_r_command"]
+    assert porygon_reasons == ["search_porygon_setup_line"]
+
+
 def test_end_telemetry_marks_visible_productive_line() -> None:
     """The tactical ledger exposes END decisions that abandon a visible productive line."""
     agent = HonchkrowPorygonAgent(_profile())

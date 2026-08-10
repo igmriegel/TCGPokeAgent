@@ -728,6 +728,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if context is SelectContext.TO_HAND and card_id == HONCHKROW:
             if self._pokepad_honchkrow_is_useful(state, candidate):
                 return 1750.0, ["select_honchkrow_for_attack_or_hand_refresh"]
+        if context is SelectContext.TO_HAND and candidate.option.get("sourceCardId") in {
+            ULTRA_BALL,
+            POKE_PAD,
+            PROTON,
+            TRANSCEIVER,
+        }:
+            score, reasons = self._search_target_priority_score(state, candidate)
+            if reasons:
+                return score, reasons
         is_effect_target = context is not None and context.value == "EFFECT_TARGET"
         if context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH} or is_effect_target:
             if is_effect_target and card_id not in {
@@ -961,6 +970,43 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         }
         raw = max((values[key] for key, count in targets.items() if count > 0), default=-500.0)
         return raw - max(0, self._own_bench_count(state) - 1) * 100.0
+
+    def _search_target_priority_score(
+        self, state: GameState, candidate: Candidate
+    ) -> tuple[float, list[str]]:
+        card_id = self._feature_int(candidate, "card_id")
+        if card_id == PORYGON2:
+            if self._r_command_wins_game(state):
+                return 2800.0, ["search_porygon2_game_winning_r_command"]
+            if self._porygon2_terminal_promotion_available(state, candidate):
+                return 2500.0, [
+                    "search_porygon2_terminal_ignition_line",
+                    "ignition_reaches_r_command_attack_cost",
+                ]
+            if self._r_command_is_best_damage_line(state) or self._porygon2_prize_race_line(
+                state
+            ):
+                return 2100.0, ["search_porygon2_prize_race_line"]
+            if self._promotion_line_is_lethal(state, PORYGON2):
+                return 1600.0, ["search_porygon2_promotion_line"]
+            return 1000.0, ["search_porygon2_primary_line"]
+        if card_id == HONCHKROW:
+            if self._pokemon_is_ready(state, candidate):
+                return 1450.0, ["search_honchkrow_ready_attacker"]
+            return 820.0, ["search_honchkrow_setup_line"]
+        if card_id == PORYGON:
+            if self._proton_setup_is_useful(state):
+                return 1150.0, ["search_porygon_setup_line"]
+            return 760.0, ["search_porygon_development_line"]
+        if card_id == MURKROW:
+            if self._own_field_count(state) < 2:
+                return 1100.0, ["search_murkrow_opening_line"]
+            return 700.0, ["search_murkrow_development_line"]
+        if card_id == ARTICUNO:
+            if self._articuno_is_needed(state):
+                return 1500.0, ["search_articuno_matchup_tech"]
+            return -1800.0, ["avoid_articuno_without_matchup_need"]
+        return 0.0, []
 
     def _proton_targets_exist(self, state: GameState) -> bool:
         """Return whether Proton has at least one visible-deck target left."""
