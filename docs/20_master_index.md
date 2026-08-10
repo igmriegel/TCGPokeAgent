@@ -18,6 +18,7 @@ other documents link to it instead of copying it.
 | What has the Honchkrow expert answered? | [`35_honchkrow_expert_interview_record.md`](35_honchkrow_expert_interview_record.md) |
 | What feedback was received? | [`29_gameplay_feedback.md`](29_gameplay_feedback.md) |
 | What evidence supports a decision? | [`strategy_notes.md`](strategy_notes.md) |
+| How do I get started quickly? | [`_onboarding.md`](../_onboarding.md) |
 
 ## Information ownership
 
