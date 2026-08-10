@@ -23,7 +23,7 @@ def main() -> None:
     """Parse replay files and write aggregate plus per-replay diagnostics."""
     parser = argparse.ArgumentParser()
     parser.add_argument("replay_dir", type=Path)
-    parser.add_argument("--owner-name", default="Igor Riegel")
+    parser.add_argument("--owner-name", default="mudkip_mini_chicken")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 

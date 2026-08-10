@@ -11,8 +11,9 @@ REPLAY_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 SUBMISSION_METADATA_PATH = Path("data/raw/kaggle/submission_metadata.json")
 REPORT_DIR = Path("perf_reports")
-OWNER_NAME = "Igor Riegel"
+OWNER_NAME = "mudkip_mini_chicken"
 LATEST_REPORT_LIMIT = 2
+EXCLUDED_SUBMISSION_IDS = {"55389788"}
 
 
 def _parse_submission_date(value: str) -> datetime:
@@ -49,7 +50,9 @@ def latest_downloaded_submission_ids(
     completed = [
         row
         for row in metadata
-        if row.get("status") == "SubmissionStatus.COMPLETE" and row.get("ref") in downloaded_ids
+        if row.get("status") == "SubmissionStatus.COMPLETE"
+        and row.get("ref") in downloaded_ids
+        and row.get("ref") not in EXCLUDED_SUBMISSION_IDS
     ]
     completed.sort(key=lambda row: _parse_submission_date(row.get("date", "")), reverse=True)
     return [str(row["ref"]) for row in completed[:limit] if row.get("ref")]

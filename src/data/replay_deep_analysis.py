@@ -212,7 +212,7 @@ def _resolve_owner(replay: Mapping[str, Any], owner_name: str) -> int | None:
 def extract_deep_analysis(
     replay_path: str | Path,
     *,
-    owner_name: str = "Igor Riegel",
+    owner_name: str = "mudkip_mini_chicken",
     owner_index: int | None = None,
 ) -> DeepReplayAnalysis:
     """Extract full turn-by-turn analysis from a CABT replay.
@@ -351,7 +351,7 @@ def _resolve_archetype(replay: Mapping[str, Any], player_index: int) -> str:
 def load_all_deep_analyses(
     replay_dir: str | Path,
     *,
-    owner_name: str = "Igor Riegel",
+    owner_name: str = "mudkip_mini_chicken",
 ) -> list[DeepReplayAnalysis]:
     """Load deep analysis for all replays in a directory.
 

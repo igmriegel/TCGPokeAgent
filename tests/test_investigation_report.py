@@ -67,6 +67,24 @@ def test_active_submissions_returns_two_latest_completed() -> None:
     ]
 
 
+def test_active_submissions_skips_problematic_submission() -> None:
+    """Exclude submission 55389788 from replay downloads."""
+    submissions = [
+        {
+            "ref": "55389788",
+            "date": "2026-08-06 00:00:00",
+            "status": "SubmissionStatus.COMPLETE",
+        },
+        {
+            "ref": "55389999",
+            "date": "2026-08-05 00:00:00",
+            "status": "SubmissionStatus.COMPLETE",
+        },
+    ]
+
+    assert [row["ref"] for row in downloader._active_submissions(submissions)] == ["55389999"]
+
+
 def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) -> None:
     """Select only the latest completed submissions with local replay files."""
     replay_dir = tmp_path / "replays"
@@ -85,6 +103,36 @@ def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) 
     ) == ["new", "old"]
 
 
+def test_latest_downloaded_submission_ids_skips_problematic_submission(
+    tmp_path: Path,
+) -> None:
+    """Exclude submission 55389788 from generated replay reports."""
+    replay_dir = tmp_path / "replays"
+    replay_dir.mkdir()
+    (replay_dir / "55389788-episode.json").touch()
+    (replay_dir / "55389999-episode.json").touch()
+    metadata = [
+        {
+            "ref": "55389788",
+            "date": "2026-08-06 00:00:00",
+            "status": "SubmissionStatus.COMPLETE",
+        },
+        {
+            "ref": "55389999",
+            "date": "2026-08-05 00:00:00",
+            "status": "SubmissionStatus.COMPLETE",
+        },
+    ]
+    submission_map = {
+        "55389788-episode": "55389788",
+        "55389999-episode": "55389999",
+    }
+
+    assert report_updater.latest_downloaded_submission_ids(metadata, submission_map, replay_dir) == [
+        "55389999"
+    ]
+
+
 def test_filter_replay_paths_uses_submission_map(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -97,6 +145,137 @@ def test_filter_replay_paths_uses_submission_map(
     selected = report._filter_replay_paths(replay_paths, "55222565")
 
     assert selected == [tmp_path / "100.json"]
+
+
+def test_filter_replay_paths_handles_kaggle_replay_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Accept Kaggle replay filenames ending in '-replay.json'."""
+    mapping_path = tmp_path / "episode_to_submission.json"
+    mapping_path.write_text(json.dumps({"91667826": "55392121"}))
+    monkeypatch.setattr(report, "SUBMISSION_MAP_PATH", mapping_path)
+    replay_paths = [tmp_path / "episode-91667826-replay.json"]
+
+    selected = report._filter_replay_paths(replay_paths, "55392121")
+
+    assert selected == [tmp_path / "episode-91667826-replay.json"]
+
+
+def test_generate_report_recurses_into_submission_directories(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Collect replays from a nested Kaggle submission directory."""
+    mapping_path = tmp_path / "episode_to_submission.json"
+    mapping_path.write_text(json.dumps({"91667826": "55392121"}))
+    monkeypatch.setattr(report, "SUBMISSION_MAP_PATH", mapping_path)
+    monkeypatch.setattr(
+        report,
+        "_list_completed_submissions",
+        lambda: [
+            {
+                "ref": "55392121",
+                "date": "2026-08-10T00:07:25.943000",
+                "description": "nested test submission",
+                "publicScore": "123.4",
+            }
+        ],
+    )
+
+    replay_dir = tmp_path / "replays" / "remote" / "55392121"
+    replay_dir.mkdir(parents=True)
+    replay_path = replay_dir / "episode-91667826-replay.json"
+    replay_path.touch()
+
+    def fake_parse_replay(path: Path, owner_name: str) -> dict[str, object]:
+        del owner_name
+        assert path == replay_path
+        return {
+            "episode_id": "91667826",
+            "outcome": "win",
+            "first_player": 0,
+            "max_turn": 1,
+            "opp_archetype": "test opponent",
+            "owner_deck": "test deck",
+            "attack_usage": {},
+            "damage_dealt": [],
+            "damage_taken": [],
+            "evolution_turns": [],
+        }
+
+    monkeypatch.setattr(report, "parse_replay", fake_parse_replay)
+    output_path = tmp_path / "report.html"
+
+    report.generate_report(
+        replay_dir,
+        "mudkip_mini_chicken",
+        output_path,
+        submission_id="55392121",
+    )
+
+    content = output_path.read_text()
+    assert "Total Replays</div>" in content
+    assert "1</div>" in content
+    assert "Report generated" not in content
+
+
+def test_generate_report_infers_owner_name_when_initial_pass_is_empty(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Retry parsing with an inferred owner name when the default misses all replays."""
+    mapping_path = tmp_path / "episode_to_submission.json"
+    mapping_path.write_text(json.dumps({"91667826": "55392121"}))
+    monkeypatch.setattr(report, "SUBMISSION_MAP_PATH", mapping_path)
+    monkeypatch.setattr(
+        report,
+        "_list_completed_submissions",
+        lambda: [
+            {
+                "ref": "55392121",
+                "date": "2026-08-10T00:07:25.943000",
+                "description": "nested test submission",
+                "publicScore": "123.4",
+            }
+        ],
+    )
+
+    replay_dir = tmp_path / "replays"
+    replay_dir.mkdir()
+    replay_path = replay_dir / "episode-91667826-replay.json"
+    replay_path.touch()
+
+    calls: list[str] = []
+
+    def fake_parse_replay(path: Path, owner_name: str) -> dict[str, object] | None:
+        del path
+        calls.append(owner_name)
+        if owner_name == "Correct Owner":
+            return {
+                "episode_id": "91667826",
+                "outcome": "win",
+                "first_player": 0,
+                "max_turn": 1,
+                "opp_archetype": "test opponent",
+                "owner_deck": "test deck",
+                "attack_usage": {},
+                "damage_dealt": [],
+                "damage_taken": [],
+                "evolution_turns": [],
+            }
+        return None
+
+    monkeypatch.setattr(report, "parse_replay", fake_parse_replay)
+    monkeypatch.setattr(report, "_infer_owner_name", lambda replay_paths: "Correct Owner")
+    output_path = tmp_path / "report.html"
+
+    report.generate_report(
+        replay_dir,
+        "mudkip_mini_chicken",
+        output_path,
+        submission_id="55392121",
+    )
+
+    assert calls == ["mudkip_mini_chicken", "Correct Owner"]
+    assert "1</div>" in output_path.read_text()
 
 
 def test_filter_replay_paths_rejects_unknown_submission(
@@ -158,7 +337,12 @@ def test_selected_report_has_one_submission_summary(
     monkeypatch.setattr(report, "parse_replay", fake_parse_replay)
     output_path = tmp_path / "report.html"
 
-    report.generate_report(tmp_path, "Igor Riegel", output_path, submission_id="55222565")
+    report.generate_report(
+        tmp_path,
+        "mudkip_mini_chicken",
+        output_path,
+        submission_id="55222565",
+    )
 
     content = output_path.read_text()
     assert "Selected Submission Summary" in content
@@ -212,7 +396,12 @@ def test_deck_filter_excludes_other_controlled_decks(
     monkeypatch.setattr(report, "parse_replay", fake_parse_replay)
     output_path = tmp_path / "report.html"
 
-    report.generate_report(tmp_path, "Igor Riegel", output_path, deck_filter="Abomasnow")
+    report.generate_report(
+        tmp_path,
+        "mudkip_mini_chicken",
+        output_path,
+        deck_filter="Abomasnow",
+    )
 
     content = output_path.read_text()
     assert "Total Replays</div>" in content

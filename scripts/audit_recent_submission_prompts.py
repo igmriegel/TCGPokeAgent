@@ -57,7 +57,7 @@ def _owner_index(replay: Mapping[str, Any]) -> int:
         matches = [
             index
             for index, agent in enumerate(agents)
-            if isinstance(agent, Mapping) and agent.get("Name") == "Igor Riegel"
+            if isinstance(agent, Mapping) and agent.get("Name") == "mudkip_mini_chicken"
         ]
         if len(matches) == 1:
             return matches[0]

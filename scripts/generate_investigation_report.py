@@ -105,7 +105,7 @@ def _parse_submission_date(value: str) -> datetime:
 
 def _episode_id_from_path(replay_path: Path) -> str:
     """Return the episode ID encoded in a replay filename."""
-    return replay_path.stem.removeprefix("episode-")
+    return replay_path.stem.removeprefix("episode-").removesuffix("-replay")
 
 
 def _filter_replay_paths(replay_paths: list[Path], submission_id: str | None) -> list[Path]:
@@ -392,7 +392,7 @@ def parse_replay(fpath, owner_name):
             if _log.get("type") == "Evolve" and _log.get("playerIndex") == owner_idx:
                 evolution_turns.append(_frame.get("current", {}).get("turn", 0))
 
-    episode_id = pathlib.Path(fpath).stem.replace("episode-", "")
+    episode_id = pathlib.Path(fpath).stem.removeprefix("episode-").removesuffix("-replay")
     return {
         "episode_id": episode_id,
         "owner_index": owner_idx,
@@ -420,6 +420,42 @@ def parse_replay(fpath, owner_name):
     }
 
 
+def _infer_owner_name(replay_paths: list[Path]) -> str | None:
+    """Infer the controlled-player name from replay metadata.
+
+    Args:
+        replay_paths: Replay files selected for analysis.
+
+    Returns:
+        The most common agent name across the selected replays when it is
+        unambiguous, otherwise ``None``.
+    """
+    counts: Counter[str] = Counter()
+    considered = 0
+    for replay_path in replay_paths:
+        try:
+            data = json.loads(replay_path.read_text())
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+        agents = data.get("info", {}).get("Agents", [])
+        names = {
+            agent.get("Name")
+            for agent in agents
+            if isinstance(agent, dict) and agent.get("Name")
+        }
+        if not names:
+            continue
+        considered += 1
+        counts.update(str(name) for name in names)
+    if considered == 0 or not counts:
+        return None
+    top_count = max(counts.values())
+    top_names = [name for name, count in counts.items() if count == top_count]
+    if len(top_names) != 1:
+        return None
+    return top_names[0]
+
+
 def generate_report(
     replay_dir: pathlib.Path,
     owner_name: str,
@@ -441,45 +477,61 @@ def generate_report(
         print(f"Report generation disabled: {output_path}")
         return
 
-    raw_results = []
-    mapped_episode_count = Counter()
-    parsed_episode_count = Counter()
-    unprocessed_episode_count = Counter()
     submission_map = _load_submission_map()
-    replay_paths = _filter_replay_paths(sorted(replay_dir.glob("*.json")), submission_id)
-    for _fp in replay_paths:
-        episode_id = _episode_id_from_path(_fp)
-        mapped_submission_id = submission_map.get(episode_id)
-        try:
-            _res = parse_replay(_fp, owner_name)
-        except (OSError, TypeError, ValueError, json.JSONDecodeError):
-            _res = None
-        if _res is not None:
-            if (
-                deck_filter
-                and deck_filter.casefold() not in str(_res.get("owner_deck", "")).casefold()
-            ):
-                continue
+    replay_paths = _filter_replay_paths(sorted(replay_dir.rglob("*.json")), submission_id)
+    
+    def _collect_results(
+        resolved_owner_name: str,
+    ) -> tuple[list[dict[str, object]], Counter[str], Counter[str], Counter[str]]:
+        raw_results: list[dict[str, object]] = []
+        mapped_episode_count = Counter()
+        parsed_episode_count = Counter()
+        unprocessed_episode_count = Counter()
+
+        for _fp in replay_paths:
+            episode_id = _episode_id_from_path(_fp)
             mapped_submission_id = submission_map.get(episode_id)
-            if mapped_submission_id:
-                mapped_episode_count[mapped_submission_id] += 1
-            _res.setdefault("lost_to_no_pokemon_by_turn_2", False)
-            _res.setdefault("lost_to_no_pokemon_by_turn_3", False)
-            _res.setdefault("opponent_has_weakness_type", False)
-            _res.setdefault("lost_to_deck_out", False)
-            _res.setdefault("owner_prizes_remaining", 0)
-            _res.setdefault("opponent_prizes_remaining", 0)
-            _res.setdefault("owner_active_name", "Unknown")
-            _res.setdefault("owner_active_hp", "N/A")
-            _res.setdefault("opponent_active_name", "Unknown")
-            _res.setdefault("opponent_active_hp", "N/A")
-            _res.setdefault("opponent_deck_remaining", "N/A")
-            _res.setdefault("opponent_dominant_metal", False)
-            raw_results.append(_res)
-            if mapped_submission_id:
-                parsed_episode_count[mapped_submission_id] += 1
-        elif mapped_submission_id:
-            unprocessed_episode_count[mapped_submission_id] += 1
+            try:
+                _res = parse_replay(_fp, resolved_owner_name)
+            except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                _res = None
+            if _res is not None:
+                if (
+                    deck_filter
+                    and deck_filter.casefold() not in str(_res.get("owner_deck", "")).casefold()
+                ):
+                    continue
+                if mapped_submission_id:
+                    mapped_episode_count[mapped_submission_id] += 1
+                _res.setdefault("lost_to_no_pokemon_by_turn_2", False)
+                _res.setdefault("lost_to_no_pokemon_by_turn_3", False)
+                _res.setdefault("opponent_has_weakness_type", False)
+                _res.setdefault("lost_to_deck_out", False)
+                _res.setdefault("owner_prizes_remaining", 0)
+                _res.setdefault("opponent_prizes_remaining", 0)
+                _res.setdefault("owner_active_name", "Unknown")
+                _res.setdefault("owner_active_hp", "N/A")
+                _res.setdefault("opponent_active_name", "Unknown")
+                _res.setdefault("opponent_active_hp", "N/A")
+                _res.setdefault("opponent_deck_remaining", "N/A")
+                _res.setdefault("opponent_dominant_metal", False)
+                raw_results.append(_res)
+                if mapped_submission_id:
+                    parsed_episode_count[mapped_submission_id] += 1
+            elif mapped_submission_id:
+                unprocessed_episode_count[mapped_submission_id] += 1
+
+        return raw_results, mapped_episode_count, parsed_episode_count, unprocessed_episode_count
+
+    raw_results, mapped_episode_count, parsed_episode_count, unprocessed_episode_count = (
+        _collect_results(owner_name)
+    )
+    if not raw_results and submission_id is not None:
+        inferred_owner_name = _infer_owner_name(replay_paths)
+        if inferred_owner_name and inferred_owner_name != owner_name:
+            raw_results, mapped_episode_count, parsed_episode_count, unprocessed_episode_count = (
+                _collect_results(inferred_owner_name)
+            )
 
     included_submission_ids = {
         submission_map.get(str(result["episode_id"]))
@@ -1121,7 +1173,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "owner_name",
         nargs="?",
-        default="Igor Riegel",
+        default="mudkip_mini_chicken",
         help="Kaggle agent name used to identify the controlled player.",
     )
     parser.add_argument(
