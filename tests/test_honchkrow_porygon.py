@@ -453,6 +453,33 @@ def test_one_pokemon_board_uses_transceiver_to_reach_proton_before_ariana() -> N
     assert [selection.indices for selection in choices] == [(1,)]
 
 
+def test_transceiver_is_resolved_before_an_attack_that_depends_on_it() -> None:
+    """A counted Transceiver must be played before the attack is chosen."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=6,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": TRANSCEIVER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 60, 60)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS),
+        _candidate(1, OptionType.PLAY, card_id=TRANSCEIVER, card={"cardType": 2}),
+    ]
+    selections = [Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)]
+
+    phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert phase == DecisionPhase.PLAY_SUPPORTER.value
+    assert reason == "resolve_transceiver_before_attack"
+    assert [selection.indices for selection in choices] == [(1,)]
+
+
 def test_late_transceiver_with_developed_board_does_not_fetch_proton() -> None:
     """A developed late board resolves Transceiver to resource improvement."""
     agent = HonchkrowPorygonAgent(_profile())
@@ -485,6 +512,34 @@ def test_late_transceiver_with_developed_board_does_not_fetch_proton() -> None:
     assert choices is not None
     assert [selection.indices for selection in choices] == [(1,)]
     assert agent.turn_ledger.transceiver_target == ARIANA
+
+
+def test_headset_is_resolved_before_an_attack_that_depends_on_it() -> None:
+    """A counted Miracle Headset must be played before the attack is chosen."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=6,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": MIRACLE_HEADSET}],
+                discard=[{"id": ARCHER}],
+            ),
+            PlayerState(active=PokemonState(721, 60, 60)),
+        ],
+    )
+    candidates = [
+        _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS),
+        _candidate(1, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1}),
+    ]
+    candidates[1].features.update({"target_card_id": HONCHKROW, "target_serial": 22})
+    selections = [Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)]
+
+    phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
+
+    assert phase == DecisionPhase.PLAY_ITEMS.value
+    assert reason == "resolve_headset_before_attack"
+    assert [selection.indices for selection in choices] == [(1,)]
 
 
 def test_expert_variant_takes_arithmetic_terminal_ko_before_setup() -> None:

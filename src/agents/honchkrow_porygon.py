@@ -3119,6 +3119,34 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if game_wins:
             return DecisionPhase.ATTACK_PRIORITY.value, "pre_draw_game_win", game_wins
 
+        if self._transceiver_line_requires_resolution(state):
+            transceiver = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id") == TRANSCEIVER
+                )
+            )
+            if transceiver:
+                return (
+                    DecisionPhase.PLAY_SUPPORTER.value,
+                    "resolve_transceiver_before_attack",
+                    transceiver,
+                )
+
+        if self._headset_line_requires_resolution(state):
+            headset = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id") == MIRACLE_HEADSET
+                )
+            )
+            if headset:
+                return (
+                    DecisionPhase.PLAY_ITEMS.value,
+                    "resolve_headset_before_attack",
+                    headset,
+                )
+
         if (
             self._uses_retreat_guard
             and self._active_matches_switch_commitment(state)
@@ -3764,8 +3792,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == TRANSCEIVER
-                    and not self._scorer._card_in_hand(state, PROTON)
-                    and self._scorer._proton_setup_is_useful(state)
+                    and (
+                        self._scorer._proton_setup_is_useful(state)
+                        or self._transceiver_line_requires_resolution(state)
+                    )
                 )
             )
             if transceiver:
@@ -3978,6 +4008,30 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         self._turn_ledger.headset_reason = "two_supporters_close_immediate_ko"
         return True
+
+    def _transceiver_line_requires_resolution(self, state: GameState) -> bool:
+        """Return whether Transceiver must resolve before a lethal attack."""
+        if not self._scorer._card_in_hand(state, TRANSCEIVER):
+            return False
+        needed = self._turn_ledger.supporters_needed_for_ko or (
+            self._scorer._supporters_needed_for_ko(state)
+        )
+        visible = self._scorer._supporters_in_hand(state)
+        effective = self._scorer._effective_supporters_in_hand(state)
+        return bool(
+            self._scorer._proton_setup_is_useful(state)
+            or (needed > 0 and visible < needed <= effective)
+        )
+
+    def _headset_line_requires_resolution(self, state: GameState) -> bool:
+        """Return whether Miracle Headset must resolve before a lethal attack."""
+        if not self._scorer._card_in_hand(state, MIRACLE_HEADSET):
+            return False
+        return bool(
+            self._canonical_headset_is_useful(state)
+            or self._scorer._miracle_headset_emergency_is_useful(state)
+            or self._scorer._headset_line_is_lethal(state)
+        )
 
     def _attack_wins_game(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether an attack explicitly or arithmetically takes the last Prizes."""
