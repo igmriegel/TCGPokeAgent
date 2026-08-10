@@ -1,0 +1,7 @@
+run/*.tar.gz
+run/*.sha256
+run/cg/
+submission/*.tar.gz
+submission/*.sha256
+__pycache__/
+*.pyc
