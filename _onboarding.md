@@ -11,10 +11,10 @@ status in `docs/`.
 
 ## Read first
 
-1. [`docs/PROJECT_STATUS.md`](PROJECT_STATUS.md)
-2. [`docs/CODEBASE_MAP.md`](CODEBASE_MAP.md)
-3. [`docs/20_master_index.md`](20_master_index.md)
-4. [`docs/03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md)
+1. [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
+2. [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md)
+3. [`docs/20_master_index.md`](docs/20_master_index.md)
+4. [`docs/03_tasks/TASK_INDEX.md`](docs/03_tasks/TASK_INDEX.md)
 
 ## Setup
 

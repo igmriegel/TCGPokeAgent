@@ -58,6 +58,7 @@
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
 | `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Build the compact stdout-debug package for auditable Kaggle decision traces |
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |
+| `uv run --frozen python scripts/audit_owner_feedback_replays.py <replay-dir> --output <report.json>` | Validate and hash the 14 owner-provided Honchkrow replays and emit reconciled diagnostics |
 | `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --policy-variant supporter_resource_v2 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with explicit policy selection and prize, deck, board, Supporter, action, and terminal telemetry |
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |
 | `uv run --frozen python scripts/analyze_replays.py REPLAY_DIR --output REPORT.json` | Rebuild per-replay damage, KO, resource, and loss diagnostics recursively |

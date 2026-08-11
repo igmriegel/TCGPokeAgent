@@ -65,19 +65,29 @@ def _candidate(
     card_id: int | None = None,
     attack_id: int | None = None,
     card: dict[str, object] | None = None,
+    target_card_id: int | None = None,
+    target_serial: int | None = None,
 ) -> Candidate:
     option: dict[str, object] = {"type": option_type.value}
     if card_id is not None:
         option["cardId"] = card_id
     if attack_id is not None:
         option["attackId"] = attack_id
+    if target_card_id is not None:
+        option["targetCardId"] = target_card_id
+    if target_serial is not None:
+        option["targetSerial"] = target_serial
     return Candidate(
         index,
         option,
         option_type,
         card=card,
         attack={"attackId": attack_id} if attack_id else None,
-        features={"card_id": card_id or 0},
+        features={
+            "card_id": card_id or 0,
+            "target_card_id": target_card_id or 0,
+            "target_serial": target_serial or 0,
+        },
     )
 
 
@@ -471,7 +481,9 @@ def test_transceiver_is_resolved_before_an_attack_that_depends_on_it() -> None:
         _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS),
         _candidate(1, OptionType.PLAY, card_id=TRANSCEIVER, card={"cardType": 2}),
     ]
-    selections = [Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)]
+    selections = [
+        Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)
+    ]
 
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
@@ -533,7 +545,9 @@ def test_headset_is_resolved_before_an_attack_that_depends_on_it() -> None:
         _candidate(1, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1}),
     ]
     candidates[1].features.update({"target_card_id": HONCHKROW, "target_serial": 22})
-    selections = [Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)]
+    selections = [
+        Selection((index,), (candidate.option_type,)) for index, candidate in enumerate(candidates)
+    ]
 
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
@@ -1679,7 +1693,7 @@ def test_archer_requires_public_own_ko_but_not_board_collapse() -> None:
                 deck_count=20,
                 bench=[PokemonState(PORYGON, 30, 90)],
             ),
-            PlayerState(active=PokemonState(999, 100, 100), hand_count=2),
+            PlayerState(active=PokemonState(999, 100, 100), hand_count=2, deck_count=20),
         ]
     )
     assert not scorer._archer_is_safe_and_useful(state, candidate)
@@ -1698,7 +1712,7 @@ def test_archer_remains_eligible_when_a_winning_attack_exists() -> None:
                 hand_count=2,
                 deck_count=20,
             ),
-            PlayerState(active=PokemonState(999, 100, 100), hand_count=6),
+            PlayerState(active=PokemonState(999, 100, 100), hand_count=6, deck_count=20),
         ]
     )
     assert scorer._archer_is_safe_and_useful(state, candidate)
@@ -1805,9 +1819,9 @@ def test_roto_is_needed_when_it_closes_a_visible_ko(monkeypatch) -> None:
     monkeypatch.setattr(
         agent._scorer,
         "_roto_expected_value",
-        lambda *_: (
-            _ for _ in ()
-        ).throw(AssertionError("Roto EV should not gate a visible KO line")),
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("Roto EV should not gate a visible KO line")
+        ),
     )
 
     assert agent._scorer._roto_stick_is_needed(state)
@@ -1908,7 +1922,7 @@ def test_transceiver_is_preferred_over_petrel_for_ariana_when_both_are_available
                 bench=[PokemonState(721, 60, 60) for _ in range(8)],
             ),
             PlayerState(active=PokemonState(721, 60, 60)),
-        ]
+        ],
     )
     transceiver = _candidate(0, OptionType.PLAY, card_id=TRANSCEIVER, card={"cardType": 2})
     petrel = _candidate(1, OptionType.PLAY, card_id=PETREL, card={"cardType": 3})
@@ -2322,7 +2336,7 @@ def test_canonical_turn_loop_attaches_energy_before_ariana() -> None:
                 hand_count=3,
                 deck_count=20,
             ),
-            PlayerState(active=PokemonState(999, 200, 200)),
+            PlayerState(active=PokemonState(999, 200, 200), deck_count=20),
         ],
     )
     attach = _candidate(
@@ -2641,6 +2655,80 @@ def test_deck_and_resource_guards_reject_wasteful_search_and_archer() -> None:
     assert agent._candidate_is_forbidden(state, ultra_ball, SelectContext.MAIN)
     assert agent._candidate_is_forbidden(state, headset, SelectContext.MAIN)
     assert agent._candidate_is_forbidden(state, archer, SelectContext.MAIN)
+
+
+def test_archer_is_blocked_when_opponent_deck_is_at_most_three() -> None:
+    """Archer must not recycle the opponent's nearly empty deck."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 130, 130), hand=[{"id": ARCHER}]),
+            PlayerState(deck_count=3),
+        ]
+    )
+    candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+    assert agent._scorer._opponent_deck_is_low(state)
+
+
+def test_porygon2_search_is_blocked_without_porygon_in_play() -> None:
+    """Poké Pad must not fetch an evolution with no visible Basic target."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(players=[PlayerState(hand=[{"id": POKE_PAD}], bench_max=5), PlayerState()])
+    candidate = _candidate(0, OptionType.CARD, card_id=PORYGON2)
+    candidate.option["sourceCardId"] = POKE_PAD
+
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+    assert agent.turn_ledger.resource_guard == "reject_porygon2_without_porygon_field"
+
+
+def test_pokepad_honchkrow_waits_for_board_development() -> None:
+    """Poké Pad must not fetch Honchkrow while the only Basic is still exposed."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                hand=[{"id": POKE_PAD}, {"id": MURKROW}],
+                deck_count=20,
+            ),
+            PlayerState(deck_count=20),
+        ]
+    )
+    candidate = _candidate(0, OptionType.CARD, card_id=HONCHKROW)
+
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+
+
+def test_petrel_does_not_choose_ultra_ball_when_roto_closes_the_line(monkeypatch) -> None:
+    """Petrel must preserve the exact item required by the active KO objective."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(hand=[{"id": PETREL}, {"id": ROTO_STICK}], deck_count=20),
+            PlayerState(deck_count=20),
+        ]
+    )
+    monkeypatch.setattr(agent._scorer, "_roto_stick_is_needed", lambda _: True)
+    candidate = _candidate(0, OptionType.CARD, card_id=ULTRA_BALL)
+
+    assert not agent._petrel_target_is_useful(state, candidate)
+
+
+def test_attack_and_end_are_blocked_until_supporter_resource_is_resolved(monkeypatch) -> None:
+    """A pending Supporter line must be resolved before attack or END."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[PlayerState(active=PokemonState(HONCHKROW, 130, 130)), PlayerState()]
+    )
+    monkeypatch.setattr(agent, "_supporter_resolution_required_before_attack", lambda _: True)
+    agent._refresh_turn_obligations(state)
+    attack = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    end = _candidate(1, OptionType.END)
+
+    assert agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, end, SelectContext.MAIN)
 
 
 def test_articuno_and_benched_ignition_remain_forbidden() -> None:
