@@ -105,6 +105,13 @@ dictionary or active emitter. The smoke gate must additionally prove that a
 captured stderr event decodes into the required `selection`, `trace`, `ranked`,
 `features`, `turn_ledger`, and `match_ledger` fields.
 
+Remote logs are intentionally compact, not encrypted. The required
+interpretation entrypoint is `scripts/download_kaggle_decision_logs.py`: it
+downloads both agent-index logs for completed submission episodes, verifies each
+compact payload checksum, expands aliases, and writes plain plus
+description-annotated JSONL with the exact dictionary and provenance manifest.
+Raw Base64 log strings are not a valid harness input for strategic review.
+
 SDK upgrades require an explicit compatibility experiment, a regenerated
 lockfile, and a harness contract update; the dependency is never updated
 silently.

@@ -112,6 +112,28 @@ event before relying on a submission as strategic evidence.
 ## Download and decode remote agent logs
 
 Kaggle exposes the two agent streams for each completed simulation episode.
+Use the project entrypoint to download both agent logs, verify every compact
+payload, expand aliases, and produce both plain and description-annotated JSONL:
+
+```bash
+uv run --frozen python scripts/download_kaggle_decision_logs.py SUBMISSION_ID
+```
+
+It writes `logs/kaggle/SUBMISSION_ID/raw/`, `decoded/`, `annotated/`, the exact
+`decision_ledger_dictionary.json`, and a provenance `manifest.json`. The
+`annotated` records include the complete field descriptions needed to interpret
+the compact strings correctly. Never review raw Base64 payloads as if they were
+plain decision data.
+
+For a single completed episode or one known agent side:
+
+```bash
+uv run --frozen python scripts/download_kaggle_decision_logs.py SUBMISSION_ID \
+  --episode-id EPISODE_ID --agent-index 0
+```
+
+The underlying CLI workflow remains available for diagnosis:
+
 List the episodes belonging to the submission first:
 
 ```bash
@@ -134,7 +156,7 @@ Locate and decode the complete stderr decision-ledger events:
 rg -n 'audit_decision_ledger|audit_decision_ledger_failed' \
   logs/kaggle/SUBMISSION_ID/EPISODE_ID
 uv run --frozen python scripts/decode_kaggle_decision_ledger.py \
-  LOG_FILE --output decisions.jsonl
+  LOG_FILE --annotated --output decisions.jsonl
 ```
 
 Keep the downloaded log with its submission ID, episode ID, agent index, and

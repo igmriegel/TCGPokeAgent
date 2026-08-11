@@ -179,6 +179,23 @@ def test_official_package_emits_complete_compressed_decision_ledger(tmp_path) ->
     expected_fields = {"selection", "trace", "ranked", "features", "turn_ledger", "match_ledger"}
     assert expected_fields <= decoded.keys()
 
+    annotated_path = tmp_path / "annotated.jsonl"
+    subprocess.run(
+        [
+            sys.executable,
+            str(root / "scripts" / "decode_kaggle_decision_ledger.py"),
+            str(log_path),
+            "--annotated",
+            "--output",
+            str(annotated_path),
+        ],
+        cwd=root,
+        check=True,
+    )
+    annotated = json.loads(annotated_path.read_text(encoding="utf-8"))
+    assert annotated["decision"]["selection"] == [0]
+    assert annotated["turn_ledger_fields"]["objective"] == "Persistent public turn objective."
+
 
 def test_decision_ledger_dictionary_describes_every_tactical_field() -> None:
     """The versioned dictionary cannot drift from the public tactical ledgers."""

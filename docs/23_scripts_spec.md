@@ -59,6 +59,7 @@
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
 | `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Compatibility alias for the official auditable package; the complete ledger is emitted to stderr, never stdout |
 | `uv run --frozen python scripts/decode_kaggle_decision_ledger.py REPLAY_OR_LOG --output decisions.jsonl` | Verify checksum and decode complete compressed decision-ledger records |
+| `uv run --frozen python scripts/download_kaggle_decision_logs.py SUBMISSION_ID` | Download both remote agent logs, decode compact payloads, and write annotated JSONL with the exact field-description dictionary |
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |
 | `uv run --frozen python scripts/audit_owner_feedback_replays.py <replay-dir> --output <report.json>` | Validate and hash the 14 owner-provided Honchkrow replays and emit reconciled diagnostics |
 | `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation for the canonical policy with prize, deck, board, Supporter, action, and terminal telemetry |
