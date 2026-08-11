@@ -59,7 +59,7 @@
 | `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Build the compact stdout-debug package for auditable Kaggle decision traces |
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |
 | `uv run --frozen python scripts/audit_owner_feedback_replays.py <replay-dir> --output <report.json>` | Validate and hash the 14 owner-provided Honchkrow replays and emit reconciled diagnostics |
-| `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --policy-variant supporter_resource_v2 --output REPORT.json` | Run the 200-match dedicated CABT evaluation with explicit policy selection and prize, deck, board, Supporter, action, and terminal telemetry |
+| `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation for the canonical policy with prize, deck, board, Supporter, action, and terminal telemetry |
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |
 | `uv run --frozen python scripts/analyze_replays.py REPLAY_DIR --output REPORT.json` | Rebuild per-replay damage, KO, resource, and loss diagnostics recursively |
 | `uv run --frozen python scripts/audit_submission_55333874.py` | Reproduce the immutable submitted policy over its 26-replay isolated corpus, emit the decision ledger and review bundle, and incorporate completed CABT candidate gates |
@@ -70,12 +70,9 @@
 | `uv run --frozen python scripts/build_honchkrow_turn_loop_v2_report.py BASELINE CANDIDATE OUTPUT_DIR` | Build the complete independent HLV2 comparison bundle and emit `HOLD` until every final gate is evidenced |
 | `uv run --frozen python scripts/summarize_honchkrow_turn_loop_v2_replays.py BASELINE CANDIDATE OUTPUT_DIR` | Reduce the two 1,434-decision reproductions to a safe single-decision divergence ledger without alternate-outcome claims |
 
-The Honchkrow package entrypoint declares its policy variant explicitly; package
-manifests record the same value. `HONCHKROW_POLICY_VARIANT` remains available
-only for non-package experiments. Use `baseline` for the prior committed-switch
-policy, or `legacy_baseline` only for rollback/regression measurement.
-`ko_priority_v3_retreat_guard` remains an accepted alias so prior
-evaluation commands remain reproducible.
+The Honchkrow package entrypoint declares `expert_turn_loop` explicitly; package
+manifests record the same value. Historical policy names are not accepted by
+the evaluator or package builder.
 
 ## Internal helpers
 

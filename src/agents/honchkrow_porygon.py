@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -63,14 +62,8 @@ MEGA_ABOMASNOW_EX = 723
 MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS = 6
 MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS = 18
 MEGA_ABOMASNOW_DECK_RESERVE = 2
-DECK_OUT_EXPERIMENTAL_RESERVE = 3
 ROTO_STICK_REVEAL_COUNT = 4
 CANONICAL_POLICY_VARIANT = "expert_turn_loop"
-CONSOLIDATED_POLICY_VARIANTS = (
-    "supporter_resource_v2",
-    "expert_rounds_1_3_v1",
-    CANONICAL_POLICY_VARIANT,
-)
 
 
 class TurnObjective(StrEnum):
@@ -2311,148 +2304,34 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._own_ko_turn: int | None = None
         self._special_roto_proton_only = False
         self._match_ledger = MatchTacticalLedger()
-        configured_variant = policy_variant or os.environ.get(
-            "HONCHKROW_POLICY_VARIANT", "supporter_resource_v2"
-        )
-        configured_variant = {
-            "canonical_turn_loop_v1": "expert_turn_loop",
-            "expert_turn_loop_v2": "expert_turn_loop",
-        }.get(configured_variant, configured_variant)
-        self.policy_variant = (
-            configured_variant
-            if configured_variant
-            in {
-                "baseline",
-                "legacy_baseline",
-                "ko_priority_v1",
-                "ko_priority_v2_strict",
-                "ko_priority_v3_retreat_guard",
-                "supporter_lethal_v1",
-                "supporter_resource_v2",
-                "expert_rounds_1_3_v1",
-                "expert_turn_loop",
-                "expert_turn_loop_no_ultra_ball_test",
-                "expert_turn_loop_probabilistic_supporters_v1",
-                "expert_turn_loop_90pct_base",
-                "expert_turn_loop_90pct_probabilistic_ariana_v1",
-                "expert_turn_loop_deck_reserve_v1",
-                "expert_turn_loop_deck_reserve_v2",
-                "supporter_resource_v2_replay_fix_v1",
-                "expert_rounds_1_3_replay_fix_v1",
-            }
-            else "baseline"
-        )
-        self._scorer.set_reference_roto(self._uses_90pct_reference)
-        self._scorer.set_elective_draw_reserve_override(
-            DECK_OUT_EXPERIMENTAL_RESERVE
-            if self.policy_variant
-            in {"expert_turn_loop_deck_reserve_v1", "expert_turn_loop_deck_reserve_v2"}
-            else None
-        )
+        self.policy_variant = CANONICAL_POLICY_VARIANT
+        self._scorer.set_reference_roto(False)
+        self._scorer.set_elective_draw_reserve_override(None)
 
     @property
     def _uses_retreat_guard(self) -> bool:
         """Return whether the promoted committed-switch policy is active."""
-        return self.policy_variant in {
-            "baseline",
-            "ko_priority_v3_retreat_guard",
-            "supporter_lethal_v1",
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        } or self.policy_variant in {
-            "expert_turn_loop_deck_reserve_v1",
-            "expert_turn_loop_deck_reserve_v2",
-        }
+        return True
 
     @property
     def _uses_supporter_lethal_commitment(self) -> bool:
         """Return whether exact Rocket Feathers commitments are enabled."""
-        return self.policy_variant in {
-            "supporter_lethal_v1",
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        } or self.policy_variant in {
-            "expert_turn_loop_deck_reserve_v1",
-            "expert_turn_loop_deck_reserve_v2",
-        }
+        return True
 
     @property
     def _uses_resource_variant(self) -> bool:
         """Return whether Roto-Stick and Transceiver resource logic is enabled."""
-        return self.policy_variant in {
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "supporter_resource_v2_replay_fix_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        } or self.policy_variant in {
-            "expert_turn_loop_deck_reserve_v1",
-            "expert_turn_loop_deck_reserve_v2",
-        }
+        return True
 
     @property
     def _uses_expert_rounds_1_3(self) -> bool:
         """Return whether the first three ratified interview rounds are active."""
-        return self.policy_variant in {
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-            "expert_rounds_1_3_replay_fix_v1",
-        } or self.policy_variant in {
-            "expert_turn_loop_deck_reserve_v1",
-            "expert_turn_loop_deck_reserve_v2",
-        }
+        return True
 
     @property
     def _uses_expert_turn_loop(self) -> bool:
         """Return whether the official Owner-defined turn loop is active."""
-        return self.policy_variant in {
-            "expert_turn_loop",
-            "expert_turn_loop_no_ultra_ball_test",
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-        } or self.policy_variant in {
-            "expert_turn_loop_deck_reserve_v1",
-            "expert_turn_loop_deck_reserve_v2",
-        }
-
-    @property
-    def _uses_probabilistic_supporters(self) -> bool:
-        """Return whether the isolated probabilistic supporter experiment is active."""
-        return self.policy_variant in {
-            "expert_turn_loop_probabilistic_supporters_v1",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-        }
-
-    @property
-    def _uses_90pct_reference(self) -> bool:
-        """Return whether the pre-probabilistic-Roto reference is active."""
-        return self.policy_variant in {
-            "expert_turn_loop_90pct_base",
-            "expert_turn_loop_90pct_probabilistic_ariana_v1",
-        }
+        return True
 
     @property
     def turn_ledger(self) -> TurnTacticalLedger:
@@ -2816,25 +2695,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.chosen_target = self._scorer._feature_int(
                     candidate, "target_card_id"
                 )
-                if self.policy_variant == "ko_priority_v2_strict":
-                    player = self._scorer._own_player(parsed.state)
-                    active = self._scorer._own_active(parsed.state)
-                    self._attack_sequence = AttackSequence(
-                        attack_id=self._scorer._attack_id(candidate),
-                        target_card_id=self._scorer._feature_int(candidate, "target_card_id"),
-                        target_hp_before=self._target_hp(parsed.state, candidate),
-                        attacker_card_id=active.card_id if active else 0,
-                        attacker_energy=len(active.energies) if active else 0,
-                        supporters_available=self._scorer._supporters_in_hand(parsed.state),
-                        planned_damage=self._candidate_damage(parsed.state, candidate),
-                        minimum_damage=self._target_hp(parsed.state, candidate),
-                        ko_threshold=self._target_hp(parsed.state, candidate),
-                        deck_reserve_before=player.deck_count if player else 0,
-                    )
-                elif (
-                    self._uses_supporter_lethal_commitment
-                    and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
-                ):
+                if self._scorer._attack_id(candidate) == ROCKET_FEATHERS:
                     player = self._scorer._own_player(parsed.state)
                     active = self._scorer._own_active(parsed.state)
                     required = self._supporters_required_for_candidate(parsed.state, candidate)
@@ -2886,13 +2747,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._roto_turn = None
             if self._transceiver_turn == parsed.state.turn:
                 self._transceiver_turn = None
-        if (
-            self.policy_variant == "ko_priority_v2_strict"
-            and parsed.select_context
-            in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}
-            and self._attack_sequence is not None
-        ):
-            self._attack_sequence.pending_intermediate = False
         player = self._scorer._own_player(parsed.state)
         if player is not None and player.deck_count <= 2:
             self._turn_ledger.deck_risk = "critical"
@@ -3274,36 +3128,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     giovanni_switch,
                 )
 
-        if self.policy_variant in {"ko_priority_v1", "ko_priority_v2_strict"}:
-            lethal_attacks = matching(
-                lambda candidate: (
-                    candidate.option_type is OptionType.ATTACK
-                    and self._variant_attack_is_lethal(state, candidate)
-                )
-            )
-            if lethal_attacks:
-                if self.policy_variant == "ko_priority_v2_strict":
-                    hammer_lethal = [
-                        selection
-                        for selection in lethal_attacks
-                        if any(
-                            self._scorer._attack_id(candidate) == HAMMER_IN
-                            for index in selection.indices
-                            if (candidate := by_index.get(index)) is not None
-                        )
-                    ]
-                    if hammer_lethal:
-                        return (
-                            DecisionPhase.ATTACK_PRIORITY.value,
-                            "strict_hammer_in_lethal_attack",
-                            hammer_lethal,
-                        )
-                return (
-                    DecisionPhase.ATTACK_PRIORITY.value,
-                    "ko_priority_lethal_attack",
-                    lethal_attacks,
-                )
-
         if self._uses_resource_variant:
             factory_play = matching(
                 lambda candidate: (
@@ -3434,29 +3258,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return DecisionPhase.PLAY_ITEMS.value, "recover_before_ariana", night_stretcher
 
         hand_reduction = matching(
-            lambda candidate: (
-                self._probabilistic_pre_draw_hand_reduction(state, candidate)
-                if self._uses_probabilistic_supporters
-                else self._is_safe_pre_draw_hand_reduction(state, candidate)
-            )
+            lambda candidate: self._is_safe_pre_draw_hand_reduction(state, candidate)
         )
         if hand_reduction:
-            reason = (
-                "probabilistic_reduce_hand_before_ariana"
-                if self._uses_probabilistic_supporters
-                else "reduce_hand_before_ariana"
-            )
-            return DecisionPhase.PLAY_POKEMON.value, reason, hand_reduction
+            return DecisionPhase.PLAY_POKEMON.value, "reduce_hand_before_ariana", hand_reduction
 
         ariana = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._feature_int(candidate, "card_id") == ARIANA
-                and (
-                    self._scorer._ariana_expected_value(state) > 0
-                    if self._uses_probabilistic_supporters
-                    else self._scorer._ariana_is_safe_and_useful(state)
-                )
+                and self._scorer._ariana_is_safe_and_useful(state)
             )
         )
         if ariana:
@@ -3984,11 +3795,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Keep Night Stretcher available when the deck is already on reserve."""
         if not self._scorer._night_stretcher_is_productive(state):
             return False
-        if self.policy_variant not in {
-            "expert_turn_loop",
-            "expert_turn_loop_deck_reserve_v2",
-        }:
-            return True
         player = self._scorer._own_player(state)
         if player is None:
             return False
@@ -4005,12 +3811,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         player = self._scorer._own_player(state)
         if (
-            self.policy_variant
-            in {
-                "expert_turn_loop",
-                "expert_turn_loop_deck_reserve_v2",
-            }
-            and player is not None
+            player is not None
             and player.deck_count
             < self._scorer._elective_draw_reserve(state) + ROTO_STICK_REVEAL_COUNT
         ):
@@ -4570,17 +4371,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if lethal_discard:
                 self._turn_ledger.resource_guard = "discard_six_for_mega_abomasnow_ko"
                 return lethal_discard
-            if (
-                self.policy_variant == "ko_priority_v2_strict"
-                and self._attack_sequence is not None
-                and self._attack_sequence.attack_id == ROCKET_FEATHERS
-            ):
-                self._turn_ledger.resource_guard = "strict_rocket_feathers_requires_six"
-                return [
-                    selection
-                    for selection in selections
-                    if self._rocket_supporter_count(selection, by_index) == 0
-                ]
         safe = super()._filter_forbidden_selections(state, selections, candidates, context)
         if context is SelectContext.MAIN:
             original_has_non_end = any(
@@ -4974,12 +4764,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             candidate.option_type is OptionType.ATTACK
             and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
         ):
-            if self.policy_variant == "ko_priority_v2_strict":
-                return not self._variant_attack_is_lethal(state, candidate)
-            if self.policy_variant == "ko_priority_v1" and not self._variant_attack_is_lethal(
-                state, candidate
-            ):
-                return not self._rocket_feathers_has_horizon(state, candidate)
             return self._scorer._effective_supporters_in_hand(state) == 0
         if candidate.option_type is OptionType.PLAY and card_id == ROTO_STICK:
             return not (
@@ -4990,13 +4774,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
                 )
             )
-        if (
-            self.policy_variant == "expert_turn_loop_no_ultra_ball_test"
-            and candidate.option_type in {OptionType.PLAY, OptionType.CARD}
-            and card_id == ULTRA_BALL
-        ):
-            self._turn_ledger.resource_guard = "experimental_block_ultra_ball_play_or_search"
-            return True
         if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
             return self._ignition_attack_plan(state, candidate) is None
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:

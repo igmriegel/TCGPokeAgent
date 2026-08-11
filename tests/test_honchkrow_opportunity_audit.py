@@ -182,8 +182,8 @@ def test_end_with_lethal_attack_is_explicitly_classified() -> None:
     assert audits[0].category == OpportunityCategory.END_WITH_LETHAL_LINE
 
 
-def test_promoted_baseline_and_legacy_policy_are_named() -> None:
-    """The promoted guard is the default while the prior policy remains selectable."""
+def test_honchkrow_policy_is_consolidated() -> None:
+    """The dedicated agent exposes only the official executable policy."""
     import json
     from pathlib import Path
 
@@ -196,31 +196,11 @@ def test_promoted_baseline_and_legacy_policy_are_named() -> None:
             ).read_text()
         )
     )
-    baseline = HonchkrowPorygonAgent(profile)
-    legacy = HonchkrowPorygonAgent(profile, "legacy_baseline")
-    assert baseline.policy_variant == "supporter_resource_v2"
-    assert baseline._uses_retreat_guard
-    assert legacy.policy_variant == "legacy_baseline"
-    assert not legacy._uses_retreat_guard
-    assert HonchkrowPorygonAgent(profile, "ko_priority_v1").policy_variant == "ko_priority_v1"
-    assert (
-        HonchkrowPorygonAgent(profile, "ko_priority_v2_strict").policy_variant
-        == "ko_priority_v2_strict"
-    )
-    assert (
-        HonchkrowPorygonAgent(profile, "ko_priority_v3_retreat_guard").policy_variant
-        == "ko_priority_v3_retreat_guard"
-    )
-    assert (
-        HonchkrowPorygonAgent(profile, "supporter_resource_v2_replay_fix_v1").policy_variant
-        == "supporter_resource_v2_replay_fix_v1"
-    )
-    expert_fix = HonchkrowPorygonAgent(profile, "expert_rounds_1_3_replay_fix_v1")
-    assert expert_fix._uses_expert_rounds_1_3
-    expert_turn_loop = HonchkrowPorygonAgent(profile, "expert_turn_loop")
-    assert expert_turn_loop.policy_variant == "expert_turn_loop"
-    assert expert_turn_loop._uses_expert_turn_loop
-    assert expert_turn_loop._uses_expert_rounds_1_3
+    agent = HonchkrowPorygonAgent(profile)
+    assert agent.policy_variant == "expert_turn_loop"
+    assert agent._uses_retreat_guard
+    assert agent._uses_expert_turn_loop
+    assert agent._uses_expert_rounds_1_3
 
 
 def test_unselected_rocket_attack_is_not_an_executed_opportunity() -> None:

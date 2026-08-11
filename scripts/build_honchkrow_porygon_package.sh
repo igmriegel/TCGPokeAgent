@@ -86,16 +86,9 @@ manifest = {
     "latency": None,
     "metrics": {},
     "parameters": {
-        "policy_variant": policy_variant,
-        "consolidated_policy_variants": [
-            "supporter_resource_v2",
-            "expert_rounds_1_3_v1",
-            "expert_turn_loop",
-        ],
-        "consolidation_rule": (
-            "expert_turn_loop is the executable policy; the earlier variants "
-            "remain included as lineage and compatibility branches"
-        ),
+        "canonical_policy_variant": policy_variant,
+        "policy_variants": 1,
+        "consolidation_rule": "expert_turn_loop is the only executable Honchkrow policy",
         "evidence_corpus": evidence_corpus,
         "evaluation_protocol": {
             "screening_matches": 300,

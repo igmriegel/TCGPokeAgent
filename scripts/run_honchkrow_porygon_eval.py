@@ -294,37 +294,16 @@ def _inferred_reason(current: Mapping[str, Any], loser_side: int) -> str:
     return "unknown"
 
 
-POLICY_VARIANTS = (
-    "baseline",
-    "legacy_baseline",
-    "ko_priority_v1",
-    "ko_priority_v2_strict",
-    "ko_priority_v3_retreat_guard",
-    "supporter_lethal_v1",
-    "supporter_resource_v2",
-    "expert_rounds_1_3_v1",
-    "expert_turn_loop",
-    "expert_turn_loop_no_ultra_ball_test",
-    "expert_turn_loop_probabilistic_supporters_v1",
-    "expert_turn_loop_90pct_base",
-    "expert_turn_loop_90pct_probabilistic_ariana_v1",
-    "expert_turn_loop_deck_reserve_v1",
-    "expert_turn_loop_deck_reserve_v2",
-    "supporter_resource_v2_replay_fix_v1",
-    "expert_rounds_1_3_replay_fix_v1",
-)
-
-
-def _build_agent(policy_variant: str | None = None) -> tuple[HonchkrowPorygonAgent, DeckDefinition]:
+def _build_agent() -> tuple[HonchkrowPorygonAgent, DeckDefinition]:
     """Load the dedicated profile and deck."""
     profile = DeckProfile.from_dict(json.loads(PROFILE_PATH.read_text(encoding="utf-8")))
     deck = DeckDefinition.from_path(DECK_PATH, "honchkrow_porygon")
-    return HonchkrowPorygonAgent(profile, policy_variant), deck
+    return HonchkrowPorygonAgent(profile), deck
 
 
-def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[str, Any]:
+def _run_match(seed: int, side: int) -> dict[str, Any]:
     """Run one match and retain result, terminal, and policy telemetry."""
-    agent, deck = _build_agent(policy_variant)
+    agent, deck = _build_agent()
     events: list[dict[str, Any]] = []
     decisions = 0
     decision_ms: list[float] = []
@@ -397,6 +376,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
         ledger = agent.turn_ledger
         match_ledger = agent.match_ledger
         policy_decision = agent.last_decision
+        decision_trace = getattr(policy_decision, "trace", None)
         event = {
             "turn": int(current.get("turn", 0) or 0),
             "deck_count": int(own.get("deckCount", 0) or 0),
@@ -513,11 +493,7 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
             "selection_reasons": list(
                 getattr(getattr(policy_decision, "selection", None), "reasons", ())
             ),
-            "decision_trace": (
-                asdict(policy_decision.trace)
-                if getattr(policy_decision, "trace", None) is not None
-                else None
-            ),
+            "decision_trace": asdict(decision_trace) if decision_trace is not None else None,
             "state_before": dict(current),
             "telemetry_before": telemetry_before,
         }
@@ -642,13 +618,10 @@ def _run_match(seed: int, side: int, policy_variant: str | None = None) -> dict[
 def run(
     matches_per_side: int,
     seed_base: int,
-    policy_variant: str | None = None,
 ) -> dict[str, Any]:
     """Run both sides and aggregate all requested outcome and telemetry metrics."""
     matches = [
-        _run_match(seed_base + index, side, policy_variant)
-        for index in range(matches_per_side)
-        for side in (0, 1)
+        _run_match(seed_base + index, side) for index in range(matches_per_side) for side in (0, 1)
     ]
     outcomes = Counter(match["result"] for match in matches)
     reasons = Counter(match["termination_reason"] for match in matches)
@@ -817,7 +790,6 @@ def run_stream(
     matches_per_side: int,
     seed_base: int,
     output: Path,
-    policy_variant: str | None = None,
 ) -> dict[str, Any]:
     """Run matches while persisting each complete trace before continuing."""
     trace_path = output.with_suffix(output.suffix + ".jsonl")
@@ -840,7 +812,7 @@ def run_stream(
         for ordinal in range(len(completed_matches), total):
             seed = seed_base + ordinal // 2
             side = ordinal % 2
-            match = _run_match(seed, side, policy_variant)
+            match = _run_match(seed, side)
             trace.write(json.dumps(match, sort_keys=True) + "\n")
             trace.flush()
             _accumulate_stream_match(
@@ -926,19 +898,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--matches-per-side", type=int, default=100)
     parser.add_argument("--seed-base", type=int, default=20260807)
-    parser.add_argument(
-        "--policy-variant",
-        choices=POLICY_VARIANTS,
-        default="expert_turn_loop",
-        help="Honchkrow/Porygon policy variant to evaluate.",
-    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     report = run_stream(
         args.matches_per_side,
         args.seed_base,
         args.output,
-        args.policy_variant,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

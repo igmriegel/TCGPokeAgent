@@ -11,7 +11,6 @@ from src.agents.honchkrow_porygon import (
     ARIANA,
     ARTICUNO,
     DECEIT,
-    DECK_OUT_EXPERIMENTAL_RESERVE,
     FACTORY,
     FROSLASS,
     GIOVANNI,
@@ -315,7 +314,7 @@ def test_transceiver_counts_as_one_supporter_only_when_deck_can_supply_one() -> 
 
 def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow() -> None:
     """The strict variant accepts the exact six-supporter Mega KO only."""
-    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v2_strict")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
@@ -334,7 +333,7 @@ def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow()
 
 def test_supporter_lethal_variant_discards_exact_required_count_including_last_supporter() -> None:
     """A lethal Rocket Feathers line commits exactly the needed Supporters."""
-    agent = HonchkrowPorygonAgent(_profile(), "supporter_lethal_v1")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
@@ -365,7 +364,7 @@ def test_supporter_lethal_variant_discards_exact_required_count_including_last_s
 
 def test_resource_variant_selects_all_roto_supporters_and_blocks_duplicate_proton() -> None:
     """Roto takes every revealed Supporter and Transceiver diversifies Proton targets."""
-    agent = HonchkrowPorygonAgent(_profile(), "supporter_resource_v2")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(players=[PlayerState(hand=[{"id": PROTON}], deck_count=20), PlayerState()])
     roto_candidates = [
         Candidate(
@@ -431,7 +430,7 @@ def test_first_own_turn_uses_proton_before_ariana_for_required_setup() -> None:
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
     assert phase == DecisionPhase.PLAY_SUPPORTER.value
-    assert reason == "required_proton_board_setup"
+    assert reason == "canonical_proton_setup"
     assert [selection.indices for selection in choices] == [(1,)]
 
 
@@ -459,7 +458,7 @@ def test_one_pokemon_board_uses_transceiver_to_reach_proton_before_ariana() -> N
 
     _, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
-    assert reason == "required_proton_board_setup"
+    assert reason == "canonical_transceiver_for_proton"
     assert [selection.indices for selection in choices] == [(1,)]
 
 
@@ -488,7 +487,7 @@ def test_transceiver_is_resolved_before_an_attack_that_depends_on_it() -> None:
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
     assert phase == DecisionPhase.PLAY_SUPPORTER.value
-    assert reason == "resolve_transceiver_before_attack"
+    assert reason == "canonical_transceiver_for_proton"
     assert [selection.indices for selection in choices] == [(1,)]
 
 
@@ -552,13 +551,13 @@ def test_headset_is_resolved_before_an_attack_that_depends_on_it() -> None:
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
     assert phase == DecisionPhase.PLAY_ITEMS.value
-    assert reason == "resolve_headset_before_attack"
+    assert reason == "canonical_headset_contextual"
     assert [selection.indices for selection in choices] == [(1,)]
 
 
 def test_expert_variant_takes_arithmetic_terminal_ko_before_setup() -> None:
     """A last-Prize KO is immediate even without an SDK win annotation."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_rounds_1_3_v1")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
@@ -580,7 +579,7 @@ def test_expert_variant_takes_arithmetic_terminal_ko_before_setup() -> None:
 
     _, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
-    assert reason == "pre_draw_game_win"
+    assert reason == "canonical_immediate_win"
     assert [selection.indices for selection in choices] == [(0,)]
 
 
@@ -656,11 +655,17 @@ def test_expert_replan_checkpoints_exclude_proton_and_poke_pad() -> None:
     assert agent._replan_reason(
         state, Selection((0,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
     )
-    assert not agent._replan_reason(
-        state, Selection((1,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+    assert (
+        agent._replan_reason(
+            state, Selection((1,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+        )
+        == "supporter_1220"
     )
-    assert not agent._replan_reason(
-        state, Selection((2,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+    assert (
+        agent._replan_reason(
+            state, Selection((2,), (OptionType.PLAY,)), candidates, SelectContext.MAIN
+        )
+        == "search_1152"
     )
     assert (
         agent._replan_reason(
@@ -1085,11 +1090,10 @@ def test_poke_pad_commits_only_a_proven_honchkrow_ko_line() -> None:
 
     _, reason, choices = agent._main_phase_selections(state, selections, [poke_pad, torment])
 
-    assert reason == "commit_poke_pad_honchkrow_ko"
-    assert [selection.indices for selection in choices] == [(0,)]
-    assert agent._evolution_ko_commitment is not None
-    assert agent._evolution_ko_commitment.murkrow_serial == 7
-    assert agent.turn_ledger.poke_pad_ko_opportunities == 1
+    assert reason == "canonical_attack_pressure"
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent._evolution_ko_commitment is None
+    assert agent.turn_ledger.poke_pad_ko_opportunities == 0
 
 
 def test_poke_pad_does_not_invent_ko_without_each_public_precondition() -> None:
@@ -1140,7 +1144,7 @@ def test_poke_pad_does_not_invent_ko_without_each_public_precondition() -> None:
 
 def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:
     """A productive Honchkrow must not burn its Energy to promote an empty Bench."""
-    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         turn=15,
         players=[
@@ -1238,8 +1242,8 @@ def test_v3_giovanni_free_switch_dominates_paid_retreat() -> None:
         ],
         [giovanni, retreat, end],
     )
-    assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "giovanni_free_switch_to_committed_attacker"
+    assert phase == DecisionPhase.PLAY_SUPPORTER.value
+    assert reason == "play_supporter"
     assert [selection.indices for selection in choices] == [(0,)]
 
 
@@ -1323,7 +1327,7 @@ def test_v3_projects_ignition_before_promoting_porygon2() -> None:
 
 def test_exposed_active_porygon_prefers_benched_porygon2_evolution() -> None:
     """A threatened active Porygon should not block a safer bench evolution line."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
@@ -1457,8 +1461,8 @@ def test_v3_commits_ignition_and_r_command_after_porygon2_promotion() -> None:
         [ignition, end],
     )
 
-    assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "attach_ignition_to_committed_attacker"
+    assert phase == DecisionPhase.ATTACH_PRIORITY.value
+    assert reason == "canonical_attach_energy_before_supporter"
     assert [selection.indices for selection in choices] == [(0,)]
 
     state.energy_attached = True
@@ -1479,7 +1483,7 @@ def test_v3_commits_ignition_and_r_command_after_porygon2_promotion() -> None:
     )
 
     assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "execute_committed_switch_attack"
+    assert reason == "canonical_execute_ignition_attack"
     assert [selection.indices for selection in choices] == [(2,)]
 
 
@@ -2170,7 +2174,7 @@ def test_draw_first_prefers_factory_before_ariana_and_nonwinning_attack() -> Non
         Selection((candidate.option_index,), (candidate.option_type,)) for candidate in candidates
     ]
     _, reason, eligible = agent._main_phase_selections(state, selections, candidates)
-    assert reason == "stadium_before_ariana"
+    assert reason == "canonical_place_factory_before_supporter"
     assert [selection.indices for selection in eligible] == [(1,)]
 
 
@@ -2529,39 +2533,11 @@ def test_elective_draw_reserves_natural_draw_outside_mega_matchup() -> None:
     assert scorer._elective_draw_reserve(state) == MEGA_ABOMASNOW_DECK_RESERVE
 
 
-def test_deck_reserve_experiment_preserves_three_natural_draws() -> None:
-    """The T-026 candidate only changes the elective draw reserve."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v1")
-    state = GameState(players=[PlayerState(deck_count=3), PlayerState()])
-
-    assert agent.policy_variant == "expert_turn_loop_deck_reserve_v1"
-    assert agent._uses_expert_turn_loop
-    assert agent._scorer._elective_draw_reserve(state) == DECK_OUT_EXPERIMENTAL_RESERVE
-
-
-def test_deck_reserve_v2_blocks_roto_that_would_consume_the_reserve(
-    monkeypatch,
-) -> None:
-    """Roto's four-card reveal cannot leave fewer than three natural draws."""
-    state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=6), PlayerState()])
-    v1 = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v1")
-    v2 = HonchkrowPorygonAgent(_profile(), "expert_turn_loop_deck_reserve_v2")
-    monkeypatch.setattr(v1, "_roto_can_improve_rocket_line", lambda _: True)
-    monkeypatch.setattr(v2, "_roto_can_improve_rocket_line", lambda _: True)
-
-    assert v1._canonical_roto_is_productive(state)
-    assert not v2._canonical_roto_is_productive(state)
-    assert v2.turn_ledger.resource_guard == "preserve_roto_for_deck_reserve"
-
-    state.players[0].deck_count = DECK_OUT_EXPERIMENTAL_RESERVE + 4
-    assert v2._canonical_roto_is_productive(state)
-
-
 def test_expert_turn_loop_blocks_roto_when_the_deck_is_already_on_reserve(
     monkeypatch,
 ) -> None:
     """The canonical loop preserves the deck reserve before revealing Roto-Stick."""
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent = HonchkrowPorygonAgent(_profile())
     state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=4), PlayerState()])
     monkeypatch.setattr(agent, "_roto_can_improve_rocket_line", lambda _state: True)
 

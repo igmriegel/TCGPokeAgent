@@ -31,9 +31,9 @@ before proposing fixes. Track execution and closure evidence under
 Only explicit Owner acceptance after replay-based validation can close this
 issue or remove its session-wide visibility.
 
-**Current release:** `expert_turn_loop` is the official implementation. The
-suffixed names are retained only as compatibility aliases for historical
-replays and manifests.
+**Current release:** `expert_turn_loop` is the only executable Honchkrow/Porygon
+implementation. Historical policy names are not runtime modes; their reports
+are evidence only.
 
 Historical submission: `expert_turn_loop_v2` submitted from canonical commit
 `2c554dc`; the prior immutable package remains the rollback reference
@@ -70,8 +70,8 @@ interval is -0.62 to +10.62 points. The candidate remains experimental.
 ## Executive summary
 
 The agent is operational and the dedicated Honchkrow/Porygon policy
-`expert_turn_loop` is now the canonical implementation, consolidating the
-ratified `supporter_resource_v2` and `expert_rounds_1_3_v1` rules. The
+`expert_turn_loop` is now the sole implementation of the consolidated
+Honchkrow/Porygon policy. The
 post-audit 300-match run finished 249W/51L (83.0%), with zero execution
 failures and 12 audited deck-out losses. The historical 200-match reference
 finished 162W/38L (81.0%) with 26 audited deck-out losses; the win-rate
@@ -96,7 +96,7 @@ promotion matrix have not run, so the release policy remains heuristic.
 | Expert turn loop v2 CABT screening | 600 bilateral episodes per policy: baseline 511W/89L, candidate 518W/82L; both 600/600 operationally `ok`, equal 27 deck-out losses, +1.17 p.p. difference, 95% CI [-2.79, +5.12] p.p. | Statistical result `HOLD`; user authorized operational promotion with limitation recorded |
 | Official turn loop release | Default entrypoint and package builder target `expert_turn_loop`; suffixed names remain compatibility aliases | Local package and CABT promotion validated; remote submission is separate |
 | Expert turn loop v2 submission | Canonical package SHA-256 `e90c6b87687c75a033348be2891dc1e6625af6c7e3be4acf9f1ff85718e31262`, receipt `20260808T073233Z-e90c6b87687c.json`, source commit `2c554dc` | Submitted successfully; retain statistical `HOLD` limitation and await remote score/replays |
-| Expert Rounds 1–3 candidate | 300 matches: 264W/36L (88.0%), zero execution failures, 9 deck-out losses; +5.0 points with independent 95% interval [-0.62, +10.62] | Promising but inconclusive; keep `expert_rounds_1_3_v1` experimental |
+| Historical expert candidate | Retained only in prior reports | Not executable after policy consolidation |
 | **New CABT comparison baseline** | `d5f42c5`, 300 matches: 249W/51L, 83.0%, zero execution failures, 12 deck-out losses | **Promoted by user decision; future CABT deltas compare against this report** |
 | Dedicated local evaluation | Independent 200-match blocks: prior baseline 160W/40L (80.00%), lethal v1 165W/35L (82.50%), resource v2 168W/32L (84.00%); zero execution failures | Resource v2 promoted as production probe by user decision |
 | Deck-out monitoring | Instrumented 40-game bilateral sample: 6 losses, 5 deck-outs, 1 other/unclassified | P0 next development |
@@ -168,8 +168,8 @@ The post-promotion package was rebuilt from commit `f22a24f` with policy
    documentation change.
 8. Use the post-audit 300-match policy at commit `d5f42c5` as the CABT
    comparison `baseline`; preserve the committed-switch policy as
-   `legacy_baseline` for historical regression comparisons. The executable
-   canonical policy is `expert_turn_loop`.
+   Historical policy names are evidence labels only. The executable canonical
+   policy is `expert_turn_loop`.
 9. Keep the existing submission `55304212` as historical remote evidence; the
    new turn-planning package is submitted for observation but is not promoted.
 10. Treat deck-out prevention and terminal-cause telemetry as the next P0
