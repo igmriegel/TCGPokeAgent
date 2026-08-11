@@ -16,6 +16,21 @@ runs/<experiment_id>/<run_id>/
 
 `runs/` is generated output, outside the submission package.
 
+## Canonical replay and log layout
+
+Kaggle evidence and locally generated visualizer replays are stored only under
+`data/`, as defined in the harness contract:
+
+```text
+data/raw/kaggle/replays/remote/<submission_id>/
+data/raw/kaggle/replays/owner_feedback/<capture_id>/
+data/raw/kaggle/decision_logs/<submission_id>/{raw,decoded,annotated}/
+data/derived/local_replays/<date>/
+```
+
+Do not create `logs/` or `replays/` at the repository root. Flat replay caches
+are redundant and must not be recreated.
+
 ## Kaggle decision-ledger contract
 
 Every official Honchkrow/Porygon package writes one complete public decision

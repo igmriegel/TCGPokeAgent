@@ -439,9 +439,7 @@ def _infer_owner_name(replay_paths: list[Path]) -> str | None:
             continue
         agents = data.get("info", {}).get("Agents", [])
         names = {
-            agent.get("Name")
-            for agent in agents
-            if isinstance(agent, dict) and agent.get("Name")
+            agent.get("Name") for agent in agents if isinstance(agent, dict) and agent.get("Name")
         }
         if not names:
             continue
@@ -479,7 +477,7 @@ def generate_report(
 
     submission_map = _load_submission_map()
     replay_paths = _filter_replay_paths(sorted(replay_dir.rglob("*.json")), submission_id)
-    
+
     def _collect_results(
         resolved_owner_name: str,
     ) -> tuple[list[dict[str, object]], Counter[str], Counter[str], Counter[str]]:
@@ -1160,7 +1158,7 @@ def _parser() -> argparse.ArgumentParser:
         "replay_dir",
         nargs="?",
         type=pathlib.Path,
-        default=pathlib.Path("data/raw/kaggle/kaggle_gameplay_runs"),
+        default=pathlib.Path("data/raw/kaggle/replays/remote"),
         help="Directory containing the replay JSON files.",
     )
     parser.add_argument(

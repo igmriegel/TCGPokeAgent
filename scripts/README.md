@@ -70,7 +70,7 @@ PYTHONPATH=. .venv/bin/python scripts/run_replay.py \
   --agent-one heuristic --agent-two random --matches 1
 ```
 
-The JSON is written under `replays/YYYYMMDD/`. Open `visualizer.html`, select
+The JSON is written under `data/derived/local_replays/YYYYMMDD/`. Open `visualizer.html`, select
 the JSON file, and allow the page to submit it to the competition visualizer.
 The visualizer is an external service; do not upload private observations or
 credentials.
@@ -82,7 +82,7 @@ of ad-hoc `jq` filters:
 
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/inspect_replay.py \
-  replays/remote/55392121/episode-91484013-replay.json \
+  data/raw/kaggle/replays/remote/55392121/episode-91484013-replay.json \
   --turn 11 --player-index 0 \
   --card-id 1216 --card-id 1257 --card-id 15
 ```
@@ -105,8 +105,7 @@ Download replay files from all completed Kaggle submissions:
 scripts/download_all_replays.sh
 ```
 
-This downloads replays to `replays/remote/{submission_id}/` and copies them to
-`data/raw/kaggle/kaggle_gameplay_runs/`. It also creates/updates
+This downloads replays to `data/raw/kaggle/replays/remote/{submission_id}/`. It also creates/updates
 `data/raw/kaggle/episode_to_submission.json` mapping episodes to submissions.
 
 ## Generate investigation report
@@ -117,7 +116,7 @@ Generate the HTML investigation report from downloaded replays:
 scripts/generate_investigation_report.sh
 ```
 
-This reads replays from `data/raw/kaggle/kaggle_gameplay_runs/`, analyzes
+This reads replays from `data/raw/kaggle/replays/remote/`, analyzes
 them using the CG SDK for card metadata, and generates
 The legacy aggregate output `perf_reports/INVESTIGATION_REPORT_ABOMASNOW.html`
 is disabled. Use a submission-specific output path or `--deck-filter` for an

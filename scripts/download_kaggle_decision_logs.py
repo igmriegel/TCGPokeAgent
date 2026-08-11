@@ -7,7 +7,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from decode_kaggle_decision_ledger import (
     DICTIONARY_PATH,
@@ -17,6 +17,9 @@ from decode_kaggle_decision_ledger import (
 )
 
 COMPETITION = "pokemon-tcg-ai-battle"
+DEFAULT_OWNER_NAME = "mudkip_mini_chicken"
+DEFAULT_REPLAY_DIR = Path("data/raw/kaggle/replays/remote")
+DEFAULT_OUTPUT_DIR = Path("data/raw/kaggle/decision_logs")
 
 
 def _episodes(submission_id: str) -> list[dict[str, Any]]:
@@ -37,26 +40,85 @@ def _episodes(submission_id: str) -> list[dict[str, Any]]:
     ]
 
 
-def _download_log(episode_id: str, agent_index: int, destination: Path) -> Path:
-    """Download one agent's stdout/stderr log and return its expected local path."""
+def _download_log(episode_id: str, agent_index: int, destination: Path) -> Path | None:
+    """Download an accessible agent log, returning ``None`` for Kaggle-forbidden logs."""
+    destination.mkdir(parents=True, exist_ok=True)
+    expected_paths = (
+        destination / f"{episode_id}-{agent_index}",
+        destination / f"episode-{episode_id}-agent-{agent_index}-logs.json",
+    )
+    for path in expected_paths:
+        if path.is_file():
+            return path
+    try:
+        subprocess.run(
+            [
+                "kaggle",
+                "competitions",
+                "logs",
+                episode_id,
+                str(agent_index),
+                "-p",
+                str(destination),
+                "-q",
+            ],
+            check=True,
+        )
+    except subprocess.CalledProcessError as error:
+        if error.returncode == 1:
+            return None
+        raise
+    for path in expected_paths:
+        if path.is_file():
+            return path
+    expected = ", ".join(str(path) for path in expected_paths)
+    raise FileNotFoundError(f"Kaggle did not return an expected agent log: {expected}")
+
+
+def _load_replay(episode_id: str, replay_dir: Path, destination: Path) -> dict[str, Any]:
+    """Load a replay, downloading it once when it is absent from the local mirror."""
+    candidates = (
+        replay_dir / f"{episode_id}.json",
+        destination / f"episode-{episode_id}-replay.json",
+    )
+    for path in candidates:
+        if path.is_file():
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                return payload
+            raise ValueError(f"replay must be a mapping: {path}")
+
     destination.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        [
-            "kaggle",
-            "competitions",
-            "logs",
-            episode_id,
-            str(agent_index),
-            "-p",
-            str(destination),
-            "-q",
-        ],
+        ["kaggle", "competitions", "replay", episode_id, "-p", str(destination), "-q"],
         check=True,
     )
-    path = destination / f"{episode_id}-{agent_index}"
+    path = destination / f"episode-{episode_id}-replay.json"
     if not path.is_file():
-        raise FileNotFoundError(f"Kaggle did not return expected agent log: {path}")
-    return path
+        raise FileNotFoundError(f"Kaggle did not return expected replay: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"replay must be a mapping: {path}")
+    return payload
+
+
+def _owner_agent_indices(replay: Mapping[str, Any], owner_name: str) -> list[int]:
+    """Return every replay seat belonging to the submitted agent name."""
+    info = replay.get("info")
+    if not isinstance(info, Mapping):
+        raise ValueError("replay info must be a mapping")
+    agents = info.get("Agents")
+    if not isinstance(agents, list):
+        raise ValueError("replay info Agents must be a list")
+    indices = [
+        index
+        for index, agent in enumerate(agents)
+        if isinstance(agent, Mapping) and agent.get("Name") == owner_name
+    ]
+    if not indices:
+        episode_id = info.get("EpisodeId", "unknown")
+        raise ValueError(f"owner {owner_name!r} is absent from replay {episode_id}")
+    return indices
 
 
 def _write_decoded_log(log_path: Path, output_root: Path) -> int:
@@ -79,7 +141,7 @@ def _write_decoded_log(log_path: Path, output_root: Path) -> int:
 
 
 def main() -> None:
-    """Download and annotate both agent logs for completed submission episodes."""
+    """Download and annotate submitted-agent logs for completed submission episodes."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("submission_id", help="Kaggle simulation submission ID.")
     parser.add_argument(
@@ -94,9 +156,22 @@ def main() -> None:
         type=int,
         choices=(0, 1),
         default=[],
-        help="Agent index to process; defaults to both.",
+        help="Explicit agent index to process; bypasses replay-based owner resolution.",
     )
-    parser.add_argument("--output-dir", type=Path, default=Path("logs/kaggle"))
+    parser.add_argument(
+        "--owner-name",
+        default=DEFAULT_OWNER_NAME,
+        help="Kaggle display name of the submission owner used to resolve replay seats.",
+    )
+    parser.add_argument(
+        "--replay-dir",
+        type=Path,
+        default=DEFAULT_REPLAY_DIR,
+        help=(
+            "Local Kaggle replay mirror; missing replays are downloaded into the output directory."
+        ),
+    )
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args()
 
     available = _episodes(args.submission_id)
@@ -108,7 +183,6 @@ def main() -> None:
     missing = requested - found
     if missing:
         raise ValueError(f"completed episodes not found: {', '.join(sorted(missing))}")
-    agent_indices = args.agent_index or [0, 1]
     output_root = args.output_dir / args.submission_id
     output_root.mkdir(parents=True, exist_ok=True)
     dictionary_target = output_root / DICTIONARY_PATH.name
@@ -118,14 +192,26 @@ def main() -> None:
     downloaded: list[dict[str, Any]] = []
     for episode in episodes:
         episode_id = str(episode["id"])
+        agent_indices = args.agent_index
+        if not agent_indices:
+            replay_directory = args.replay_dir / args.submission_id
+            replay = _load_replay(
+                episode_id,
+                replay_directory,
+                replay_directory,
+            )
+            agent_indices = _owner_agent_indices(replay, args.owner_name)
         for agent_index in agent_indices:
             log_path = _download_log(episode_id, agent_index, output_root / "raw")
+            if log_path is None:
+                continue
             count = _write_decoded_log(log_path, output_root)
             decoded_total += count
             downloaded.append(
                 {
                     "episode_id": episode_id,
                     "agent_index": agent_index,
+                    "owner_name": args.owner_name,
                     "log": str(log_path),
                     "sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
                     "decoded_decisions": count,

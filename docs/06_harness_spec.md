@@ -107,10 +107,30 @@ captured stderr event decodes into the required `selection`, `trace`, `ranked`,
 
 Remote logs are intentionally compact, not encrypted. The required
 interpretation entrypoint is `scripts/download_kaggle_decision_logs.py`: it
-downloads both agent-index logs for completed submission episodes, verifies each
+uses each replay's owner seat to download submitted-agent logs for completed episodes, verifies each
 compact payload checksum, expands aliases, and writes plain plus
 description-annotated JSONL with the exact dictionary and provenance manifest.
 Raw Base64 log strings are not a valid harness input for strategic review.
+
+## Canonical local evidence storage
+
+All downloaded or generated replay evidence lives under `data/`; top-level
+`logs/` and `replays/` are not valid output locations. The canonical layout is:
+
+```text
+data/
+  raw/kaggle/replays/remote/<submission_id>/
+  raw/kaggle/replays/owner_feedback/<capture_id>/
+  raw/kaggle/decision_logs/<submission_id>/{raw,decoded,annotated}/
+  raw/kaggle/{episode_to_submission.json,submission_metadata.json}
+  derived/local_replays/<date>/
+```
+
+`scripts/download_all_replays.py` writes remote replays directly to the first
+path. `scripts/download_kaggle_decision_logs.py` resolves the submitted seat
+from that replay and writes logs to the decision-log path. `scripts/run_replay.py`
+writes local visualizer payloads to `data/derived/local_replays/`. Consumers
+must read these canonical paths and must not create flat replay copies.
 
 SDK upgrades require an explicit compatibility experiment, a regenerated
 lockfile, and a harness contract update; the dependency is never updated

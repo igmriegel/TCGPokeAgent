@@ -5,13 +5,11 @@ from __future__ import annotations
 import csv
 import io
 import json
-import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
 
-REPLAY_SOURCE = Path("replays/remote")
-REPLAY_DEST = Path("data/raw/kaggle/kaggle_gameplay_runs")
+REPLAY_SOURCE = Path("data/raw/kaggle/replays/remote")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 COMPETITION = "pokemon-tcg-ai-battle"
 ACTIVE_SUBMISSION_LIMIT = 2
@@ -40,15 +38,13 @@ def _active_submission_ids() -> set[str]:
 
 
 def main() -> int:
-    REPLAY_DEST.mkdir(parents=True, exist_ok=True)
-
     submission_map = {}
     if SUBMISSION_MAP_PATH.exists():
         submission_map = json.loads(SUBMISSION_MAP_PATH.read_text())
 
     active_submission_ids = _active_submission_ids()
     print(f"Active replay window: {', '.join(sorted(active_submission_ids))}")
-    copied = 0
+    discovered = 0
     for submission_dir in sorted(REPLAY_SOURCE.iterdir()):
         if not submission_dir.is_dir():
             continue
@@ -64,17 +60,13 @@ def main() -> int:
             else:
                 episode_id = stem
 
-            dest_file = REPLAY_DEST / f"{episode_id}.json"
-            if not dest_file.exists():
-                shutil.copy2(replay_file, dest_file)
-                copied += 1
-
             submission_map[episode_id] = submission_id
+            discovered += 1
 
     SUBMISSION_MAP_PATH.write_text(json.dumps(submission_map, indent=2) + "\n")
-    print(f"Copied {copied} new replays")
+    print(f"Indexed {discovered} canonical replays")
     print(f"Submission map: {len(submission_map)} entries")
-    print(f"Total replays in destination: {len(list(REPLAY_DEST.glob('*.json')))}")
+    print(f"Total replays in source: {len(list(REPLAY_SOURCE.glob('*/*.json')))}")
     return 0
 
 

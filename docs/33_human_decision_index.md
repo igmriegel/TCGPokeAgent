@@ -2048,7 +2048,7 @@ or that a human decision is implemented.
 ## Replay sampling protocol
 
 The workspace currently contains 91 JSON replay files under
-`data/raw/kaggle/kaggle_gameplay_runs`. This is a candidate corpus count, not a
+`data/raw/kaggle/replays/remote`. This is a candidate corpus count, not a
 schema-valid or independent-match claim.
 
 For each confirmed decision family:

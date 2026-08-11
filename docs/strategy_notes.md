@@ -307,7 +307,7 @@ decision: "Accept the deck-agnostic implementation and smoke evidence; require t
 observed_at: "2026-07-29T23:15:36Z"
 submission_ids: [55093119, 55088176, 55086902]
 completed_replays_downloaded: 68
-raw_directory: "data/raw/kaggle/kaggle_gameplay_runs"
+raw_directory: "data/raw/kaggle/replays/remote"
 raw_size: "107 MiB"
 schema_valid_replays: 68
 invalid_replays: 0

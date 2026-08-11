@@ -69,8 +69,8 @@ been captured in one frozen report.
 | `src/data/replay_diagnostics.py` | Replay-derived damage, KO, resource, and loss diagnostics | `tests/test_replay_diagnostics.py`; CABT diagnostics report |
 | `src/data/replay_inspector.py` | Stable text and JSON summaries of replay decision frames | `scripts/inspect_replay.py`; replay debugging |
 | `src/data/honchkrow_audit.py` | Honchkrow/Porygon effective-sequence audit and contextual loss classification | `tests/test_honchkrow_porygon.py`, `tests/test_honchkrow_opportunity_audit.py`; replay-decision JSONL audits |
-| `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/kaggle_gameplay_runs/` |
-| `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory | Active; populates `episode_to_submission.json` |
+| `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions | Active; produces `data/raw/kaggle/replays/remote/` |
+| `scripts/sync_replays.sh` | Index canonical downloaded replays | Active; refreshes `episode_to_submission.json` |
 | `scripts/audit_turn_planning.py` | Detect setup-Supporter and proven Honchkrow evolution-KO patterns | Active; consumes plain or gzip JSONL CABT traces and emits bounded evidence |
 | `scripts/generate_investigation_report.sh` | Generate HTML investigation report from replays | Active for submission/deck-filtered outputs; legacy Abomasnow output disabled |
 | `scripts/analyze_replays.py` | Build aggregate replay damage and failure diagnostics | Active; produces versioned JSON diagnostics |
@@ -105,7 +105,7 @@ release evidence. Promotion requires the holdout and package gates in
 | Agent/evaluation profiles | `configs/` | Executable flat schema |
 | Operational commands | `scripts/` | Active; inventory in `scripts/README.md` |
 | Investigation reports | `perf_reports/` | Generated HTML; legacy `INVESTIGATION_REPORT_ABOMASNOW.html` generation disabled |
-| Raw/derived evidence | `data/`, `reports/`, `replays/`, `runs/` | Generated/versioned according to persistence contracts |
+| Raw/derived evidence | `data/`, `reports/`, `runs/` | Generated/versioned according to persistence contracts |
 
 ## Dead and dormant code policy
 

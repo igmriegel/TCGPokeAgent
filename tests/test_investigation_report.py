@@ -87,16 +87,17 @@ def test_active_submissions_skips_problematic_submission() -> None:
 
 def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) -> None:
     """Select only the latest completed submissions with local replay files."""
-    replay_dir = tmp_path / "replays"
-    replay_dir.mkdir()
-    (replay_dir / "new-episode.json").touch()
-    (replay_dir / "old-episode.json").touch()
+    replay_dir = tmp_path / "replays" / "remote"
+    (replay_dir / "new").mkdir(parents=True)
+    (replay_dir / "old").mkdir()
+    (replay_dir / "new" / "episode-100-replay.json").touch()
+    (replay_dir / "old" / "episode-200-replay.json").touch()
     metadata = [
         {"ref": "old", "date": "2026-08-01 00:00:00", "status": "SubmissionStatus.COMPLETE"},
         {"ref": "new", "date": "2026-08-05 00:00:00", "status": "SubmissionStatus.COMPLETE"},
         {"ref": "missing", "date": "2026-08-06 00:00:00", "status": "SubmissionStatus.COMPLETE"},
     ]
-    submission_map = {"new-episode": "new", "old-episode": "old"}
+    submission_map = {"100": "new", "200": "old"}
 
     assert report_updater.latest_downloaded_submission_ids(
         metadata, submission_map, replay_dir
@@ -107,10 +108,11 @@ def test_latest_downloaded_submission_ids_skips_problematic_submission(
     tmp_path: Path,
 ) -> None:
     """Exclude submission 55389788 from generated replay reports."""
-    replay_dir = tmp_path / "replays"
-    replay_dir.mkdir()
-    (replay_dir / "55389788-episode.json").touch()
-    (replay_dir / "55389999-episode.json").touch()
+    replay_dir = tmp_path / "replays" / "remote"
+    (replay_dir / "55389788").mkdir(parents=True)
+    (replay_dir / "55389999").mkdir()
+    (replay_dir / "55389788" / "episode-100-replay.json").touch()
+    (replay_dir / "55389999" / "episode-200-replay.json").touch()
     metadata = [
         {
             "ref": "55389788",
@@ -124,13 +126,13 @@ def test_latest_downloaded_submission_ids_skips_problematic_submission(
         },
     ]
     submission_map = {
-        "55389788-episode": "55389788",
-        "55389999-episode": "55389999",
+        "100": "55389788",
+        "200": "55389999",
     }
 
-    assert report_updater.latest_downloaded_submission_ids(metadata, submission_map, replay_dir) == [
-        "55389999"
-    ]
+    assert report_updater.latest_downloaded_submission_ids(
+        metadata, submission_map, replay_dir
+    ) == ["55389999"]
 
 
 def test_filter_replay_paths_uses_submission_map(

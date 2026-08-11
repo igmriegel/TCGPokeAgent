@@ -70,7 +70,7 @@ scripts/submit_simulation.sh
   submissions
 - `docs/` - project status, gameplay rules, task index, and report contracts
 - `submissions/` - built archives
-- `replays/` - downloaded Kaggle replays
+- `data/raw/kaggle/replays/` - downloaded Kaggle replays
 - `experiments/` - isolated one-off experiments
 
 ## If you want to change gameplay

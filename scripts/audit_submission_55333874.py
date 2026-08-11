@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SUBMISSION_ID = 55333874
 EXPECTED_ARCHIVE_SHA256 = "f6a7c94e7cc94e6507c9db965f29845b141ae0b047e504e839884067547e4fac"
 DEFAULT_ARCHIVE = ROOT / "submissions" / "honchkrow_porygon_post_audit_20260807.tar.gz"
-DEFAULT_REPLAYS = ROOT / "replays" / "remote" / str(SUBMISSION_ID)
+DEFAULT_REPLAYS = ROOT / "data" / "raw" / "kaggle" / "replays" / "remote" / str(SUBMISSION_ID)
 DEFAULT_OUTPUT = ROOT / "reports" / "replay_audits" / str(SUBMISSION_ID)
 CANDIDATE_VARIANTS = (
     "supporter_resource_v2_replay_fix_v1",
@@ -52,7 +52,7 @@ def _load_replay(path: Path) -> dict[str, Any]:
 def _sync_local_corpus(replay_paths: list[Path]) -> dict[str, Any]:
     """Copy the isolated corpus into raw storage and refresh local metadata."""
     raw_root = ROOT / "data" / "raw" / "kaggle"
-    raw_replays = raw_root / "kaggle_gameplay_runs"
+    raw_replays = raw_root / "replays" / "remote" / str(SUBMISSION_ID)
     mapping_path = raw_root / "episode_to_submission.json"
     metadata_path = raw_root / "submission_metadata.json"
     raw_replays.mkdir(parents=True, exist_ok=True)
@@ -60,7 +60,7 @@ def _sync_local_corpus(replay_paths: list[Path]) -> dict[str, Any]:
     copied = 0
     for replay_path in replay_paths:
         episode_id = replay_path.name.split("-")[1]
-        destination = raw_replays / f"{episode_id}.json"
+        destination = raw_replays / replay_path.name
         if not destination.exists():
             shutil.copy2(replay_path, destination)
             copied += 1
@@ -217,9 +217,7 @@ def _import_policy(package_root: Path | None, variant: str) -> tuple[Any, list[i
         if manifest_path.is_file():
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             os.environ["AGENT_SOURCE_COMMIT"] = str(manifest.get("source_commit", ""))
-            os.environ["AGENT_PACKAGE_SHA256"] = str(
-                manifest.get("package_payload_sha256", "")
-            )
+            os.environ["AGENT_PACKAGE_SHA256"] = str(manifest.get("package_payload_sha256", ""))
         sys.path.insert(0, str(package_root))
         spec = importlib.util.spec_from_file_location("submitted_main", package_root / "main.py")
         if spec is None or spec.loader is None:

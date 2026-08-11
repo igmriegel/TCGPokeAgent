@@ -35,7 +35,7 @@ was empty:
 
 ```bash
 uv run --frozen python -m src.data.gameplay_annotations inspect \
-  --replay data/raw/kaggle/kaggle_gameplay_runs/88879568.json \
+  --replay data/raw/kaggle/replays/remote/<submission_id>/episode-88879568-replay.json \
   --player 0 \
   --card-id 721 \
   --empty-bench
@@ -48,7 +48,7 @@ types without renumbering them.
 
 ```bash
 uv run --frozen python -m src.data.gameplay_annotations add \
-  --replay data/raw/kaggle/kaggle_gameplay_runs/88879568.json \
+  --replay data/raw/kaggle/replays/remote/<submission_id>/episode-88879568-replay.json \
   --output data/annotations/gameplay_reviews/v1/annotations.jsonl \
   --annotation-id KGR-88879568-002 \
   --supersedes KGR-88879568-001 \

@@ -74,7 +74,7 @@ before falling back to raw JSON tools:
 
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/inspect_replay.py \
-  replays/remote/55392121/episode-91484013-replay.json \
+  data/raw/kaggle/replays/remote/55392121/episode-91484013-replay.json \
   --turn 11 --player-index 0 \
   --card-id 1216 --card-id 1257 --card-id 15
 ```
@@ -119,7 +119,7 @@ payload, expand aliases, and produce both plain and description-annotated JSONL:
 uv run --frozen python scripts/download_kaggle_decision_logs.py SUBMISSION_ID
 ```
 
-It writes `logs/kaggle/SUBMISSION_ID/raw/`, `decoded/`, `annotated/`, the exact
+It writes `data/raw/kaggle/decision_logs/SUBMISSION_ID/raw/`, `decoded/`, `annotated/`, the exact
 `decision_ledger_dictionary.json`, and a provenance `manifest.json`. The
 `annotated` records include the complete field descriptions needed to interpret
 the compact strings correctly. Never review raw Base64 payloads as if they were
@@ -145,16 +145,16 @@ player position shown by the episode/replay; download both `0` and `1` when the
 submission was evaluated on both sides:
 
 ```bash
-mkdir -p logs/kaggle/SUBMISSION_ID/EPISODE_ID
+mkdir -p data/raw/kaggle/decision_logs/SUBMISSION_ID/raw
 kaggle competitions logs EPISODE_ID AGENT_INDEX \
-  -p logs/kaggle/SUBMISSION_ID/EPISODE_ID -q
+  -p data/raw/kaggle/decision_logs/SUBMISSION_ID/raw -q
 ```
 
 Locate and decode the complete stderr decision-ledger events:
 
 ```bash
 rg -n 'audit_decision_ledger|audit_decision_ledger_failed' \
-  logs/kaggle/SUBMISSION_ID/EPISODE_ID
+  data/raw/kaggle/decision_logs/SUBMISSION_ID/raw
 uv run --frozen python scripts/decode_kaggle_decision_ledger.py \
   LOG_FILE --annotated --output decisions.jsonl
 ```

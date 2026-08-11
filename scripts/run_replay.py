@@ -150,7 +150,7 @@ def main() -> None:
         "--agent-two", default="random", choices=("baseline", "heuristic", "random")
     )
     parser.add_argument("--matches", type=int, default=1)
-    parser.add_argument("--output-dir", default="replays")
+    parser.add_argument("--output-dir", default="data/derived/local_replays")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     if args.matches < 1:

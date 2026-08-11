@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-REPLAY_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
+REPLAY_DIR = Path("data/raw/kaggle/replays/remote")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 SUBMISSION_METADATA_PATH = Path("data/raw/kaggle/submission_metadata.json")
 REPORT_DIR = Path("perf_reports")
@@ -41,7 +41,10 @@ def latest_downloaded_submission_ids(
     Returns:
         Submission IDs ordered from newest to oldest.
     """
-    downloaded_episode_ids = {path.stem for path in replay_dir.glob("*.json") if path.is_file()}
+    downloaded_episode_ids = {
+        path.stem.removeprefix("episode-").removesuffix("-replay")
+        for path in replay_dir.rglob("episode-*-replay.json")
+    }
     downloaded_ids = {
         submission_map[episode_id]
         for episode_id in downloaded_episode_ids

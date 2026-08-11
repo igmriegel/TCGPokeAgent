@@ -3388,7 +3388,9 @@ def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:
 
 def test_replay_facts_for_91193154_preserve_the_proton_articuno_nuance() -> None:
     """The replay records Proton selecting Articuno while Dreepy was publicly visible."""
-    replay = json.loads((ROOT / "data/raw/kaggle/kaggle_gameplay_runs/91193154.json").read_text())
+    replay = json.loads(
+        (ROOT / "data/raw/kaggle/replays/remote/55365210/episode-91193154-replay.json").read_text()
+    )
     frame = replay["steps"][10][1]
     assert frame["action"] == [3]
     assert any(log.get("cardId") == PROTON for log in frame["observation"]["logs"])

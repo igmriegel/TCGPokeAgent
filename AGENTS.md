@@ -100,7 +100,8 @@ tests/                           # pytest fixtures + tests
 scripts/                         # run_smoke, run_full, build_package, replay tools
 docs/                            # Canonical status, code map, contracts, evidence
 perf_reports/                    # HTML investigation reports (generated)
-replays/                         # Raw Kaggle replay downloads by submission ID
+data/raw/kaggle/replays/         # Raw Kaggle replay downloads by submission ID
+data/raw/kaggle/decision_logs/   # Raw, decoded, and annotated remote agent logs
 ```
 
 ---

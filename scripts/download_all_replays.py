@@ -7,14 +7,12 @@ import csv
 import io
 import json
 import os
-import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
 
 COMPETITION = "pokemon-tcg-ai-battle"
-REPLAY_DIR = Path("replays/remote")
-DATA_DIR = Path("data/raw/kaggle/kaggle_gameplay_runs")
+REPLAY_DIR = Path("data/raw/kaggle/replays/remote")
 SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 SUBMISSION_METADATA_PATH = Path("data/raw/kaggle/submission_metadata.json")
 KAGGLE_COMMAND_TIMEOUT = int(os.environ.get("KAGGLE_COMMAND_TIMEOUT", "60"))
@@ -81,8 +79,6 @@ def _list_episodes(submission_id: str) -> list[dict[str, str]] | None:
 
 
 def main() -> int:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--submission-id",
@@ -121,9 +117,7 @@ def main() -> int:
     if requested_ids:
         blocked_ids = sorted(requested_ids & EXCLUDED_SUBMISSION_IDS)
         if blocked_ids:
-            message = "submission IDs are excluded from replay download: " + ", ".join(
-                blocked_ids
-            )
+            message = "submission IDs are excluded from replay download: " + ", ".join(blocked_ids)
             raise ValueError(message)
         found_ids = {submission.get("ref") for submission in active}
         missing_ids = sorted(requested_ids - found_ids)
@@ -162,31 +156,26 @@ def main() -> int:
         skipped = 0
         for ep in completed_eps:
             ep_id = str(ep["id"])
-            dest = DATA_DIR / f"{ep_id}.json"
-
-            if dest.exists():
+            replay_file = sub_dir / f"episode-{ep_id}-replay.json"
+            if replay_file.exists():
                 submission_map[ep_id] = sub_id
                 skipped += 1
                 continue
 
-            replay_file = sub_dir / f"episode-{ep_id}-replay.json"
-            if not replay_file.exists():
-                try:
-                    subprocess.run(
-                        ["kaggle", "competitions", "replay", ep_id, "-p", str(sub_dir), "-q"],
-                        check=True,
-                        capture_output=True,
-                        timeout=KAGGLE_COMMAND_TIMEOUT,
-                    )
-                except subprocess.TimeoutExpired:
-                    print(f"    FAILED: {ep_id} (download timed out)")
-                    continue
-                except subprocess.CalledProcessError:
-                    print(f"    FAILED: {ep_id}")
-                    continue
-
+            try:
+                subprocess.run(
+                    ["kaggle", "competitions", "replay", ep_id, "-p", str(sub_dir), "-q"],
+                    check=True,
+                    capture_output=True,
+                    timeout=KAGGLE_COMMAND_TIMEOUT,
+                )
+            except subprocess.TimeoutExpired:
+                print(f"    FAILED: {ep_id} (download timed out)")
+                continue
+            except subprocess.CalledProcessError:
+                print(f"    FAILED: {ep_id}")
+                continue
             if replay_file.exists():
-                shutil.copy2(replay_file, dest)
                 submission_map[ep_id] = sub_id
                 downloaded += 1
 
@@ -199,7 +188,7 @@ def main() -> int:
     print(f"Downloaded: {total_downloaded}")
     print(f"Cached: {total_skipped}")
     print(f"Mapping: {len(submission_map)} episodes")
-    print(f"Data dir: {len(list(DATA_DIR.glob('*.json')))} files")
+    print(f"Replay files: {len(list(REPLAY_DIR.glob('*/*.json')))}")
     return 0
 
 
