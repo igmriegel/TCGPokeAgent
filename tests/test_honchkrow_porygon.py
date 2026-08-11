@@ -2761,6 +2761,47 @@ def test_porygon2_promotion_takes_the_last_prizes() -> None:
     ]
 
 
+def test_porygon2_promotion_considers_prize_pressure_and_next_turn_setup() -> None:
+    """Promotion should favor a live Porygon2 prize line over generic board safety."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                prize=[None],
+                bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}], serial=22)],
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 6,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 140, 140, serial=30)),
+        ]
+    )
+    porygon2 = _candidate(
+        0,
+        OptionType.CARD,
+        card_id=PORYGON2,
+        card={"cardType": 0},
+    )
+    murkrow = _candidate(
+        1,
+        OptionType.CARD,
+        card_id=MURKROW,
+        card={"cardType": 0},
+    )
+
+    porygon2_score, porygon2_reasons = scorer._card_selection_score(
+        state, porygon2, SelectContext.TO_ACTIVE
+    )
+    murkrow_score, murkrow_reasons = scorer._card_selection_score(
+        state, murkrow, SelectContext.TO_ACTIVE
+    )
+
+    assert scorer._porygon2_next_turn_setup_available(state)
+    assert scorer._porygon2_prize_pressure_line(state)
+    assert porygon2_score > murkrow_score
+    assert "promote_porygon2_prize_pressure" in porygon2_reasons
+    assert murkrow_reasons == ["promote_murkrow_only_without_evolved_attacker"]
+
+
 def test_ignition_attack_line_is_available_without_preempting_choice() -> None:
     """An enabled Ignition line remains available without preempting other choices."""
     agent = HonchkrowPorygonAgent(_profile())

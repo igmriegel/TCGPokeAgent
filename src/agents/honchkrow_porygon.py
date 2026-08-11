@@ -789,6 +789,11 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                         "promote_porygon2_game_winning_r_command",
                         "r_command_takes_last_prizes",
                     ]
+                if self._porygon2_prize_pressure_line(state):
+                    reasons = ["promote_porygon2_prize_pressure"]
+                    if self._porygon2_next_turn_setup_available(state):
+                        reasons.append("porygon2_next_turn_setup_available")
+                    return 2600.0, reasons
                 if self._r_command_is_best_damage_line(state):
                     reasons = ["promote_porygon2_best_r_command"]
                     if self._porygon2_prize_race_line(state):
@@ -797,6 +802,11 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return 1250.0, ["promote_ready_porygon2"]
             if card_id == PORYGON2 and self._promotion_line_is_lethal(state, PORYGON2):
                 return 5200.0, ["promote_porygon2_projected_r_command_ko"]
+            if card_id == PORYGON2 and self._porygon2_prize_pressure_line(state):
+                reasons = ["promote_porygon2_prize_pressure"]
+                if self._porygon2_next_turn_setup_available(state):
+                    reasons.append("porygon2_next_turn_setup_available")
+                return 2300.0, reasons
             if card_id == PORYGON2 and self._porygon2_terminal_promotion_available(
                 state, candidate
             ):
@@ -1965,6 +1975,49 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if self._pokemon_is_ready(state, candidate):
             return False
         return bool(self._card_in_hand(state, IGNITION_ENERGY) and not state.energy_attached)
+
+    def _porygon2_next_turn_setup_available(self, state: GameState) -> bool:
+        """Return whether a visible Porygon2 line can be completed on the next turn."""
+        player = self._own_player(state)
+        if player is None:
+            return False
+        porygon2 = next(
+            (
+                pokemon
+                for pokemon in [player.active, *player.bench]
+                if pokemon is not None and pokemon.card_id == PORYGON2
+            ),
+            None,
+        )
+        if porygon2 is None:
+            return False
+        target_energy = self._attack_energy_target(PORYGON2)
+        energy = self._energy_units_for_pokemon(porygon2)
+        if energy >= target_energy:
+            return True
+        return bool(
+            not state.energy_attached
+            and self._card_in_hand(state, IGNITION_ENERGY)
+            and energy + 3 >= target_energy
+        )
+
+    def _porygon2_prize_pressure_line(self, state: GameState) -> bool:
+        """Return whether Porygon2 pressure is relevant to the remaining prize race."""
+        player = self._own_player(state)
+        opponent = self._opponent_player(state)
+        if player is None or opponent is None or not player.prize:
+            return False
+        prizes_remaining = len(player.prize)
+        if prizes_remaining <= 0:
+            return False
+        projected_damage = self._rocket_supporters_in_discard(state) * 20
+        opponent_hp = self._raw_opponent_hp(state)
+        if projected_damage >= opponent_hp > 0:
+            return True
+        if prizes_remaining <= 2 and self._porygon2_next_turn_setup_available(state):
+            target_prize_value = self._active_target_prize_value(state)
+            return projected_damage >= max(60, min(opponent_hp, target_prize_value * 20))
+        return False
 
     def _active_target_prize_value(self, state: GameState) -> int:
         """Return the effective public Prize value of the opposing Active."""
