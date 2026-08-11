@@ -214,6 +214,10 @@ uv run --frozen pytest tests/ -v
 
 - Do not present a task as complete based only on an implementation claim.
   Complete the requested scope or state precisely what remains incomplete.
+- Do not stop an authorized implementation task halfway through its normal
+  workflow. Continue through implementation, validation, artifact generation,
+  and the requested handoff unless a real blocker, missing authority, or user
+  instruction requires stopping; report that boundary immediately with evidence.
 - Every material change must include proportionate, reproducible evidence that
   the requested behavior was implemented: relevant tests, extracted-package
   validation, command output, artifact hash, remote receipt, or downloaded
