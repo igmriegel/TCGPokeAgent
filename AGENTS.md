@@ -210,6 +210,24 @@ Run:
 uv run --frozen pytest tests/ -v
 ```
 
+## Delivery Evidence and Completeness
+
+- Do not present a task as complete based only on an implementation claim.
+  Complete the requested scope or state precisely what remains incomplete.
+- Every material change must include proportionate, reproducible evidence that
+  the requested behavior was implemented: relevant tests, extracted-package
+  validation, command output, artifact hash, remote receipt, or downloaded
+  remote evidence as applicable.
+- State the evidence boundary explicitly. Local validation is not remote
+  confirmation; a package build is not a Kaggle submission; a submission is not
+  replay evidence or a strategic improvement.
+- When a user asks for an improvement, report the before/after evidence or say
+  that no evidence of improvement exists. Never infer strategic improvement
+  from a code change, successful test, or upload alone.
+- Preserve user-owned unrelated files and changes. Before a commit, identify
+  the exact files included and exclude unrelated work unless the user directs
+  otherwise.
+
 ---
 
 ## Config System
