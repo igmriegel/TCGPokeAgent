@@ -37,6 +37,29 @@ def _expand_keys(value: object, aliases: dict[str, str]) -> object:
     return value
 
 
+def _captured_log_text(text: str) -> str:
+    """Extract stdout and stderr from the JSON returned by the Kaggle logs CLI."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(payload, list):
+        return text
+
+    streams: list[str] = []
+    for turn in payload:
+        if not isinstance(turn, list):
+            continue
+        for event in turn:
+            if not isinstance(event, dict):
+                continue
+            for field in ("stdout", "stderr"):
+                value = event.get(field)
+                if isinstance(value, str) and value:
+                    streams.append(value)
+    return "\n".join(streams) if streams else text
+
+
 def decode_events(text: str) -> list[dict[str, Any]]:
     """Decode all complete decision-ledger events in one captured log.
 
@@ -52,7 +75,7 @@ def decode_events(text: str) -> list[dict[str, Any]]:
         value: key for key, value in keys.items() if isinstance(key, str) and isinstance(value, str)
     }
     records: list[dict[str, Any]] = []
-    for match in EVENT_PATTERN.finditer(text):
+    for match in EVENT_PATTERN.finditer(_captured_log_text(text)):
         envelope = json.loads(match.group(1))
         if envelope.get("encoding") != "zlib+base64":
             continue
