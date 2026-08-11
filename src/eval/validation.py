@@ -137,6 +137,7 @@ def validate_package_archive(archive: str | Path) -> dict[str, Any]:
                 package.extractall(root, filter="data")
                 check_package_layout(root)
                 manifest = _validate_package_manifest(root, path.stat().st_size)
+                _validate_decision_ledger_contract(root, manifest)
                 _check_python_311_syntax(root)
                 initial = subprocess.run(
                     [os.fspath(_python_executable()), "main.py"],
@@ -229,6 +230,42 @@ def _validate_package_manifest(root: Path, archive_size: int) -> dict[str, Any]:
     if (root / "vendor" / competing_backend).exists():
         raise PreflightError("ranker package contains the competing backend")
     return manifest
+
+
+def _validate_decision_ledger_contract(root: Path, manifest: Mapping[str, Any]) -> None:
+    """Validate the active audit ledger declared by an official package.
+
+    Args:
+        root: Extracted package root.
+        manifest: Parsed package manifest.
+
+    Raises:
+        PreflightError: If a declared ledger is incomplete or its dictionary is absent.
+    """
+    parameters = manifest.get("parameters", {})
+    if not isinstance(parameters, Mapping):
+        raise PreflightError("package parameters must be a mapping")
+    ledger = parameters.get("decision_ledger")
+    if ledger is None:
+        return
+    if not isinstance(ledger, Mapping):
+        raise PreflightError("decision ledger manifest must be a mapping")
+    required = {
+        "event": "audit_decision_ledger",
+        "schema_version": "decision-ledger-v1",
+        "transport": "stderr_logger",
+        "encoding": "zlib+base64",
+        "integrity": "sha256",
+    }
+    for key, expected in required.items():
+        if ledger.get(key) != expected:
+            raise PreflightError(f"decision ledger manifest {key} is invalid")
+    dictionary = ledger.get("dictionary")
+    if not isinstance(dictionary, str) or not (root / dictionary).is_file():
+        raise PreflightError("decision ledger dictionary is missing from the package")
+    source = root / "main.py"
+    if "def _emit_decision_ledger() -> None:" not in source.read_text(encoding="utf-8"):
+        raise PreflightError("package does not contain the active decision ledger emitter")
 
 
 def _run_ranker_smoke(root: Path, manifest: Mapping[str, Any]) -> str:

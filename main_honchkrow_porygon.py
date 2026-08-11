@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import logging
 import sys
+import zlib
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -36,6 +40,132 @@ _PROFILE_PATH = _ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.js
 POLICY_VARIANT = "expert_turn_loop"
 _agent: AgentPolicy | None = None
 _deck: list[int] | None = None
+_LEDGER_DICTIONARY_PATH = _ROOT / "src" / "artifacts" / "decision_ledger_dictionary.json"
+_LEDGER_KEY_MAP: dict[str, str] | None = None
+
+
+def _ledger_key_map() -> dict[str, str]:
+    """Load the versioned audit-key dictionary bundled with the package."""
+    global _LEDGER_KEY_MAP
+    if _LEDGER_KEY_MAP is None:
+        payload = json.loads(_LEDGER_DICTIONARY_PATH.read_text(encoding="utf-8"))
+        keys = payload.get("keys", {}) if isinstance(payload, Mapping) else {}
+        _LEDGER_KEY_MAP = {
+            key: value
+            for key, value in keys.items()
+            if isinstance(key, str) and isinstance(value, str)
+        }
+    return _LEDGER_KEY_MAP
+
+
+def _compact_ledger_keys(value: object) -> object:
+    """Replace audit-record keys with their stable short aliases recursively."""
+    if isinstance(value, dict):
+        key_map = _ledger_key_map()
+        return {
+            key_map.get(str(key), str(key)): _compact_ledger_keys(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_compact_ledger_keys(item) for item in value]
+    if isinstance(value, tuple):
+        return [_compact_ledger_keys(item) for item in value]
+    return value
+
+
+def _public_ledger(ledger: object) -> dict[str, object]:
+    """Return JSON-safe public ledger fields without exposing private state."""
+    return asdict(ledger) if is_dataclass(ledger) else {}
+
+
+def _decision_ledger(decision: object) -> dict[str, object]:
+    """Serialize every calculated public value used for one policy decision."""
+    trace = getattr(decision, "trace", None)
+    ranked = [
+        {
+            "indices": row.selection.indices,
+            "score": row.score,
+            "rank": row.rank,
+            "reasons": row.reasons,
+            "margin_to_next": row.margin_to_next,
+        }
+        for row in getattr(decision, "ranked", ())
+    ]
+    features = [
+        {
+            "indices": row.selection.indices,
+            "schema_version": row.schema_version,
+            "values": row.values,
+            "heuristic_score": row.heuristic_score,
+            "heuristic_reasons": row.heuristic_reasons,
+        }
+        for row in getattr(decision, "features", ())
+    ]
+    return {
+        "event": "audit_decision_ledger",
+        "schema_version": "decision-ledger-v1",
+        "selection": getattr(getattr(decision, "selection", None), "indices", ()),
+        "decision_phase": getattr(decision, "decision_phase", ""),
+        "decision_phase_reason": getattr(decision, "decision_phase_reason", ""),
+        "fallback_used": getattr(decision, "fallback_used", False),
+        "model_backend": getattr(decision, "model_backend", ""),
+        "model_version": getattr(decision, "model_version", ""),
+        "duration_ms": getattr(decision, "duration_ms", 0.0),
+        "trace": asdict(trace) if is_dataclass(trace) else {},
+        "ranked": ranked,
+        "features": features,
+        "turn_ledger": _public_ledger(getattr(_agent, "turn_ledger", None)),
+        "match_ledger": _public_ledger(getattr(_agent, "match_ledger", None)),
+    }
+
+
+def _emit_decision_ledger() -> None:
+    """Write the complete public decision audit record to the Kaggle log."""
+    decision = getattr(_agent, "last_decision", None)
+    if decision is None:
+        return
+    try:
+        raw = json.dumps(
+            _compact_ledger_keys(_decision_ledger(decision)), separators=(",", ":"), default=str
+        )
+        payload = json.dumps(
+            {
+                "event": "audit_decision_ledger",
+                "schema_version": "decision-ledger-v1",
+                "dictionary": "decision-ledger-keys-v1",
+                "sha256": hashlib.sha256(raw.encode("utf-8")).hexdigest(),
+                "encoding": "zlib+base64",
+                "payload": base64.b64encode(zlib.compress(raw.encode("utf-8"), level=9)).decode(
+                    "ascii"
+                ),
+            },
+            separators=(",", ":"),
+        )
+        if len(payload) > 9_000:
+            raise ValueError("encoded decision ledger exceeds the Kaggle log budget")
+        logger.warning("audit_decision_ledger=%s", payload)
+    except Exception:
+        logger.exception("audit_decision_ledger_failed")
+
+
+def _emit_fallback_ledger(observation: Mapping[str, Any], result: list[int]) -> None:
+    """Record deterministic fallback use without changing the simulator response."""
+    select = observation.get("select")
+    context = select.get("type", "") if isinstance(select, Mapping) else ""
+    logger.warning(
+        "audit_decision_ledger=%s",
+        json.dumps(
+            {
+                "event": "audit_decision_ledger",
+                "schema_version": "decision-ledger-v1",
+                "selection": result,
+                "select_context": context,
+                "fallback_used": True,
+                "reason": "policy_exception",
+            },
+            separators=(",", ":"),
+        ),
+    )
 
 
 def _load_deck() -> list[int]:
@@ -73,10 +203,13 @@ def agent_policy(observation: dict[str, Any]) -> list[int]:
         return list(_deck)
     try:
         result = _agent.select(observation)
+        _emit_decision_ledger()
         _validate_selection(observation, result)
         return result
     except Exception:
-        return _fallback_selection(observation)
+        fallback = _fallback_selection(observation)
+        _emit_fallback_ledger(observation, fallback)
+        return fallback
 
 
 def _validate_selection(observation: Mapping[str, Any], output: list[int]) -> None:

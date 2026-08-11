@@ -43,6 +43,9 @@
 - [x] Isolated package execution and remote-compatible root layout.
 - [x] Release hashes, manifest, rollback artifact, and evidence log.
 - [x] Search explicitly disabled for the heuristic-only scope.
+- [x] Official Honchkrow/Porygon package ledger remains active: every decision
+  emits checksum-verifiable `decision-ledger-v1` to stderr while stdout remains
+  a legal simulator action.
 
 ## Decision rule
 

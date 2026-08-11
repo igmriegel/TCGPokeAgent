@@ -16,6 +16,32 @@ runs/<experiment_id>/<run_id>/
 
 `runs/` is generated output, outside the submission package.
 
+## Kaggle decision-ledger contract
+
+Every official Honchkrow/Porygon package writes one complete public decision
+ledger for every non-initial decision to stderr. Stdout remains exclusively for
+the simulator action. The Kaggle environment captures both streams separately,
+with a 10,000-character default limit per decision.
+
+The `audit_decision_ledger` event contains every candidate, filter stage, ranked
+selection, feature vector, selected indices, `DecisionTrace`, `turn_ledger`, and
+`match_ledger`. Field names use stable aliases from
+`src/artifacts/decision_ledger_dictionary.json`; the payload is zlib-compressed,
+base64-encoded, and protected by a SHA-256 of the uncompressed compact record.
+The dictionary is bundled at that same path inside the submission archive. Its
+`field_descriptions`, `turn_ledger_fields`, and `match_ledger_fields` sections
+are the authoritative explanation for every decoded field. The decoder expands
+aliases before writing JSONL:
+
+```bash
+uv run --frozen python scripts/decode_kaggle_decision_ledger.py REPLAY_OR_LOG \
+  --output decisions.jsonl
+```
+
+If a complete compressed record cannot fit in 9,000 characters, an explicit
+`audit_decision_ledger_failed` event is emitted. A truncated or failed event is
+not valid evidence of a complete decision audit.
+
 ## Contracts
 
 - `manifest.json`: resolved input, versions, hashes, seeds and matrix.

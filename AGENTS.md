@@ -179,12 +179,19 @@ CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
 - Fallback must always be available (never let a parse failure crash the agent)
 - Catch and wrap external errors; don't let SDK exceptions propagate
 
-### Honchkrow stdout debug
-- The `debug_decision_compact` trace belongs to `scripts/build_kaggle_stdout_debug_package.sh`
-  and the extracted stdout-debug package only.
-- Do not remove, rename, or relocate that compact trace from the stdout-debug builder
-  without updating the archived Kaggle debug workflow, its documentation, and its tests.
-- Do not move that trace into the normal Honchkrow Kaggle entrypoint.
+### Honchkrow decision-ledger audit logging
+- The official Honchkrow/Porygon package must emit one `audit_decision_ledger`
+  record for every non-initial decision. This functionality is always active.
+- Write audit records only to stderr; stdout is reserved for the simulator's
+  JSON action and must never contain a ledger.
+- The complete public record uses `decision-ledger-v1`, the versioned aliases in
+  `src/artifacts/decision_ledger_dictionary.json`, zlib+base64 encoding, and an
+  SHA-256 integrity check. It includes candidates, stages, rankings, feature
+  values, selection, trace, turn ledger, and match ledger.
+- Do not remove, disable, rename, or make this audit path optional without
+  updating the package harness, decoder, documentation, and smoke tests. An
+  oversize record must emit `audit_decision_ledger_failed`, never a partial or
+  invented audit record.
 
 ---
 

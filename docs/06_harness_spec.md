@@ -80,6 +80,30 @@ The environment publishes `actTimeout=0`, `runTimeout=2000`, `remainingOverageTi
 - make imports from `/kaggle_simulations/agent/`;
 - keep the file under 197.7 MiB;
 - extract into a temporary directory and test using only the extracted content.
+- for the official Honchkrow/Porygon archive, require the active
+  `decision-ledger-v1` manifest contract, its bundled key dictionary, and an
+  extracted-package smoke that preserves action stdout while emitting a
+  checksum-verifiable stderr ledger.
+
+### Decision-ledger dictionary
+
+The interpretation source for every official Honchkrow/Porygon audit event is
+`src/artifacts/decision_ledger_dictionary.json`, both in the repository and at
+the same relative path in the extracted archive. The package manifest points to
+this exact path through `parameters.decision_ledger.dictionary`.
+
+The dictionary's `keys` map reversibly maps each compact ledger alias to its
+full field name. `field_descriptions` defines the decision, trace, candidate,
+ranking, feature, and raw-CABT-map fields. `turn_ledger_fields` and
+`match_ledger_fields` define every tactical counter and calculated value by its
+uncompressed field name. The decoder verifies the payload SHA-256, expands
+aliases using this file, and only then produces audit JSONL. Do not interpret
+an encoded payload with a dictionary from a different schema version.
+
+The package harness rejects an archive that declares the ledger but omits the
+dictionary or active emitter. The smoke gate must additionally prove that a
+captured stderr event decodes into the required `selection`, `trace`, `ranked`,
+`features`, `turn_ledger`, and `match_ledger` fields.
 
 SDK upgrades require an explicit compatibility experiment, a regenerated
 lockfile, and a harness contract update; the dependency is never updated

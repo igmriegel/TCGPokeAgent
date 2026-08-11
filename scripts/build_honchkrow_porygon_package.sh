@@ -23,7 +23,8 @@ cp src/agents/__init__.py src/agents/baseline.py src/agents/factory.py src/agent
     src/agents/heuristic.py src/agents/honchkrow_porygon.py src/agents/search.py "${TMPDIR}/src/agents/"
 cp src/core/*.py "${TMPDIR}/src/core/"
 cp src/ranking/__init__.py src/ranking/features.py src/ranking/rankers.py "${TMPDIR}/src/ranking/"
-cp src/artifacts/deck_profile_honchkrow_porygon.json "${TMPDIR}/src/artifacts/"
+cp src/artifacts/deck_profile_honchkrow_porygon.json src/artifacts/decision_ledger_dictionary.json \
+    "${TMPDIR}/src/artifacts/"
 cp -r cg "${TMPDIR}/cg"
 find "${TMPDIR}" -name '__pycache__' -type d -prune -exec rm -rf {} +
 find "${TMPDIR}" -name '*.pyc' -delete
@@ -95,6 +96,15 @@ manifest = {
             "final_matches": 1000,
             "both_sides": True,
             "paired_seeds": False,
+        },
+        "decision_ledger": {
+            "event": "audit_decision_ledger",
+            "schema_version": "decision-ledger-v1",
+            "dictionary": "src/artifacts/decision_ledger_dictionary.json",
+            "transport": "stderr_logger",
+            "encoding": "zlib+base64",
+            "integrity": "sha256",
+            "required_fields": ["selection", "trace", "ranked", "features", "turn_ledger", "match_ledger"],
         },
     },
     "policy_variant": policy_variant,

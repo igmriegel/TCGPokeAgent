@@ -31,6 +31,7 @@
 | `scripts/download_data.sh --check` | Verify official dataset manifest |
 | `scripts/download_data.sh --competition simulation` | Download one authorized dataset |
 | `scripts/download_all_replays.sh` | Download replays from all Kaggle submissions |
+| `kaggle competitions logs EPISODE_ID AGENT_INDEX -p logs/kaggle/SUBMISSION_ID/EPISODE_ID -q` | Download one submitted agent's captured stdout/stderr log for decision-ledger audit |
 | `scripts/generate_investigation_report.sh` | Generate active HTML investigation reports; the legacy Abomasnow output is disabled |
 | `scripts/sync_replays.sh` | Sync downloaded replays to dashboard directory |
 | `scripts/audit_turn_planning.py` | Audit Ariana, Proton, Transceiver, Petrel/Factory, and proven Poké Pad KO patterns in JSONL traces |
@@ -38,7 +39,7 @@
 | `make build-abomasnow-package` | Build the Abomasnow `submissions/submission.tar.gz` archive |
 | `scripts/build_package.sh submissions/submission_hdi_v1.tar.gz hdi_v1` | Build the native HDI v1 experimental archive and SHA-256 sidecar |
 | `scripts/build_package.sh submissions/submission-xgboost.tar.gz xgboost_ranker MODEL_DIR` | Build one backend-exclusive ranker archive |
-| `scripts/build_honchkrow_porygon_package.sh submissions/honchkrow_porygon_submission.tar.gz` | Build the isolated Honchkrow/Porygon deck archive |
+| `scripts/build_honchkrow_porygon_package.sh submissions/honchkrow_porygon_submission.tar.gz` | Build the isolated Honchkrow/Porygon deck archive with its required complete stderr decision ledger |
 | `uv run --frozen --group ranker-xgboost python scripts/train_rankers.py --help` | Train grouped native ranker studies (`scripts/train_rankers.py`) |
 | `uv run --frozen python -m src.eval.validation --package submissions/submission.tar.gz` | Validate an extracted archive |
 | `scripts/submit_simulation.sh --dry-run` | Run all local submission gates without upload |
@@ -56,7 +57,8 @@
 | `uv run --frozen python scripts/audit_turn_planning.py <trace.jsonl.gz> --output <report.json>` | Emit tactical counters and bounded factual examples from a CABT trace |
 | `uv run --frozen python scripts/inspect_replay.py <replay.json> --turn N --player-index P` | Inspect Kaggle replay frames with stable coordinates, logs, and legal options |
 | `uv run --frozen python scripts/update_replays_reports.py` | Refresh generated replay investigation reports |
-| `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Build the compact stdout-debug package for auditable Kaggle decision traces |
+| `bash scripts/build_kaggle_stdout_debug_package.sh <output.tar.gz>` | Compatibility alias for the official auditable package; the complete ledger is emitted to stderr, never stdout |
+| `uv run --frozen python scripts/decode_kaggle_decision_ledger.py REPLAY_OR_LOG --output decisions.jsonl` | Verify checksum and decode complete compressed decision-ledger records |
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |
 | `uv run --frozen python scripts/audit_owner_feedback_replays.py <replay-dir> --output <report.json>` | Validate and hash the 14 owner-provided Honchkrow replays and emit reconciled diagnostics |
 | `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation for the canonical policy with prize, deck, board, Supporter, action, and terminal telemetry |
