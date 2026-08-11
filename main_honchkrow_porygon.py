@@ -143,7 +143,7 @@ def _emit_decision_ledger() -> None:
         )
         if len(payload) > 9_000:
             raise ValueError("encoded decision ledger exceeds the Kaggle log budget")
-        logger.warning("audit_decision_ledger=%s", payload)
+        print(f"audit_decision_ledger={payload}", file=sys.stderr, flush=True)
     except Exception:
         logger.exception("audit_decision_ledger_failed")
 
@@ -152,20 +152,21 @@ def _emit_fallback_ledger(observation: Mapping[str, Any], result: list[int]) -> 
     """Record deterministic fallback use without changing the simulator response."""
     select = observation.get("select")
     context = select.get("type", "") if isinstance(select, Mapping) else ""
-    logger.warning(
-        "audit_decision_ledger=%s",
-        json.dumps(
-            {
-                "event": "audit_decision_ledger",
-                "schema_version": "decision-ledger-v1",
-                "selection": result,
-                "select_context": context,
-                "fallback_used": True,
-                "reason": "policy_exception",
-            },
-            separators=(",", ":"),
-        ),
+    payload = json.dumps(
+        {
+            "event": "audit_decision_ledger",
+            "schema_version": "decision-ledger-v1",
+            "selection": result,
+            "select_context": context,
+            "fallback_used": True,
+            "reason": "policy_exception",
+        },
+        separators=(",", ":"),
     )
+    try:
+        print(f"audit_decision_ledger={payload}", file=sys.stderr, flush=True)
+    except Exception:
+        logger.exception("audit_decision_ledger_failed")
 
 
 def _load_deck() -> list[int]:

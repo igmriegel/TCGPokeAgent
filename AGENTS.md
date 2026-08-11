@@ -182,8 +182,9 @@ CI and Docker use `uv sync --frozen` to guarantee reproducible installs.
 ### Honchkrow decision-ledger audit logging
 - The official Honchkrow/Porygon package must emit one `audit_decision_ledger`
   record for every non-initial decision. This functionality is always active.
-- Write audit records only to stderr; stdout is reserved for the simulator's
-  JSON action and must never contain a ledger.
+- Write audit records directly to stderr; it is the diagnostic stream, not an
+  error-only stream. Stdout is reserved for the simulator's JSON action and
+  must never contain a ledger.
 - The complete public record uses `decision-ledger-v1`, the versioned aliases in
   `src/artifacts/decision_ledger_dictionary.json`, zlib+base64 encoding, and an
   SHA-256 integrity check. It includes candidates, stages, rankings, feature

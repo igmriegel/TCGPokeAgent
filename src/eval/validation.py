@@ -253,7 +253,7 @@ def _validate_decision_ledger_contract(root: Path, manifest: Mapping[str, Any]) 
     required = {
         "event": "audit_decision_ledger",
         "schema_version": "decision-ledger-v1",
-        "transport": "stderr_logger",
+        "transport": "stderr_stream",
         "encoding": "zlib+base64",
         "integrity": "sha256",
     }

@@ -122,7 +122,7 @@ def test_dedicated_expert_package_manifest_identifies_backend(tmp_path) -> None:
     assert manifest["parameters"]["canonical_policy_variant"] == "expert_turn_loop"
     ledger = manifest["parameters"]["decision_ledger"]
     assert ledger["event"] == "audit_decision_ledger"
-    assert ledger["transport"] == "stderr_logger"
+    assert ledger["transport"] == "stderr_stream"
     assert ledger["dictionary"] == "src/artifacts/decision_ledger_dictionary.json"
 
 
@@ -192,6 +192,51 @@ def test_decision_ledger_dictionary_describes_every_tactical_field() -> None:
     assert set(dictionary["keys"]) <= dictionary["field_descriptions"].keys()
     assert turn_fields <= dictionary["turn_ledger_fields"].keys()
     assert match_fields <= dictionary["match_ledger_fields"].keys()
+
+
+def test_decision_ledger_does_not_change_the_callable_action(tmp_path) -> None:
+    """Writing the audit event under redirected stderr must not throw or alter an action."""
+    root = Path(__file__).parents[1]
+    archive = tmp_path / "honchkrow_expert_turn_loop.tar.gz"
+    extracted = tmp_path / "extracted"
+    extracted.mkdir()
+    fixture = json.loads((root / "tests" / "fixtures" / "cabt_main_turn.json").read_text())
+
+    subprocess.run(
+        [str(root / "scripts" / "build_honchkrow_porygon_package.sh"), str(archive)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    with tarfile.open(archive) as package:
+        package.extractall(extracted)
+    script = """
+import json
+import sys
+from contextlib import redirect_stderr
+from io import StringIO
+
+sys.path.insert(0, '.')
+import main
+
+main.agent_policy({'select': None})
+captured = StringIO()
+with redirect_stderr(captured):
+    action = main.agent(FIXTURE)
+print(json.dumps({'action': action, 'stderr': captured.getvalue()}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script.replace("FIXTURE", repr(fixture))],
+        cwd=extracted,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    captured = json.loads(completed.stdout)
+    assert captured["action"] == [0]
+    assert "audit_decision_ledger=" in captured["stderr"]
 
 
 def test_stdout_debug_package_matches_the_official_auditable_package(tmp_path) -> None:

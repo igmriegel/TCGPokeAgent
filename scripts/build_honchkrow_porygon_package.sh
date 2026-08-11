@@ -101,7 +101,7 @@ manifest = {
             "event": "audit_decision_ledger",
             "schema_version": "decision-ledger-v1",
             "dictionary": "src/artifacts/decision_ledger_dictionary.json",
-            "transport": "stderr_logger",
+            "transport": "stderr_stream",
             "encoding": "zlib+base64",
             "integrity": "sha256",
             "required_fields": ["selection", "trace", "ranked", "features", "turn_ledger", "match_ledger"],
