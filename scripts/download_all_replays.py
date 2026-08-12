@@ -17,7 +17,6 @@ SUBMISSION_MAP_PATH = Path("data/raw/kaggle/episode_to_submission.json")
 SUBMISSION_METADATA_PATH = Path("data/raw/kaggle/submission_metadata.json")
 KAGGLE_COMMAND_TIMEOUT = int(os.environ.get("KAGGLE_COMMAND_TIMEOUT", "60"))
 ACTIVE_SUBMISSION_LIMIT = 2
-EXCLUDED_SUBMISSION_IDS = {"55389788"}
 
 
 def _list_submissions() -> list[dict[str, str]]:
@@ -45,7 +44,6 @@ def _active_submissions(submissions: list[dict[str, str]]) -> list[dict[str, str
         submission
         for submission in submissions
         if submission.get("status") == "SubmissionStatus.COMPLETE"
-        and submission.get("ref") not in EXCLUDED_SUBMISSION_IDS
     ]
     return sorted(
         completed,
@@ -105,20 +103,11 @@ def main() -> int:
     )
     requested_ids = set(args.submission_id)
     active = (
-        [
-            submission
-            for submission in submissions
-            if submission.get("ref") in requested_ids
-            and submission.get("ref") not in EXCLUDED_SUBMISSION_IDS
-        ]
+        [submission for submission in submissions if submission.get("ref") in requested_ids]
         if requested_ids
         else _active_submissions(submissions)
     )
     if requested_ids:
-        blocked_ids = sorted(requested_ids & EXCLUDED_SUBMISSION_IDS)
-        if blocked_ids:
-            message = "submission IDs are excluded from replay download: " + ", ".join(blocked_ids)
-            raise ValueError(message)
         found_ids = {submission.get("ref") for submission in active}
         missing_ids = sorted(requested_ids - found_ids)
         if missing_ids:

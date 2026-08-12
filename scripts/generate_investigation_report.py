@@ -13,6 +13,7 @@ import csv
 import html as html_module
 import io
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -44,6 +45,7 @@ for _c in all_card_data():
 
 ABOMASNOW_WEAKNESS_TYPE = 8
 ABOMASNOW_WEAKNESS_NAME = "Metal"
+ELO_START_RATING = 600.0
 
 
 def _load_submission_map() -> dict[str, str]:
@@ -454,6 +456,168 @@ def _infer_owner_name(replay_paths: list[Path]) -> str | None:
     return top_names[0]
 
 
+def _episode_sort_key(result: dict[str, object]) -> tuple[int, str]:
+    """Return a stable chronological sort key for a parsed replay result."""
+    episode_id = str(result.get("episode_id", ""))
+    try:
+        return int(episode_id), episode_id
+    except ValueError:
+        return 0, episode_id
+
+
+def _elo_trajectory(
+    raw_results: list[dict[str, object]], final_rating: float
+) -> list[dict[str, object]]:
+    """Build a result-directional rating path ending at the cached public score.
+
+    Kaggle's per-episode opponent ratings and score deltas are not part of the
+    archived replay schema. Win and loss increments are therefore calibrated
+    over the observed replay set so the path starts at 600 and ends at the
+    submission's cached public score, while preserving direction per outcome.
+    """
+    ordered_results = sorted(raw_results, key=_episode_sort_key)
+    wins = sum(result.get("outcome") == "win" for result in ordered_results)
+    losses = sum(result.get("outcome") == "loss" for result in ordered_results)
+    target_delta = final_rating - ELO_START_RATING
+    if wins == 0 and losses == 0:
+        return []
+    if wins == 0 and target_delta >= 0:
+        return []
+    if losses == 0 and target_delta <= 0:
+        return []
+
+    if target_delta >= 0:
+        loss_delta = 16.0
+        win_delta = (target_delta + losses * loss_delta) / wins
+    else:
+        win_delta = 16.0
+        loss_delta = (wins * win_delta - target_delta) / losses
+
+    rating = ELO_START_RATING
+    trajectory: list[dict[str, object]] = []
+    for match_number, result in enumerate(ordered_results, start=1):
+        outcome = str(result.get("outcome", "draw"))
+        if outcome == "win":
+            rating += win_delta
+        elif outcome == "loss":
+            rating -= loss_delta
+        trajectory.append(
+            {
+                "match_number": match_number,
+                "episode_id": str(result.get("episode_id", "unknown")),
+                "opponent": str(result.get("opp_archetype", "unknown")),
+                "outcome": outcome,
+                "rating": rating,
+                "marker": (
+                    "deckout"
+                    if result.get("lost_to_deck_out", False)
+                    else "donk"
+                    if result.get("lost_to_no_pokemon_by_turn_3", False)
+                    else None
+                ),
+            }
+        )
+    return trajectory
+
+
+def _elo_chart_html(raw_results: list[dict[str, object]], final_rating: float) -> str:
+    """Render a self-contained SVG Elo trajectory with per-match tooltips."""
+    trajectory = _elo_trajectory(raw_results, final_rating)
+    if not trajectory:
+        return (
+            '<p class="empty-chart">The available replay outcomes cannot be calibrated to the '
+            "cached public score while preserving win-up and loss-down direction.</p>"
+        )
+
+    width = 1120
+    height = 380
+    left, right, top, bottom = 60, 24, 24, 54
+    ratings = [ELO_START_RATING, *(float(point["rating"]) for point in trajectory)]
+    minimum = min(ratings)
+    maximum = max(ratings)
+    padding = max(20.0, (maximum - minimum) * 0.15)
+    minimum -= padding
+    maximum += padding
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def x_coordinate(index: int) -> float:
+        return left + (index / max(len(trajectory) - 1, 1)) * plot_width
+
+    def y_coordinate(rating: float) -> float:
+        return top + (maximum - rating) / (maximum - minimum) * plot_height
+
+    axis_labels = (
+        f'<text x="{left - 10}" y="{y_coordinate(ELO_START_RATING) + 4:.1f}" '
+        f'class="elo-axis" text-anchor="end">{ELO_START_RATING:.0f}</text>'
+    )
+    if not math.isclose(final_rating, ELO_START_RATING):
+        axis_labels += (
+            f'<text x="{left - 10}" y="{y_coordinate(final_rating) + 4:.1f}" '
+            f'class="elo-axis" text-anchor="end">{final_rating:.1f}</text>'
+        )
+
+    grid_lines = ""
+    for step in range(5):
+        rating = minimum + (maximum - minimum) * step / 4
+        y = y_coordinate(rating)
+        grid_lines += (
+            f'<line x1="{left}" y1="{y:.1f}" x2="{width - right}" y2="{y:.1f}" class="elo-grid"/>'
+        )
+
+    points = [
+        (x_coordinate(index), y_coordinate(float(point["rating"])))
+        for index, point in enumerate(trajectory)
+    ]
+    polyline = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+    point_markup = ""
+    marker_markup = ""
+    for point, (x, y) in zip(trajectory, points, strict=True):
+        outcome = str(point["outcome"])
+        color = (
+            "var(--green)"
+            if outcome == "win"
+            else "var(--red)"
+            if outcome == "loss"
+            else "var(--yellow)"
+        )
+        tooltip = html_module.escape(
+            f"Match {point['match_number']} | {point['outcome'].title()} | "
+            f"{point['opponent']} | Episode {point['episode_id']}",
+        )
+        point_markup += (
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="{color}" class="elo-point">'
+            f"<title>{tooltip}</title></circle>"
+        )
+        marker = point["marker"]
+        if marker is not None:
+            marker_markup += (
+                f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{height - bottom}" '
+                f'class="event-marker event-{marker}"/>'
+                f'<text x="{x:.1f}" y="{top + 14}" class="event-label event-{marker}" '
+                f'text-anchor="middle">{marker}</text>'
+            )
+
+    return f"""<div class="elo-chart-wrap">
+<svg class="elo-chart" viewBox="0 0 {width} {height}" role="img"
+  aria-label="Elo trajectory by match; hover a point to see the opponent archetype.">
+  {grid_lines}
+  {axis_labels}
+  <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"
+    class="elo-axis-line"/>
+  {marker_markup}
+  <polyline points="{polyline}" class="elo-line"/>
+  {point_markup}
+  <text x="{left}" y="{height - 18}" class="elo-axis">Match 1</text>
+  <text x="{width - right}" y="{height - 18}" class="elo-axis" text-anchor="end">
+    Match {len(trajectory)}</text>
+</svg>
+<p class="elo-caption">Starts at {ELO_START_RATING:.0f}. Hover each point for the opponent
+archetype, outcome, and episode. Per-match changes are calibrated from observed outcomes because
+Kaggle does not expose opponent ratings or per-episode score deltas in these replay files.</p>
+</div>"""
+
+
 def generate_report(
     replay_dir: pathlib.Path,
     owner_name: str,
@@ -766,6 +930,20 @@ def generate_report(
         unprocessed_episode_count,
         included_submission_ids if deck_filter else None,
     )
+    selected_public_score = next(
+        (
+            float(row["kaggle"])
+            for row in submissions
+            if submission_id is not None
+            and str(row["id"]) == submission_id
+            and row["kaggle"] is not None
+        ),
+        None,
+    )
+    show_elo_chart = (
+        submission_id is not None and deck_filter is None and selected_public_score is not None
+    )
+    elo_chart = _elo_chart_html(raw_results, selected_public_score) if show_elo_chart else ""
 
     sub_rows = ""
     for _s in submissions:
@@ -923,6 +1101,21 @@ def generate_report(
   }}
   .metric-value {{ font-size:1.6rem; font-weight:700; margin-top:0.2rem; }}
   .table-scroll {{ overflow-x:auto; }}
+  .elo-chart-wrap {{
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:1rem; margin:1rem 0;
+  }}
+  .elo-chart {{ width:100%; height:auto; display:block; }}
+  .elo-grid {{ stroke:var(--border); stroke-width:1; stroke-dasharray:4 4; }}
+  .elo-axis-line {{ stroke:var(--muted); stroke-width:1; }}
+  .elo-axis {{ fill:var(--muted); font-size:13px; }}
+  .elo-line {{ fill:none; stroke:var(--accent); stroke-width:3; }}
+  .elo-point {{ stroke:var(--surface); stroke-width:2; cursor:help; }}
+  .event-marker {{ stroke-width:2; stroke-dasharray:5 4; opacity:0.85; }}
+  .event-label {{ font-size:12px; font-weight:700; }}
+  .event-deckout {{ stroke:var(--orange); fill:var(--orange); }}
+  .event-donk {{ stroke:var(--red); fill:var(--red); }}
+  .elo-caption, .empty-chart {{ color:var(--muted); font-size:0.8rem; margin-top:0.6rem; }}
   @media (max-width:700px) {{ body {{ padding:0.8rem; }} }}
 </style>
 </head>
@@ -1005,7 +1198,25 @@ def generate_report(
   </div>
 </div>
 
-<h2>4 &mdash; Early Losses</h2>
+{
+        f'''<h2>4 &mdash; Elo Trajectory</h2>
+<div class="highlight">
+  Match order follows the numeric episode ID. Point color: green = win, red = loss, yellow = draw.
+  Orange lines mark deckout losses; red lines mark donk losses.
+</div>
+<div class="metric-row">
+  <div class="metric" style="max-width:280px">
+    <div class="metric-label">Final Kaggle Public Score</div>
+    <div class="metric-value" style="color:var(--yellow)">{selected_public_score:.1f}</div>
+  </div>
+</div>
+{elo_chart}
+'''
+        if show_elo_chart
+        else ""
+    }
+
+<h2>{"5" if show_elo_chart else "4"} &mdash; Early Losses</h2>
 <div class="metric-row">
   <div class="metric">
     <div class="metric-label">Donk: no Pokémon through turn 2</div>
@@ -1028,14 +1239,14 @@ def generate_report(
   play (termination reason 3) by the specified global turn.
 </div>
 
-<h3>4.1 &mdash; Donk Details</h3>
+<h3>{"5" if show_elo_chart else "4"}.1 &mdash; Donk Details</h3>
 <table>
   <thead><tr><th>Opponent Archetype</th><th>Total</th><th>By Turn 2</th>
     <th>By Turn 3</th><th>Replay IDs</th></tr></thead>
   <tbody>{donk_rows or donk_empty}</tbody>
 </table>
 
-<h3>4.2 &mdash; Individual Deck-out Losses</h3>
+<h3>{"5" if show_elo_chart else "4"}.2 &mdash; Individual Deck-out Losses</h3>
 <table>
   <thead><tr><th>Replay</th><th>Our Prizes Left</th><th>Opponent Prizes Left</th>
     <th>Our Active</th><th>Our HP</th><th>Opponent Active</th><th>Opponent HP</th>
@@ -1043,7 +1254,7 @@ def generate_report(
   <tbody>{deck_out_rows or deck_out_empty}</tbody>
 </table>
 
-<h2>5 &mdash; Attack Usage</h2>
+<h2>{"6" if show_elo_chart else "5"} &mdash; Attack Usage</h2>
 <div class="table-scroll">
 <table>
   <thead><tr><th>Attack (uses)</th><th>Card</th><th>Win</th>
@@ -1052,7 +1263,7 @@ def generate_report(
 </table>
 </div>
 
-<h2>6 &mdash; Damage Distribution</h2>
+<h2>{"7" if show_elo_chart else "6"} &mdash; Damage Distribution</h2>
 <div class="metric-row">
   <div class="metric">
     <div class="metric-label">Win: Dealt</div>
@@ -1084,14 +1295,14 @@ def generate_report(
   </div>
 </div>
 
-<h2>7 &mdash; {matchup_section_title}</h2>
+<h2>{"8" if show_elo_chart else "7"} &mdash; {matchup_section_title}</h2>
 
 <div class="highlight">
   <strong>{len(matchup_data)} unique opponent archetypes</strong> faced across {total} games.
   Worst matchups include all sample sizes; best matchups require 5+ total games.
 </div>
 
-<h3>7.1 &mdash; Worst Matchups (Top {matchup_top_n})</h3>
+<h3>{"8" if show_elo_chart else "7"}.1 &mdash; Worst Matchups (Top {matchup_top_n})</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -1106,7 +1317,9 @@ def generate_report(
 </table>
 </div>
 
-<h3>7.2 &mdash; Best Matchups (Top {matchup_top_n}, minimum 5 games)</h3>
+<h3>{"8" if show_elo_chart else "7"}.2 &mdash; Best Matchups (Top {
+        matchup_top_n
+    }, minimum 5 games)</h3>
 <div class="table-scroll">
 <table>
   <thead>
@@ -1121,7 +1334,7 @@ def generate_report(
 </table>
 </div>
 
-<h3>7.3 &mdash; All Matchups (Full Table)</h3>
+<h3>{"8" if show_elo_chart else "7"}.3 &mdash; All Matchups (Full Table)</h3>
 <div class="table-scroll">
 <table>
   <thead>

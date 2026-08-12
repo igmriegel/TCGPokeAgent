@@ -67,8 +67,8 @@ def test_active_submissions_returns_two_latest_completed() -> None:
     ]
 
 
-def test_active_submissions_skips_problematic_submission() -> None:
-    """Exclude submission 55389788 from replay downloads."""
+def test_active_submissions_includes_55389788() -> None:
+    """Allow submission 55389788 to be downloaded after its exclusion is lifted."""
     submissions = [
         {
             "ref": "55389788",
@@ -82,7 +82,10 @@ def test_active_submissions_skips_problematic_submission() -> None:
         },
     ]
 
-    assert [row["ref"] for row in downloader._active_submissions(submissions)] == ["55389999"]
+    assert [row["ref"] for row in downloader._active_submissions(submissions)] == [
+        "55389788",
+        "55389999",
+    ]
 
 
 def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) -> None:
@@ -104,10 +107,10 @@ def test_latest_downloaded_submission_ids_ignores_older_reports(tmp_path: Path) 
     ) == ["new", "old"]
 
 
-def test_latest_downloaded_submission_ids_skips_problematic_submission(
+def test_latest_downloaded_submission_ids_includes_55389788(
     tmp_path: Path,
 ) -> None:
-    """Exclude submission 55389788 from generated replay reports."""
+    """Allow submission 55389788 to receive a generated replay report."""
     replay_dir = tmp_path / "replays" / "remote"
     (replay_dir / "55389788").mkdir(parents=True)
     (replay_dir / "55389999").mkdir()
@@ -132,7 +135,7 @@ def test_latest_downloaded_submission_ids_skips_problematic_submission(
 
     assert report_updater.latest_downloaded_submission_ids(
         metadata, submission_map, replay_dir
-    ) == ["55389999"]
+    ) == ["55389788", "55389999"]
 
 
 def test_filter_replay_paths_uses_submission_map(
@@ -350,9 +353,13 @@ def test_selected_report_has_one_submission_summary(
     assert "Selected Submission Summary" in content
     assert "Submission History" not in content
     assert "Matchup Analysis &mdash; Submission 55222565" in content
-    assert "7.1 &mdash; Worst Matchups (Top 5)" in content
-    assert "minimum 5 games" not in content.split("7.1", 1)[1].split("7.2", 1)[0]
-    assert "7.2 &mdash; Best Matchups (Top 5, minimum 5 games)" in content
+    assert "4 &mdash; Elo Trajectory" in content
+    assert "test opponent" in content
+    assert "Final Kaggle Public Score" in content
+    assert "614.4" in content
+    assert "8.1 &mdash; Worst Matchups (Top 5)" in content
+    assert "minimum 5 games" not in content.split("8.1", 1)[1].split("8.2", 1)[0]
+    assert "8.2 &mdash; Best Matchups (Top 5, minimum 5 games)" in content
     assert "614.4" in content
     assert "1W/0L" in content
     assert "other submission" not in content
@@ -409,3 +416,46 @@ def test_deck_filter_excludes_other_controlled_decks(
     assert "Total Replays</div>" in content
     assert "1</div>" in content
     assert "Filter: Abomasnow" in content
+    assert "Elo Trajectory" not in content
+
+
+def test_elo_trajectory_starts_at_600_and_names_each_opponent() -> None:
+    """Build an ordered Elo-style trend from replay outcomes."""
+    trajectory = report._elo_trajectory(
+        [
+            {
+                "episode_id": "20",
+                "outcome": "loss",
+                "opp_archetype": "Deck B",
+                "lost_to_deck_out": True,
+            },
+            {"episode_id": "10", "outcome": "win", "opp_archetype": "Deck A"},
+        ],
+        final_rating=584.0,
+    )
+
+    assert [point["episode_id"] for point in trajectory] == ["10", "20"]
+    assert [point["opponent"] for point in trajectory] == ["Deck A", "Deck B"]
+    assert [point["marker"] for point in trajectory] == [None, "deckout"]
+    assert float(trajectory[0]["rating"]) > 600
+    assert float(trajectory[1]["rating"]) < float(trajectory[0]["rating"])
+    assert float(trajectory[-1]["rating"]) == 584.0
+
+    chart = report._elo_chart_html(
+        [
+            {
+                "episode_id": "10",
+                "outcome": "win",
+                "opp_archetype": "Deck A",
+                "lost_to_no_pokemon_by_turn_3": True,
+            },
+        ],
+        final_rating=616.0,
+    )
+    assert "Starts at 600" in chart
+    assert "| Elo" not in chart
+    assert ">600</text>" in chart
+    assert ">616.0</text>" in chart
+    assert "event-donk" in chart
+    assert ">donk</text>" in chart
+    assert "Deck A" in chart
