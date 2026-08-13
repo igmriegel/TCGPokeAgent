@@ -4404,4 +4404,68 @@ def test_rocket_feathers_discards_exact_supporters_for_current_target() -> None:
     assert agent.turn_ledger.resource_guard == "discard_exact_supporters_for_rocket_ko"
 
 
+def test_transceiver_does_not_repeat_proton_after_same_turn_setup_gain() -> None:
+    """A second public Transceiver search must compare non-Proton resources."""
+    agent = HonchkrowPorygonAgent(_profile())
+    agent._transceiver_turn = 4
+    state = GameState(
+        turn=4,
+        players=[PlayerState(hand=[{"id": TRANSCEIVER}], deck_count=20), PlayerState()],
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": TRANSCEIVER},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((PROTON, PETREL))
+    ]
+    agent.turn_ledger.proton_gain_remaining = 0
+    choices = agent._transceiver_selections(
+        state,
+        [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))],
+        candidates,
+    )
+    assert choices is not None
+    assert [selection.indices for selection in choices] == [(1,)]
+
+
+def test_petrel_cannot_fetch_ariana_when_ariana_is_publicly_in_hand() -> None:
+    """Petrel's Ariana target is rejected when the same card is already held."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(players=[PlayerState(hand=[{"id": ARIANA}, {"id": PETREL}]), PlayerState()])
+    candidate = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "sourceCardId": PETREL},
+        OptionType.CARD,
+        card={"cardType": 3},
+        features={"card_id": ARIANA},
+    )
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
+    assert agent.turn_ledger.deferred_petrel_reason == "ariana_already_in_hand"
+
+
+def test_energy_is_deferred_against_public_abra_without_same_turn_attack() -> None:
+    """Energy cannot consume the turn while the public Abra line still needs setup."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=6,
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80), hand=[{"id": ROCKET_ENERGY}]),
+            PlayerState(active=PokemonState(ABRA, 60, 60)),
+        ],
+    )
+    candidate = _candidate(
+        0,
+        OptionType.ATTACH,
+        card_id=ROCKET_ENERGY,
+        card={"cardType": 5},
+        target_card_id=MURKROW,
+    )
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+    assert agent.turn_ledger.energy_veto_threat == "public_abra_line"
+
+
 assert HonchkrowPorygonAgent

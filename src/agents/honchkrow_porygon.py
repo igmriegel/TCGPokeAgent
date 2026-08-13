@@ -221,6 +221,19 @@ class TurnTacticalLedger:
     end_reason: str = ""
     heros_cape_scrapped: bool = False
     public_line_evaluations: list[dict[str, Any]] = field(default_factory=list)
+    search_plan_objective: str = ""
+    search_resource_used_this_turn: int | None = None
+    proton_gain_remaining: int = 0
+    ariana_already_available: bool = False
+    petrel_reserved: bool = False
+    best_draw_sequence: tuple[str, ...] = ()
+    energy_attachment_reason: str = ""
+    energy_veto_threat: str = ""
+    giovanni_line: str = ""
+    ariana_petrel_comparison: str = ""
+    archer_line_comparison: str = ""
+    headset_preservation_reason: str = ""
+    end_veto_reason: str = ""
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -325,6 +338,19 @@ class TurnTacticalLedger:
         self.end_reason = ""
         self.heros_cape_scrapped = False
         self.public_line_evaluations.clear()
+        self.search_plan_objective = ""
+        self.search_resource_used_this_turn = None
+        self.proton_gain_remaining = 0
+        self.ariana_already_available = False
+        self.petrel_reserved = False
+        self.best_draw_sequence = ()
+        self.energy_attachment_reason = ""
+        self.energy_veto_threat = ""
+        self.giovanni_line = ""
+        self.ariana_petrel_comparison = ""
+        self.archer_line_comparison = ""
+        self.headset_preservation_reason = ""
+        self.end_veto_reason = ""
 
 
 @dataclass(slots=True)
@@ -1383,6 +1409,19 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and self._card_in_hand(state, PETREL)
             and self._ariana_marginal_draw(state) <= 2
             and player.deck_count > 0
+        )
+
+    def _pokepad_ariana_hand_reduction_is_useful(self, state: GameState) -> bool:
+        """Return whether Poké Pad improves a proven Ariana redraw."""
+        player = self._own_player(state)
+        return bool(
+            player
+            and self._card_in_hand(state, ARIANA)
+            and not state.supporter_played
+            and self._ariana_is_safe_and_useful(state)
+            and not self._proton_setup_is_useful(state)
+            and player.hand_count >= 2
+            and self._card_copies_remaining(state, HONCHKROW) > 0
         )
 
     def _transceiver_is_better_than_petrel_for_ariana(self, state: GameState) -> bool:
@@ -3151,6 +3190,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._turn_ledger.energy_attachable = bool(
             self._turn_ledger.energy_cards_in_hand and not state.energy_attached
         )
+        self._turn_ledger.ariana_already_available = self._scorer._card_in_hand(state, ARIANA)
+        proton_targets = self._scorer._proton_targets_remaining(state)
+        self._turn_ledger.proton_gain_remaining = sum(
+            max(0, int(value)) for value in proton_targets.values()
+        )
+        self._turn_ledger.search_plan_objective = self._turn_ledger.objective
+        self._turn_ledger.search_resource_used_this_turn = self._transceiver_turn
+        self._turn_ledger.petrel_reserved = bool(
+            self._scorer._card_in_hand(state, PETREL)
+            and self._scorer._card_in_hand(state, TRANSCEIVER)
+        )
+        self._turn_ledger.best_draw_sequence = tuple(self._turn_ledger.draw_sequence)
         self._turn_ledger.deck_reserve = player.deck_count if player is not None else 0
         required = self._scorer._r_command_supporters_needed(state)
         discard = self._scorer._rocket_supporters_in_discard(state)
@@ -4065,8 +4116,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
-                    and self._evolution_ko_commitment is not None
-                    and self._scorer._pokepad_honchkrow_is_useful(state, candidate)
+                    and (
+                        (
+                            self._evolution_ko_commitment is not None
+                            and self._scorer._pokepad_honchkrow_is_useful(state, candidate)
+                        )
+                        or self._scorer._pokepad_ariana_hand_reduction_is_useful(state)
+                    )
                 )
             )
             if poke_pad:
@@ -4963,8 +5019,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.deferred_petrel_reason = recovery_plan.deferred_petrel_reason
             if recovery_plan.productive:
                 obligations.append("must_recover_before_ariana")
+            if (
+                self._scorer._articuno_is_needed(state)
+                and not self._scorer._articuno_is_on_field(state)
+                and not self._scorer._own_bench_full(state)
+                and self._scorer._card_in_hand(state, ARTICUNO)
+            ):
+                obligations.append("must_develop_articuno")
             if not state.energy_attached and self._turn_ledger.energy_cards_in_hand:
-                obligations.append("must_attach_energy_before_ariana")
+                if self._energy_has_same_turn_productive_line(state):
+                    obligations.append("must_attach_energy_for_attack")
         if obligations or self._scorer._productive_line_available(state):
             obligations.append("must_not_end")
         self._turn_ledger.unresolved_obligations = tuple(dict.fromkeys(obligations))
@@ -4973,6 +5037,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             for obligation in self._turn_ledger.unresolved_obligations
             if obligation.endswith("before_ariana") or obligation == "must_develop_board"
         )
+
+    def _energy_has_same_turn_productive_line(self, state: GameState) -> bool:
+        """Return whether visible Energy enables a committed attack this turn."""
+        player = self._scorer._own_player(state)
+        if player is None:
+            return False
+        if self._public_abra_threat(state) and not self._turn_ledger.first_own_turn:
+            return False
+        return any(
+            pokemon is not None
+            and pokemon.card_id in {HONCHKROW, PORYGON2, MURKROW}
+            and self._scorer._energy_units_for_pokemon(pokemon) + 1
+            >= self._scorer._attack_energy_target(int(pokemon.card_id))
+            for pokemon in [player.active, *player.bench]
+        )
+
+    def _public_abra_threat(self, state: GameState) -> bool:
+        """Return whether the opponent publicly exposes the Abra evolution line."""
+        return bool(self._scorer._visible_opponent_card_ids(state) & {ABRA, KADABRA, ALAKAZAM})
 
     def _headset_line_requires_resolution(self, state: GameState) -> bool:
         """Return whether Miracle Headset must resolve before a lethal attack."""
@@ -5386,9 +5469,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and context is SelectContext.TO_HAND
             and self._headset_turn == state.turn
         ):
-            plan = self._headset_plan(state)
-            if plan is not None:
-                reason, required_ids = plan
+            headset_plan = self._headset_plan(state)
+            if headset_plan is not None:
+                reason, required_ids = headset_plan
                 exact_plan = [
                     selection
                     for selection in selections
@@ -5624,6 +5707,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         else:
             target_order = [ARIANA, PETREL, GIOVANNI]
 
+        # A second Transceiver in one public turn must not repeat a Proton
+        # setup gain that the first search already delivered.
+        if self._transceiver_turn == state.turn and self._turn_ledger.proton_gain_remaining == 0:
+            target_order = [target_id for target_id in target_order if target_id != PROTON]
+            self._turn_ledger.resource_guard = "transceiver_proton_already_resolved"
+        if self._turn_ledger.ariana_already_available:
+            target_order = [target_id for target_id in target_order if target_id != ARIANA]
+            self._turn_ledger.resource_guard = "transceiver_ariana_already_in_hand"
+
         if state.supporter_played and ARIANA in target_order:
             self._turn_ledger.transceiver_rejected_target = ARIANA
             self._turn_ledger.resource_guard = "transceiver_ariana_after_supporter_veto"
@@ -5638,11 +5730,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         non_proton = [selection for selection, ids in selection_ids if PROTON not in ids]
         if non_proton:
             return non_proton
-        if self._scorer._proton_setup_is_useful(state):
+        if (
+            self._scorer._proton_setup_is_useful(state)
+            and self._turn_ledger.proton_gain_remaining > 0
+        ):
             self._turn_ledger.transceiver_target = PROTON
             self._turn_ledger.transceiver_objective = objective
             return list(selections)
         self._match_ledger.late_proton_without_gain += 1
+        self._turn_ledger.transceiver_rejected_target = PROTON
         return list(selections)
 
     def _rocket_supporter_count(
@@ -5777,12 +5873,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if self._turn_ledger.resource_guard != "rocket_feathers_nonlethal_veto":
                 self._turn_ledger.resource_guard = "productive_action_remains"
             self._turn_ledger.end_reason = "veto_productive_line"
+            self._turn_ledger.end_veto_reason = "productive_public_line"
             return True
         if candidate.option_type is OptionType.END and self._turn_ledger.unresolved_obligations:
             self._turn_ledger.resource_guard = "unresolved_turn_obligation"
             self._turn_ledger.end_reason = "veto_" + ",".join(
                 self._turn_ledger.unresolved_obligations
             )
+            self._turn_ledger.end_veto_reason = self._turn_ledger.end_reason
             return True
         if (
             self._uses_expert_turn_loop
@@ -5824,6 +5922,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 energy_id == IGNITION_ENERGY
                 and self._ignition_attack_plan(state, candidate) is None
             ):
+                self._turn_ledger.energy_attachment_reason = "defer_without_same_turn_attack"
+                return True
+            if (
+                energy_id == ROCKET_ENERGY
+                and self._public_abra_threat(state)
+                and not self._energy_has_same_turn_productive_line(state)
+            ):
+                self._turn_ledger.energy_veto_threat = "public_abra_line"
+                self._turn_ledger.energy_attachment_reason = "defer_against_abra_without_attack"
                 return True
             rocket_murkrow_attack = bool(
                 energy_id == ROCKET_ENERGY
@@ -5867,6 +5974,27 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         ):
             self._turn_ledger.resource_guard = "resource_attack_nonlethal_veto"
             return True
+        if candidate.option_type is OptionType.ATTACK:
+            attack_id = self._scorer._attack_id(candidate)
+            damage = self._candidate_damage(state, candidate)
+            if (
+                damage <= 0
+                and attack_id != TORMENT
+                and (
+                    self._scorer._card_in_hand(state, ARIANA)
+                    or self._scorer._card_in_hand(state, POKE_PAD)
+                    or self._scorer._articuno_is_needed(state)
+                )
+                and not (
+                    self._candidate_completes_committed_ignition(candidate)
+                    or (
+                        self._switch_commitment is not None
+                        and self._switch_commitment.method == "ignition"
+                    )
+                )
+            ):
+                self._turn_ledger.resource_guard = "zero_damage_attack_vetoed_for_public_plan"
+                return True
         if (
             candidate.option_type is OptionType.ATTACK
             and self._scorer._attack_id(candidate) == DECEIT
@@ -5925,6 +6053,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             ) or self._scorer._archer_preserves_nonlethal_rocket_resources(state, candidate)
             if not allowed:
                 self._turn_ledger.archer_veto_reason = "visible_attack_setup_or_draw_line"
+            self._turn_ledger.archer_line_comparison = (
+                "draw_line_rejected_against_public_ariana_factory_transceiver_petrel"
+                if not allowed
+                else "draw_line_selected_after_public_line_filter"
+            )
             return not allowed
         if candidate.option_type is OptionType.PLAY and card_id == PROTON:
             return not self._scorer._proton_setup_is_useful(state)
@@ -6026,6 +6159,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 return True
         if candidate.option_type is OptionType.CARD and card_id == HONCHKROW:
             if context in {SelectContext.TO_HAND, SelectContext.LOOK}:
+                if candidate.option.get(
+                    "sourceCardId"
+                ) == POKE_PAD and self._scorer._pokepad_ariana_hand_reduction_is_useful(state):
+                    self._turn_ledger.resource_guard = "pokepad_hand_reduction_for_ariana"
+                    return False
                 if self._scorer._card_selected_from_night_stretcher(candidate):
                     return not self._scorer._night_stretcher_target_is_immediately_playable(
                         state, card_id
@@ -6617,6 +6755,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 state, PROTON
             ) and self._scorer._proton_setup_is_useful(state)
         if card_id == ARIANA:
+            if self._scorer._card_in_hand(state, ARIANA):
+                self._turn_ledger.deferred_petrel_reason = "ariana_already_in_hand"
+                return False
             return self._scorer._ariana_is_safe_and_useful(state)
         if card_id == FACTORY:
             return not bool(state.stadium) and self._scorer._own_player(state) is not None

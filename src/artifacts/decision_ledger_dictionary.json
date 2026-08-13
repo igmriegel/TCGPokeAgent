@@ -111,7 +111,20 @@
     "night_stretcher_priority_reason": "State-based reason for the selected Night Stretcher recovery target.", "r_command_projected_supporters": "Public Supporter count projected after a preserved next-turn Supporter.",
     "r_command_projected_damage": "Projected R Command damage from the public two-turn Supporter projection.", "headset_ariana_recovery": "Whether Headset explicitly restores Ariana plus another useful Supporter.",
     "development_obligations_pending": "Productive development actions that must resolve before Ariana.", "recovery_plan_reason": "Same-turn public conversion reason for the evaluated recovery plan.", "recovery_plan_cards": "Public card IDs selected by the evaluated recovery plan.", "deferred_petrel_reason": "Why Petrel was not an immediate same-turn conversion.", "end_reason": "Reason END was vetoed or selected from the current public plan.", "heros_cape_scrapped": "Whether Tool Scrapper was prioritized to remove a visible opposing Hero's Cape.",
-    "public_line_evaluations": "Bounded public tactical-line records, including attacker, target, before/after damage, recovered Supporters, prizes, and verdict."
+    "public_line_evaluations": "Bounded public tactical-line records, including attacker, target, before/after damage, recovered Supporters, prizes, and verdict.",
+    "search_plan_objective": "Persistent public objective used by search prompts.",
+    "search_resource_used_this_turn": "Public search resource already used this turn.",
+    "proton_gain_remaining": "Public Proton setup gain still available.",
+    "ariana_already_available": "Whether Ariana is already visible in hand.",
+    "petrel_reserved": "Whether Petrel is reserved for a later public conversion.",
+    "best_draw_sequence": "Best known public draw sequence for this turn.",
+    "energy_attachment_reason": "Public reason for accepting or vetoing Energy attachment.",
+    "energy_veto_threat": "Public threat that caused an Energy attachment veto.",
+    "giovanni_line": "Public Giovanni pivot or target line.",
+    "ariana_petrel_comparison": "State-based Ariana versus Petrel comparison.",
+    "archer_line_comparison": "State-based Archer comparison against public draw lines.",
+    "headset_preservation_reason": "Reason recovered Headset resources were preserved.",
+    "end_veto_reason": "Hard-filter reason for rejecting END."
   },
   "match_ledger_fields": {
     "target_serial": "Public serial of the tracked opponent target.", "target_card_id": "Card ID of the tracked opponent target.",
