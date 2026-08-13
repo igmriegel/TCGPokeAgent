@@ -649,6 +649,10 @@ The durable summary is
 
 **Source:** direct replay review by Igor, Project Owner
 
+Historical first-divergence evidence from submission `55422182` is retained in
+[`strategy_notes.md`](strategy_notes.md#2026-08-12-submission-55422182-first-divergence-review).
+It is provenance for this feedback, not a closure decision or runtime input.
+
 ### Original feedback
 
 Igor reviewed agent replays and identified that the agent is not following the
