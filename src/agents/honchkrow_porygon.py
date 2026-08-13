@@ -194,6 +194,7 @@ class TurnTacticalLedger:
     headset_ariana_recovery: bool = False
     development_obligations_pending: tuple[str, ...] = ()
     heros_cape_scrapped: bool = False
+    public_line_evaluations: list[dict[str, Any]] = field(default_factory=list)
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -290,6 +291,7 @@ class TurnTacticalLedger:
         self.headset_ariana_recovery = False
         self.development_obligations_pending = ()
         self.heros_cape_scrapped = False
+        self.public_line_evaluations.clear()
 
 
 @dataclass(slots=True)
@@ -398,6 +400,8 @@ class SwitchCommitment:
     attack_id: int
     planned_damage: int
     requires_ignition: bool = False
+    opponent_target_card_id: int | None = None
+    opponent_target_serial: int | None = None
 
 
 class HonchkrowPorygonScorer(SimpleHeuristicScorer):
@@ -1573,21 +1577,21 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _giovanni_switch_line_is_productive(self, state: GameState) -> bool:
         """Return whether Giovanni converts a ready bench attacker into an immediate KO."""
         player = self._own_player(state)
-        target_hp = self._effective_opponent_hp(state)
-        if player is None or target_hp <= 0:
+        opponent = self._opponent_player(state)
+        if player is None or opponent is None:
             return False
+        targets = [pokemon for pokemon in [opponent.active, *opponent.bench] if pokemon is not None]
         for pokemon in player.bench:
             if pokemon is None:
                 continue
             energy = self._energy_units_for_pokemon(pokemon)
             if pokemon.card_id == HONCHKROW and energy >= self._attack_energy_target(HONCHKROW):
-                if max(0, self._effective_supporters_in_hand(state) - 1) * 60 >= target_hp:
+                damage = max(0, self._effective_supporters_in_hand(state) - 1) * 60
+                if any(damage >= max(0, int(target.hp)) > 0 for target in targets):
                     return True
             if pokemon.card_id == PORYGON2 and energy >= self._attack_energy_target(PORYGON2):
-                if self.r_command_knocks_out_active(
-                    state,
-                    discarded_supporters=self._rocket_supporters_in_discard(state) + 1,
-                ):
+                damage = (self._rocket_supporters_in_discard(state) + 1) * 20
+                if any(damage >= max(0, int(target.hp)) > 0 for target in targets):
                     return True
         return False
 
@@ -3643,7 +3647,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 energy_attachment,
             )
 
-        if self._scorer._own_ko_observed:
+        if self._scorer._own_ko_observed and not (
+            self._giovanni_switch_plan(state) is not None
+            or any(
+                candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
+                and self._scorer._feature_int(candidate, "card_id") == PORYGON2
+                and self._scorer._porygon2_terminal_promotion_available(state, candidate)
+                for candidate in candidates
+            )
+            or self._canonical_night_stretcher_is_productive(state)
+        ):
             post_ko_supporters = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
@@ -4299,6 +4312,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
         """Require a public two/three-Prize or final-Prize bench target."""
+        plan = self._giovanni_switch_plan(state)
+        if plan is not None and plan.opponent_target_serial is not None:
+            self._switch_commitment = plan
+            self._turn_ledger.next_attacker_serial = plan.target_serial
+            self._turn_ledger.giovanni_pivot_reason = "giovanni_porygon2_bench_ko"
+            return True
         if self._scorer._giovanni_pivot_is_productive(state):
             self._turn_ledger.giovanni_pivot_reason = "free_porygon_for_ready_honchkrow"
             return True
@@ -4344,20 +4363,152 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return False
 
     def _canonical_headset_is_useful(self, state: GameState) -> bool:
-        """Choose Headset only when exactly two recoveries close a visible KO."""
-        discard = self._scorer._rocket_supporters_in_discard(state)
-        hand = self._scorer._effective_supporters_in_hand(state)
-        needed = self._turn_ledger.supporters_needed_for_ko
-        recoverable = min(2, discard)
-        if recoverable == 0 or hand >= needed or hand + recoverable < needed:
-            self._turn_ledger.headset_reason = ""
-            return False
-        active = self._scorer._own_active(state)
-        if active is None or active.card_id != HONCHKROW:
-            self._turn_ledger.headset_reason = ""
-            return False
-        self._turn_ledger.headset_reason = "two_supporters_close_immediate_ko"
-        return True
+        """Choose Headset only for a line recalculated from the public target."""
+        plan = self._headset_plan(state)
+        self._turn_ledger.headset_reason = plan[0] if plan is not None else ""
+        return plan is not None
+
+    def _headset_plan(self, state: GameState) -> tuple[str, tuple[int, ...]] | None:
+        """Return the exact public Headset plan and its required Supporters.
+
+        The requirement is intentionally derived from the current target on every
+        prompt.  Ledger values describe prior observations and are never inputs
+        to a damage decision.
+        """
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if player is None or opponent is None:
+            return None
+        discard_ids = tuple(
+            self._scorer._card_id_from_value(card)
+            for card in player.discard
+            if self._scorer._is_rocket_supporter(
+                self._scorer._card_id_from_value(card),
+                self._scorer.catalog.get_card(str(self._scorer._card_id_from_value(card))) or {},
+            )
+        )
+        if not discard_ids:
+            return None
+        held_ids = {
+            self._scorer._card_id_from_value(card) for card in self._scorer._hand_cards(state)
+        }
+        recovery_ids = tuple(
+            card_id for card_id in discard_ids if card_id != ARIANA or ARIANA not in held_ids
+        )
+        active = player.active
+        if active is not None and active.card_id == HONCHKROW:
+            target = opponent.active
+            if target is not None and self._scorer._energy_units_for_pokemon(active) >= 2:
+                per_supporter = self._scorer._attack_damage(
+                    state,
+                    Candidate(0, {"attackId": ROCKET_FEATHERS}, OptionType.ATTACK),
+                    60,
+                    target,
+                )
+                needed = (max(0, int(target.hp)) + per_supporter - 1) // per_supporter
+                hand = self._scorer._effective_supporters_in_hand(state)
+                missing = max(0, needed - hand)
+                if 0 < missing <= min(2, len(recovery_ids)):
+                    self._record_public_line(
+                        "headset_rocket_feathers_ko",
+                        active,
+                        target,
+                        hand * per_supporter,
+                        (hand + missing) * per_supporter,
+                        recovery_ids[:missing],
+                        "selected",
+                    )
+                    return "headset_rocket_feathers_ko", recovery_ids[:missing]
+                if (
+                    ARIANA in discard_ids
+                    and any(card_id != ARIANA for card_id in discard_ids)
+                    and hand + 1 > hand
+                    and per_supporter >= 60
+                ):
+                    self._record_public_line(
+                        "headset_rocket_feathers_plus_ariana",
+                        active,
+                        target,
+                        hand * per_supporter,
+                        (hand + 1) * per_supporter,
+                        (ARIANA,),
+                        "preserve_ariana_next_turn",
+                    )
+                    return "headset_rocket_feathers_plus_ariana", (
+                        ARIANA,
+                        next(card_id for card_id in discard_ids if card_id != ARIANA),
+                    )
+        for attacker in player.bench:
+            if attacker is None or attacker.card_id != PORYGON2:
+                continue
+            if self._scorer._energy_units_for_pokemon(attacker) < 3:
+                continue
+            damage = (self._scorer._rocket_supporters_in_discard(state) + 1) * 20
+            for target in opponent.bench:
+                if (
+                    target is not None
+                    and damage >= max(0, int(target.hp)) > 0
+                    and GIOVANNI in discard_ids
+                ):
+                    self._record_public_line(
+                        "headset_giovanni_porygon2_bench_ko",
+                        attacker,
+                        target,
+                        self._scorer._rocket_supporters_in_discard(state) * 20,
+                        damage,
+                        (GIOVANNI,),
+                        "selected",
+                    )
+                    return "headset_giovanni_porygon2_bench_ko", (GIOVANNI,)
+        if self._scorer._effective_supporters_in_hand(
+            state
+        ) == 0 and not self._scorer._has_playable_supporter(state):
+            useful = tuple(
+                dict.fromkeys(
+                    card_id
+                    for card_id in discard_ids
+                    if card_id in {ARIANA, ARCHER, GIOVANNI, PETREL, PROTON}
+                )
+            )
+            if useful:
+                return "headset_supporter_recovery", useful[:2]
+        return None
+
+    def _record_public_line(
+        self,
+        line_type: str,
+        attacker: Any,
+        target: Any,
+        damage_before: int,
+        damage_after: int,
+        supporters: tuple[int, ...],
+        verdict: str,
+    ) -> None:
+        """Record bounded, public evidence for a calculated tactical line."""
+        record = {
+            "line_type": line_type,
+            "attacker": getattr(attacker, "card_id", None),
+            "attacker_serial": getattr(attacker, "serial", None),
+            "target": getattr(target, "card_id", None),
+            "target_serial": getattr(target, "serial", None),
+            "damage_before": damage_before,
+            "damage_after": damage_after,
+            "supporters": list(supporters),
+            "prizes": int(
+                getattr(
+                    target,
+                    "effective_prize_value",
+                    self._scorer.catalog.get_traits(
+                        str(getattr(target, "card_id", 0))
+                    ).base_prize_value,
+                )
+            )
+            if target is not None
+            else 0,
+            "verdict": verdict,
+        }
+        if record not in self._turn_ledger.public_line_evaluations:
+            self._turn_ledger.public_line_evaluations.append(record)
 
     def _headset_ariana_recovery_is_useful(self, state: GameState) -> bool:
         """Return whether Headset restores Ariana and a second public useful Supporter."""
@@ -4848,10 +4999,52 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.resource_guard = "promote_committed_switch_attacker"
                 return exact_switch
         if (
+            self._switch_commitment is not None
+            and context is SelectContext.EFFECT_TARGET
+            and self._switch_commitment.opponent_target_serial is not None
+        ):
+            committed_target = [
+                selection
+                for selection in selections
+                if any(
+                    (candidate := by_index.get(index)) is not None
+                    and self._scorer._feature_int(candidate, "target_serial")
+                    == self._switch_commitment.opponent_target_serial
+                    for index in selection.indices
+                )
+            ]
+            if committed_target:
+                self._turn_ledger.resource_guard = "select_committed_giovanni_target"
+                return committed_target
+        if (
             self._uses_retreat_guard
             and context is SelectContext.TO_HAND
             and self._headset_turn == state.turn
         ):
+            plan = self._headset_plan(state)
+            if plan is not None:
+                reason, required_ids = plan
+                exact_plan = [
+                    selection
+                    for selection in selections
+                    if all(
+                        any(
+                            self._scorer._feature_int(candidate, "card_id") == card_id
+                            for index in selection.indices
+                            if (candidate := by_index.get(index)) is not None
+                        )
+                        for card_id in required_ids
+                    )
+                ]
+                if exact_plan:
+                    self._turn_ledger.headset_reason = reason
+                    self._turn_ledger.headset_recovery_reason = reason
+                    self._turn_ledger.resource_guard = (
+                        "headset_prefers_ariana_plus_second_supporter"
+                        if reason == "headset_supporter_recovery" and ARIANA in required_ids
+                        else f"headset_plan_{reason}"
+                    )
+                    return exact_plan
             recoverable = min(2, self._scorer._rocket_supporters_in_discard(state))
             exact_two = [
                 selection
@@ -5331,7 +5524,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
             if self._uses_retreat_guard:
                 return not (
-                    self._v3_miracle_headset_is_useful(state)
+                    self._headset_plan(state) is not None
                     or self._headset_ariana_recovery_is_useful(state)
                 )
             return not self._scorer._miracle_headset_is_useful(state)
@@ -5364,6 +5557,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 or self._scorer._factory_play_is_useful(state)
             )
         if candidate.option_type is OptionType.PLAY and card_id == GIOVANNI:
+            if self._uses_expert_turn_loop and self._canonical_giovanni_is_productive(state):
+                return False
             if self._uses_expert_turn_loop and self._scorer._giovanni_pivot_is_productive(state):
                 return False
             if self._uses_retreat_guard:
@@ -5380,6 +5575,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and card_id in {HONCHKROW, PORYGON2}
             and self._scorer._articuno_is_needed(state)
             and not self._scorer._articuno_is_on_field(state)
+            and self._scorer._card_in_hand(state, ARTICUNO)
         ):
             self._turn_ledger.resource_guard = "hold_evolution_until_articuno_protection"
             return True
@@ -5599,12 +5795,43 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             or opponent is None
             or opponent.active is None
             or state.supporter_played
-            or any(pokemon is not None for pokemon in opponent.bench)
             or not any(
                 self._scorer._card_id_from_value(card) == GIOVANNI for card in player.hand or ()
             )
         ):
             return None
+        # Giovanni may select an opposing Bench target.  Bind both public
+        # serials so the later promotion and target prompts cannot drift.
+        for attacker in player.bench:
+            if (
+                attacker is None
+                or attacker.card_id != PORYGON2
+                or self._scorer._energy_units_for_pokemon(attacker) < 3
+            ):
+                continue
+            damage = (self._scorer._rocket_supporters_in_discard(state) + 1) * 20
+            for target in opponent.bench:
+                if target is None or damage < max(0, int(target.hp)):
+                    continue
+                prize_value = int(
+                    getattr(
+                        target,
+                        "effective_prize_value",
+                        self._scorer.catalog.get_traits(str(target.card_id)).base_prize_value,
+                    )
+                )
+                if prize_value < len(player.prize):
+                    continue
+                return SwitchCommitment(
+                    method="giovanni",
+                    turn=state.turn,
+                    target_card_id=PORYGON2,
+                    target_serial=attacker.serial,
+                    attack_id=R_COMMAND,
+                    planned_damage=damage,
+                    opponent_target_card_id=int(target.card_id),
+                    opponent_target_serial=target.serial,
+                )
         bench_plan = self._best_switch_plan(state, method="giovanni", giovanni_played=True)
         if bench_plan is None:
             return None

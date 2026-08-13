@@ -109,7 +109,8 @@
     "target_priority_reason": "Reason for the selected public target priority.", "chosen_target_prize_value": "Prize value of the selected public target.",
     "night_stretcher_priority_reason": "State-based reason for the selected Night Stretcher recovery target.", "r_command_projected_supporters": "Public Supporter count projected after a preserved next-turn Supporter.",
     "r_command_projected_damage": "Projected R Command damage from the public two-turn Supporter projection.", "headset_ariana_recovery": "Whether Headset explicitly restores Ariana plus another useful Supporter.",
-    "development_obligations_pending": "Productive development actions that must resolve before Ariana.", "heros_cape_scrapped": "Whether Tool Scrapper was prioritized to remove a visible opposing Hero's Cape."
+    "development_obligations_pending": "Productive development actions that must resolve before Ariana.", "heros_cape_scrapped": "Whether Tool Scrapper was prioritized to remove a visible opposing Hero's Cape.",
+    "public_line_evaluations": "Bounded public tactical-line records, including attacker, target, before/after damage, recovered Supporters, prizes, and verdict."
   },
   "match_ledger_fields": {
     "target_serial": "Public serial of the tracked opponent target.", "target_card_id": "Card ID of the tracked opponent target.",

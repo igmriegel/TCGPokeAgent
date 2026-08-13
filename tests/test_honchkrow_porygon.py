@@ -3989,6 +3989,73 @@ def test_headset_ariana_recovery_selects_ariana_and_a_second_supporter() -> None
     assert agent.turn_ledger.resource_guard == "headset_prefers_ariana_plus_second_supporter"
 
 
+def test_headset_plan_recalculates_current_target_instead_of_ledger_requirement() -> None:
+    """A stale ledger requirement cannot claim a Rocket Feathers KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": MIRACLE_HEADSET}, {"id": ARIANA}],
+                discard=[{"id": ARCHER}, {"id": PETREL}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(721, 350, 350)),
+        ]
+    )
+    agent.turn_ledger.supporters_needed_for_ko = 1
+
+    assert agent._headset_plan(state) is None
+    assert not agent._canonical_headset_is_useful(state)
+
+
+def test_headset_plan_recovers_giovanni_for_ready_porygon2_bench_ko() -> None:
+    """Headset can recover Giovanni for a public Porygon2 Bench KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80),
+                bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}], serial=7)],
+                hand=[{"id": MIRACLE_HEADSET}],
+                discard=[{"id": GIOVANNI}] * 13,
+                deck_count=10,
+            ),
+            PlayerState(bench=[PokemonState(721, 260, 260, serial=33)]),
+        ]
+    )
+
+    assert agent._headset_plan(state) == ("headset_giovanni_porygon2_bench_ko", (GIOVANNI,))
+
+
+def test_giovanni_commits_ready_porygon2_and_public_bench_target() -> None:
+    """A final-Prize Giovanni line binds both the attacker and the Bench target."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=7,
+        players=[
+            PlayerState(
+                prize=[None],
+                active=PokemonState(MURKROW, 80, 80),
+                bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}], serial=7)],
+                hand=[{"id": GIOVANNI}],
+                discard=[{"id": ARIANA}] * 12,
+            ),
+            PlayerState(
+                active=PokemonState(999, 200, 200),
+                bench=[PokemonState(721, 260, 260, serial=33)],
+            ),
+        ],
+    )
+
+    plan = agent._giovanni_switch_plan(state)
+
+    assert plan is not None
+    assert plan.target_serial == 7
+    assert plan.opponent_target_serial == 33
+    assert agent._canonical_giovanni_is_productive(state)
+
+
 def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:
     """Munkidori's 110 HP is covered by one 60-damage supporter attack at weakness."""
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
