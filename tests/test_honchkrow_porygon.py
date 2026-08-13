@@ -7,6 +7,8 @@ from pathlib import Path
 
 from src.agents.heuristic import DecisionPhase
 from src.agents.honchkrow_porygon import (
+    ABRA,
+    ALAKAZAM,
     ARCHER,
     ARIANA,
     ARTICUNO,
@@ -21,10 +23,6 @@ from src.agents.honchkrow_porygon import (
     HEROS_CAPE,
     HONCHKROW,
     IGNITION_ENERGY,
-    MEGA_ABOMASNOW_DECK_RESERVE,
-    MEGA_ABOMASNOW_EX,
-    MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS,
-    MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS,
     MIRACLE_HEADSET,
     MURKROW,
     NIGHT_STRETCHER,
@@ -59,6 +57,7 @@ from src.core import (
 from src.data.honchkrow_audit import classify_loss, decision_evidence
 
 ROOT = Path(__file__).parents[1]
+MEGA_ABOMASNOW_EX = 723
 
 
 def _candidate(
@@ -196,24 +195,14 @@ def test_effect_target_preserves_persistent_serial() -> None:
     assert scorer._target_opponent_pokemon(state, candidate) is target
 
 
-def test_kadabra_super_psy_bolt_does_not_trigger_articuno_protection() -> None:
-    """Kadabra's fixed-damage attack is not the Alakazam hand-size threat."""
+def test_abra_kadabra_and_alakazam_trigger_articuno_protection() -> None:
+    """Any visible member of the public Alakazam line needs Articuno protection."""
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
-    scorer.set_alakazam_matchup_confirmed()
-    state = GameState(players=[PlayerState(), PlayerState(active=PokemonState(742, 90, 90))])
-
-    assert not scorer._powerful_hand_threat(state)
-    assert not scorer._articuno_is_needed(state)
-
-
-def test_alakazam_powerful_hand_triggers_articuno_protection() -> None:
-    """Alakazam's hand-dependent attack still preserves the Articuno branch."""
-    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
-    scorer.set_alakazam_matchup_confirmed()
-    state = GameState(players=[PlayerState(), PlayerState(active=PokemonState(743, 120, 120))])
-
-    assert scorer._powerful_hand_threat(state)
-    assert scorer._articuno_is_needed(state)
+    for card_id in (ABRA, 742, ALAKAZAM):
+        state = GameState(
+            players=[PlayerState(), PlayerState(active=PokemonState(card_id, 90, 90))]
+        )
+        assert scorer._articuno_is_needed(state)
 
 
 def test_grimmsnarl_froslass_matchup_avoids_articuno() -> None:
@@ -240,6 +229,60 @@ def test_grimmsnarl_froslass_matchup_avoids_articuno() -> None:
     assert score < 0
     assert reasons == ["avoid_articuno_against_grimmsnarl_froslass"]
     assert not scorer._articuno_is_needed(state)
+
+
+def test_archer_alakazam_hand_pressure_requires_a_larger_public_opponent_hand() -> None:
+    """Archer receives its bonus only for a visible Alakazam line and larger public hand."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    scorer.set_own_ko_observed(True)
+    candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+
+    for opponent_hand_count, expected_score, expected_reason in (
+        (3, 900.0, True),
+        (2, 780.0, False),
+        (1, 780.0, False),
+    ):
+        state = GameState(
+            players=[
+                PlayerState(hand=[{"id": ARCHER}], hand_count=2, deck_count=20),
+                PlayerState(
+                    active=PokemonState(ALAKAZAM, 120, 120),
+                    hand_count=opponent_hand_count,
+                    deck_count=20,
+                ),
+            ]
+        )
+
+        score, reasons = scorer._play_score(state, candidate)
+
+        assert score == expected_score
+        assert ("archer_alakazam_hand_pressure" in reasons) is expected_reason
+
+
+def test_archer_alakazam_hand_pressure_does_not_bypass_safety_guards() -> None:
+    """The Alakazam bonus cannot make an unsafe Archer redraw legal."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    state = GameState(
+        players=[
+            PlayerState(hand=[{"id": ARCHER}], hand_count=1, deck_count=4),
+            PlayerState(active=PokemonState(ABRA, 60, 60), hand_count=4, deck_count=20),
+        ]
+    )
+
+    score, reasons = scorer._play_score(state, candidate)
+
+    assert score == -2400.0
+    assert reasons == ["archer_without_safe_disruption"]
+
+
+def test_runtime_policy_has_no_mega_abomasnow_or_kadabra_attack_guard() -> None:
+    """The generalized tactical policy must not branch on one opponent or Kadabra attack text."""
+    source = (ROOT / "src/agents/honchkrow_porygon.py").read_text()
+
+    assert "ABOMASNOW" not in source
+    assert "kadabra_super" not in source
+    assert "super psy bolt" not in source.casefold()
 
 
 def test_visible_enhanced_hammer_preserves_uncommitted_special_energy() -> None:
@@ -316,8 +359,8 @@ def test_transceiver_counts_as_one_supporter_only_when_deck_can_supply_one() -> 
     assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
 
 
-def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow() -> None:
-    """The strict variant accepts the exact six-supporter Mega KO only."""
+def test_rocket_feathers_requires_exact_supporters_for_public_target_hp() -> None:
+    """Rocket Feathers accepts only the exact public KO against an arbitrary Active."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
@@ -325,7 +368,7 @@ def test_strict_rocket_feathers_requires_six_supporters_against_mega_abomasnow()
                 active=PokemonState(HONCHKROW, 130, 130, energies=[{"id": 15}, {"id": 15}]),
                 hand=[{"id": card_id} for card_id in (1216, 1217, 1218, 1219, 1220, 1216)],
             ),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(active=PokemonState(721, 350, 350)),
         ]
     )
     candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
@@ -1238,7 +1281,7 @@ def test_v3_trace_regression_does_not_retreat_after_nonlethal_rocket_veto() -> N
 
 
 def test_v3_paid_retreat_requires_ready_bench_attack() -> None:
-    """Paid retreat is legal only when a specific Bench attacker can attack now."""
+    """Paid retreat is legal only when a specific Bench attacker can KO now."""
     agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
     state = GameState(
         players=[
@@ -1247,7 +1290,7 @@ def test_v3_paid_retreat_requires_ready_bench_attack() -> None:
                 bench=[PokemonState(HONCHKROW, 130, 130, serial=22)],
                 hand=[{"id": ARIANA}],
             ),
-            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+            PlayerState(active=PokemonState(721, 60, 60, serial=30)),
         ]
     )
     retreat = _candidate(0, OptionType.RETREAT)
@@ -1276,7 +1319,7 @@ def test_v3_giovanni_free_switch_dominates_paid_retreat() -> None:
                 ],
                 hand=[{"id": GIOVANNI}, {"id": ARIANA}],
             ),
-            PlayerState(active=PokemonState(721, 150, 150, serial=30)),
+            PlayerState(active=PokemonState(721, 60, 60, serial=30)),
         ],
     )
     plan = agent._giovanni_switch_plan(state)
@@ -1352,15 +1395,57 @@ def test_v3_giovanni_can_complete_r_command_from_discard() -> None:
                 active=PokemonState(PORYGON, 60, 60, serial=10),
                 bench=[PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}])],
                 hand=[{"id": GIOVANNI}],
-                discard=[{"id": ARIANA}] * 17,
+                discard=[{"id": ARIANA}] * 12,
             ),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 260, 260, serial=30)),
         ]
     )
     plan = agent._giovanni_switch_plan(state)
     assert plan is not None
     assert plan.attack_id == R_COMMAND
-    assert plan.planned_damage == 360
+    assert plan.planned_damage == 260
+
+
+def test_v3_giovanni_does_not_enable_insufficient_porygon2_switch() -> None:
+    """Giovanni's projected discard only permits Porygon2 for an immediate KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}])],
+                hand=[{"id": GIOVANNI}],
+                discard=[{"id": ARIANA}] * 12,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 280, 280, serial=30)),
+        ]
+    )
+
+    assert not agent._scorer.r_command_knocks_out_active(state, discarded_supporters=13)
+    assert agent._giovanni_switch_plan(state) is None
+
+
+def test_porygon2_r_command_ko_priority_does_not_extend_to_generic_switch_or_retreat() -> None:
+    """Only the mandatory promotion and Giovanni receive the special KO priority."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}])],
+                discard=[{"id": ARIANA}] * 12,
+            ),
+            PlayerState(active=PokemonState(721, 260, 260, serial=30)),
+        ]
+    )
+    porygon2 = _candidate(0, OptionType.CARD, card_id=PORYGON2)
+
+    score, reasons = agent._scorer._card_selection_score(state, porygon2, SelectContext.SWITCH)
+
+    assert not agent._candidate_is_forbidden(state, porygon2, SelectContext.SWITCH)
+    assert score < 4800.0
+    assert "promote_porygon2_r_command_ko" not in reasons
+    assert agent._best_switch_plan(state, method="retreat", giovanni_played=False) is not None
 
 
 def test_v3_projects_ignition_before_promoting_porygon2() -> None:
@@ -2754,44 +2839,42 @@ def test_canonical_night_stretcher_scoring_uses_the_productive_recovery_line() -
     assert not scorer._night_stretcher_is_productive(blocked_state)
 
 
-def test_factory_is_only_useful_after_supporter_and_with_two_cards_left_to_draw() -> None:
+def test_factory_is_only_useful_after_supporter_and_with_two_cards_to_draw() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(players=[PlayerState(deck_count=2), PlayerState()])
     assert not scorer._factory_is_useful(state)
     state.supporter_played = True
-    state.players[0].deck_count = 3
+    state.players[0].deck_count = 2
     assert scorer._factory_is_useful(state)
     state.players[0].deck_count = 1
     assert not scorer._factory_is_useful(state)
 
 
-def test_elective_draw_reserves_natural_draw_outside_mega_matchup() -> None:
+def test_ariana_can_use_the_last_card_in_the_deck() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
-    state = GameState(players=[PlayerState(deck_count=1), PlayerState()])
-    assert scorer._elective_draw_reserve(state) == 1
-    state.players[1].active = PokemonState(MEGA_ABOMASNOW_EX, 350, 350)
-    assert scorer._elective_draw_reserve(state) == MEGA_ABOMASNOW_DECK_RESERVE
+    state = GameState(players=[PlayerState(deck_count=1, hand=[{"id": ARIANA}]), PlayerState()])
+    assert scorer._ariana_is_safe_and_useful(state)
 
 
-def test_expert_turn_loop_blocks_roto_when_the_deck_is_already_on_reserve(
+def test_expert_turn_loop_allows_roto_to_use_the_last_four_cards(
     monkeypatch,
 ) -> None:
-    """The canonical loop preserves the deck reserve before revealing Roto-Stick."""
+    """Roto may empty the deck; only its four-card reveal requirement remains."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=4), PlayerState()])
     monkeypatch.setattr(agent, "_roto_can_improve_rocket_line", lambda _state: True)
 
-    assert not agent._canonical_roto_is_productive(state)
-    assert agent.turn_ledger.resource_guard == "preserve_roto_for_deck_reserve"
-
-    state.players[0].deck_count = 5
     assert agent._canonical_roto_is_productive(state)
 
+    state.players[0].deck_count = 3
+    assert not agent._canonical_roto_is_productive(state)
+    assert agent.turn_ledger.resource_guard == "roto_requires_four_cards_to_reveal"
 
-def test_expert_turn_loop_blocks_night_stretcher_when_the_deck_is_already_on_reserve(
+
+def test_expert_turn_loop_keeps_productive_night_stretcher_independent_of_draw_reserve(
     monkeypatch,
 ) -> None:
-    """The canonical loop preserves the deck reserve before recovering Night Stretcher."""
+    """Night Stretcher does not consume an elective draw and remains productive on reserve."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
@@ -2805,10 +2888,6 @@ def test_expert_turn_loop_blocks_night_stretcher_when_the_deck_is_already_on_res
     )
     monkeypatch.setattr(agent._scorer, "_night_stretcher_is_productive", lambda _state: True)
 
-    assert not agent._canonical_night_stretcher_is_productive(state)
-    assert agent.turn_ledger.resource_guard == "preserve_night_stretcher_for_deck_reserve"
-
-    state.players[0].deck_count = 2
     assert agent._canonical_night_stretcher_is_productive(state)
 
 
@@ -2974,15 +3053,15 @@ def test_articuno_and_benched_ignition_remain_forbidden() -> None:
     assert agent._candidate_is_forbidden(state, ignition_bench, SelectContext.ATTACH_ENERGY)
 
 
-def test_mega_abomasnow_requires_six_supporters_for_rocket_feathers() -> None:
+def test_rocket_feathers_requires_exact_public_supporters_for_current_hp() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
                 active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
-                hand=[{"id": ARIANA}] * (MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS - 1),
+                hand=[{"id": ARIANA}] * 2,
             ),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(active=PokemonState(721, 180, 180)),
         ]
     )
     feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
@@ -2991,13 +3070,13 @@ def test_mega_abomasnow_requires_six_supporters_for_rocket_feathers() -> None:
     assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
 
 
-def test_mega_abomasnow_requires_eighteen_supporters_for_r_command() -> None:
+def test_r_command_requires_a_public_ko_against_any_active_pokemon() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
                 active=PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}]),
-                discard=[{"id": ARIANA}] * (MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS - 1),
+                discard=[{"id": ARIANA}] * 17,
             ),
             PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
         ]
@@ -3007,16 +3086,22 @@ def test_mega_abomasnow_requires_eighteen_supporters_for_r_command() -> None:
     state.players[0].discard.append({"id": ARCHER})
     assert not agent._candidate_is_forbidden(state, r_command, SelectContext.MAIN)
 
+    state.players[0].discard = [{"id": ARIANA}] * 12
+    state.players[1].active = PokemonState(721, 240, 240)
+    assert not agent._candidate_is_forbidden(state, r_command, SelectContext.MAIN)
 
-def test_porygon2_promotion_waits_for_mega_abomasnow_ko_line() -> None:
+
+def test_porygon2_promotion_uses_public_r_command_ko_after_own_ko() -> None:
+    """Replay 92500152's public promotion state selects the immediate KO."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
+                prize=[None, None, None],
                 bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}])],
-                discard=[{"id": ARIANA}] * (MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS - 1),
+                discard=[{"id": ARIANA}] * 13,
             ),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 220, 220)),
         ]
     )
     porygon2 = Candidate(
@@ -3025,15 +3110,68 @@ def test_porygon2_promotion_waits_for_mega_abomasnow_ko_line() -> None:
         OptionType.CARD,
         features={"card_id": PORYGON2, "target_energy_count": 3},
     )
+    honchkrow = Candidate(
+        1,
+        {"type": OptionType.CARD.value, "cardId": HONCHKROW},
+        OptionType.CARD,
+        features={"card_id": HONCHKROW, "target_energy_count": 2},
+    )
+
     score, reasons = agent._scorer._card_selection_score(state, porygon2, SelectContext.TO_ACTIVE)
-    assert score < 0
-    assert reasons == ["defer_porygon2_until_mega_abomasnow_ko_ready"]
-    assert agent._candidate_is_forbidden(state, porygon2, SelectContext.TO_ACTIVE)
-    state.players[0].discard.append({"id": ARCHER})
-    score, reasons = agent._scorer._card_selection_score(state, porygon2, SelectContext.TO_ACTIVE)
-    assert score > 0
-    assert reasons == ["promote_porygon2_best_r_command"]
+    honchkrow_score, _ = agent._scorer._card_selection_score(
+        state, honchkrow, SelectContext.TO_ACTIVE
+    )
+
+    assert agent._scorer.r_command_knocks_out_active(state)
+    assert score == 5200.0
+    assert reasons == [
+        "promote_porygon2_game_winning_r_command",
+        "r_command_takes_last_prizes",
+    ]
+    assert score > honchkrow_score
     assert not agent._candidate_is_forbidden(state, porygon2, SelectContext.TO_ACTIVE)
+    safe = agent._filter_forbidden_selections(
+        state,
+        [
+            Selection((0,), (OptionType.CARD,)),
+            Selection((1,), (OptionType.CARD,)),
+        ],
+        [porygon2, honchkrow],
+        SelectContext.TO_ACTIVE,
+    )
+    assert [selection.indices for selection in safe] == [(0,), (1,)]
+
+
+def test_porygon2_promotion_requires_public_r_command_ko() -> None:
+    """Mandatory promotion vetoes unready and insufficient R Command damage."""
+    agent = HonchkrowPorygonAgent(_profile())
+    porygon2 = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "cardId": PORYGON2},
+        OptionType.CARD,
+        features={"card_id": PORYGON2, "target_energy_count": 3},
+    )
+    for supporters, hp, expected_ko in ((12, 260, False), (11, 220, True), (13, 220, True)):
+        state = GameState(
+            players=[
+                PlayerState(
+                    bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}])],
+                    discard=[{"id": ARIANA}] * supporters,
+                ),
+                PlayerState(active=PokemonState(721, hp, hp)),
+            ]
+        )
+
+        assert agent._scorer.r_command_knocks_out_active(state) is expected_ko
+        assert agent._candidate_is_forbidden(state, porygon2, SelectContext.TO_ACTIVE) is (
+            not expected_ko
+        )
+        _, reasons = agent._scorer._card_selection_score(state, porygon2, SelectContext.TO_ACTIVE)
+        assert reasons == (
+            ["promote_porygon2_r_command_ko"]
+            if expected_ko
+            else ["veto_porygon2_r_command_damage_insufficient"]
+        )
 
 
 def test_porygon2_promotion_takes_the_last_prizes() -> None:
@@ -3260,14 +3398,14 @@ def test_ignition_hammer_line_uses_active_serial_when_area_flag_is_missing() -> 
     assert [selection.indices for selection in choices] == [(0,)]
 
 
-def test_retreat_requires_ready_mega_abomasnow_ko_replacement() -> None:
+def test_retreat_requires_ready_immediate_ko_replacement() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
             PlayerState(
                 active=PokemonState(HONCHKROW, 130, 130, energies=[{}]),
                 bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}])],
-                discard=[{"id": ARIANA}] * (MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS - 1),
+                discard=[{"id": ARIANA}] * 17,
             ),
             PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
         ]
@@ -3278,21 +3416,21 @@ def test_retreat_requires_ready_mega_abomasnow_ko_replacement() -> None:
     assert not agent._candidate_is_forbidden(state, retreat, SelectContext.MAIN)
     phase, reason = agent._candidate_phase(state, retreat)
     assert phase is DecisionPhase.ATTACK_PRIORITY
-    assert reason == "retreat_enables_mega_abomasnow_ko"
+    assert reason == "retreat_enables_immediate_ko"
 
 
-def test_mega_abomasnow_elective_draws_keep_two_natural_draws() -> None:
+def test_factory_can_use_the_last_two_cards_in_the_deck() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(
         supporter_played=True,
         players=[
             PlayerState(deck_count=3, hand_count=7, hand=[{"id": ARIANA}]),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(active=PokemonState(721, 350, 350)),
         ],
     )
-    assert not scorer._factory_is_useful(state)
-    state.players[0].deck_count = 4
     assert scorer._factory_is_useful(state)
+    state.players[0].deck_count = 1
+    assert not scorer._factory_is_useful(state)
 
 
 def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
@@ -3889,12 +4027,15 @@ def test_replay_facts_for_91193154_preserve_the_proton_articuno_nuance() -> None
     )
 
 
-def test_rocket_feathers_discards_exactly_six_for_mega_abomasnow_ko() -> None:
+def test_rocket_feathers_discards_exact_supporters_for_current_target() -> None:
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         players=[
-            PlayerState(hand=[{"id": ARIANA}] * 6),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}] * 6,
+            ),
+            PlayerState(active=PokemonState(721, 180, 180)),
         ]
     )
     candidates = [
@@ -3902,14 +4043,20 @@ def test_rocket_feathers_discards_exactly_six_for_mega_abomasnow_ko() -> None:
         for index in range(6)
     ]
     selections = [
-        Selection(tuple(range(5)), (OptionType.CARD,) * 5),
-        Selection(tuple(range(6)), (OptionType.CARD,) * 6),
+        Selection(tuple(range(2)), (OptionType.CARD,) * 2),
+        Selection(tuple(range(3)), (OptionType.CARD,) * 3),
     ]
     filtered = agent._filter_forbidden_selections(
         state, selections, candidates, SelectContext.DISCARD
     )
-    assert [selection.indices for selection in filtered] == [tuple(range(6))]
-    assert agent.turn_ledger.resource_guard == "discard_six_for_mega_abomasnow_ko"
+    agent._attack_sequence = AttackSequence(
+        ROCKET_FEATHERS, 721, 180, HONCHKROW, 2, 6, 360, 180, 180, 20
+    )
+    filtered = agent._filter_forbidden_selections(
+        state, selections, candidates, SelectContext.DISCARD
+    )
+    assert [selection.indices for selection in filtered] == [tuple(range(3))]
+    assert agent.turn_ledger.resource_guard == "discard_exact_supporters_for_rocket_ko"
 
 
 assert HonchkrowPorygonAgent

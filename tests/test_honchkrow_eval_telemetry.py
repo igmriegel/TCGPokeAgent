@@ -14,7 +14,9 @@ from scripts.run_honchkrow_porygon_eval import (
     _terminal_reason,
     _terminal_snapshot,
 )
-from src.agents.honchkrow_porygon import MEGA_ABOMASNOW_EX, R_COMMAND, ROCKET_FEATHERS
+from src.agents.honchkrow_porygon import R_COMMAND, ROCKET_FEATHERS
+
+MEGA_ABOMASNOW_EX = 723
 
 
 def test_damaged_mega_exact_lethal_is_not_counted_as_partial() -> None:

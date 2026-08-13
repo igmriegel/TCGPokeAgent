@@ -62,10 +62,9 @@ ARTICUNO_ATTACK = 583
 DREEPY = 119
 DRAKLOAK = 120
 DRAGAPULT_EX = 121
-MEGA_ABOMASNOW_EX = 723
-MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS = 6
-MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS = 18
-MEGA_ABOMASNOW_DECK_RESERVE = 2
+ABRA = 741
+KADABRA = 742
+ALAKAZAM = 743
 ROTO_STICK_REVEAL_COUNT = 4
 CANONICAL_POLICY_VARIANT = "expert_turn_loop"
 
@@ -409,7 +408,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         self._proton_used_previous_turn = False
         self._own_ko_observed = False
         self._reference_roto = False
-        self._elective_draw_reserve_override: int | None = None
         self._persistent_target_serial: int | None = None
         self._persistent_target_card_id: int | None = None
 
@@ -429,10 +427,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def set_reference_roto(self, enabled: bool) -> None:
         """Select the frozen pre-probabilistic-Roto reference policy."""
         self._reference_roto = enabled
-
-    def set_elective_draw_reserve_override(self, reserve: int | None) -> None:
-        """Set an experimental minimum reserve for elective draw effects."""
-        self._elective_draw_reserve_override = reserve
 
     def reset_persistent_target(self) -> None:
         """Forget a target when the public objective ends."""
@@ -471,10 +465,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 if self._grimmsnarl_froslass_matchup(state):
                     return -1800.0, ["avoid_articuno_against_grimmsnarl_froslass"]
                 if self._articuno_is_needed(state):
-                    reasons = ["play_articuno_matchup_tech"]
-                    if self._powerful_hand_threat(state):
-                        reasons.append("articuno_powerful_hand_protection")
-                    return 920.0, reasons
+                    return 920.0, ["play_articuno_matchup_tech"]
                 return -1500.0, ["preserve_articuno_until_needed"]
             if card_id == HONCHKROW:
                 return 620.0, ["develop_primary_honchkrow"]
@@ -560,7 +551,12 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if card_id == ARCHER:
             if not self._archer_is_safe_and_useful(state, candidate):
                 return -2400.0, ["archer_without_safe_disruption"]
-            return 780.0, ["archer_after_own_ko"]
+            reasons = ["archer_after_own_ko"]
+            score = 780.0
+            if self._archer_alakazam_hand_pressure(state):
+                score += 120.0
+                reasons.append("archer_alakazam_hand_pressure")
+            return score, reasons
         if card_type == 4:
             return 450.0, ["stadium_after_supporter"]
         if card_type == 3:
@@ -649,8 +645,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if self._truthy(candidate.option, "win", "wins", "gameOver"):
             return 5000.0, ["honchkrow_win_now"]
         reasons: list[str] = ["honchkrow_attack_for_prize_progress"]
-        if self._kadabra_super_psy_bolt_threat(state):
-            reasons.append("kadabra_super_psy_bolt")
         score = 260.0 + explicit_damage
         if self._truthy(candidate.option, "ko", "knockout", "isKo") or (
             explicit_damage > 0 and opponent_hp > 0 and explicit_damage >= opponent_hp
@@ -829,12 +823,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                     return 800.0, ["defer_honchkrow_to_r_command"]
                 return 1500.0, ["promote_ready_honchkrow"]
             if card_id == PORYGON2 and self._pokemon_is_ready(state, candidate):
-                if (
-                    self._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-                    and self._rocket_supporters_in_discard(state)
-                    < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
-                ):
-                    return -2400.0, ["defer_porygon2_until_mega_abomasnow_ko_ready"]
+                if context is SelectContext.TO_ACTIVE:
+                    if not self.r_command_knocks_out_active(state):
+                        return -2400.0, ["veto_porygon2_r_command_damage_insufficient"]
+                    if self._r_command_wins_game(state):
+                        return 5200.0, [
+                            "promote_porygon2_game_winning_r_command",
+                            "r_command_takes_last_prizes",
+                        ]
+                    return 4800.0, ["promote_porygon2_r_command_ko"]
                 if self._r_command_wins_game(state):
                     return 5200.0, [
                         "promote_porygon2_game_winning_r_command",
@@ -914,41 +911,13 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return False
         visible = self._visible_opponent_card_ids(state)
         dragapult_line = bool(visible & {DREEPY, DRAKLOAK, DRAGAPULT_EX})
-        alakazam_line = self._powerful_hand_threat(state)
+        alakazam_line = bool(visible & {ABRA, KADABRA, ALAKAZAM})
         return dragapult_line or alakazam_line
 
     def _grimmsnarl_froslass_matchup(self, state: GameState) -> bool:
         """Return whether both public Grimmsnarl and Froslass threats are visible."""
         visible = self._visible_opponent_card_ids(state)
         return {GRIMMSNARL_EX, FROSLASS}.issubset(visible)
-
-    def _powerful_hand_threat(self, state: GameState) -> bool:
-        """Return whether a visible Alakazam exposes the hand-size attack."""
-        opponent = self._opponent_player(state)
-        if opponent is None:
-            return False
-        for pokemon in (opponent.active, *opponent.bench):
-            if pokemon is None or pokemon.card_id != 743:
-                continue
-            card = self.catalog.get_card(str(pokemon.card_id)) or {}
-            for attack_id in card.get("attacks", []):
-                attack = self.catalog.get_attack(str(attack_id)) or {}
-                attack_text = f"{attack.get('name', '')} {attack.get('text', '')}".casefold()
-                if "powerful hand" in attack_text:
-                    return True
-        return False
-
-    def _kadabra_super_psy_bolt_threat(self, state: GameState) -> bool:
-        """Return whether Kadabra publicly exposes the fixed-damage attack."""
-        opponent = self._opponent_player(state)
-        if opponent is None or opponent.active is None or opponent.active.card_id != 742:
-            return False
-        card = self.catalog.get_card("742") or {}
-        return any(
-            "super psy bolt" in f"{attack.get('name', '')} {attack.get('text', '')}".casefold()
-            for attack_id in card.get("attacks", [])
-            for attack in [self.catalog.get_attack(str(attack_id)) or {}]
-        )
 
     def _articuno_is_on_field(self, state: GameState) -> bool:
         """Return whether Articuno is already Active or Benched."""
@@ -1152,7 +1121,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return False
         if self._energy_units_for_pokemon(active) < 2:
             return False
-        if player.deck_count <= self._elective_draw_reserve(state):
+        if player.deck_count <= 0:
             return False
         return self._roto_expected_value(state, needed - hand)[0] > 0
 
@@ -1266,20 +1235,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return -2400.0
         hand_after_play = max(0, int(player.hand_count) - max(0, hand_reduction) - 1)
         ariana_draws = min(
-            max(0, self._ariana_draw_count(state) - hand_after_play),
-            max(0, int(player.deck_count) - self._elective_draw_reserve(state)),
+            max(0, self._ariana_draw_count(state) - hand_after_play), player.deck_count
         )
         factory_draws = 2 if self._factory_in_play(state) or factory_will_be_played else 0
-        draws = min(
-            ariana_draws + factory_draws,
-            max(0, int(player.deck_count) - self._elective_draw_reserve(state)),
-        )
+        draws = min(ariana_draws + factory_draws, player.deck_count)
         if ariana_draws <= 0:
             return -1800.0
         deck = max(1, int(player.deck_count))
         expected_supporters = draws * self._roto_remaining_supporters(state) / deck
-        deck_risk = max(0, self._elective_draw_reserve(state) - (int(player.deck_count) - draws))
-        return expected_supporters * 650.0 + draws * 35.0 - deck_risk * 250.0
+        return expected_supporters * 650.0 + draws * 35.0
 
     def _factory_in_play(self, state: GameState) -> bool:
         return self._stadium_in_play(state, FACTORY)
@@ -1306,7 +1270,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and not state.stadium_played
             and self._card_in_hand(state, PETREL)
             and self._ariana_marginal_draw(state) <= 2
-            and player.deck_count - 2 >= self._elective_draw_reserve(state)
+            and player.deck_count >= 2
         )
 
     def _transceiver_is_better_than_petrel_for_ariana(self, state: GameState) -> bool:
@@ -1357,8 +1321,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if state.supporter_played:
             return False
         draws = self._ariana_marginal_draw(state)
-        reserve = self._elective_draw_reserve(state)
-        return bool(draws > 0 and int(player.deck_count) - draws >= reserve)
+        return bool(draws > 0 and player.deck_count > 0)
 
     def _factory_play_is_useful(self, state: GameState) -> bool:
         """Return whether Factory can be played before the draw sequence."""
@@ -1366,7 +1329,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if player is None or state.stadium_played:
             return False
         return bool(
-            int(player.deck_count) >= self._elective_draw_reserve(state)
+            int(player.deck_count) >= 2
             and (state.supporter_played or self._has_playable_supporter(state))
         )
 
@@ -1376,18 +1339,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return bool(
             player
             and state.supporter_played
-            and player.deck_count - 2 >= self._elective_draw_reserve(state)
+            and player.deck_count >= 2
         )
-
-    def _elective_draw_reserve(self, state: GameState) -> int:
-        """Keep a natural draw available after elective draw effects."""
-        if self._elective_draw_reserve_override is not None:
-            return self._elective_draw_reserve_override
-        if self._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
-            return 1
-        if self._active_has_committed_mega_abomasnow_ko(state):
-            return 0
-        return MEGA_ABOMASNOW_DECK_RESERVE
 
     def _night_stretcher_is_productive(self, state: GameState) -> bool:
         """Require a recovery target that can immediately leave the hand."""
@@ -1542,6 +1495,17 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
         return prior_ko and not self._visible_non_archer_line_exists(state)
 
+    def _archer_alakazam_hand_pressure(self, state: GameState) -> bool:
+        """Return whether public Alakazam-line evidence makes Archer more valuable."""
+        player = self._own_player(state)
+        opponent = self._opponent_player(state)
+        return bool(
+            player
+            and opponent
+            and bool(self._visible_opponent_card_ids(state) & {ABRA, KADABRA, ALAKAZAM})
+            and opponent.hand_count > player.hand_count
+        )
+
     def _visible_non_archer_line_exists(self, state: GameState) -> bool:
         """Reject Archer while a card can still change this turn's public board."""
         return bool(
@@ -1624,7 +1588,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 if max(0, self._effective_supporters_in_hand(state) - 1) * 60 >= target_hp:
                     return True
             if pokemon.card_id == PORYGON2 and energy >= self._attack_energy_target(PORYGON2):
-                if (self._rocket_supporters_in_discard(state) + 1) * 20 >= target_hp:
+                if self.r_command_knocks_out_active(
+                    state,
+                    discarded_supporters=self._rocket_supporters_in_discard(state) + 1,
+                ):
                     return True
         return False
 
@@ -2065,9 +2032,16 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return sum(pokemon is not None for pokemon in player.bench) if player else 0
 
     def _supporters_needed_for_ko(self, state: GameState) -> int:
-        """Return the minimum 60-damage supporter count for the active target."""
-        hp = self._effective_opponent_hp(state)
-        return (hp + 59) // 60 if hp > 0 else 0
+        """Return Rocket Feathers' exact public Supporter requirement for the Active."""
+        opponent = self._opponent_player(state)
+        target = opponent.active if opponent is not None else None
+        if target is None:
+            return 0
+        candidate = Candidate(0, {"attackId": ROCKET_FEATHERS}, OptionType.ATTACK)
+        damage_per_supporter = self._attack_damage(state, candidate, 60, target)
+        if damage_per_supporter <= 0:
+            return 0
+        return (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
 
     def _promotion_line_is_lethal(self, state: GameState, card_id: int) -> bool:
         """Return whether a visible promotion can attack lethally this turn."""
@@ -2116,8 +2090,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _r_command_is_best_damage_line(self, state: GameState) -> bool:
         """Return whether public discard makes Porygon2 the best current attacker."""
-        if self._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
-            return self._rocket_supporters_in_discard(state) >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
         opponent_hp = self._raw_opponent_hp(state)
         r_command = self._rocket_supporters_in_discard(state) * 20
         feathers = self._effective_supporters_in_hand(state) * 60
@@ -2126,14 +2098,38 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return True
         return r_command > max(feathers, hammer)
 
+    def r_command_knocks_out_active(
+        self, state: GameState, *, discarded_supporters: int | None = None
+    ) -> bool:
+        """Return whether public R Command damage knocks out the opposing Active.
+
+        Args:
+            state: Current public game state.
+            discarded_supporters: Optional public projected count after a known effect.
+
+        Returns:
+            Whether the public damage reaches the opposing Active's current HP.
+        """
+        opponent = self._opponent_player(state)
+        active = opponent.active if opponent is not None else None
+        if active is None:
+            return False
+        supporters = (
+            self._rocket_supporters_in_discard(state)
+            if discarded_supporters is None
+            else discarded_supporters
+        )
+        candidate = Candidate(0, {"attackId": R_COMMAND}, OptionType.ATTACK)
+        damage = self._attack_damage(state, candidate, supporters * 20, active)
+        return damage >= max(0, int(active.hp)) > 0
+
     def _r_command_wins_game(self, state: GameState) -> bool:
         """Return whether the visible Porygon2 R Command ends the Prize race."""
         target = self._opponent_player(state)
         active = target.active if target is not None else None
         if active is None or active.hp <= 0:
             return False
-        damage = self._rocket_supporters_in_discard(state) * 20
-        if damage < int(active.hp):
+        if not self.r_command_knocks_out_active(state):
             return False
         prizes_needed = len(self._own_player(state).prize) if self._own_player(state) else 0
         prize_value = self._active_target_prize_value(state)
@@ -2141,7 +2137,15 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _r_command_supporters_needed(self, state: GameState) -> int:
         """Return the exact discard-supporter count needed for the visible KO."""
-        return (max(0, self._raw_opponent_hp(state)) + 19) // 20
+        opponent = self._opponent_player(state)
+        target = opponent.active if opponent is not None else None
+        if target is None:
+            return 0
+        candidate = Candidate(0, {"attackId": R_COMMAND}, OptionType.ATTACK)
+        damage_per_supporter = self._attack_damage(state, candidate, 20, target)
+        if damage_per_supporter <= 0:
+            return 0
+        return (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
 
     def _roto_can_close_r_command_line(self, state: GameState) -> bool:
         """Return whether Roto can provide the final supporter for Porygon2."""
@@ -2166,9 +2170,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         """Return whether promotion plus an Ignition attachment wins next turn."""
         if self._feature_int(candidate, "card_id") != PORYGON2:
             return False
-        if self._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
-            if self._rocket_supporters_in_discard(state) < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS:
-                return False
         if not self._r_command_wins_game(state):
             return False
         if self._pokemon_is_ready(state, candidate):
@@ -2230,29 +2231,63 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                     return target.effective_prize_value
         return self.catalog.get_traits(str(pokemon.card_id)).base_prize_value
 
-    def _active_has_committed_mega_abomasnow_ko(self, state: GameState) -> bool:
-        """Return whether the Active can take the visible Mega Abomasnow KO now."""
-        if self._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX:
-            return False
+    def _active_has_immediate_ko(self, state: GameState) -> bool:
+        """Return whether the current Active has a public, legal immediate KO."""
         active = self._own_active(state)
-        return bool(active and self._pokemon_has_committed_mega_abomasnow_ko(state, active))
+        return bool(active and self._pokemon_has_immediate_ko(state, active))
 
-    def _pokemon_has_committed_mega_abomasnow_ko(self, state: GameState, pokemon: Any) -> bool:
-        """Evaluate a visible attacker's exact 350-HP knockout resources."""
+    def _pokemon_has_immediate_ko(self, state: GameState, pokemon: Any) -> bool:
+        """Return whether a Pokémon's public resources can KO the opposing Active.
+
+        This intentionally uses current HP and the common public damage pipeline,
+        including attack costs, weakness, resistance, and active prevention.
+        """
+        opponent = self._opponent_player(state)
+        target = opponent.active if opponent is not None else None
+        if target is None or max(0, int(target.hp)) == 0:
+            return False
         card_id = int(pokemon.card_id) if isinstance(pokemon.card_id, int) else 0
-        energy_count = self._energy_units_for_pokemon(pokemon)
+        choices: list[tuple[int, int]] = []
         if card_id == HONCHKROW:
-            feathers_ready = (
-                energy_count >= self._attack_energy_target(HONCHKROW)
-                and self._effective_supporters_in_hand(state)
-                >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
+            choices.extend(
+                [
+                    (ROCKET_FEATHERS, self._effective_supporters_in_hand(state) * 60),
+                    (HAMMER_IN, 100),
+                ]
             )
-            hammer_ready = energy_count >= 3 and self._raw_opponent_hp(state) <= 100
-            return feathers_ready or hammer_ready
-        return bool(
-            card_id == PORYGON2
-            and energy_count >= self._attack_energy_target(PORYGON2)
-            and self._rocket_supporters_in_discard(state) >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
+        elif card_id == PORYGON2:
+            choices.append((R_COMMAND, self._rocket_supporters_in_discard(state) * 20))
+        card = self.catalog.get_card(str(card_id)) or {}
+        for attack_id in card.get("attacks", []):
+            if isinstance(attack_id, int) and attack_id not in {
+                ROCKET_FEATHERS,
+                R_COMMAND,
+                HAMMER_IN,
+            }:
+                attack = self.catalog.get_attack(str(attack_id)) or {}
+                choices.append((attack_id, self._metadata_int(attack, "damage")))
+        attacker_card = self.catalog.get_card(str(card_id)) or {}
+        for attack_id, base_damage in choices:
+            attack = self.catalog.get_attack(str(attack_id)) or {}
+            if base_damage <= 0 or not self._attack_cost_is_satisfied(pokemon, attack):
+                continue
+            damage = calculate_damage(
+                base_damage,
+                attacker_card.get("energyType"),
+                self.catalog.get_card(str(target.card_id)) or {},
+                prevented=has_splashing_dodge_protection(state.raw, target.serial),
+                state_raw=state.raw,
+                defender_serial=target.serial,
+            )
+            if damage >= max(0, int(target.hp)):
+                return True
+        return False
+
+    def _attack_cost_is_satisfied(self, pokemon: Any, attack: Mapping[str, Any]) -> bool:
+        """Return whether public energy units pay an attack's declared cost."""
+        energies = attack.get("energies", [])
+        return isinstance(energies, list) and len(energies) <= self._energy_units_for_pokemon(
+            pokemon
         )
 
     def _attack_has_committed_ko(self, state: GameState, candidate: Candidate) -> bool:
@@ -2272,12 +2307,6 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             base_damage = 100
         damage = self._attack_damage(state, candidate, base_damage, target)
         return damage >= target_hp > 0
-
-    def _attack_has_committed_mega_abomasnow_ko(
-        self, state: GameState, candidate: Candidate
-    ) -> bool:
-        """Compatibility alias for the generic committed-KO predicate."""
-        return self._attack_has_committed_ko(state, candidate)
 
     def _candidate_visible_damage(self, candidate: Candidate) -> int:
         """Return deterministic damage declared by a legal attack candidate."""
@@ -2505,7 +2534,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._match_ledger = MatchTacticalLedger()
         self.policy_variant = CANONICAL_POLICY_VARIANT
         self._scorer.set_reference_roto(False)
-        self._scorer.set_elective_draw_reserve_override(None)
 
     @property
     def _uses_retreat_guard(self) -> bool:
@@ -4155,12 +4183,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
 
     def _canonical_night_stretcher_is_productive(self, state: GameState) -> bool:
-        """Keep Night Stretcher available when the deck is already on reserve."""
+        """Recover a Pokémon when the public recovery line is immediately useful."""
         player = self._scorer._own_player(state)
         if player is None:
-            return False
-        if int(player.deck_count) <= self._scorer._elective_draw_reserve(state):
-            self._turn_ledger.resource_guard = "preserve_night_stretcher_for_deck_reserve"
             return False
         return any(
             self._night_stretcher_target_priority(state, self._scorer._card_id_from_value(card))[0]
@@ -4251,7 +4276,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return 0, ""
 
     def _canonical_roto_is_productive(self, state: GameState) -> bool:
-        """Require a legal Roto before damage unless its draw would risk deck-out."""
+        """Require a legal Roto before damage when it can reveal four cards."""
         if not self._scorer._card_in_hand(state, ROTO_STICK):
             return False
         if self._opponent_budew_item_lock(state):
@@ -4261,9 +4286,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if (
             player is not None
             and player.deck_count
-            < self._scorer._elective_draw_reserve(state) + ROTO_STICK_REVEAL_COUNT
+            < ROTO_STICK_REVEAL_COUNT
         ):
-            self._turn_ledger.resource_guard = "preserve_roto_for_deck_reserve"
+            self._turn_ledger.resource_guard = "roto_requires_four_cards_to_reveal"
             return False
         self._turn_ledger.roto_preserved_reason = "play_roto_before_partial_damage"
         return True
@@ -4576,7 +4601,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return False
         if active.card_id != HONCHKROW or self._scorer._energy_units_for_pokemon(active) < 2:
             return False
-        if player.deck_count <= self._scorer._elective_draw_reserve(state):
+        if player.deck_count <= 0:
             return False
         target_hp = self._scorer._raw_opponent_hp(state)
         current_damage = self._scorer._effective_supporters_in_hand(state) * 60
@@ -4891,19 +4916,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         return preferred
                 self._turn_ledger.resource_guard = f"headset_recovers_{recoverable}_supporter"
                 return without_duplicate_ariana or exact_two
-        if (
-            context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}
-            and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-        ):
-            lethal_discard = [
-                selection
-                for selection in selections
-                if self._rocket_supporter_count(selection, by_index)
-                == MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
-            ]
-            if lethal_discard:
-                self._turn_ledger.resource_guard = "discard_six_for_mega_abomasnow_ko"
-                return lethal_discard
         safe = super()._filter_forbidden_selections(state, selections, candidates, context)
         if context is SelectContext.MAIN:
             original_has_non_end = any(
@@ -5099,10 +5111,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Return whether an optional action spends attack resources without an immediate KO."""
         if candidate is None:
             return False
-        if (
-            not self._uses_expert_turn_loop
-            and self._scorer._opponent_active_card_id(state) != MEGA_ABOMASNOW_EX
-        ):
+        if not self._uses_expert_turn_loop:
             return False
         if candidate.option_type is OptionType.ATTACK:
             attack_id = self._scorer._attack_id(candidate)
@@ -5112,13 +5121,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 return False
             return True
         if candidate.option_type is OptionType.RETREAT:
-            return not self._retreat_enables_committed_mega_abomasnow_ko(state)
+            return not self._retreat_enables_immediate_ko(state)
         return bool(
             candidate.option_type is OptionType.CARD
             and self._scorer._feature_int(candidate, "card_id") == PORYGON2
-            and context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH}
-            and self._scorer._rocket_supporters_in_discard(state)
-            < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
+            and context is SelectContext.TO_ACTIVE
+            and not (
+                self._scorer._pokemon_is_ready(state, candidate)
+                and self._scorer.r_command_knocks_out_active(state)
+            )
         )
 
     def _filter_duplicate_proton_roles(
@@ -5287,10 +5298,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         if (
             candidate.option_type is OptionType.ATTACK
-            and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-            and not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
+            and self._scorer._attack_id(candidate) in {R_COMMAND, HAMMER_IN}
+            and not self._scorer._attack_has_committed_ko(state, candidate)
         ):
-            self._turn_ledger.resource_guard = "mega_abomasnow_requires_committed_ko"
+            self._turn_ledger.resource_guard = "resource_attack_nonlethal_veto"
             return True
         if (
             candidate.option_type is OptionType.ATTACK
@@ -5431,12 +5442,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             } and not self._scorer._porygon2_search_is_valid(state):
                 self._turn_ledger.resource_guard = "reject_porygon2_without_porygon_field"
                 return True
-            if (
-                context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH}
-                and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-                and self._scorer._rocket_supporters_in_discard(state)
-                < MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
+            if context is SelectContext.TO_ACTIVE and not (
+                self._scorer._pokemon_is_ready(state, candidate)
+                and self._scorer.r_command_knocks_out_active(state)
             ):
+                self._turn_ledger.resource_guard = "porygon2_vetoed_r_command_damage_insufficient"
                 return True
             if (
                 context
@@ -5529,14 +5539,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     else "paid_retreat_without_attack_conversion"
                 )
                 return not justified
-            if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
-                justified = self._retreat_enables_committed_mega_abomasnow_ko(state)
-                self._turn_ledger.resource_guard = (
-                    "retreat_enables_mega_abomasnow_ko"
-                    if justified
-                    else "retreat_without_mega_abomasnow_ko"
-                )
-                return not justified
+            justified = self._retreat_enables_immediate_ko(state)
+            self._turn_ledger.resource_guard = (
+                "retreat_enables_immediate_ko" if justified else "retreat_without_immediate_ko"
+            )
+            return not justified
             if self._active_has_productive_attack(state) or self._active_has_guaranteed_ko(state):
                 return True
         return False
@@ -5620,6 +5627,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         active_choice = self._pokemon_attack_choice(state, player.active, giovanni_played=False)
         active_damage = active_choice[1] if active_choice is not None else 0
         target_hp = max(0, int(opponent.active.hp))
+        if bench_plan.planned_damage < target_hp:
+            return None
         if active_damage > 0 and not (active_damage < target_hp <= bench_plan.planned_damage):
             return None
         return bench_plan
@@ -5638,9 +5647,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return None
         target_hp = max(0, int(opponent.active.hp))
         active_damage = active_choice[1] if active_choice is not None else 0
-        if active_damage > 0 and not (active_damage < target_hp <= plan.planned_damage):
+        if plan.planned_damage < target_hp:
             return None
-        if opponent.active.card_id == MEGA_ABOMASNOW_EX and plan.planned_damage < target_hp:
+        if active_damage > 0 and not (active_damage < target_hp <= plan.planned_damage):
             return None
         return plan
 
@@ -5672,6 +5681,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     requires_ignition=requires_ignition,
                 )
             )
+        if method == "giovanni":
+            porygon2_ko_plans = [
+                plan
+                for plan in plans
+                if plan.target_card_id == PORYGON2
+                and self._scorer.r_command_knocks_out_active(
+                    state,
+                    discarded_supporters=self._scorer._rocket_supporters_in_discard(state) + 1,
+                )
+            ]
+            if porygon2_ko_plans:
+                return max(porygon2_ko_plans, key=lambda plan: plan.planned_damage)
+            plans = [plan for plan in plans if plan.target_card_id != PORYGON2]
         return max(plans, key=lambda plan: plan.planned_damage, default=None)
 
     def _pokemon_attack_choice(
@@ -5700,22 +5722,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
         if pokemon.card_id == HONCHKROW:
             supporters = self._scorer._effective_supporters_in_hand(state) - int(giovanni_played)
-            mega_abomasnow = self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-            if supporters > 0 and (
-                not mega_abomasnow or supporters >= MEGA_ABOMASNOW_ROCKET_FEATHERS_SUPPORTERS
-            ):
+            if supporters > 0:
                 add_choice(
                     ROCKET_FEATHERS,
                     self._dark_attack_damage(state, supporters * 60),
                 )
-            if not mega_abomasnow or self._scorer._raw_opponent_hp(state) <= 100:
-                add_choice(HAMMER_IN, self._dark_attack_damage(state, 100))
+            add_choice(HAMMER_IN, self._dark_attack_damage(state, 100))
         elif pokemon.card_id == PORYGON2:
             supporters = self._scorer._rocket_supporters_in_discard(state) + int(giovanni_played)
-            mega_abomasnow = self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
-            if supporters > 0 and (
-                not mega_abomasnow or supporters >= MEGA_ABOMASNOW_R_COMMAND_SUPPORTERS
-            ):
+            if supporters > 0:
                 add_choice(
                     R_COMMAND,
                     supporters * 20,
@@ -5836,7 +5851,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             defender_serial=target.serial,
         )
 
-    def _retreat_enables_committed_mega_abomasnow_ko(self, state: GameState) -> bool:
+    def _retreat_enables_immediate_ko(self, state: GameState) -> bool:
         """Require retreat to exchange a nonlethal Active for an immediate KO."""
         player = self._scorer._own_player(state)
         active = player.active if player is not None else None
@@ -5846,11 +5861,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         retreat_cost = self._scorer._metadata_int(active_card, "retreatCost")
         if retreat_cost <= 0 or len(active.energies) < retreat_cost:
             return False
-        if self._scorer._pokemon_has_committed_mega_abomasnow_ko(state, active):
+        if self._scorer._pokemon_has_immediate_ko(state, active):
             return False
         return any(
-            pokemon is not None
-            and self._scorer._pokemon_has_committed_mega_abomasnow_ko(state, pokemon)
+            pokemon is not None and self._scorer._pokemon_has_immediate_ko(state, pokemon)
             for pokemon in player.bench
         )
 
@@ -5892,10 +5906,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.ATTACK:
             if self._scorer._truthy(candidate.option, "win", "wins", "ko", "knockout", "isKo"):
                 return DecisionPhase.ATTACK_PRIORITY, "guaranteed_ko"
-        if candidate.option_type is OptionType.RETREAT and (
-            self._retreat_enables_committed_mega_abomasnow_ko(state)
+        if candidate.option_type is OptionType.RETREAT and self._retreat_enables_immediate_ko(
+            state
         ):
-            return DecisionPhase.ATTACK_PRIORITY, "retreat_enables_mega_abomasnow_ko"
+            return DecisionPhase.ATTACK_PRIORITY, "retreat_enables_immediate_ko"
         if candidate.option_type is OptionType.DISCARD and self._scorer._discard_is_required_for_ko(
             state, candidate
         ):

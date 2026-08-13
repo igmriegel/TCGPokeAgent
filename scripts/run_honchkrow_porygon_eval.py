@@ -20,7 +20,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.agents.honchkrow_porygon import (  # noqa: E402
-    MEGA_ABOMASNOW_EX,
     R_COMMAND,
     ROCKET_FEATHERS,
     HonchkrowPorygonAgent,
@@ -38,6 +37,7 @@ DECK_PATH = Path(
 )
 TERMINATION_REASONS = {1: "all_prizes_taken", 2: "deck_out", 3: "no_pokemon_in_play"}
 ROCKET_SUPPORTERS = {1216, 1217, 1218, 1219, 1220}
+MEGA_ABOMASNOW_EX = 723
 
 
 @contextlib.contextmanager
