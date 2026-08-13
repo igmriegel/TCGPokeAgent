@@ -850,6 +850,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             if card_id == HONCHKROW and self._pokemon_is_ready(state, candidate):
                 if self._r_command_is_best_damage_line(state):
                     return 800.0, ["defer_honchkrow_to_r_command"]
+                if self._promotion_line_is_lethal(state, HONCHKROW):
+                    return 4700.0, ["promote_honchkrow_rocket_feathers_ko"]
                 return 1500.0, ["promote_ready_honchkrow"]
             if card_id == PORYGON2 and self._pokemon_is_ready(state, candidate):
                 if context is SelectContext.TO_ACTIVE:
@@ -5683,6 +5685,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._articuno_is_needed(state)
             and not self._scorer._articuno_is_on_field(state)
             and self._scorer._card_in_hand(state, ARTICUNO)
+            and not self._scorer._own_bench_full(state)
         ):
             self._turn_ledger.resource_guard = "hold_evolution_until_articuno_protection"
             return True

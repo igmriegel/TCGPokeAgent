@@ -3145,6 +3145,53 @@ def test_porygon2_promotion_uses_public_r_command_ko_after_own_ko() -> None:
     assert [selection.indices for selection in safe] == [(0,), (1,)]
 
 
+def test_porygon2_promotion_prefers_the_larger_public_terminal_line() -> None:
+    """A ready Porygon2 remains the promotion over Murkrow at 300 versus 160."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                bench=[PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}])],
+                discard=[{"id": ARIANA}] * 15,
+            ),
+            PlayerState(active=PokemonState(721, 160, 160)),
+        ]
+    )
+    porygon2 = _candidate(0, OptionType.CARD, card_id=PORYGON2)
+    murkrow = _candidate(1, OptionType.CARD, card_id=MURKROW)
+
+    porygon2_score, _ = agent._scorer._card_selection_score(
+        state, porygon2, SelectContext.TO_ACTIVE
+    )
+    murkrow_score, _ = agent._scorer._card_selection_score(state, murkrow, SelectContext.TO_ACTIVE)
+
+    assert porygon2_score > murkrow_score
+    assert not agent._candidate_is_forbidden(state, porygon2, SelectContext.TO_ACTIVE)
+
+
+def test_ready_honchkrow_ko_outranks_murkrow_promotion() -> None:
+    """Murkrow is only the fallback when no ready evolved attacker can KO."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                bench=[PokemonState(HONCHKROW, 130, 130, energies=[{}, {}])],
+                hand=[{"id": ARIANA}] * 3,
+            ),
+            PlayerState(active=PokemonState(721, 180, 180)),
+        ]
+    )
+    honchkrow = _candidate(0, OptionType.CARD, card_id=HONCHKROW)
+    murkrow = _candidate(1, OptionType.CARD, card_id=MURKROW)
+
+    honchkrow_score, _ = agent._scorer._card_selection_score(
+        state, honchkrow, SelectContext.TO_ACTIVE
+    )
+    murkrow_score, _ = agent._scorer._card_selection_score(state, murkrow, SelectContext.TO_ACTIVE)
+
+    assert honchkrow_score > murkrow_score
+
+
 def test_porygon2_promotion_requires_public_r_command_ko() -> None:
     """Mandatory promotion vetoes unready and insufficient R Command damage."""
     agent = HonchkrowPorygonAgent(_profile())
