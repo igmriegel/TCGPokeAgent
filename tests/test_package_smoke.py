@@ -124,6 +124,9 @@ def test_dedicated_expert_package_manifest_identifies_backend(tmp_path) -> None:
     assert ledger["event"] == "audit_decision_ledger"
     assert ledger["transport"] == "stderr_stream"
     assert ledger["dictionary"] == "src/artifacts/decision_ledger_dictionary.json"
+    assert {"source_commit", "package_sha256"} <= set(ledger["required_fields"])
+    assert manifest["source_commit"]
+    assert len(manifest["package_payload_sha256"]) == 64
 
 
 def test_official_package_emits_complete_compressed_decision_ledger(tmp_path) -> None:
@@ -159,7 +162,7 @@ def test_official_package_emits_complete_compressed_decision_ledger(tmp_path) ->
     compact = zlib.decompress(b64decode(envelope["payload"])).decode("utf-8")
     assert envelope["encoding"] == "zlib+base64"
     assert len(match.group(1)) < 9_000
-    assert {"s", "t", "r", "x", "tl", "ml"} <= json.loads(compact).keys()
+    assert {"s", "t", "r", "x", "tl", "ml", "sc", "ph"} <= json.loads(compact).keys()
 
     log_path = tmp_path / "kaggle-stderr.log"
     decoded_path = tmp_path / "decoded.jsonl"
@@ -176,7 +179,16 @@ def test_official_package_emits_complete_compressed_decision_ledger(tmp_path) ->
         check=True,
     )
     decoded = json.loads(decoded_path.read_text(encoding="utf-8"))
-    expected_fields = {"selection", "trace", "ranked", "features", "turn_ledger", "match_ledger"}
+    expected_fields = {
+        "selection",
+        "trace",
+        "ranked",
+        "features",
+        "turn_ledger",
+        "match_ledger",
+        "source_commit",
+        "package_sha256",
+    }
     assert expected_fields <= decoded.keys()
 
     annotated_path = tmp_path / "annotated.jsonl"

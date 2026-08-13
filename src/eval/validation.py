@@ -250,6 +250,14 @@ def _validate_decision_ledger_contract(root: Path, manifest: Mapping[str, Any]) 
         return
     if not isinstance(ledger, Mapping):
         raise PreflightError("decision ledger manifest must be a mapping")
+    source_commit = manifest.get("source_commit")
+    package_sha256 = manifest.get("package_payload_sha256")
+    if not isinstance(source_commit, str) or not source_commit:
+        raise PreflightError("package manifest source_commit is required for decision ledger")
+    if not isinstance(package_sha256, str) or len(package_sha256) != 64:
+        raise PreflightError(
+            "package manifest package_payload_sha256 is required for decision ledger"
+        )
     required = {
         "event": "audit_decision_ledger",
         "schema_version": "decision-ledger-v1",
@@ -260,6 +268,12 @@ def _validate_decision_ledger_contract(root: Path, manifest: Mapping[str, Any]) 
     for key, expected in required.items():
         if ledger.get(key) != expected:
             raise PreflightError(f"decision ledger manifest {key} is invalid")
+    required_fields = ledger.get("required_fields")
+    if not isinstance(required_fields, list) or not {
+        "source_commit",
+        "package_sha256",
+    }.issubset(required_fields):
+        raise PreflightError("decision ledger provenance fields are required")
     dictionary = ledger.get("dictionary")
     if not isinstance(dictionary, str) or not (root / dictionary).is_file():
         raise PreflightError("decision ledger dictionary is missing from the package")

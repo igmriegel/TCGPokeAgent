@@ -104,7 +104,7 @@ manifest = {
             "transport": "stderr_stream",
             "encoding": "zlib+base64",
             "integrity": "sha256",
-            "required_fields": ["selection", "trace", "ranked", "features", "turn_ledger", "match_ledger"],
+            "required_fields": ["selection", "trace", "ranked", "features", "turn_ledger", "match_ledger", "source_commit", "package_sha256"],
         },
     },
     "policy_variant": policy_variant,

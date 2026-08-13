@@ -10,7 +10,7 @@ import sys
 import zlib
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 from src.agents.honchkrow_porygon import HonchkrowPorygonAgent
 from src.core import AgentPolicy, DeckDefinition, DeckProfile
@@ -44,6 +44,19 @@ _LEDGER_DICTIONARY_PATH = _ROOT / "src" / "artifacts" / "decision_ledger_diction
 _LEDGER_KEY_MAP: dict[str, str] | None = None
 
 
+def _package_provenance() -> dict[str, str]:
+    """Load immutable build provenance when running from an extracted package."""
+    manifest_path = _ROOT / "package_manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"source_commit": "", "package_sha256": ""}
+    return {
+        "source_commit": str(manifest.get("source_commit", "")),
+        "package_sha256": str(manifest.get("package_payload_sha256", "")),
+    }
+
+
 def _ledger_key_map() -> dict[str, str]:
     """Load the versioned audit-key dictionary bundled with the package."""
     global _LEDGER_KEY_MAP
@@ -75,7 +88,7 @@ def _compact_ledger_keys(value: object) -> object:
 
 def _public_ledger(ledger: object) -> dict[str, object]:
     """Return JSON-safe public ledger fields without exposing private state."""
-    return asdict(ledger) if is_dataclass(ledger) else {}
+    return cast(dict[str, object], asdict(cast(Any, ledger))) if is_dataclass(ledger) else {}
 
 
 def _decision_ledger(decision: object) -> dict[str, object]:
@@ -111,11 +124,12 @@ def _decision_ledger(decision: object) -> dict[str, object]:
         "model_backend": getattr(decision, "model_backend", ""),
         "model_version": getattr(decision, "model_version", ""),
         "duration_ms": getattr(decision, "duration_ms", 0.0),
-        "trace": asdict(trace) if is_dataclass(trace) else {},
+        "trace": cast(dict[str, object], asdict(cast(Any, trace))) if is_dataclass(trace) else {},
         "ranked": ranked,
         "features": features,
         "turn_ledger": _public_ledger(getattr(_agent, "turn_ledger", None)),
         "match_ledger": _public_ledger(getattr(_agent, "match_ledger", None)),
+        **_package_provenance(),
     }
 
 
