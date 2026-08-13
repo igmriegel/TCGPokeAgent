@@ -390,6 +390,31 @@ class AttackSequence:
 
 
 @dataclass(frozen=True, slots=True)
+class PublicAttackLine:
+    """A state-derived, auditable public attack line.
+
+    This record deliberately contains only visible state and declared action
+    effects.  It is the common calculation used by terminal filters and
+    resource-recovery plans; a ledger value can describe it but never drive it.
+    """
+
+    attacker_card_id: int
+    attacker_serial: int | None
+    target_card_id: int
+    target_serial: int | None
+    attack_id: int
+    damage_before: int
+    damage_after: int
+    supporters_recovered: tuple[int, ...]
+    supporters_spent: tuple[int, ...]
+    attack_ready: bool
+    knocks_out: bool
+    prizes_taken: int
+    wins_game: bool
+    veto_reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class SwitchCommitment:
     """Bind a voluntary switch to one ready attacker and immediate attack."""
 
@@ -4441,21 +4466,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         for attacker in player.bench:
             if attacker is None or attacker.card_id != PORYGON2:
                 continue
-            if self._scorer._energy_units_for_pokemon(attacker) < 3:
-                continue
-            damage = (self._scorer._rocket_supporters_in_discard(state) + 1) * 20
             for target in opponent.bench:
-                if (
-                    target is not None
-                    and damage >= max(0, int(target.hp)) > 0
-                    and GIOVANNI in discard_ids
-                ):
+                if target is None or GIOVANNI not in discard_ids:
+                    continue
+                line = self._evaluate_public_attack_line(
+                    state, attacker, target, R_COMMAND, supporters_spent=(GIOVANNI,)
+                )
+                if line.knocks_out:
                     self._record_public_line(
                         "headset_giovanni_porygon2_bench_ko",
                         attacker,
                         target,
-                        self._scorer._rocket_supporters_in_discard(state) * 20,
-                        damage,
+                        line.damage_before,
+                        line.damage_after,
                         (GIOVANNI,),
                         "selected",
                     )
@@ -4485,7 +4508,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         verdict: str,
     ) -> None:
         """Record bounded, public evidence for a calculated tactical line."""
-        record = {
+        record: dict[str, Any] = {
             "line_type": line_type,
             "attacker": getattr(attacker, "card_id", None),
             "attacker_serial": getattr(attacker, "serial", None),
@@ -4509,6 +4532,90 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         }
         if record not in self._turn_ledger.public_line_evaluations:
             self._turn_ledger.public_line_evaluations.append(record)
+
+    def _evaluate_public_attack_line(
+        self,
+        state: GameState,
+        attacker: Any,
+        target: Any,
+        attack_id: int,
+        *,
+        supporters_recovered: tuple[int, ...] = (),
+        supporters_spent: tuple[int, ...] = (),
+    ) -> PublicAttackLine:
+        """Calculate a public attack line for one attacker, target, and action."""
+        attacker_id = int(getattr(attacker, "card_id", 0) or 0)
+        target_id = int(getattr(target, "card_id", 0) or 0)
+        ready = (
+            attacker is not None
+            and target is not None
+            and self._attack_cost_satisfied(attacker, attack_id)
+        )
+        supporters_in_hand = self._scorer._effective_supporters_in_hand(state) + len(
+            supporters_recovered
+        )
+        supporters_in_discard = self._scorer._rocket_supporters_in_discard(state) + len(
+            supporters_spent
+        )
+        before_base = 0
+        after_base = 0
+        if attack_id == ROCKET_FEATHERS:
+            before_base = self._scorer._effective_supporters_in_hand(state) * 60
+            after_base = max(0, supporters_in_hand - len(supporters_spent)) * 60
+        elif attack_id == R_COMMAND:
+            before_base = self._scorer._rocket_supporters_in_discard(state) * 20
+            after_base = supporters_in_discard * 20
+        else:
+            attack = self._scorer.catalog.get_attack(str(attack_id)) or {}
+            before_base = self._scorer._metadata_int(attack, "damage")
+            after_base = before_base
+        candidate = Candidate(
+            0,
+            {"attackId": attack_id},
+            OptionType.ATTACK,
+            features={
+                "target_card_id": target_id,
+                "target_serial": int(getattr(target, "serial", 0) or 0),
+            },
+        )
+        damage_before = self._scorer._attack_damage(state, candidate, before_base, target)
+        damage_after = self._scorer._attack_damage(state, candidate, after_base, target)
+        target_hp = max(0, int(getattr(target, "hp", 0) or 0))
+        knocks_out = ready and damage_after >= target_hp > 0
+        prizes_taken = (
+            int(
+                getattr(
+                    target,
+                    "effective_prize_value",
+                    self._scorer.catalog.get_traits(str(target_id)).base_prize_value,
+                )
+            )
+            if knocks_out
+            else 0
+        )
+        own_player = self._scorer._own_player(state)
+        wins_game = bool(own_player and prizes_taken >= len(own_player.prize) > 0)
+        veto_reason = ""
+        if not ready:
+            veto_reason = "attack_cost_not_ready"
+        elif not knocks_out:
+            veto_reason = "public_damage_insufficient"
+        return PublicAttackLine(
+            attacker_card_id=attacker_id,
+            attacker_serial=getattr(attacker, "serial", None),
+            target_card_id=target_id,
+            target_serial=getattr(target, "serial", None),
+            attack_id=attack_id,
+            damage_before=damage_before,
+            damage_after=damage_after,
+            supporters_recovered=supporters_recovered,
+            supporters_spent=supporters_spent,
+            attack_ready=ready,
+            knocks_out=knocks_out,
+            prizes_taken=prizes_taken,
+            wins_game=wins_game,
+            veto_reason=veto_reason,
+        )
 
     def _headset_ariana_recovery_is_useful(self, state: GameState) -> bool:
         """Return whether Headset restores Ariana and a second public useful Supporter."""
@@ -5803,24 +5910,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         # Giovanni may select an opposing Bench target.  Bind both public
         # serials so the later promotion and target prompts cannot drift.
         for attacker in player.bench:
-            if (
-                attacker is None
-                or attacker.card_id != PORYGON2
-                or self._scorer._energy_units_for_pokemon(attacker) < 3
-            ):
+            if attacker is None or attacker.card_id != PORYGON2:
                 continue
-            damage = (self._scorer._rocket_supporters_in_discard(state) + 1) * 20
             for target in opponent.bench:
-                if target is None or damage < max(0, int(target.hp)):
+                if target is None:
                     continue
-                prize_value = int(
-                    getattr(
-                        target,
-                        "effective_prize_value",
-                        self._scorer.catalog.get_traits(str(target.card_id)).base_prize_value,
-                    )
+                line = self._evaluate_public_attack_line(
+                    state, attacker, target, R_COMMAND, supporters_spent=(GIOVANNI,)
                 )
-                if prize_value < len(player.prize):
+                if not line.knocks_out or not line.wins_game:
                     continue
                 return SwitchCommitment(
                     method="giovanni",
@@ -5828,7 +5926,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     target_card_id=PORYGON2,
                     target_serial=attacker.serial,
                     attack_id=R_COMMAND,
-                    planned_damage=damage,
+                    planned_damage=line.damage_after,
                     opponent_target_card_id=int(target.card_id),
                     opponent_target_serial=target.serial,
                 )

@@ -4056,6 +4056,29 @@ def test_giovanni_commits_ready_porygon2_and_public_bench_target() -> None:
     assert agent._canonical_giovanni_is_productive(state)
 
 
+def test_public_attack_line_uses_target_damage_cost_and_prizes() -> None:
+    """The shared evaluator rejects an unready line and credits a visible final Prize."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    attacker = PokemonState(PORYGON2, 90, 90, energies=[{}, {}, {}], serial=7)
+    target = PokemonState(721, 260, 260, serial=33)
+    state = GameState(
+        players=[
+            PlayerState(prize=[None], bench=[attacker], discard=[{"id": ARIANA}] * 12),
+            PlayerState(bench=[target]),
+        ]
+    )
+
+    line = agent._evaluate_public_attack_line(
+        state, attacker, target, R_COMMAND, supporters_spent=(GIOVANNI,)
+    )
+
+    assert line.attack_ready
+    assert line.damage_before == 240
+    assert line.damage_after == 260
+    assert line.knocks_out
+    assert line.wins_game
+
+
 def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:
     """Munkidori's 110 HP is covered by one 60-damage supporter attack at weakness."""
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
