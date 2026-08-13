@@ -301,13 +301,66 @@ def _load_matches(path: Path) -> Iterable[Mapping[str, Any]]:
                 yield value
 
 
+def audit_ledger_records(records: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Audit decoded Honchkrow decision-ledger JSONL records.
+
+    The remote decision-log format contains one compressed ledger expansion per
+    line rather than the replay-event envelope consumed by ``audit_matches``.
+    This path preserves the public ledger facts without inventing missing board
+    state or treating replay identifiers as policy inputs.
+    """
+    count = 0
+    max_turn_roto = 0
+    max_revealed = 0
+    max_selected = 0
+    ariana_plays = 0
+    transceiver_targets: Counter[str] = Counter()
+    deckout_vetoes = 0
+    for record in records:
+        decision = record.get("decision", record)
+        if not isinstance(decision, Mapping):
+            continue
+        count += 1
+        ledger = decision.get("turn_ledger", {})
+        if not isinstance(ledger, Mapping):
+            continue
+        max_turn_roto = max(max_turn_roto, int(ledger.get("roto_sticks_played", 0) or 0))
+        max_revealed = max(max_revealed, int(ledger.get("roto_supporters_revealed", 0) or 0))
+        max_selected = max(max_selected, int(ledger.get("roto_supporters_selected", 0) or 0))
+        ariana_plays = max(ariana_plays, int(ledger.get("ariana_plays", 0) or 0))
+        target = ledger.get("transceiver_target")
+        if target is not None:
+            transceiver_targets[str(target)] += 1
+        if ledger.get("deckout_veto_reason"):
+            deckout_vetoes += 1
+    return {
+        "records": count,
+        "counters": {
+            "roto_sticks_played_max": max_turn_roto,
+            "roto_supporters_revealed_max": max_revealed,
+            "roto_supporters_selected_max": max_selected,
+            "roto_zero_over_zero_consistent": bool(
+                max_turn_roto > 0 and max_revealed == 0 and max_selected == 0
+            ),
+            "ariana_plays_max": ariana_plays,
+            "transceiver_targets": dict(transceiver_targets),
+            "deckout_veto_records": deckout_vetoes,
+        },
+        "evidence_boundary": "decoded_public_decision_ledger_only",
+    }
+
+
 def main() -> int:
     """Run the audit and write a reproducible JSON report."""
     parser = argparse.ArgumentParser()
     parser.add_argument("trace", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = audit_matches(_load_matches(args.trace))
+    records = list(_load_matches(args.trace))
+    if records and isinstance(records[0].get("decision"), Mapping):
+        report = audit_ledger_records(records)
+    else:
+        report = audit_matches(records)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report["counters"], sort_keys=True))
