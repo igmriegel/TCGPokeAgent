@@ -28,3 +28,23 @@ Froslass KO opportunities are tracked separately: the policy applies one
 post-attack ten-HP reduction per visible opposing Froslass only to targets
 whose public metadata contains an Ability.  CABT confirmation remains required
 before treating this as strategic evidence.
+
+## P0 setup and resource review
+
+The following four local raw replays were inspected at their first causal
+owner-side actions. They establish observed sequencing inputs only; they do
+not establish an alternate result.
+
+| Replay | Observed public sequence | New divergence class | Implemented guard |
+|---|---|---|---|
+| `92201785` | Ultra Ball search preceded Porygon2 selection during opening setup. | `setup_search_before_proton` | Proton/setup now blocks Ultra Ball, and Ultra Ball cannot select Porygon2 in that state. |
+| `92191620` | Proton established the opening Bench against a public Dreepy line. | `dragapult_protection_must_persist` | Petrel/Proton search preserves the Poké Pad → Articuno protective line; Itchy Pollen still blocks Item lines. |
+| `92168434` | Ultra Ball was used before later resource conversion. | `ultra_ball_supporter_preservation` | Required Supporters cannot be discarded except for a current-state, exact R Command win. |
+| `92157127` | The early resource sequence exposed a setup-versus-attack choice. | `opening_partial_attack_abandons_setup` | Porygon/Porygon2 partial attacks are blocked on the first own turn; legal Roto resolves before partial damage unless deck reserve or Budew forbids it. |
+
+The decision ledger now exposes the corresponding guard or priority reason:
+`block_initial_porygon_partial_attack`, `preserve_ultra_ball_for_proton_setup`,
+`free_porygon_for_ready_honchkrow`, `play_roto_before_partial_damage`, and the
+selected Giovanni target's priority class and Prize value. Archer's approval is
+also limited to a public dead hand: spent Energy and unpaired Evolutions are
+not treated as productive resources.

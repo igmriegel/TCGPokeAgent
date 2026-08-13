@@ -1243,7 +1243,7 @@ def test_v3_giovanni_free_switch_dominates_paid_retreat() -> None:
         [giovanni, retreat, end],
     )
     assert phase == DecisionPhase.PLAY_SUPPORTER.value
-    assert reason == "play_supporter"
+    assert reason == "canonical_giovanni_prize_target"
     assert [selection.indices for selection in choices] == [(0,)]
 
 
@@ -1853,13 +1853,20 @@ def test_roto_probability_uses_four_revealed_cards() -> None:
     assert roto_probability == four_card_probability
 
 
-def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
+def test_replay_metadata_does_not_change_opening_roto_selection() -> None:
+    """The historical replay ID is evidence only, never a runtime policy input."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
-    state = GameState(
+    replay_state = GameState(
         turn=2,
         your_index=1,
         first_player=0,
         raw={"episodeId": 91190470},
+        players=[PlayerState(), PlayerState(hand=[{"id": ROTO_STICK}], deck_count=30)],
+    )
+    ordinary_state = GameState(
+        turn=2,
+        your_index=1,
+        first_player=0,
         players=[PlayerState(), PlayerState(hand=[{"id": ROTO_STICK}], deck_count=30)],
     )
     candidates = [
@@ -1872,36 +1879,14 @@ def test_special_roto_opening_selects_only_proton_or_nothing() -> None:
         )
         for index, card_id in enumerate((PROTON, ARIANA))
     ]
-    selections = [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))]
-    count, choices = agent._roto_recovery_selections(state, selections, candidates) or (0, [])
-    assert count == 1
-    assert [selection.indices for selection in choices] == [(0,)]
+    selections = [Selection((0, 1), (OptionType.CARD,) * 2), Selection((0,), (OptionType.CARD,))]
+    replay_result = agent._roto_recovery_selections(replay_state, selections, candidates)
+    ordinary_result = agent._roto_recovery_selections(ordinary_state, selections, candidates)
 
-
-def test_special_roto_can_be_burned_without_selecting_a_supporter() -> None:
-    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
-    state = GameState(
-        turn=2,
-        your_index=1,
-        first_player=0,
-        raw={"episodeId": 91190470},
-        players=[PlayerState(), PlayerState(hand=[{"id": ROTO_STICK}], deck_count=30)],
-    )
-    candidates = [
-        Candidate(
-            0,
-            {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
-            OptionType.CARD,
-            card={"cardType": 3},
-            features={"card_id": ARIANA},
-        )
-    ]
-    count, choices = agent._roto_recovery_selections(state, [Selection((), ())], candidates) or (
-        1,
-        [],
-    )
-    assert count == 0
-    assert [selection.indices for selection in choices] == [()]
+    assert replay_result == ordinary_result
+    assert replay_result is not None
+    assert replay_result[0] == 2
+    assert [selection.indices for selection in replay_result[1]] == [(0, 1)]
 
 
 def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
@@ -3188,6 +3173,43 @@ def test_expert_turn_loop_uses_legal_partial_attack_as_pressure() -> None:
     assert phase == DecisionPhase.ATTACK_PRIORITY.value
     assert reason == "canonical_attack_pressure"
     assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_expert_turn_loop_blocks_initial_porygon_partial_attack() -> None:
+    """Opening Porygon attacks are reserved for an explicit game-winning line."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=1,
+        players=[
+            PlayerState(active=PokemonState(PORYGON, 60, 60, energies=[{}, {}])),
+            PlayerState(active=PokemonState(999, 80, 80)),
+        ],
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=R_COMMAND)
+
+    assert agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
+    assert agent.turn_ledger.setup_guard_reason == "block_initial_porygon_partial_attack"
+
+
+def test_expert_turn_loop_allows_giovanni_to_pivot_porygon() -> None:
+    """Giovanni may free Porygon for a ready Honchkrow without a same-turn KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, energies=[{}]),
+                bench=[PokemonState(HONCHKROW, 130, 130, energies=[{}, {}])],
+                hand=[{"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(999, 300, 300)),
+        ],
+    )
+    giovanni = _candidate(0, OptionType.PLAY, card_id=GIOVANNI, card={"cardType": 3})
+
+    assert not agent._candidate_is_forbidden(state, giovanni, SelectContext.MAIN)
+    assert agent._canonical_giovanni_is_productive(state)
+    assert agent.turn_ledger.giovanni_pivot_reason == "free_porygon_for_ready_honchkrow"
 
 
 def test_rocket_energy_enabling_murkrow_attack_is_not_forbidden() -> None:

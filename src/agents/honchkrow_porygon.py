@@ -180,6 +180,10 @@ class TurnTacticalLedger:
     froslass_ping: int = 0
     archer_veto_reason: str = ""
     headset_recovery_reason: str = ""
+    setup_guard_reason: str = ""
+    giovanni_pivot_reason: str = ""
+    target_priority_reason: str = ""
+    chosen_target_prize_value: int = 0
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -265,6 +269,10 @@ class TurnTacticalLedger:
         self.froslass_ping = 0
         self.archer_veto_reason = ""
         self.headset_recovery_reason = ""
+        self.setup_guard_reason = ""
+        self.giovanni_pivot_reason = ""
+        self.target_priority_reason = ""
+        self.chosen_target_prize_value = 0
 
 
 @dataclass(slots=True)
@@ -467,6 +475,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 "ariana_hand_refresh_and_energy_access",
             ]
         if card_id == GIOVANNI:
+            if self._giovanni_pivot_is_productive(state):
+                return 1500.0, ["giovanni_pivots_porygon_to_bench_attacker"]
             if self._giovanni_is_lethal_or_promoting(state, candidate):
                 return 1600.0, ["giovanni_immediate_ko_line"]
             if self._supporters_in_hand_after(card_id, state) >= self._supporters_needed_for_ko(
@@ -516,6 +526,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return 820.0, ["petrel_emergency_ariana_search"]
             return self._petrel_search_score(state)
         if card_id == ROTO_STICK:
+            if self._card_in_hand(state, ROTO_STICK):
+                return 980.0, ["roto_stick_required_before_partial_damage"]
             if self._roto_stick_is_needed(state):
                 return 980.0, ["roto_stick_closes_supporter_deficit"]
             return -1800.0, ["preserve_roto_stick_for_supporter_ko"]
@@ -1509,7 +1521,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return prior_ko and not self._visible_non_archer_line_exists(state)
 
     def _visible_non_archer_line_exists(self, state: GameState) -> bool:
-        """Reject Archer while the public hand already attacks, develops, or draws."""
+        """Reject Archer while a card can still change this turn's public board."""
         return bool(
             (self._card_in_hand(state, ARIANA) and self._ariana_is_safe_and_useful(state))
             or (self._proton_setup_is_useful(state) and self._card_in_hand(state, PROTON))
@@ -1525,6 +1537,55 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                     or self._ultra_ball_is_productive(state)
                 )
             )
+            or self._has_live_basic_development(state)
+            or self._has_live_energy_attachment(state)
+        )
+
+    def _has_live_basic_development(self, state: GameState) -> bool:
+        """Return whether a Basic in hand can legally improve the current field."""
+        return bool(
+            not self._own_bench_full(state)
+            and any(
+                self._card_id_from_value(card) in {MURKROW, PORYGON, ARTICUNO}
+                for card in self._hand_cards(state)
+            )
+        )
+
+    def _has_live_energy_attachment(self, state: GameState) -> bool:
+        """Return whether an unused Energy can complete an available attack line."""
+        if state.energy_attached:
+            return False
+        player = self._own_player(state)
+        if player is None or not any(
+            self._is_energy_card(
+                self._card_id_from_value(card),
+                self.catalog.get_card(str(self._card_id_from_value(card))),
+            )
+            for card in self._hand_cards(state)
+        ):
+            return False
+        return any(
+            pokemon is not None
+            and pokemon.card_id in {MURKROW, HONCHKROW, PORYGON2}
+            and self._energy_units_for_pokemon(pokemon)
+            < self._attack_energy_target(int(pokemon.card_id))
+            for pokemon in [player.active, *player.bench]
+        )
+
+    def _giovanni_pivot_is_productive(self, state: GameState) -> bool:
+        """Allow Giovanni to free an exposed Porygon for a ready Bench attacker."""
+        player = self._own_player(state)
+        if (
+            player is None
+            or player.active is None
+            or player.active.card_id not in {PORYGON, PORYGON2}
+        ):
+            return False
+        return any(
+            pokemon is not None
+            and pokemon.card_id == HONCHKROW
+            and self._energy_units_for_pokemon(pokemon) >= self._attack_energy_target(HONCHKROW)
+            for pokemon in player.bench
         )
 
     def _giovanni_switch_line_is_productive(self, state: GameState) -> bool:
@@ -1710,7 +1771,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _giovanni_target_score(
         self, state: GameState, candidate: Candidate
     ) -> tuple[float, list[str]]:
-        """Rank Giovanni targets by prize value, then lowest remaining HP."""
+        """Rank targets by immediate win, guaranteed prizes, weakness, then Energy."""
         target = self._target_opponent_pokemon(state, candidate)
         if target is None:
             return 0.0, ["giovanni_no_target_data"]
@@ -1725,18 +1786,41 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         hp = max(0, int(getattr(target, "hp", 0)) - self._froslass_ping_for_target(state, target))
         guaranteed = self._truthy(candidate.option, "ko", "knockout", "isKo")
         economic = self._economic_two_prize_ko(state, target, prizes)
-        reasons = ["giovanni_highest_prize_target", "giovanni_lowest_hp_tiebreak"]
-        if guaranteed:
-            reasons.append("giovanni_guaranteed_ko_target")
+        opponent = self._opponent_player(state)
+        bench_target = bool(opponent and opponent.active is not target)
+        energy = self._energy_units_for_pokemon(target)
+        weakness = self._target_has_darkness_weakness(target)
+        player = self._own_player(state)
+        wins = guaranteed and player is not None and prizes >= len(player.prize)
+        reasons = ["giovanni_target_fallback"]
+        score = 900.0 + max(0, 300 - hp)
+        if wins:
+            score += 6000.0
+            reasons = ["giovanni_immediate_win_target"]
+        elif guaranteed:
+            score += 4000.0 + prizes * 500.0
+            reasons = ["giovanni_guaranteed_ko_highest_prize"]
+        elif weakness:
+            score += 1200.0
+            reasons = ["giovanni_dark_weakness_target"]
+        elif bench_target and energy > 0:
+            score += 900.0 + energy * 40.0
+            reasons = ["giovanni_energized_bench_target"]
         if economic:
             reasons.append("economic_two_prize_ko")
         if target.card_id == 140 and economic:
             reasons.append("giovanni_fezandipiti_two_prize_ko")
         if self._persistent_target_serial == getattr(target, "serial", None):
             reasons.append("preserve_persistent_effect_target")
-        return 900.0 + prizes * 500.0 + max(0, 300 - hp) + (900.0 if economic else 0.0) + (
-            500.0 if guaranteed else 0.0
-        ), reasons
+        return score + (900.0 if economic else 0.0), reasons
+
+    def _target_has_darkness_weakness(self, target: Any) -> bool:
+        """Return whether public card metadata gives the target Darkness weakness."""
+        card = self.catalog.get_card(str(getattr(target, "card_id", 0))) or {}
+        weakness = card.get("weakness")
+        if isinstance(weakness, Mapping):
+            return self._metadata_int(weakness, "type") == 5
+        return self._metadata_int(card, "weaknessType") == 5
 
     def _economic_two_prize_ko(self, state: GameState, target: Any, prizes: int) -> bool:
         """Return whether a visible attack takes a multi-Prize target economically."""
@@ -2216,7 +2300,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             pokemon is not None and pokemon.card_id == FROSLASS
             for pokemon in ([opponent.active, *opponent.bench] if opponent is not None else [])
         )
-        return 10 * froslasses
+        return 10 * int(froslasses)
 
     def _raw_opponent_hp(self, state: GameState) -> int:
         """Return the opposing Active's remaining HP without attack-specific modifiers."""
@@ -2394,7 +2478,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._previous_own_pokemon_keys: tuple[tuple[int, int | None], ...] | None = None
         self._previous_opponent_prize_count: int | None = None
         self._own_ko_turn: int | None = None
-        self._special_roto_proton_only = False
         self._match_ledger = MatchTacticalLedger()
         self.policy_variant = CANONICAL_POLICY_VARIANT
         self._scorer.set_reference_roto(False)
@@ -2471,7 +2554,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._previous_own_pokemon_keys = None
         self._previous_opponent_prize_count = None
         self._own_ko_turn = None
-        self._special_roto_proton_only = False
         self._match_ledger.reset()
 
     @staticmethod
@@ -2493,21 +2575,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             )
         )
 
-    @staticmethod
-    def _contains_replay_id(value: Any, replay_id: int) -> bool:
-        """Return whether public observation metadata names a replay."""
-        if isinstance(value, Mapping):
-            return any(
-                HonchkrowPorygonAgent._contains_replay_id(item, replay_id)
-                for item in value.values()
-            )
-        if isinstance(value, (list, tuple)):
-            return any(HonchkrowPorygonAgent._contains_replay_id(item, replay_id) for item in value)
-        return value == replay_id or str(value) == str(replay_id)
-
-    def _update_public_ko_transition(
-        self, state: GameState, observation: Mapping[str, Any]
-    ) -> None:
+    def _update_public_ko_transition(self, state: GameState) -> None:
         """Derive an own-KO event only from consecutive public snapshots."""
         current = self._own_pokemon_keys(state)
         opponent = self._scorer._opponent_player(state)
@@ -2521,9 +2589,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._own_ko_turn = state.turn
         self._previous_own_pokemon_keys = current
         self._previous_opponent_prize_count = opponent_prize_count
-        self._special_roto_proton_only = self._contains_replay_id(observation, 91190470) or (
-            self._contains_replay_id(state.raw, 91190470)
-        )
         self._scorer.set_own_ko_observed(
             self._own_ko_turn is not None and state.turn <= self._own_ko_turn + 1
         )
@@ -2531,7 +2596,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     def decide(self, observation: dict[str, Any]) -> Any:
         """Decide while recording only public pre/post-draw tactical evidence."""
         parsed = self._parser.parse(observation)
-        self._update_public_ko_transition(parsed.state, observation)
+        self._update_public_ko_transition(parsed.state)
         if parsed.state.turn != self._turn_ledger.turn:
             if self._evolution_ko_commitment is not None:
                 self._turn_ledger.poke_pad_ko_misses += 1
@@ -2635,6 +2700,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 if candidate is not None:
                     target = self._scorer._target_opponent_pokemon(parsed.state, candidate)
                     self._scorer.set_persistent_target(target)
+                    score, reasons = self._scorer._giovanni_target_score(parsed.state, candidate)
+                    del score
+                    self._turn_ledger.target_priority_reason = reasons[0] if reasons else ""
+                    if target is not None:
+                        self._turn_ledger.chosen_target_prize_value = int(
+                            self._scorer.catalog.get_traits(target.card_id).base_prize_value
+                        )
                     break
         for index in decision.selection.indices:
             candidate = by_index.get(index)
@@ -3882,7 +3954,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == ROTO_STICK
                     and self._scorer._effective_supporters_in_hand(state) == 0
-                    and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
+                    and self._roto_setup_mode(state)
                 )
             )
             if blocked_roto:
@@ -3988,6 +4060,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _canonical_ultra_ball_is_productive(self, state: GameState) -> bool:
         """Allow Ariana hand reduction or the exact two-Supporter R Command conversion."""
+        if (
+            self._scorer._own_turn_number(state) > 0
+            and self._scorer._proton_setup_is_useful(state)
+            and not self._scorer._ultra_ball_completes_r_command(state)
+        ):
+            self._turn_ledger.setup_guard_reason = "preserve_ultra_ball_for_proton_setup"
+            return False
         return self._scorer._ultra_ball_completes_r_command(state) or (
             self._scorer._card_in_hand(state, ARIANA)
             and self._scorer._ultra_ball_is_productive(state)
@@ -4006,10 +4085,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return True
 
     def _canonical_roto_is_productive(self, state: GameState) -> bool:
-        """Allow Roto after Factory when it can convert a supporterless turn."""
-        if self._roto_proton_only_mode(state):
-            return True
+        """Require a legal Roto before damage unless its draw would risk deck-out."""
         if not self._scorer._card_in_hand(state, ROTO_STICK):
+            return False
+        if self._opponent_budew_item_lock(state):
+            self._turn_ledger.resource_guard = "budew_itchy_pollen_item_lock"
             return False
         player = self._scorer._own_player(state)
         if (
@@ -4019,18 +4099,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         ):
             self._turn_ledger.resource_guard = "preserve_roto_for_deck_reserve"
             return False
-        if self._scorer._roto_closes_visible_ko(state):
-            return True
-        if self._scorer._effective_supporters_in_hand(state) == 0:
-            self._turn_ledger.roto_preserved_reason = "play_roto_for_supporter_conversion"
-            return True
-        needed = self._turn_ledger.supporters_needed_for_ko or (
-            self._scorer._supporters_needed_for_ko(state)
-        )
-        available = self._scorer._effective_supporters_in_hand(state)
-        return (
-            self._roto_can_improve_rocket_line(state) and available < max(needed, 1)
-        ) or self._scorer._roto_can_close_r_command_line(state)
+        self._turn_ledger.roto_preserved_reason = "play_roto_before_partial_damage"
+        return True
 
     def _articuno_is_reachable(self, state: GameState, candidates: Sequence[Candidate]) -> bool:
         """Return whether Articuno is already present or reachable in this prompt."""
@@ -4054,6 +4124,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
         """Require a public two/three-Prize or final-Prize bench target."""
+        if self._scorer._giovanni_pivot_is_productive(state):
+            self._turn_ledger.giovanni_pivot_reason = "free_porygon_for_ready_honchkrow"
+            return True
         if self._scorer._giovanni_switch_line_is_productive(state):
             return True
         player = self._scorer._own_player(state)
@@ -4103,6 +4176,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         effective = self._scorer._effective_supporters_in_hand(state)
         return bool(
             self._scorer._proton_setup_is_useful(state)
+            or self._scorer._giovanni_pivot_is_productive(state)
             or (needed > 0 and visible < needed <= effective)
         )
 
@@ -4181,15 +4255,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._scorer._own_turn_number(state) == 1
             and not self._scorer._card_in_hand(state, PROTON)
             and not self._scorer._card_in_hand(state, ARIANA)
-        )
-
-    def _roto_proton_only_mode(self, state: GameState) -> bool:
-        """Return whether the isolated 91190470 opening exception is active."""
-        return bool(
-            (self._special_roto_proton_only or self._contains_replay_id(state.raw, 91190470))
-            and self._scorer._own_turn_number(state) == 1
-            and state.your_index != state.first_player
-            and not self._scorer._card_in_hand(state, PROTON)
         )
 
     def _variant_attack_is_lethal(self, state: GameState, candidate: Candidate) -> bool:
@@ -4651,23 +4716,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._roto_turn != state.turn
         ):
             return None
-        if self._roto_proton_only_mode(state):
-            proton = [
-                candidate
-                for candidate in revealed
-                if self._scorer._feature_int(candidate, "card_id") == PROTON
-            ]
-            proton_indices = {candidate.option_index for candidate in proton}
-            exact = [
-                selection
-                for selection in selections
-                if any(index in proton_indices for index in selection.indices)
-                and all(index in proton_indices for index in selection.indices)
-            ]
-            if proton:
-                return 1, exact or [Selection((proton[0].option_index,), (OptionType.CARD,))]
-            empty = [selection for selection in selections if not selection.indices]
-            return 0, empty or [Selection((), ())]
         if self._uses_expert_rounds_1_3 and self._roto_setup_mode(state):
             by_card_id: dict[int, list[int]] = {}
             for candidate in revealed:
@@ -4721,7 +4769,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.objective or self._choose_turn_objective(state, candidates).value
         )
         target_order: list[int]
-        if (
+        if self._scorer._giovanni_pivot_is_productive(state):
+            target_order = [GIOVANNI, PROTON, ARIANA, PETREL]
+            self._turn_ledger.giovanni_pivot_reason = "transceiver_fetches_giovanni_pivot"
+        elif (
             objective
             in {
                 TurnObjective.PREVENT_NO_POKEMON_LOSS.value,
@@ -4891,6 +4942,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.resource_guard = "unresolved_turn_obligation"
             return True
         if (
+            self._uses_expert_turn_loop
+            and candidate.option_type is OptionType.ATTACK
+            and self._scorer._own_turn_number(state) == 1
+            and self._scorer._own_active_card_id(state) in {PORYGON, PORYGON2}
+            and not self._attack_wins_game(state, candidate)
+        ):
+            self._turn_ledger.setup_guard_reason = "block_initial_porygon_partial_attack"
+            return True
+        if (
             candidate.option_type is OptionType.PLAY
             and card_type in {1, 2}
             and self._opponent_budew_item_lock(state)
@@ -4983,10 +5043,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return not (
                 self._scorer._roto_stick_is_needed(state)
                 or (self._uses_expert_turn_loop and self._canonical_roto_is_productive(state))
-                or (
-                    self._uses_expert_rounds_1_3
-                    and (self._roto_setup_mode(state) or self._roto_proton_only_mode(state))
-                )
+                or (self._uses_expert_rounds_1_3 and self._roto_setup_mode(state))
             )
         if candidate.option_type is OptionType.ATTACH and card_id == IGNITION_ENERGY:
             return self._ignition_attack_plan(state, candidate) is None
@@ -5031,6 +5088,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 or self._scorer._factory_play_is_useful(state)
             )
         if candidate.option_type is OptionType.PLAY and card_id == GIOVANNI:
+            if self._uses_expert_turn_loop and self._scorer._giovanni_pivot_is_productive(state):
+                return False
             if self._uses_retreat_guard:
                 opponent = self._scorer._opponent_player(state)
                 if opponent is not None and not any(
@@ -5078,6 +5137,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     )
                 return not self._scorer._pokepad_honchkrow_is_useful(state, candidate)
         if candidate.option_type is OptionType.CARD and card_id == PORYGON2:
+            if (
+                context is SelectContext.TO_HAND
+                and candidate.option.get("sourceCardId") == ULTRA_BALL
+                and self._scorer._proton_setup_is_useful(state)
+            ):
+                self._turn_ledger.setup_guard_reason = "block_ultra_ball_porygon2_before_proton"
+                return True
             if context in {
                 SelectContext.TO_HAND,
                 SelectContext.LOOK,
