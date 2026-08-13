@@ -357,7 +357,10 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     records = list(_load_matches(args.trace))
-    if records and isinstance(records[0].get("decision"), Mapping):
+    if records and (
+        isinstance(records[0].get("decision"), Mapping)
+        or records[0].get("event") == "audit_decision_ledger"
+    ):
         report = audit_ledger_records(records)
     else:
         report = audit_matches(records)
