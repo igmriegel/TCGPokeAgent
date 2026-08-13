@@ -38,6 +38,7 @@ reports/**/*.progress.json
 reports/replay_audits/*/cabt_screen_*.json
 reports/replay_audits/*/cabt_final_*.json
 reports/replay_audits/*/audit.json
+reports/replay_audits/*/reprocessed.json
 reports/replay_audits/*/decision_ledger.jsonl
 reports/replay_audits/*/diagnostics.json
 reports/replay_audits/*/package_trace/
