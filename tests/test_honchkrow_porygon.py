@@ -10,6 +10,7 @@ from src.agents.honchkrow_porygon import (
     ARCHER,
     ARIANA,
     ARTICUNO,
+    CYNTHIAS_POWER_WEIGHT,
     DECEIT,
     FACTORY,
     FROSLASS,
@@ -36,6 +37,7 @@ from src.agents.honchkrow_porygon import (
     ROCKET_ENERGY,
     ROCKET_FEATHERS,
     ROTO_STICK,
+    SPIKEMUTH_GYM,
     TOOL_SCRAPPER,
     TORMENT,
     TRANSCEIVER,
@@ -525,6 +527,34 @@ def test_late_transceiver_with_developed_board_does_not_fetch_proton() -> None:
     assert choices is not None
     assert [selection.indices for selection in choices] == [(1,)]
     assert agent.turn_ledger.transceiver_target == ARIANA
+
+
+def test_transceiver_rejects_ariana_after_supporter_was_played() -> None:
+    """A used Supporter prevents Transceiver from selecting Ariana this turn."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        supporter_played=True,
+        players=[PlayerState(hand=[{"id": TRANSCEIVER}], deck_count=20), PlayerState()],
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": TRANSCEIVER},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((ARIANA, PETREL))
+    ]
+    selections = [Selection((index,), (OptionType.CARD,)) for index in range(2)]
+
+    assert agent._candidate_is_forbidden(state, candidates[0], SelectContext.TO_HAND)
+    choices = agent._transceiver_selections(state, selections, candidates)
+
+    assert choices is not None
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.transceiver_rejected_target == ARIANA
+    assert agent.turn_ledger.resource_guard == "transceiver_ariana_after_supporter_veto"
 
 
 def test_headset_is_resolved_before_an_attack_that_depends_on_it() -> None:
@@ -1144,8 +1174,8 @@ def test_poke_pad_does_not_invent_ko_without_each_public_precondition() -> None:
         assert agent._evolution_ko_commitment is None
 
 
-def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:
-    """A productive Honchkrow must not burn its Energy to promote an empty Bench."""
+def test_v3_trace_regression_does_not_retreat_after_nonlethal_rocket_veto() -> None:
+    """A nonlethal Rocket veto must not redirect into an unjustified paid retreat."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
         turn=15,
@@ -1172,7 +1202,7 @@ def test_v3_trace_regression_keeps_productive_honchkrow_active() -> None:
     feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
     retreat = _candidate(1, OptionType.RETREAT)
 
-    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
     assert agent._candidate_is_forbidden(state, retreat, SelectContext.MAIN)
 
 
@@ -1930,7 +1960,7 @@ def test_tool_scrapper_is_prioritized_when_opponent_has_visible_heros_cape() -> 
         [scraper, end],
     )
 
-    assert reason == "canonical_scrap_visible_heros_cape"
+    assert reason == "canonical_scrap_visible_tool"
     assert [choice.indices for choice in choices] == [(0,)]
     assert agent.turn_ledger.heros_cape_scrapped
 
@@ -1952,6 +1982,49 @@ def test_tool_scrapper_target_prompt_requires_visible_heros_cape() -> None:
     )
 
     assert [choice.indices for choice in choices] == [(0,)]
+
+
+def test_tool_scrapper_prioritizes_cynthias_power_weight() -> None:
+    """Tool Scrapper removes Cynthia's Power Weight when it is publicly attached."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 130, 130)),
+            PlayerState(active=PokemonState(999, 200, 200, tool_ids=[str(CYNTHIAS_POWER_WEIGHT)])),
+        ]
+    )
+    scraper = _candidate(0, OptionType.PLAY, card_id=TOOL_SCRAPPER, card={"cardType": 1})
+    end = _candidate(1, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [scraper, end],
+    )
+
+    assert reason == "canonical_scrap_visible_tool"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+
+def test_stadium_replaces_visible_spikemuth_gym() -> None:
+    """A legal Stadium in hand replaces public Spikemuth Gym before lower-priority actions."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        stadium=str(SPIKEMUTH_GYM),
+        players=[PlayerState(active=PokemonState(HONCHKROW, 130, 130)), PlayerState()],
+    )
+    factory = _candidate(0, OptionType.PLAY, card_id=FACTORY, card={"cardType": 4})
+    end = _candidate(1, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [factory, end],
+    )
+
+    assert reason == "canonical_replace_spikemuth_gym"
+    assert [choice.indices for choice in choices] == [(0,)]
+    assert agent.turn_ledger.resource_guard == "replace_spikemuth_gym"
 
 
 def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
@@ -2687,7 +2760,7 @@ def test_expert_turn_loop_blocks_night_stretcher_when_the_deck_is_already_on_res
     assert agent._canonical_night_stretcher_is_productive(state)
 
 
-def test_rocket_feathers_horizon_never_justifies_partial_mega_attack() -> None:
+def test_rocket_feathers_requires_visible_ko_against_mega_abomasnow() -> None:
     """Mega Abomasnow requires the visible KO in the current attack."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
@@ -2702,7 +2775,8 @@ def test_rocket_feathers_horizon_never_justifies_partial_mega_attack() -> None:
     )
     candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
 
-    assert not agent._rocket_feathers_has_horizon(state, candidate)
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+    assert agent.turn_ledger.resource_guard == "rocket_feathers_nonlethal_veto"
 
 
 def test_energy_units_count_rocket_and_ignition_as_multi_unit_cards() -> None:
@@ -3195,8 +3269,8 @@ def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
     assert [selection.indices for selection in eligible] == [(1,)]
 
 
-def test_expert_loop_keeps_partial_rocket_line_against_non_mega_target() -> None:
-    """A legal partial Rocket Feathers attack remains available outside Mega Abomasnow."""
+def test_rocket_feathers_vetoes_partial_damage_against_non_mega_target() -> None:
+    """Rocket Feathers requires an immediate KO against every opponent."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
@@ -3210,11 +3284,88 @@ def test_expert_loop_keeps_partial_rocket_line_against_non_mega_target() -> None
     )
     feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
 
-    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent.turn_ledger.resource_guard == "rocket_feathers_nonlethal_veto"
 
 
-def test_expert_turn_loop_uses_legal_partial_attack_as_pressure() -> None:
-    """A legal nonlethal attack is the canonical final action against normal targets."""
+def test_rocket_feathers_vetoes_all_public_nonlethal_damage_bands() -> None:
+    """60, 120, and 180 damage cannot start a Rocket Feathers sequence below target HP."""
+    for supporters, opponent_id in ((1, 721), (2, MEGA_ABOMASNOW_EX), (3, 722)):
+        agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+        state = GameState(
+            players=[
+                PlayerState(
+                    active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                    hand=[{"id": ARIANA}] * supporters,
+                    deck_count=20,
+                ),
+                PlayerState(active=PokemonState(opponent_id, 360, 360)),
+            ]
+        )
+        feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+        end = _candidate(1, OptionType.END)
+
+        assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+        _, reason, choices = agent._main_phase_selections(
+            state,
+            [Selection((0,), (OptionType.ATTACK,)), Selection((1,), (OptionType.END,))],
+            [feathers, end],
+        )
+
+        assert reason == "end"
+        assert [selection.indices for selection in choices] == [(1,)]
+
+
+def test_used_supporter_and_transceiver_do_not_enable_partial_rocket_feathers() -> None:
+    """A spent Supporter prevents Transceiver from adding Rocket Feathers damage."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        supporter_played=True,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARIANA}, {"id": ARIANA}, {"id": TRANSCEIVER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 360, 360)),
+        ],
+    )
+    feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+    end = _candidate(1, OptionType.END)
+
+    assert agent._scorer._effective_supporters_in_hand(state) == 2
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.ATTACK,)), Selection((1,), (OptionType.END,))],
+        [feathers, end],
+    )
+
+    assert reason == "end"
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.resource_guard == "rocket_feathers_nonlethal_veto"
+
+
+def test_rocket_feathers_allows_exact_and_overkill_immediate_kos() -> None:
+    """Exact and overkill public Rocket Feathers damage remain legal commitments."""
+    for supporters, target_hp in ((2, 120), (3, 120)):
+        agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+        state = GameState(
+            players=[
+                PlayerState(
+                    active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                    hand=[{"id": ARIANA}] * supporters,
+                    deck_count=20,
+                ),
+                PlayerState(active=PokemonState(721, target_hp, target_hp)),
+            ]
+        )
+        feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+
+        assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+
+
+def test_expert_turn_loop_ends_instead_of_partial_rocket_feathers() -> None:
+    """The canonical turn loop does not retain Rocket Feathers as pressure."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
@@ -3235,9 +3386,9 @@ def test_expert_turn_loop_uses_legal_partial_attack_as_pressure() -> None:
         [feathers, end],
     )
 
-    assert phase == DecisionPhase.ATTACK_PRIORITY.value
-    assert reason == "canonical_attack_pressure"
-    assert [selection.indices for selection in choices] == [(0,)]
+    assert phase == DecisionPhase.END.value
+    assert reason == "end"
+    assert [selection.indices for selection in choices] == [(1,)]
 
 
 def test_expert_turn_loop_blocks_initial_porygon_partial_attack() -> None:
@@ -3345,8 +3496,8 @@ def test_articuno_in_hand_does_not_block_development_without_a_legal_play() -> N
     assert not agent._articuno_should_precede_development(state, [])
 
 
-def test_expert_loop_keeps_partial_rocket_line_with_next_ko_horizon() -> None:
-    """The generic guard preserves a partial line that leaves a one-turn KO."""
+def test_rocket_feathers_vetoes_partial_damage_with_next_turn_ko_horizon() -> None:
+    """A projected next-turn KO never permits partial Rocket Feathers damage."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
@@ -3365,7 +3516,8 @@ def test_expert_loop_keeps_partial_rocket_line_with_next_ko_horizon() -> None:
     )
     feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
 
-    assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+    assert agent.turn_ledger.resource_guard == "rocket_feathers_nonlethal_veto"
 
 
 def test_91192258_holds_ultra_ball_and_factory_without_a_playable_supporter() -> None:

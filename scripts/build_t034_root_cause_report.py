@@ -126,9 +126,7 @@ def _trace_coverage(record: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         "final_selection": {
             "available": has_selection,
             "evidence": (
-                ["generated_action", "executed_action", "legal_selection"]
-                if has_selection
-                else []
+                ["generated_action", "executed_action", "legal_selection"] if has_selection else []
             ),
         },
     }

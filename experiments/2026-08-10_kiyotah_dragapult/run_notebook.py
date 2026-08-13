@@ -15,7 +15,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 EXPERIMENT_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = EXPERIMENT_ROOT.parents[1]
 NOTEBOOK_DIR = EXPERIMENT_ROOT / "notebook"

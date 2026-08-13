@@ -161,9 +161,7 @@ def load_replay_frames(path: Path) -> list[ReplayFrame]:
             your_index = _int_or_none(current.get("yourIndex"))
             select_type = _int_or_none(select.get("type"))
             select_context = _int_or_none(select.get("context"))
-            action = tuple(
-                item for item in entry.get("action", []) if isinstance(item, int)
-            )
+            action = tuple(item for item in entry.get("action", []) if isinstance(item, int))
             log_lines: list[str] = []
             card_ids: list[int] = []
             attack_ids: list[int] = []

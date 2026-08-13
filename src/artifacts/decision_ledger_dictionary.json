@@ -82,7 +82,7 @@
     "deck_risk": "Current deck-reserve risk classification.", "roto_sticks_played": "Roto-Sticks played this turn.",
     "roto_supporters_revealed": "Supporters revealed by Roto-Stick.", "roto_supporters_selected": "Supporters selected from Roto-Stick.",
     "roto_damage_acquired": "Rocket Feathers damage acquired through Roto-Stick.", "roto_preserved_reason": "Reason Roto-Stick was preserved or played.",
-    "transceiver_proton_in_hand": "Whether Proton is visibly in hand for Transceiver logic.", "transceiver_target": "Card ID selected by Transceiver.",
+    "transceiver_proton_in_hand": "Whether Proton is visibly in hand for Transceiver logic.", "transceiver_target": "Card ID selected by Transceiver.", "transceiver_rejected_target": "Card ID rejected by a state-based Transceiver guard.",
     "transceiver_lethal_exception": "Whether Transceiver used its lethal exception.", "transceiver_objective": "Objective served by Transceiver.",
     "ariana_opportunities": "Visible Ariana opportunities.", "ariana_plays": "Ariana plays this turn.",
     "ariana_marginal_draw": "Projected cards gained by Ariana.", "ariana_supporters_in_hand": "Supporters in hand at Ariana evaluation.",

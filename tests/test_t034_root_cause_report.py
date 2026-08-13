@@ -39,19 +39,19 @@ def test_report_preserves_missing_trace_as_unresolved(tmp_path) -> None:
     )
     (audit_dir / "decision_ledger.jsonl").write_text(
         json.dumps(
-                {
-                    "episode_id": 1,
-                    "step": 2,
-                    "turn": 3,
-                    "executed_action": [1],
-                    "decision_trace": None,
-                    "legal_selection": True,
-                    "fallback_used": False,
-                    "visible_state": {"own": {}, "opponent": {}},
-                }
-            )
-            + "\n",
-            encoding="utf-8",
+            {
+                "episode_id": 1,
+                "step": 2,
+                "turn": 3,
+                "executed_action": [1],
+                "decision_trace": None,
+                "legal_selection": True,
+                "fallback_used": False,
+                "visible_state": {"own": {}, "opponent": {}},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
     report = build_report(audit_dir)

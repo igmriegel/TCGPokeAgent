@@ -1243,9 +1243,7 @@ class HeuristicAgent(AgentPolicy):
             Complete policy decision including alternatives, features, and latency.
         """
         started = time.perf_counter()
-        objective_before = str(
-            getattr(getattr(self, "_turn_ledger", None), "objective", "") or ""
-        )
+        objective_before = str(getattr(getattr(self, "_turn_ledger", None), "objective", "") or "")
         parsed = self._parser.parse(observation)
         self._update_alakazam_matchup(observation, parsed.state)
         self._scorer.set_energy_context(parsed.state)
@@ -1331,9 +1329,7 @@ class HeuristicAgent(AgentPolicy):
             if not decision_phase_reason:
                 decision_phase_reason = winning_phase_reason
         stages.append(self._trace_stage("rank", contextualized, [row.selection for row in ranked]))
-        objective_after = str(
-            getattr(getattr(self, "_turn_ledger", None), "objective", "") or ""
-        )
+        objective_after = str(getattr(getattr(self, "_turn_ledger", None), "objective", "") or "")
         result = PolicyDecision(
             selection=ranked[0].selection,
             ranked=tuple(ranked),
@@ -1468,8 +1464,7 @@ class HeuristicAgent(AgentPolicy):
             for candidate in parsed.candidates
         )
         ranked_scores = tuple(
-            (tuple(row.selection.indices), float(row.score), tuple(row.reasons))
-            for row in ranked
+            (tuple(row.selection.indices), float(row.score), tuple(row.reasons)) for row in ranked
         )
         context = parsed.select_context.value if parsed.select_context is not None else ""
         return DecisionTrace(

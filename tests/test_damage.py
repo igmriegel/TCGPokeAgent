@@ -15,13 +15,16 @@ def test_frost_barrier_reduces_damage_after_weakness_and_resistance() -> None:
     }
     defender = {"weakness": 1, "resistance": 2}
 
-    assert calculate_damage(
-        100,
-        1,
-        defender,
-        state_raw=state,
-        defender_serial=9,
-    ) == 170
+    assert (
+        calculate_damage(
+            100,
+            1,
+            defender,
+            state_raw=state,
+            defender_serial=9,
+        )
+        == 170
+    )
 
 
 def test_damage_reduction_is_not_applied_without_matching_source_event() -> None:

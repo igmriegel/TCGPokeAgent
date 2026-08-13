@@ -45,8 +45,10 @@ NIGHT_STRETCHER = 1097
 ULTRA_BALL = 1121
 TOOL_SCRAPPER = 1137
 HEROS_CAPE = 1159
+CYNTHIAS_POWER_WEIGHT = 1173
 MIRACLE_HEADSET = 1109
 FACTORY = 1257
+SPIKEMUTH_GYM = 1259
 ROCKET_ENERGY = 15
 IGNITION_ENERGY = 17
 ENHANCED_HAMMER = 1081
@@ -138,6 +140,7 @@ class TurnTacticalLedger:
     roto_preserved_reason: str = ""
     transceiver_proton_in_hand: bool = False
     transceiver_target: int | None = None
+    transceiver_rejected_target: int | None = None
     transceiver_lethal_exception: bool = False
     transceiver_objective: str = ""
     ariana_opportunities: int = 0
@@ -233,6 +236,7 @@ class TurnTacticalLedger:
         self.roto_preserved_reason = ""
         self.transceiver_proton_in_hand = False
         self.transceiver_target = None
+        self.transceiver_rejected_target = None
         self.transceiver_lethal_exception = False
         self.transceiver_objective = ""
         self.ariana_opportunities = 0
@@ -1278,15 +1282,19 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         return expected_supporters * 650.0 + draws * 35.0 - deck_risk * 250.0
 
     def _factory_in_play(self, state: GameState) -> bool:
+        return self._stadium_in_play(state, FACTORY)
+
+    def _stadium_in_play(self, state: GameState, stadium_id: int) -> bool:
+        """Return whether a public stadium with the requested card ID is in play."""
         stadium = state.stadium
         if isinstance(stadium, list):
             return any(
-                isinstance(card, Mapping) and self._card_id_from_value(card) == FACTORY
+                isinstance(card, Mapping) and self._card_id_from_value(card) == stadium_id
                 for card in stadium
             )
         if isinstance(stadium, Mapping):
-            return self._card_id_from_value(stadium) == FACTORY
-        return str(stadium) == str(FACTORY)
+            return self._card_id_from_value(stadium) == stadium_id
+        return str(stadium) == str(stadium_id)
 
     def _petrel_factory_is_superior(self, state: GameState) -> bool:
         """Prefer Petrel into Factory when Ariana would draw at most two cards."""
@@ -1964,8 +1972,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
 
     def _effective_supporters_in_hand(self, state: GameState) -> int:
-        """Count visible supporters plus Transceiver when it can still fetch one."""
+        """Count visible supporters plus a usable Transceiver before the Supporter play."""
         supporters = self._supporters_in_hand(state)
+        if state.supporter_played:
+            return supporters
         transceivers = sum(
             1 for card in self._hand_cards(state) if self._card_id_from_value(card) == TRANSCEIVER
         )
@@ -3556,15 +3566,30 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._feature_int(candidate, "card_id") == TOOL_SCRAPPER
-                and self._opponent_has_heros_cape(state)
+                and self._opponent_has_scrappable_tool(state)
             )
         )
         if tool_scrapper:
             self._turn_ledger.heros_cape_scrapped = True
             return (
                 DecisionPhase.PLAY_ITEMS.value,
-                "canonical_scrap_visible_heros_cape",
+                "canonical_scrap_visible_tool",
                 tool_scrapper,
+            )
+
+        spikemuth_replacement = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._metadata_int(candidate.card, "cardType") == 4
+                and self._scorer._stadium_in_play(state, SPIKEMUTH_GYM)
+            )
+        )
+        if spikemuth_replacement:
+            self._turn_ledger.resource_guard = "replace_spikemuth_gym"
+            return (
+                DecisionPhase.STADIUM.value,
+                "canonical_replace_spikemuth_gym",
+                spikemuth_replacement,
             )
 
         immediate = matching(
@@ -4126,20 +4151,32 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _opponent_has_heros_cape(self, state: GameState) -> bool:
         """Return whether a public opposing Pokémon has Hero's Cape attached."""
+        return self._opponent_has_tool(state, HEROS_CAPE)
+
+    def _opponent_has_scrappable_tool(self, state: GameState) -> bool:
+        """Return whether a public opposing Pokémon has a priority Tool Scrapper target."""
+        return any(
+            self._opponent_has_tool(state, tool_id)
+            for tool_id in (HEROS_CAPE, CYNTHIAS_POWER_WEIGHT)
+        )
+
+    def _opponent_has_tool(self, state: GameState, tool_id: int) -> bool:
+        """Return whether a public opposing Pokémon has the requested tool attached."""
         opponent = self._scorer._opponent_player(state)
         if opponent is None:
             return False
         return any(
-            str(HEROS_CAPE) in pokemon.tool_ids
+            str(tool_id) in pokemon.tool_ids
             for pokemon in [opponent.active, *opponent.bench]
             if pokemon is not None
         )
 
-    def _is_tool_scrapper_heros_cape_target(self, candidate: Candidate) -> bool:
-        """Return whether a Tool Scrapper prompt candidate is the visible Hero's Cape."""
+    def _is_tool_scrapper_priority_target(self, candidate: Candidate) -> bool:
+        """Return whether a Tool Scrapper prompt candidate is a priority opposing Tool."""
         return bool(
             self._scorer._metadata_int(candidate.option, "sourceCardId") == TOOL_SCRAPPER
-            and self._scorer._feature_int(candidate, "card_id") == HEROS_CAPE
+            and self._scorer._feature_int(candidate, "card_id")
+            in {HEROS_CAPE, CYNTHIAS_POWER_WEIGHT}
         )
 
     def _projected_r_command_supporters(self, state: GameState) -> int:
@@ -4414,6 +4451,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return self._candidate_damage(state, candidate) >= target_hp
         return self._candidate_damage(state, candidate) >= target_hp
 
+    def _rocket_feathers_is_immediate_ko(self, state: GameState, candidate: Candidate) -> bool:
+        """Return whether Rocket Feathers reaches its public target HP this turn."""
+        return bool(
+            self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+            and self._variant_attack_is_lethal(state, candidate)
+        )
+
     def _supporters_required_for_candidate(self, state: GameState, candidate: Candidate) -> int:
         """Return the exact Supporter count required by Rocket Feathers."""
         if self._scorer._attack_id(candidate) != ROCKET_FEATHERS:
@@ -4500,25 +4544,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         target_hp = self._scorer._raw_opponent_hp(state)
         current_damage = self._scorer._effective_supporters_in_hand(state) * 60
         return current_damage < target_hp
-
-    def _rocket_feathers_has_horizon(self, state: GameState, candidate: Candidate) -> bool:
-        """Return whether a non-lethal Rocket Feathers line preserves a next KO."""
-        if self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX:
-            return False
-        target_hp = self._target_hp(state, candidate)
-        damage = self._candidate_damage(state, candidate)
-        remaining = max(0, target_hp - damage)
-        supporters = self._scorer._effective_supporters_in_hand(state)
-        next_turn_supporters = max(0, supporters - 1)
-        player = self._scorer._own_player(state)
-        active = self._scorer._own_active(state)
-        ready = bool(
-            active
-            and self._scorer._energy_units_for_pokemon(active)
-            >= self._scorer._attack_energy_target(HONCHKROW)
-        )
-        deck_safe = bool(player and player.deck_count > self._scorer._elective_draw_reserve(state))
-        return remaining <= next_turn_supporters * 60 and ready and deck_safe
 
     def _is_safe_pre_draw_hand_reduction(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether a Pokémon/evolution can leave hand before Ariana safely."""
@@ -4609,7 +4634,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             cape_targets = {
                 candidate.option_index
                 for candidate in candidates
-                if self._is_tool_scrapper_heros_cape_target(candidate)
+                if self._is_tool_scrapper_priority_target(candidate)
             }
             if cape_targets:
                 selected = [
@@ -4709,6 +4734,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._attack_sequence is not None
             and self._attack_sequence.attack_id == ROCKET_FEATHERS
         ):
+            if self._attack_sequence.planned_damage < self._attack_sequence.ko_threshold:
+                self._turn_ledger.resource_guard = "rocket_feathers_nonlethal_veto"
+                return list(selections)
             required = self._attack_sequence.minimum_damage
             target = self._scorer._opponent_player(state)
             if target is not None and target.active is not None:
@@ -4730,18 +4758,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.rocket_supporters_discarded = required
                 self._turn_ledger.rocket_supporters_preserved = max(0, available - required)
                 return exact
-            if available < required:
-                all_supporters = [
-                    selection
-                    for selection in selections
-                    if self._rocket_supporter_count(selection, by_index) == available
-                ]
-                if all_supporters:
-                    self._turn_ledger.resource_guard = (
-                        "discard_all_available_supporters_commitment_failed"
-                    )
-                    self._turn_ledger.rocket_supporters_discarded = available
-                    return all_supporters
         if self._uses_resource_variant and context is SelectContext.TO_HAND:
             roto_exact = self._roto_recovery_selections(state, selections, candidates)
             if roto_exact is not None:
@@ -4987,6 +5003,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         else:
             target_order = [ARIANA, PETREL, GIOVANNI]
 
+        if state.supporter_played and ARIANA in target_order:
+            self._turn_ledger.transceiver_rejected_target = ARIANA
+            self._turn_ledger.resource_guard = "transceiver_ariana_after_supporter_veto"
+            target_order = [target_id for target_id in target_order if target_id != ARIANA]
+
         for target_id in target_order:
             exact = [selection for selection, ids in selection_ids if target_id in ids]
             if exact:
@@ -5021,7 +5042,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         candidate: Candidate | None,
         context: SelectContext | None,
     ) -> bool:
-        """Return whether an optional action spends attack resources without a KO horizon."""
+        """Return whether an optional action spends attack resources without an immediate KO."""
         if candidate is None:
             return False
         if (
@@ -5034,8 +5055,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if attack_id not in {ROCKET_FEATHERS, R_COMMAND, HAMMER_IN}:
                 return False
             if self._variant_attack_is_lethal(state, candidate):
-                return False
-            if attack_id == ROCKET_FEATHERS and self._rocket_feathers_has_horizon(state, candidate):
                 return False
             return True
         if candidate.option_type is OptionType.RETREAT:
@@ -5130,7 +5149,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.END and self._scorer._productive_line_available(
             state
         ):
-            self._turn_ledger.resource_guard = "productive_action_remains"
+            if self._turn_ledger.resource_guard != "rocket_feathers_nonlethal_veto":
+                self._turn_ledger.resource_guard = "productive_action_remains"
             return True
         if candidate.option_type is OptionType.END and self._turn_ledger.unresolved_obligations:
             self._turn_ledger.resource_guard = "unresolved_turn_obligation"
@@ -5206,12 +5226,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         if (
             candidate.option_type is OptionType.ATTACK
+            and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
+            and not self._rocket_feathers_is_immediate_ko(state, candidate)
+        ):
+            self._turn_ledger.resource_guard = "rocket_feathers_nonlethal_veto"
+            return True
+        if (
+            candidate.option_type is OptionType.ATTACK
             and self._scorer._opponent_active_card_id(state) == MEGA_ABOMASNOW_EX
             and not self._scorer._attack_has_committed_mega_abomasnow_ko(state, candidate)
-            and not (
-                self._scorer._attack_id(candidate) == ROCKET_FEATHERS
-                and self._rocket_feathers_has_horizon(state, candidate)
-            )
         ):
             self._turn_ledger.resource_guard = "mega_abomasnow_requires_committed_ko"
             return True
@@ -5244,15 +5267,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:
             return not self._canonical_ultra_ball_is_productive(state)
         if candidate.option_type is OptionType.PLAY and card_id == TOOL_SCRAPPER:
-            return not self._opponent_has_heros_cape(state)
+            return not self._opponent_has_scrappable_tool(state)
         if (
             candidate.option_type is OptionType.CARD
             and context is SelectContext.TO_HAND
             and candidate.option.get("sourceCardId") == TRANSCEIVER
             and card_id == ARIANA
-            and self._scorer._effective_supporters_in_hand(state) >= 2
         ):
-            return True
+            if state.supporter_played:
+                self._turn_ledger.transceiver_rejected_target = ARIANA
+                self._turn_ledger.resource_guard = "transceiver_ariana_after_supporter_veto"
+                return True
+            return self._scorer._effective_supporters_in_hand(state) >= 2
         if candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
             if self._uses_retreat_guard:
                 return not (
@@ -5283,6 +5309,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.ABILITY and factory_ability:
             return not self._scorer._factory_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == FACTORY:
+            if self._scorer._stadium_in_play(state, SPIKEMUTH_GYM):
+                return False
             return not (
                 self._scorer._factory_is_useful(state)
                 or self._scorer._factory_play_is_useful(state)
