@@ -14,6 +14,7 @@ from src.agents.honchkrow_porygon import (
     ARTICUNO,
     CYNTHIAS_POWER_WEIGHT,
     DECEIT,
+    DRAGAPULT_EX,
     FACTORY,
     FROSLASS,
     GIOVANNI,
@@ -2808,6 +2809,41 @@ def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -
         ]
     )
     assert scorer._night_stretcher_is_productive(evolve_state)
+
+
+def test_articuno_alone_does_not_complete_proton_attacker_setup() -> None:
+    """Protection on the Bench does not replace a Murkrow/Porygon attacker line."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(bench=[PokemonState(ARTICUNO, 110, 110)], bench_max=3),
+            PlayerState(active=PokemonState(DRAGAPULT_EX, 320, 320)),
+        ]
+    )
+
+    plan = scorer.board_setup_plan(state)
+
+    assert plan.productive
+    assert "murkrow_attacker" in plan.missing_roles
+
+
+def test_night_stretcher_rocket_energy_requires_same_turn_attacker_progress() -> None:
+    """Rocket Energy recovery is accepted only for an immediate useful attachment."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 70, 70),
+                discard=[{"id": ROCKET_ENERGY}],
+            ),
+            PlayerState(),
+        ]
+    )
+
+    assert agent._recovery_plan(state).recovered_cards == (ROCKET_ENERGY,)
+
+    state.players[0].active = PokemonState(ARTICUNO, 110, 110)
+    assert not agent._recovery_plan(state).productive
 
 
 def test_canonical_night_stretcher_scoring_uses_the_productive_recovery_line() -> None:
