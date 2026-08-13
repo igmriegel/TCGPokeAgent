@@ -4124,6 +4124,7 @@ def test_public_attack_line_uses_target_damage_cost_and_prizes() -> None:
     assert line.damage_after == 260
     assert line.knocks_out
     assert line.wins_game
+    assert agent.turn_ledger.public_line_evaluations[-1]["verdict"] == "ko"
 
 
 def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:

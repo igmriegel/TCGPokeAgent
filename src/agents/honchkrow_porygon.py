@@ -4602,7 +4602,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             veto_reason = "attack_cost_not_ready"
         elif not knocks_out:
             veto_reason = "public_damage_insufficient"
-        return PublicAttackLine(
+        line = PublicAttackLine(
             attacker_card_id=attacker_id,
             attacker_serial=getattr(attacker, "serial", None),
             target_card_id=target_id,
@@ -4618,6 +4618,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             wins_game=wins_game,
             veto_reason=veto_reason,
         )
+        evaluation = {
+            "line_type": "public_attack",
+            "attacker": line.attacker_card_id,
+            "attacker_serial": line.attacker_serial,
+            "target": line.target_card_id,
+            "target_serial": line.target_serial,
+            "attack_id": line.attack_id,
+            "damage_before": line.damage_before,
+            "damage_after": line.damage_after,
+            "supporters_recovered": list(line.supporters_recovered),
+            "supporters_spent": list(line.supporters_spent),
+            "prizes": line.prizes_taken,
+            "wins_game": line.wins_game,
+            "verdict": "ko" if line.knocks_out else "veto",
+            "veto_reason": line.veto_reason,
+        }
+        if evaluation not in self._turn_ledger.public_line_evaluations:
+            self._turn_ledger.public_line_evaluations.append(evaluation)
+        return line
 
     def _headset_ariana_recovery_is_useful(self, state: GameState) -> bool:
         """Return whether Headset restores Ariana and a second public useful Supporter."""
@@ -5679,6 +5698,37 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return not self._giovanni_is_productive(state, candidate)
         if candidate.option_type is OptionType.PLAY and card_id == ARTICUNO:
             return not self._scorer._articuno_is_needed(state)
+        if (
+            candidate.option_type is OptionType.CARD
+            and context is SelectContext.TO_ACTIVE
+            and card_id == PORYGON2
+        ):
+            player = self._scorer._own_player(state)
+            opponent = self._scorer._opponent_player(state)
+            attacker = next(
+                (
+                    pokemon
+                    for pokemon in [
+                        player.active if player is not None else None,
+                        *(player.bench if player is not None else ()),
+                    ]
+                    if pokemon is not None
+                    and pokemon.card_id == card_id
+                    and (
+                        not self._scorer._feature_int(candidate, "target_serial")
+                        or pokemon.serial == self._scorer._feature_int(candidate, "target_serial")
+                    )
+                ),
+                None,
+            )
+            target = opponent.active if opponent is not None else None
+            attack_id = R_COMMAND
+            if attacker is None or target is None:
+                return True
+            line = self._evaluate_public_attack_line(state, attacker, target, attack_id)
+            if not line.knocks_out:
+                self._turn_ledger.resource_guard = line.veto_reason
+                return True
         if (
             candidate.option_type in {OptionType.EVOLVE, OptionType.PLAY}
             and card_id in {HONCHKROW, PORYGON2}
