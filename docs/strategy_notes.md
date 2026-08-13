@@ -903,3 +903,11 @@ attempt and extracted packages require `source_commit` and `package_sha256`.
 Focused state fixtures and extracted-package validation are local evidence
 only. Bilateral smoke, bilateral 200-match evaluation, and replay review
 remain required before any strategic or remote-performance claim.
+
+Local operational gate: the 2026-08-13 CABT run completed 200 iterations per
+side against `random_agent` (400 matches total): 353 wins, 47 losses, zero
+draws, and zero execution errors. The environment run was split into twenty
+ten-iteration-per-side blocks because the execution host terminates longer
+single processes before they persist their report. This is an isolated
+operational result, not a paired before/after comparison and not replay
+evidence of strategic compliance or competitive improvement.
