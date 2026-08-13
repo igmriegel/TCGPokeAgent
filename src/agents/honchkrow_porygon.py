@@ -3236,14 +3236,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         target = self._scorer._target_opponent_pokemon(state, candidate)
         return max(0, int(target.hp)) if target is not None else 0
 
-    def _filter_fezandipiti_bench_line(
-        self,
-        state: GameState,
-        selections: Sequence[Selection],
-        candidates: Sequence[Candidate],
-    ) -> list[Selection]:
-        return list(selections)
-
     def _main_phase_selections(
         self,
         state: GameState,

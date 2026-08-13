@@ -1518,6 +1518,12 @@ class HeuristicAgent(AgentPolicy):
         candidates: Sequence[Candidate],
     ) -> list[Selection]:
         """Stage Kyogre before exposing Snover to an energized Fezandipiti."""
+        if not any(
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id") in {KYOGRE_CARD_ID, SNOVER_CARD_ID}
+            for candidate in candidates
+        ):
+            return list(selections)
         if not self._scorer._fezandipiti_line_active(state):
             return list(selections)
         by_index = {candidate.option_index: candidate for candidate in candidates}
