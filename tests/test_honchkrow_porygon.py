@@ -4127,12 +4127,12 @@ def test_night_stretcher_ranks_porygon2_over_porygon_when_evolution_is_legal() -
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
-                PlayerState(
-                    active=PokemonState(PORYGON, 80, 80),
-                    discard=[{"id": PORYGON}, {"id": PORYGON2}, {"id": ARIANA}],
-                    hand=[{"id": IGNITION_ENERGY}],
-                    hand_count=1,
-                    deck_count=10,
+            PlayerState(
+                active=PokemonState(PORYGON, 80, 80),
+                discard=[{"id": PORYGON}, {"id": PORYGON2}, {"id": ARIANA}],
+                hand=[{"id": IGNITION_ENERGY}],
+                hand_count=1,
+                deck_count=10,
             ),
             PlayerState(active=PokemonState(999, 100, 100)),
         ]

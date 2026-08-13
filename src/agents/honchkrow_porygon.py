@@ -125,6 +125,12 @@ class TurnTacticalLedger:
     turn_action_count: int = 0
     first_own_turn: bool = False
     objective: str = ""
+    turn_objective: str = ""
+    objective_required_item: int | None = None
+    objective_required_supporter: int | None = None
+    objective_conversion_available: bool = False
+    objective_terminal_ko: bool = False
+    objective_survival: bool = False
     stage: str = "observe"
     previous_stage: str = ""
     replans: int = 0
@@ -195,6 +201,10 @@ class TurnTacticalLedger:
     canonical_violations: int = 0
     factory_effects_activated: int = 0
     headset_reason: str = ""
+    headset_draw_target: int = 0
+    headset_recovers_ariana: bool = False
+    headset_deferred_until_next_turn: bool = False
+    headset_emergency_reason: str = ""
     end_options_visible: int = 0
     end_with_productive_line: int = 0
     end_only_after_filter: int = 0
@@ -270,6 +280,12 @@ class TurnTacticalLedger:
         self.turn_action_count = 0
         self.first_own_turn = False
         self.objective = ""
+        self.turn_objective = ""
+        self.objective_required_item = None
+        self.objective_required_supporter = None
+        self.objective_conversion_available = False
+        self.objective_terminal_ko = False
+        self.objective_survival = False
         self.stage = "observe"
         self.previous_stage = ""
         self.replans = 0
@@ -340,6 +356,10 @@ class TurnTacticalLedger:
         self.canonical_violations = 0
         self.factory_effects_activated = 0
         self.headset_reason = ""
+        self.headset_draw_target = 0
+        self.headset_recovers_ariana = False
+        self.headset_deferred_until_next_turn = False
+        self.headset_emergency_reason = ""
         self.end_options_visible = 0
         self.end_with_productive_line = 0
         self.end_only_after_filter = 0
@@ -1363,8 +1383,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             current_damage = self._effective_supporters_in_hand(state) * 60
             required = max(
                 1,
-                self._supporters_needed_for_ko(state)
-                - self._effective_supporters_in_hand(state),
+                self._supporters_needed_for_ko(state) - self._effective_supporters_in_hand(state),
             )
         else:
             current_damage = self._rocket_supporters_in_discard(state) * 20
@@ -1475,11 +1494,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
     def _factory_is_active_and_usable(self, state: GameState) -> bool:
         """Return whether Factory's public draw effect can add two cards now."""
         player = self._own_player(state)
-        return bool(
-            player
-            and self._factory_in_play(state)
-            and int(player.deck_count) > 0
-        )
+        return bool(player and self._factory_in_play(state) and int(player.deck_count) > 0)
 
     def _ariana_marginal_draw(self, state: GameState) -> int:
         """Return cards drawn after Ariana itself leaves the visible hand."""
@@ -1805,6 +1820,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         active = self._own_active(state)
         if active is None or active.card_id != HONCHKROW:
             return False
+        if self._energy_units_for_pokemon(active) < self._attack_energy_target(HONCHKROW):
+            return False
         recoverable = min(2, self._rocket_supporters_in_discard(state))
         return (
             recoverable > 0
@@ -2112,9 +2129,9 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return False
         if self._card_in_hand(state, HONCHKROW) and not self._has_murkrow_ready_to_evolve(state):
             return False
-        if self._honchkrow_conversion_is_executable(
+        if self._honchkrow_conversion_is_executable(state) or self._honchkrow_ready_to_attack(
             state
-        ) or self._honchkrow_ready_to_attack(state):
+        ):
             return True
         player = self._own_player(state)
         if self._own_turn_number(state) == 1 and player is not None:
@@ -3071,6 +3088,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.objective = self._choose_turn_objective(
                 parsed.state, parsed.candidates
             ).value
+        self._refresh_objective_evidence(parsed.state, parsed.candidates)
         if (
             self._switch_commitment is not None
             and self._switch_commitment.turn != parsed.state.turn
@@ -3495,8 +3513,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             max(1, self._scorer._supporters_needed_for_ko(state) - effective_supporters_in_hand),
         )[0]
         self._turn_ledger.roto_repeat_allowed = bool(
-            self._turn_ledger.roto_expected_value > 0
-            or self._scorer._own_field_count(state) <= 1
+            self._turn_ledger.roto_expected_value > 0 or self._scorer._own_field_count(state) <= 1
         )
         self._turn_ledger.roto_attempts_this_turn = self._turn_ledger.roto_sticks_played
         self._turn_ledger.deckout_preservation_required = bool(
@@ -3657,6 +3674,60 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         ):
             return TurnObjective.IMPROVE_RESOURCES
         return TurnObjective.ATTACK_OR_CONTROL
+
+    def _refresh_objective_evidence(
+        self, state: GameState, candidates: Sequence[Candidate]
+    ) -> None:
+        """Record the concrete item, Supporter, and conversion for the turn objective."""
+        objective = (
+            self._turn_ledger.objective or self._choose_turn_objective(state, candidates).value
+        )
+        self._turn_ledger.turn_objective = objective
+        self._turn_ledger.objective_terminal_ko = objective in {
+            TurnObjective.WIN_NOW.value,
+            TurnObjective.HIGHEST_PRIZE_KO.value,
+        }
+        self._turn_ledger.objective_survival = (
+            objective == TurnObjective.PREVENT_NO_POKEMON_LOSS.value
+        )
+        required_item: int | None = None
+        if self._canonical_night_stretcher_is_productive(state):
+            required_item = NIGHT_STRETCHER
+        elif any(
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
+            and self._scorer._pokepad_honchkrow_is_useful(state, candidate)
+            for candidate in candidates
+        ):
+            required_item = POKE_PAD
+        elif self._headset_line_requires_resolution(state):
+            required_item = MIRACLE_HEADSET
+        elif self._scorer._card_in_hand(state, ROTO_STICK) and self._canonical_roto_is_productive(
+            state
+        ):
+            required_item = ROTO_STICK
+        self._turn_ledger.objective_required_item = required_item
+
+        required_supporter: int | None = None
+        if not state.supporter_played:
+            for supporter in (GIOVANNI, ARIANA, PETREL, PROTON):
+                if self._scorer._card_in_hand(state, supporter):
+                    if supporter == GIOVANNI and self._canonical_giovanni_is_productive(state):
+                        required_supporter = supporter
+                        break
+                    if supporter == ARIANA and self._scorer._ariana_is_safe_and_useful(state):
+                        required_supporter = supporter
+                        break
+                    if supporter == PETREL and self._scorer._petrel_search_score(state)[0] > 0:
+                        required_supporter = supporter
+                        break
+                    if supporter == PROTON and self._scorer._proton_setup_is_useful(state):
+                        required_supporter = supporter
+                        break
+        self._turn_ledger.objective_required_supporter = required_supporter
+        self._turn_ledger.objective_conversion_available = bool(
+            required_item is not None or required_supporter is not None
+        )
 
     def _refresh_evolution_ko_commitment(
         self, state: GameState, candidates: Sequence[Candidate]
@@ -4075,11 +4146,16 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
             ]
 
+        terminal_attack_available = any(
+            candidate.option_type is OptionType.ATTACK and self._attack_wins_game(state, candidate)
+            for candidate in candidates
+        )
         tool_scrapper = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.PLAY
                 and self._scorer._feature_int(candidate, "card_id") == TOOL_SCRAPPER
                 and self._opponent_has_scrappable_tool(state)
+                and not terminal_attack_available
             )
         )
         if tool_scrapper:
@@ -4903,9 +4979,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.roto_repeat_allowed = True
             self._turn_ledger.roto_repeat_reason = "measurable_expected_gain"
             self._turn_ledger.roto_preserved_reason = "roto_repeat_with_measurable_gain"
-        if self._roto_setup_mode(state):
-            self._turn_ledger.roto_mode = "setup_mode"
-            self._turn_ledger.roto_preserved_reason = "roto_setup_gain_expected"
+        if self._roto_survival_is_productive(state):
+            self._turn_ledger.roto_mode = "survival_mode"
+            self._turn_ledger.roto_preserved_reason = "roto_immediate_survival_line"
             return True
         if self._roto_can_improve_rocket_line(state) or (
             self._scorer._roto_attack_mode_is_productive(state)
@@ -4913,9 +4989,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.roto_mode = "attack_mode"
             self._turn_ledger.roto_preserved_reason = "roto_attack_gain_expected"
             return True
+        if self._roto_setup_mode(state):
+            self._turn_ledger.roto_mode = "setup_mode"
+            self._turn_ledger.roto_preserved_reason = "roto_setup_gain_expected"
+            return True
         self._turn_ledger.roto_mode = ""
         self._turn_ledger.resource_guard = "roto_requires_setup_or_attack_gain"
         return False
+
+    def _roto_survival_is_productive(self, state: GameState) -> bool:
+        """Return whether Roto can preserve the only visible Pokémon immediately."""
+        player = self._scorer._own_player(state)
+        if player is None or self._scorer._own_field_count(state) > 1:
+            return False
+        active = self._scorer._own_active(state)
+        if active is None or int(active.hp) > max(1, int(active.max_hp) // 3):
+            return False
+        if int(player.deck_count) <= 0:
+            return False
+        return self._scorer._roto_remaining_supporters(state) > 0
 
     def _post_supporter_roto_can_close_rocket_ko(self, state: GameState) -> bool:
         """Allow post-Supporter Roto only for one-to-four missing KO Supporters."""
@@ -5130,7 +5222,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     if card_id in {ARIANA, ARCHER, GIOVANNI, PETREL, PROTON}
                 )
             )
-            if useful:
+            if useful and ARIANA in useful and not self._headset_draw_should_defer(state):
+                self._turn_ledger.headset_recovers_ariana = True
+                self._turn_ledger.headset_emergency_reason = "ariana_recovery_for_future_continuity"
                 if PETREL in {
                     self._scorer._card_id_from_value(card)
                     for card in self._scorer._hand_cards(state)
@@ -5285,6 +5379,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         player = self._scorer._own_player(state)
         if player is None or self._scorer._card_in_hand(state, ARIANA) or state.supporter_played:
             return False
+        if self._headset_draw_should_defer(state):
+            self._turn_ledger.headset_deferred_until_next_turn = True
+            self._turn_ledger.headset_emergency_reason = "normal_draw_can_clarify_next_turn"
+            return False
         discard_ids = {self._scorer._card_id_from_value(card) for card in player.discard}
         petrel_only_deferred = (
             self._scorer._card_in_hand(state, PETREL)
@@ -5296,6 +5394,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and (self._scorer._effective_supporters_in_hand(state) == 0 or petrel_only_deferred)
             and self._scorer._ariana_is_safe_and_useful(state)
         )
+
+    def _headset_draw_should_defer(self, state: GameState) -> bool:
+        """Return whether first-turn Headset draw can safely wait for a normal draw."""
+        player = self._scorer._own_player(state)
+        if player is None or self._scorer._own_turn_number(state) != 1:
+            return False
+        if int(player.deck_count) <= 0 or self._scorer._own_field_count(state) <= 1:
+            return False
+        if self._scorer._headset_line_is_lethal(state):
+            return False
+        self._turn_ledger.headset_draw_target = self._scorer._ariana_draw_count(state)
+        return True
 
     def _transceiver_line_requires_resolution(self, state: GameState) -> bool:
         """Return whether Transceiver must resolve before a lethal attack."""
@@ -6087,11 +6197,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     for selection, ids in selection_ids
                     if not ids & self._scorer._supporter_ids()
                 ]
-            allowed_selections = [
-                selection
-                for selection, ids in selection_ids
-                if ids & allowed
-            ]
+            allowed_selections = [selection for selection, ids in selection_ids if ids & allowed]
             if not allowed_selections:
                 self._turn_ledger.deckout_veto_reason = (
                     "transceiver_critical_candidate_not_required_for_terminal_ko_or_survival"
@@ -6183,7 +6289,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> bool:
         """Allow critical-deck Transceiver only for terminal KO or immediate survival."""
         terminal = bool(
-            target_id == GIOVANNI and self._scorer._giovanni_is_lethal_or_promoting(
+            target_id == GIOVANNI
+            and self._scorer._giovanni_is_lethal_or_promoting(
                 state,
                 Candidate(-1, {"type": OptionType.PLAY.value}, OptionType.PLAY),
             )
@@ -6195,8 +6302,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and bool(self._turn_ledger.ko_is_terminal)
         )
         survival = bool(
-            self._scorer._own_field_count(state) <= 1
-            and target_id in {PROTON, ARIANA, PETREL}
+            self._scorer._own_field_count(state) <= 1 and target_id in {PROTON, ARIANA, PETREL}
         )
         if terminal_only:
             return terminal
