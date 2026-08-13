@@ -1,7 +1,7 @@
 {
   "schema_version": "v2",
   "deck_id": "honchkrow_porygon",
-  "deck_sha256": "9fb2aee973f8ccfd08fb1c8b3db0b5a73e5d3aba1a3cf205de37edaa9dd9fa42",
+  "deck_sha256": "20eb43850b545943718d3257375f55508e8764470170b3086f569a3c363b055c",
   "attack_energy_targets": {
     "463": 1,
     "891": 2,
@@ -95,7 +95,8 @@
     "tech_defense": [414],
     "supporter": [1216, 1217, 1218, 1220, 1219],
     "hand_refresh": [1216],
-    "pokemon_search": [1152, 1121],
+    "pokemon_search": [1152],
+    "tool_removal": [1137],
     "supporter_search": [1134, 1219],
     "trainer_search": [1219],
     "stadium_engine": [1257],

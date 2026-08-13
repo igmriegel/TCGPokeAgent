@@ -19,7 +19,7 @@
 - 4 Team Rocket's Transceiver — DRI 178
 - 4 Roto-Stick — PRE 127
 - 3 Night Stretcher — ASC 196
-- 1 Ultra Ball — MEG 131
+- 1 Tool Scrapper — DRV 163
 - 1 Miracle Headset — SSP 183
 - 3 Team Rocket's Factory — DRI 173
 

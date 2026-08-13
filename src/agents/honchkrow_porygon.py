@@ -43,6 +43,8 @@ TRANSCEIVER = 1134
 ROTO_STICK = 1077
 NIGHT_STRETCHER = 1097
 ULTRA_BALL = 1121
+TOOL_SCRAPPER = 1137
+HEROS_CAPE = 1159
 MIRACLE_HEADSET = 1109
 FACTORY = 1257
 ROCKET_ENERGY = 15
@@ -189,6 +191,7 @@ class TurnTacticalLedger:
     r_command_projected_damage: int = 0
     headset_ariana_recovery: bool = False
     development_obligations_pending: tuple[str, ...] = ()
+    heros_cape_scrapped: bool = False
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -283,6 +286,7 @@ class TurnTacticalLedger:
         self.r_command_projected_damage = 0
         self.headset_ariana_recovery = False
         self.development_obligations_pending = ()
+        self.heros_cape_scrapped = False
 
 
 @dataclass(slots=True)
@@ -3548,6 +3552,21 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 )
             ]
 
+        tool_scrapper = matching(
+            lambda candidate: (
+                candidate.option_type is OptionType.PLAY
+                and self._scorer._feature_int(candidate, "card_id") == TOOL_SCRAPPER
+                and self._opponent_has_heros_cape(state)
+            )
+        )
+        if tool_scrapper:
+            self._turn_ledger.heros_cape_scrapped = True
+            return (
+                DecisionPhase.PLAY_ITEMS.value,
+                "canonical_scrap_visible_heros_cape",
+                tool_scrapper,
+            )
+
         immediate = matching(
             lambda candidate: (
                 candidate.option_type is OptionType.ATTACK
@@ -4105,6 +4124,24 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             for card in player.discard
         )
 
+    def _opponent_has_heros_cape(self, state: GameState) -> bool:
+        """Return whether a public opposing Pokémon has Hero's Cape attached."""
+        opponent = self._scorer._opponent_player(state)
+        if opponent is None:
+            return False
+        return any(
+            str(HEROS_CAPE) in pokemon.tool_ids
+            for pokemon in [opponent.active, *opponent.bench]
+            if pokemon is not None
+        )
+
+    def _is_tool_scrapper_heros_cape_target(self, candidate: Candidate) -> bool:
+        """Return whether a Tool Scrapper prompt candidate is the visible Hero's Cape."""
+        return bool(
+            self._scorer._metadata_int(candidate.option, "sourceCardId") == TOOL_SCRAPPER
+            and self._scorer._feature_int(candidate, "card_id") == HEROS_CAPE
+        )
+
     def _projected_r_command_supporters(self, state: GameState) -> int:
         """Project public Supporters after a lethal Rocket Feathers and next-turn Supporter.
 
@@ -4568,6 +4605,21 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> list[Selection]:
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
+            cape_targets = {
+                candidate.option_index
+                for candidate in candidates
+                if self._is_tool_scrapper_heros_cape_target(candidate)
+            }
+            if cape_targets:
+                selected = [
+                    selection
+                    for selection in selections
+                    if any(index in cape_targets for index in selection.indices)
+                ]
+                if selected:
+                    self._turn_ledger.heros_cape_scrapped = True
+                    return selected
         if context is SelectContext.TO_HAND:
             stretcher_targets = [
                 candidate
@@ -5191,6 +5243,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return self._ignition_attack_plan(state, candidate) is None
         if candidate.option_type is OptionType.PLAY and card_id == ULTRA_BALL:
             return not self._canonical_ultra_ball_is_productive(state)
+        if candidate.option_type is OptionType.PLAY and card_id == TOOL_SCRAPPER:
+            return not self._opponent_has_heros_cape(state)
         if (
             candidate.option_type is OptionType.CARD
             and context is SelectContext.TO_HAND

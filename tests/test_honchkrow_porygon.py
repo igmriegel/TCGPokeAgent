@@ -17,6 +17,7 @@ from src.agents.honchkrow_porygon import (
     GRIMMSNARL_EX,
     HACKING,
     HAMMER_IN,
+    HEROS_CAPE,
     HONCHKROW,
     IGNITION_ENERGY,
     MEGA_ABOMASNOW_DECK_RESERVE,
@@ -35,6 +36,7 @@ from src.agents.honchkrow_porygon import (
     ROCKET_ENERGY,
     ROCKET_FEATHERS,
     ROTO_STICK,
+    TOOL_SCRAPPER,
     TORMENT,
     TRANSCEIVER,
     ULTRA_BALL,
@@ -1896,6 +1898,60 @@ def test_agent_runtime_has_no_replay_or_submission_identifier_hook() -> None:
     assert "_contains_replay_id" not in runtime_source
     assert "episodeId" not in runtime_source
     assert "submissionId" not in runtime_source
+
+
+def test_tool_scrapper_replaces_ultra_ball_in_the_dedicated_deck() -> None:
+    """The fixed deck includes Tool Scrapper and no longer includes Ultra Ball."""
+    deck = [
+        int(line)
+        for line in (ROOT / "src/artifacts/deck_team_rocket_murkrow.csv").read_text().splitlines()
+        if line
+    ]
+
+    assert TOOL_SCRAPPER in deck
+    assert ULTRA_BALL not in deck
+
+
+def test_tool_scrapper_is_prioritized_when_opponent_has_visible_heros_cape() -> None:
+    """A visible opposing Hero's Cape makes Tool Scrapper the next legal main action."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 130, 130)),
+            PlayerState(active=PokemonState(999, 200, 200, tool_ids=[str(HEROS_CAPE)])),
+        ]
+    )
+    scraper = _candidate(0, OptionType.PLAY, card_id=TOOL_SCRAPPER, card={"cardType": 1})
+    end = _candidate(1, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [scraper, end],
+    )
+
+    assert reason == "canonical_scrap_visible_heros_cape"
+    assert [choice.indices for choice in choices] == [(0,)]
+    assert agent.turn_ledger.heros_cape_scrapped
+
+
+def test_tool_scrapper_target_prompt_requires_visible_heros_cape() -> None:
+    """The Tool Scrapper discard prompt selects Hero's Cape over another legal Tool."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(players=[PlayerState(), PlayerState()])
+    cape = _candidate(0, OptionType.CARD, card_id=HEROS_CAPE)
+    cape.option["sourceCardId"] = TOOL_SCRAPPER
+    other_tool = _candidate(1, OptionType.CARD, card_id=999)
+    other_tool.option["sourceCardId"] = TOOL_SCRAPPER
+
+    choices = agent._filter_forbidden_selections(
+        state,
+        [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))],
+        [cape, other_tool],
+        SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
+    )
+
+    assert [choice.indices for choice in choices] == [(0,)]
 
 
 def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
