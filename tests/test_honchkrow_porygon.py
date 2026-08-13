@@ -2471,6 +2471,71 @@ def test_canonical_ultra_ball_requires_ariana(monkeypatch) -> None:
     assert agent._canonical_ultra_ball_is_productive(state)
 
 
+def test_ultra_ball_allows_exact_two_supporter_r_command_conversion() -> None:
+    """Ultra Ball may discard the exact public two-Supporter R Command deficit."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=7),
+                hand=[{"id": ULTRA_BALL}, {"id": ARIANA}, {"id": ARCHER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(999, 40, 40)),
+        ]
+    )
+
+    assert agent._scorer._ultra_ball_completes_r_command(state)
+    assert agent._canonical_ultra_ball_is_productive(state)
+
+
+def test_froslass_ping_is_cumulative_for_ability_targets() -> None:
+    """Each opposing Froslass reduces an Ability target's KO threshold by ten."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    target_id = 140
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(HONCHKROW, 130, 130)),
+            PlayerState(
+                active=PokemonState(target_id, 120, 120),
+                bench=[PokemonState(FROSLASS, 80, 80), PokemonState(FROSLASS, 80, 80)],
+            ),
+        ]
+    )
+
+    assert scorer._froslass_ping_for_target(state, state.players[1].active) == 20
+    assert scorer._effective_opponent_hp(state) == 100
+
+
+def test_archer_is_vetoed_when_ariana_is_already_productive() -> None:
+    """A public Ariana draw line must prevent an unnecessary Archer redraw."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[PlayerState(hand=[{"id": ARCHER}, {"id": ARIANA}], deck_count=20), PlayerState()]
+    )
+    archer = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    archer.option["ownKo"] = True
+
+    assert not scorer._archer_is_safe_and_useful(state, archer)
+
+
+def test_budew_item_lock_requires_itchy_pollen_attack() -> None:
+    """Budew blocks Items only after the opponent used Itchy Pollen."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        your_index=0,
+        players=[PlayerState(), PlayerState(active=PokemonState(235, 30, 30))],
+        raw={"_logs": [{"attackId": 323, "cardId": 235, "playerIndex": 1}]},
+    )
+    ultra_ball = _candidate(0, OptionType.PLAY, card_id=ULTRA_BALL, card={"cardType": 1})
+
+    assert agent._opponent_budew_item_lock(state)
+    assert agent._candidate_is_forbidden(state, ultra_ball, SelectContext.MAIN)
+
+    state.raw["_logs"] = [{"attackId": 999, "cardId": 235, "playerIndex": 1}]
+    assert not agent._opponent_budew_item_lock(state)
+
+
 def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     bench_state = GameState(

@@ -99,7 +99,12 @@
     "canonical_exception": "Ratified exception to normal stage order.", "canonical_violations": "Detected canonical-order violations.",
     "factory_effects_activated": "Factory effects activated this turn.", "headset_reason": "Reason for the selected Headset recovery.",
     "end_options_visible": "Visible legal END options.", "end_with_productive_line": "END choices while productive action remained.",
-    "end_only_after_filter": "END choices retained only after filters removed alternatives.", "unresolved_obligations": "Public turn obligations still requiring resolution."
+    "end_only_after_filter": "END choices retained only after filters removed alternatives.", "unresolved_obligations": "Public turn obligations still requiring resolution.",
+    "next_attacker_serial": "Public serial of the planned next attacker after a supporter line.", "ariana_retained_cards": "Playable cards retained before Ariana with their explicit preservation reasons.",
+    "r_command_required_damage": "Visible damage required for the current R Command Knock Out.", "r_command_supporter_deficit": "Rocket Supporters still required in discard for R Command.",
+    "ultra_ball_supporter_discards": "Rocket Supporters intentionally discarded through Ultra Ball for R Command.", "ultra_ball_r_command_line": "Confirmation or refusal reason for the Ultra Ball R Command line.",
+    "froslass_count": "Visible opposing Froslass count.", "froslass_ping": "Cumulative post-attack Froslass HP reduction for the target.",
+    "archer_veto_reason": "Reason Archer was rejected despite being legal.", "headset_recovery_reason": "Reason Miracle Headset recovery is productive."
   },
   "match_ledger_fields": {
     "target_serial": "Public serial of the tracked opponent target.", "target_card_id": "Card ID of the tracked opponent target.",
