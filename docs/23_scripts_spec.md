@@ -73,6 +73,8 @@
 | `uv run --frozen python scripts/create_honchkrow_turn_loop_v2_manifest.py` | Freeze the HLV2 baseline/candidate identities, deck/profile/lock hashes, CABT SDK pin, source state, and 26-replay corpus |
 | `uv run --frozen python scripts/build_honchkrow_turn_loop_v2_report.py BASELINE CANDIDATE OUTPUT_DIR` | Build the complete independent HLV2 comparison bundle and emit `HOLD` until every final gate is evidenced |
 | `uv run --frozen python scripts/summarize_honchkrow_turn_loop_v2_replays.py BASELINE CANDIDATE OUTPUT_DIR` | Reduce the two 1,434-decision reproductions to a safe single-decision divergence ledger without alternate-outcome claims |
+| `uv run --frozen python scripts/reprocess_seven_replays.py` | Reprocess the seven state-based review replays with the current policy and preserve exact replay decks |
+| `uv run --frozen python scripts/build_seven_replay_audit.py REPROCESSED OUTPUT` | Emit per-replay public state, legal candidates, objective, ranking, historical/final actions, corrected line, and error category |
 
 The Honchkrow package entrypoint declares `expert_turn_loop` explicitly; package
 manifests record the same value. Historical policy names are not accepted by

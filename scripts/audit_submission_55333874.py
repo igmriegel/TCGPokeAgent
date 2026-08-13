@@ -254,10 +254,12 @@ def _run_worker(
     for replay_path in sorted(replay_dir.glob("episode-*-replay.json")):
         replay = _load_replay(replay_path)
         owner_index = _resolve_owner(replay, deck)
+        replay_deck = _deck_from_replay(replay, owner_index)
         agent, current_deck, resolved_variant = _import_policy(package_root, variant)
         from src.core import DeckDefinition
 
-        agent.start_match(DeckDefinition.from_cards(current_deck, "honchkrow_porygon"))
+        del current_deck
+        agent.start_match(DeckDefinition.from_cards(replay_deck, "honchkrow_porygon"))
         episode_id = int(replay.get("info", {}).get("EpisodeId", 0))
         episode_decisions = 0
         episode_divergences = 0
