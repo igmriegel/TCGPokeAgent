@@ -198,6 +198,10 @@ The post-promotion package was rebuilt from commit `f22a24f` with policy
 19. The user explicitly authorized operational promotion of `expert_turn_loop`
     despite the screening `HOLD`; preserve the old package for rollback and do
     not describe this as statistically significant promotion.
+20. Disabled the fixed two-card elective-draw reserve on 2026-08-13 by Owner
+    direction. Ariana, Factory, and Roto-Stick may now use the final deck cards
+    when their own effect is valid; this is a local behavior change, not deck-out
+    prevention evidence. T-035 owns evaluation of state-based alternatives.
 
 ## Next work
 
@@ -219,6 +223,8 @@ The recommended order is:
 6. validate the heuristic priority fixes (T-015–T-021) and finish board-development scenarios;
 7. validate Rule Box/PrizeMap and PrizeCheck transitions;
 8. rebuild the replay dataset and close the release checklist.
+9. evaluate state-based deck-out safeguards under T-035 without reinstating a
+   fixed elective-draw reserve.
 
 ## Evidence links
 
