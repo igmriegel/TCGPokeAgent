@@ -883,3 +883,23 @@ The decision ledger exposes the corresponding guard or priority reason:
 selected Giovanni target's priority class and Prize value. Archer's approval is
 limited to a public dead hand: spent Energy and unpaired Evolutions are not
 treated as productive resources.
+
+## 2026-08-13 — Submission 55471482 sequencing regularization
+
+Submission `55471482` and commit `3c0d5e9` are provenance for this review,
+not runtime inputs. The state-based correction narrows post-Supporter
+Roto-Stick to a Rocket Feathers KO attempt with a deficit of one through four
+Supporters. A reveal that does not meet the computed deficit preserves the
+revealed Supporters rather than converting them into nonlethal damage.
+
+The same public-state review adds Archer preference after an observed own KO
+when it preserves Supporters from a nonlethal Rocket line, Factory rescue
+through productive Proton then Giovanni before Factory draw, Articuno setup
+against visible Abra/Kadabra/Alakazam with Bench space (except the public
+Grimmsnarl/Froslass exclusion), and a public Murkrow Torment-KO promotion
+priority. The decision ledger now records the bounded post-Supporter Roto
+attempt and extracted packages require `source_commit` and `package_sha256`.
+
+Focused state fixtures and extracted-package validation are local evidence
+only. Bilateral smoke, bilateral 200-match evaluation, and replay review
+remain required before any strategic or remote-performance claim.
