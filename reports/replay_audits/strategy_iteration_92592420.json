@@ -1,0 +1,15 @@
+{
+  "counters": {
+    "ariana_plays_max": 1,
+    "deckout_veto_records": 0,
+    "roto_sticks_played_max": 2,
+    "roto_supporters_revealed_max": 2,
+    "roto_supporters_selected_max": 2,
+    "roto_zero_over_zero_consistent": false,
+    "transceiver_targets": {
+      "1220": 9
+    }
+  },
+  "evidence_boundary": "decoded_public_decision_ledger_only",
+  "records": 66
+}
