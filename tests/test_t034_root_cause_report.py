@@ -1,4 +1,4 @@
-"""Tests for the conservative T-034 replay evidence report."""
+"""Tests for the conservative replay evidence report."""
 
 from __future__ import annotations
 

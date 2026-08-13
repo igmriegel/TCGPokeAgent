@@ -1,4 +1,4 @@
-"""Tests for immutable T-034 replay corpus restoration helpers."""
+"""Tests for immutable replay corpus restoration helpers."""
 
 from __future__ import annotations
 

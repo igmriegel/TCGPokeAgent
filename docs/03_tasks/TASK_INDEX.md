@@ -20,9 +20,9 @@ documents to these totals.
 | Queue | Count |
 |---|---:|
 | In progress | 5 |
-| Ready | 20 |
+| Ready | 19 |
 | Deferred | 8 |
-| Total open | 33 |
+| Total open | 32 |
 
 ## Active release queue
 
@@ -53,8 +53,7 @@ documents to these totals.
 | T-028 | P0 | `IN_PROGRESS` | Convert every Ignition attachment into a same-turn attack and prioritize game-winning Porygon2 promotion | FB-2026-016, H2A | Run terminal Porygon2, Prize-race, Ignition-commitment, and no-wasted-energy gates, then evaluate the promoted policy against CABT |
 | T-031 | P0 | `DEFERRED` | Ratify the complete Honchkrow/Porygon strategy with expert interview evidence and produce an implementation-ready plan | Honchkrow expert audit | Resume at Round 4 in `docs/34_honchkrow_expert_interview.md`; keep `expert_rounds_1_3_v1` experimental until comparison evidence is recorded |
 | T-033 | P0 | `DONE` | Implement and independently qualify the official `expert_turn_loop` without changing `supporter_resource_v2` | [Dedicated HLV2 index](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) | Promoted after 200 bilateral CABT matches with 88.0% wins, zero operational failures, and no deck-out regression |
-| T-034 | P0 | `READY` | Explain and eliminate the Owner-observed divergence from the documented game plan and action sequencing | FB-2026-019 | Select representative failing replays, verify exact package provenance, and trace each first causal divergence from documented intent through parse, objective, candidate, scoring, filtering, commitment, fallback, and final selection |
-| T-035 | P0 | `READY` | Obtain Owner approval to remove deprecated gameplay-policy branches after the new official package is proven | Release deprecation review | Next Codex session: inventory historical variants, verify immutable baseline reproducibility, and record Igor's explicit removal decision before deleting compatibility code |
+| T-034 | P0 | `READY` | Obtain Owner approval to remove deprecated gameplay-policy branches after the new official package is proven | Release deprecation review | Next Codex session: inventory historical variants, verify immutable baseline reproducibility, and record Igor's explicit removal decision before deleting compatibility code |
 
 ## Active-track coverage
 
@@ -69,7 +68,7 @@ This table prevents roadmap work from existing without an executable owner.
 | S6 and H0 | T-004 |
 | S7 | T-009 |
 | S9 | T-011 |
-| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028, T-034 |
+| H2A | T-001–T-004, T-015–T-021, T-023–T-026, T-028 |
 | HLV2 | [HLV2-001–HLV2-025](HONCHKROW_TURN_LOOP_V2_TASK_INDEX.md) |
 
 ## Deferred queue

@@ -1,4 +1,4 @@
-"""Restore and hash-verify the immutable replay corpus used by T-034."""
+"""Restore and hash-verify the immutable replay corpus used for replay review."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ def restore(output: Path, hashes: dict[str, str]) -> None:
 
 
 def main() -> int:
-    """Restore the T-034 corpus after checking all frozen hashes."""
+    """Restore the immutable replay corpus after checking all frozen hashes."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hashes", type=Path, default=HASHES_PATH)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)

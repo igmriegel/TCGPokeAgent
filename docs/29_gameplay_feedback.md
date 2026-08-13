@@ -45,7 +45,7 @@ Raw feedback remains immutable. A correction appends a new review with a
 | FB-2026-011 | Retreat only under public Knock Out risk, and pivot to Articuno on visible Alakazam-line evidence | Retreat gating and conditional Articuno tech branch implemented | Pending | T-023 |
 | FB-2026-012 | Articuno without matchup evidence should be sacrificial and discard-favored over Energy | Conditional-sacrifice Articuno scoring implemented | Pending | T-024 |
 | FB-2026-018 | Turn planning ignores setup-aware Supporters and proven evolution-KO sequences | Persistent objective, Supporter comparison, Transceiver targeting, and Poké Pad commitment implemented | Implemented | T-030 |
-| FB-2026-019 | Agent does not follow the documented game plan and action sequencing in reviewed replays | Root cause unknown; end-to-end investigation required | Pending | T-034 |
+| FB-2026-019 | Agent does not follow the documented game plan and action sequencing in reviewed replays | Continuous replay-review iteration | Pending | Replay review |
 
 ## FB-2026-001 — Continuous board development
 
@@ -672,11 +672,11 @@ compliance with the Owner's playbook.
 
 ### Gate
 
-T-034: produce a replay-linked root-cause report, implement separately approved
-corrections, and validate the intended plan and ordering on focused replay
-regressions plus a controlled gameplay sample. This issue remains visible in
+Produce replay-linked root-cause evidence, implement approved corrections, and
+validate intended planning and ordering on focused replay regressions plus a
+controlled gameplay sample. This continuous review remains visible in
 `AGENTS.md` and `PROJECT_STATUS.md` until Igor explicitly accepts closure based
-on the resulting replay evidence.
+on replay evidence.
 
 Create one record per distinct finding. Include the original words, evidence
 source, affected decision, accepted scope, exceptions, rule link, task IDs, and

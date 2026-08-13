@@ -1,4 +1,4 @@
-"""Build a conservative evidence report for the T-034 replay investigation."""
+"""Build a conservative evidence report for the replay-review process."""
 
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ def _trace_coverage(record: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[str, Any]:
-    """Create a replay-linked T-034 report without strategic inference.
+    """Create a replay-linked root-cause report without strategic inference.
 
     Args:
         audit_dir: Completed immutable-submission audit directory.
@@ -239,7 +239,7 @@ def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[st
     available_names = {path.name for path in replay_dir.glob("episode-*-replay.json")}
     return {
         "schema": "t034_root_cause_report_v1",
-        "task": "T-034",
+        "task": None,
         "status": "OPEN",
         "package_provenance": {
             "submission_id": submission.get("submission_id"),
@@ -279,10 +279,10 @@ def build_report(audit_dir: Path, current_traces: Path | None = None) -> dict[st
 
 
 def _markdown(report: Mapping[str, Any]) -> str:
-    """Render the concise human-readable companion for a T-034 report."""
+    """Render the concise human-readable companion for a replay-review report."""
     provenance = report["package_provenance"]
     lines = [
-        "# T-034 replay root-cause evidence",
+        "# Replay root-cause evidence",
         "",
         "Status: **OPEN**. Owner-observed strategic divergence is established; its technical root "
         "cause remains unknown.",
@@ -330,7 +330,7 @@ def _markdown(report: Mapping[str, Any]) -> str:
 
 
 def main() -> int:
-    """Build the T-034 report from an immutable replay audit."""
+    """Build the replay-review report from an immutable replay audit."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--audit-dir", type=Path, default=DEFAULT_AUDIT_DIR)
     parser.add_argument("--output", type=Path)

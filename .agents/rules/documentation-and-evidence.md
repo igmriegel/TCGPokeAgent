@@ -14,5 +14,5 @@ alwaysApply: false
 - Keep historical evidence in the appropriate evidence or report document rather than copying it into the status snapshot.
 - Do not mark a task or implementation slice complete without the stated gate and linked evidence.
 - Preserve the distinction between Owner observations, verified replay facts, technical hypotheses, and experimental results.
-- For the open strategy-divergence P0, record representative replay traces end to end under T-034 before proposing runtime conclusions.
+- For the open strategy-divergence P0, record representative replay traces end to end before proposing runtime conclusions.
 - Keep internal links, task references, dates, metrics, and artifact paths accurate when changing documentation.

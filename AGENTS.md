@@ -23,8 +23,7 @@ unresolved P0 issue in every session until the Owner explicitly accepts closure
 based on replay evidence.
 
 Before changing gameplay behavior, read the current issue statement in
-`docs/PROJECT_STATUS.md` and task `T-034` in
-`docs/03_tasks/TASK_INDEX.md`. Do not assume that existing rules, focused tests,
+`docs/PROJECT_STATUS.md`. Do not assume that existing rules, focused tests,
 or aggregate win rates prove strategic compliance. Preserve the distinction
 between the Owner's verified observation and technical root causes, which are
 still unknown and require end-to-end investigation.

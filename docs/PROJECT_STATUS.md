@@ -20,16 +20,16 @@ focused tests, replay reproduction, operational validity, and aggregate match
 results must not be treated as evidence that the intended strategy is being
 followed.
 
-The investigation must trace representative replay decisions end to end: the
+Replay review must trace representative replay decisions end to end: the
 documented rule and intended sequence, parsed public state, generated legal
 selections, persistent turn objective, scoring and hard filters, commitment and
 fallback paths, selected option indices, and the exact packaged policy used in
 the replay. Record distinct divergence classes and their first causal decision
 before proposing fixes. Track execution and closure evidence under
-[`T-034`](03_tasks/TASK_INDEX.md) and the Owner feedback under
 [`FB-2026-019`](29_gameplay_feedback.md#fb-2026-019-agent-does-not-follow-the-documented-game-plan-and-sequencing).
 Only explicit Owner acceptance after replay-based validation can close this
-issue or remove its session-wide visibility.
+issue or remove its session-wide visibility. This review is a continuous
+iteration process, not a separate backlog task.
 
 **Current release:** `expert_turn_loop` is the only executable Honchkrow/Porygon
 implementation. Historical policy names are not runtime modes; their reports
@@ -204,9 +204,8 @@ The post-promotion package was rebuilt from commit `f22a24f` with policy
 The authoritative queue is [`03_tasks/TASK_INDEX.md`](03_tasks/TASK_INDEX.md).
 The recommended order is:
 
-1. investigate the Owner-observed game-plan and sequencing divergence under
-   T-034, starting from representative replay decisions and exact package
-   provenance;
+1. continue the Owner-observed game-plan and sequencing replay review, starting
+   from representative replay decisions and exact package provenance;
 2. review the prioritized `55333874` decision queue and gather independent
    evidence before converting any uncertain finding into a heuristic;
 3. resume the Honchkrow/Porygon expert interview at Round 4 in

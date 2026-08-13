@@ -16,4 +16,4 @@ alwaysApply: false
 - Preserve simulator option indices; never renumber candidates or selections before returning them.
 - Every `SelectContext` must have a deterministic legal fallback. External or parser failures must be contained by the engine error hierarchy and must not crash the agent.
 - Add focused tests for behavior changes and run the relevant pytest, Ruff, mypy, and package checks before release.
-- Treat the Owner-observed strategy divergence as unresolved P0 work. Do not claim strategic compliance from aggregate scores or focused tests; replay-based evidence belongs under T-034.
+- Treat the Owner-observed strategy divergence as unresolved P0 work. Do not claim strategic compliance from aggregate scores or focused tests; replay-based evidence belongs in the replay-review record.

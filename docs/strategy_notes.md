@@ -769,11 +769,11 @@ promotion_scope: "This is the local CABT comparison baseline. Kaggle submission 
 future_gate: "Use fresh independent CABT samples, preserve side splits, and report terminal-cause attribution before changing the baseline."
 ```
 
-## Replay 91191361 — Phantump/Trevenant evidence for T-034
+## Replay 91191361 — Phantump/Trevenant replay-review evidence
 
 ```yaml
 replay: "91191361"
-task: "T-034"
+task: null
 observed_facts:
   - "The reviewed game contains Phantump/Trevenant and a Splashing Dodge decision."
   - "The owner-observed divergence is strategic sequencing, not an aggregate win-rate claim."
@@ -788,10 +788,10 @@ hypotheses:
 acceptance: "Replay revalidation and bilateral evaluation are still required; this change is not statistically promoted."
 ```
 
-## Replays 91192258 and 91193154 — resource and Dragapult evidence for T-034
+## Replays 91192258 and 91193154 — resource and Dragapult replay-review evidence
 
 ```yaml
-task: "T-034"
+task: null
 replays:
   - id: "91192258"
     observed_facts:
@@ -822,11 +822,11 @@ replays:
 acceptance: "Focused regression tests pass; bilateral replay evaluation remains required and no statistical promotion is claimed."
 ```
 
-## Replay 91239077 — Prize economy and Alakazam attack distinction for T-034
+## Replay 91239077 — Prize economy and Alakazam attack distinction for replay review
 
 ```yaml
 replay: "91239077"
-task: "T-034"
+task: null
 observed_facts:
   - "The owner identified a sequencing divergence involving Giovanni, Fezandipiti, Porygon2, and the Alakazam matchup."
   - "The reviewed matchup distinguishes Alakazam's Powerful Hand from Kadabra's Super Psy Bolt."
