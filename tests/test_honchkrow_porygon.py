@@ -4075,6 +4075,27 @@ def test_headset_plan_recovers_giovanni_for_ready_porygon2_bench_ko() -> None:
     assert agent._headset_plan(state) == ("headset_giovanni_porygon2_bench_ko", (GIOVANNI,))
 
 
+def test_headset_plan_preserves_ariana_when_it_adds_rocket_damage() -> None:
+    """The +60 plan recovers Ariana for next turn rather than counting it as current damage."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARCHER}],
+                discard=[{"id": ARIANA}, {"id": PETREL}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(721, 350, 350)),
+        ]
+    )
+
+    assert agent._headset_plan(state) == (
+        "headset_rocket_feathers_plus_ariana",
+        (ARIANA, PETREL),
+    )
+
+
 def test_giovanni_commits_ready_porygon2_and_public_bench_target() -> None:
     """A final-Prize Giovanni line binds both the attacker and the Bench target."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")

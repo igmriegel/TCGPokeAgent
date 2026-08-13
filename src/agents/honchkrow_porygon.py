@@ -4132,11 +4132,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == MIRACLE_HEADSET
-                    and (
-                        self._canonical_headset_is_useful(state)
-                        or self._scorer._miracle_headset_emergency_is_useful(state)
-                        or self._scorer._headset_line_is_lethal(state)
-                    )
+                    and self._canonical_headset_is_useful(state)
                 )
             )
             if headset:
@@ -4740,11 +4736,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Return whether Miracle Headset must resolve before a lethal attack."""
         if not self._scorer._card_in_hand(state, MIRACLE_HEADSET):
             return False
-        return bool(
-            self._canonical_headset_is_useful(state)
-            or self._scorer._miracle_headset_emergency_is_useful(state)
-            or self._scorer._headset_line_is_lethal(state)
-        )
+        return bool(self._canonical_headset_is_useful(state))
 
     def _attack_wins_game(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether an attack explicitly or arithmetically takes the last Prizes."""
