@@ -241,6 +241,43 @@ Supporters. Roto Stick is reserved until fetching a Supporter can close a Knock
 Out line. Ariana remains protected unless the discard is marked as required by
 the current KO line.
 
+#### Current forced-promotion matrix after an own Knock Out
+
+This is the implemented `TO_ACTIVE` ordering for the dedicated
+Honchkrow/Porygon policy. It is a public-state rule: only the exposed board,
+hand, discard, Prize counts, available attachment, and simulator candidates
+are used. It is not the final expert promotion matrix; Round 8 of the expert
+interview remains the authority for the missing survival, sacrifice, and
+retreat tie-breaks.
+
+| Order | Candidate and required public condition | Result | Runtime evidence |
+|---|---|---|---|
+| 0 | A switch commitment exists for this turn. The candidate has the committed Pokémon serial (falling back to card ID only when the serial is absent). | Keep the previously chosen attacker; do not re-rank a different copy of the same card. The commitment includes the planned attack, damage, and any required Ignition attachment. | `promote_committed_switch_attacker` |
+| 1 | Ready Porygon2 whose `R Command` immediately takes all remaining Prizes. | Highest mandatory-promotion score: `5200`. | `promote_porygon2_game_winning_r_command` |
+| 2 | Ready Porygon2 whose public `R Command` damage Knocks Out the opposing Active without ending the game. | Promote with score `4800`. If its computed damage is below the opposing Active's HP, the candidate is vetoed rather than merely deprioritized. | `promote_porygon2_r_command_ko`; `porygon2_vetoed_r_command_damage_insufficient` |
+| 3 | Ready Honchkrow whose public hand Supporters make `Rocket Feathers` Knock Out the opposing Active. | Promote with score `4700`. | `promote_honchkrow_rocket_feathers_ko` |
+| 4 | Porygon2 has a visible prize-pressure or next-turn setup line. | The scorer has lower-priority scores for this case, but the mandatory-promotion filter still vetoes it unless Porygon2 is already ready and has an immediate R Command KO. | `promote_porygon2_prize_pressure`; `porygon2_vetoed_r_command_damage_insufficient` |
+| 5 | Ready Honchkrow, then ready Porygon2, with no higher line above. | Honchkrow can remain eligible at `1500`; a Porygon2 without immediate R Command KO is removed by the mandatory-promotion filter despite lower scorer branches for it. | `promote_ready_honchkrow`; `promote_ready_porygon2` |
+| 6 | Articuno is offered and public Dragapult/Alakazam matchup evidence makes its Bench protection necessary. | Reject voluntary promotion and preserve it on the Bench. If no superior lethal attacker exists, the scorer can only treat it as a lower-priority emergency option. | `keep_articuno_on_bench_against_dragapult`; `preserve_articuno_for_matchup_defense` |
+| 7 | Murkrow, or any remaining legal basic candidate after higher rules and vetoes. | Deterministic survival fallback; Murkrow's explicit score is `100`. | `promote_murkrow_only_without_evolved_attacker` |
+
+The Porygon2 KO check is exact: it requires the chosen copy to be ready and
+compares `20 ×` the visible Team Rocket Supporters in discard against the
+opposing Active's current HP. Although the scorer contains projected-Ignition
+and Prize-pressure branches, the mandatory `TO_ACTIVE` filter rejects Porygon2
+unless it is already ready and already takes that KO. Honchkrow's immediate
+line likewise requires the chosen copy to be ready and compares `60 ×` visible
+Supporters in hand with the opposing Active's current HP.
+
+`SWITCH`, Giovanni, and paid retreat do not inherit the mandatory-promotion
+ranking. Giovanni is considered before paid retreat and each is allowed only
+when the exact Bench attacker produces an immediate productive attack; paid
+retreat must improve on the current Active's damage. Giovanni may account for
+itself entering discard in `R Command` damage. An unready Bench Pokémon, a
+nonlethal replacement, or a duplicate with the wrong serial cannot satisfy a
+commitment. These guards prevent a forced-promotion choice from being confused
+with a discretionary mobility decision.
+
 ### GR-024 — Deck-out monitoring is the next release gate
 
 The dedicated agent must record terminal reason, turn, remaining deck, field,
