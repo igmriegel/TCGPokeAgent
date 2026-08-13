@@ -1411,6 +1411,18 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and player.deck_count > 0
         )
 
+    def _public_draw_line_comparison(self, state: GameState) -> tuple[float, float, str]:
+        """Compare Ariana's immediate redraw with Petrel's best public conversion."""
+        ariana = float(max(0, self._ariana_marginal_draw(state)))
+        if self._factory_in_play(state) or self._card_in_hand(state, FACTORY):
+            ariana += 2.0
+        petrel, reasons = self._petrel_search_score(state)
+        petrel_value = max(0.0, petrel / 650.0)
+        reason = "ariana_now" if ariana >= petrel_value else "petrel_conversion"
+        if reasons:
+            reason += ":" + reasons[0]
+        return ariana, petrel_value, reason
+
     def _pokepad_ariana_hand_reduction_is_useful(self, state: GameState) -> bool:
         """Return whether Poké Pad improves a proven Ariana redraw."""
         player = self._own_player(state)
@@ -3202,6 +3214,12 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             and self._scorer._card_in_hand(state, TRANSCEIVER)
         )
         self._turn_ledger.best_draw_sequence = tuple(self._turn_ledger.draw_sequence)
+        ariana_value, petrel_value, comparison = self._scorer._public_draw_line_comparison(state)
+        self._turn_ledger.ariana_petrel_comparison = (
+            f"ariana={ariana_value:.2f};petrel={petrel_value:.2f};winner={comparison}"
+        )
+        if self._scorer._giovanni_pivot_is_productive(state):
+            self._turn_ledger.giovanni_line = "public_pivot_or_prize_conversion"
         self._turn_ledger.deck_reserve = player.deck_count if player is not None else 0
         required = self._scorer._r_command_supporters_needed(state)
         discard = self._scorer._rocket_supporters_in_discard(state)
@@ -5925,6 +5943,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.energy_attachment_reason = "defer_without_same_turn_attack"
                 return True
             if (
+                energy_id == IGNITION_ENERGY
+                and target_id == PORYGON2
+                and not self._ignition_r_command_is_productive(state)
+            ):
+                self._turn_ledger.energy_attachment_reason = (
+                    "ignition_porygon_without_r_command_gain"
+                )
+                return True
+            if (
                 energy_id == ROCKET_ENERGY
                 and self._public_abra_threat(state)
                 and not self._energy_has_same_turn_productive_line(state)
@@ -6240,6 +6267,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._scorer._discard_is_required_for_ko(state, candidate)
                 or self._scorer._ultra_ball_completes_r_command(state)
             ):
+                if self._headset_ariana_recovery_is_useful(state):
+                    self._turn_ledger.headset_preservation_reason = (
+                        "preserve_ariana_for_headset_public_continuation"
+                    )
                 self._turn_ledger.resource_guard = "preserve_ariana_without_guaranteed_ko"
                 return True
             if self._scorer._is_energy_card(card_id, candidate.card):
@@ -6714,7 +6745,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _ignition_target_is_valid(self, state: GameState, candidate: Candidate) -> bool:
         """Return whether Ignition completes a damaging attack this turn."""
+        if self._scorer._feature_int(
+            candidate, "target_card_id"
+        ) == PORYGON2 and not self._ignition_r_command_is_productive(state):
+            self._turn_ledger.energy_attachment_reason = "ignition_porygon_without_r_command_gain"
+            return False
         return self._scorer._ignition_attachment_is_productive(state, candidate)
+
+    def _ignition_r_command_is_productive(self, state: GameState) -> bool:
+        """Return whether Ignition on Porygon2 creates a public R Command gain."""
+        opponent = self._scorer._opponent_player(state)
+        player = self._scorer._own_player(state)
+        if opponent is None or opponent.active is None or player is None:
+            return False
+        projected = self._scorer._rocket_supporters_in_discard(state)
+        damage = projected * 20
+        target_prizes = self._scorer._active_target_prize_value(state)
+        return bool(
+            (damage >= int(opponent.active.hp) and damage > 0)
+            or target_prizes >= len(player.prize) > 0
+        )
 
     def _giovanni_is_productive(self, state: GameState, candidate: Candidate) -> bool:
         """Require a committed attackable switch target before playing Giovanni."""

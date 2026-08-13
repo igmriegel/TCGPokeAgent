@@ -4468,4 +4468,49 @@ def test_energy_is_deferred_against_public_abra_without_same_turn_attack() -> No
     assert agent.turn_ledger.energy_veto_threat == "public_abra_line"
 
 
+def test_public_draw_comparison_records_ariana_and_petrel_values() -> None:
+    """The draw decision exposes both public sequence values in the ledger."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(hand=[{"id": ARIANA}, {"id": PETREL}], deck_count=12),
+            PlayerState(),
+        ],
+    )
+    agent._refresh_public_turn_facts(state)
+    assert "ariana=" in agent.turn_ledger.ariana_petrel_comparison
+    assert "petrel=" in agent.turn_ledger.ariana_petrel_comparison
+
+
+def test_porygon_ignition_is_vetoed_without_public_r_command_gain() -> None:
+    """Ignition must not be attached to Porygon2 without a public conversion."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90, serial=22),
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[],
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350, serial=30)),
+        ],
+    )
+    ignition = Candidate(
+        0,
+        {"type": OptionType.ATTACH.value},
+        OptionType.ATTACH,
+        card={"cardType": 6},
+        features={
+            "card_id": IGNITION_ENERGY,
+            "target_card_id": PORYGON2,
+            "target_serial": 22,
+            "target_is_active": True,
+        },
+    )
+    assert agent._candidate_is_forbidden(state, ignition, SelectContext.MAIN)
+    assert agent.turn_ledger.energy_attachment_reason == "defer_without_same_turn_attack"
+
+
 assert HonchkrowPorygonAgent
