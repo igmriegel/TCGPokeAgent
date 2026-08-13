@@ -1243,7 +1243,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             return -1800.0
         deck = max(1, int(player.deck_count))
         expected_supporters = draws * self._roto_remaining_supporters(state) / deck
-        return expected_supporters * 650.0 + draws * 35.0
+        return float(expected_supporters * 650.0 + draws * 35.0)
 
     def _factory_in_play(self, state: GameState) -> bool:
         return self._stadium_in_play(state, FACTORY)
@@ -1334,13 +1334,9 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         )
 
     def _factory_is_useful(self, state: GameState) -> bool:
-        """Return whether Factory has an available, non-deck-out draw trigger."""
+        """Return whether Factory can draw its two cards after a Supporter."""
         player = self._own_player(state)
-        return bool(
-            player
-            and state.supporter_played
-            and player.deck_count >= 2
-        )
+        return bool(player and state.supporter_played and player.deck_count >= 2)
 
     def _night_stretcher_is_productive(self, state: GameState) -> bool:
         """Require a recovery target that can immediately leave the hand."""
@@ -4275,11 +4271,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.resource_guard = "budew_itchy_pollen_item_lock"
             return False
         player = self._scorer._own_player(state)
-        if (
-            player is not None
-            and player.deck_count
-            < ROTO_STICK_REVEAL_COUNT
-        ):
+        if player is not None and player.deck_count < ROTO_STICK_REVEAL_COUNT:
             self._turn_ledger.resource_guard = "roto_requires_four_cards_to_reveal"
             return False
         self._turn_ledger.roto_preserved_reason = "play_roto_before_partial_damage"
