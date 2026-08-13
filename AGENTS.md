@@ -229,6 +229,13 @@ uv run --frozen pytest tests/ -v
   workflow. Continue through implementation, validation, artifact generation,
   and the requested handoff unless a real blocker, missing authority, or user
   instruction requires stopping; report that boundary immediately with evidence.
+- For a user request that enumerates required behaviors, treat every listed
+  behavior as mandatory scope. Do not describe the task as implemented, create
+  a delivery commit, build a package, or submit a package until every item has
+  a concrete state-based implementation and a direct regression test. Existing
+  partial behavior does not satisfy an item unless its exact requested
+  condition and priority are verified. If a genuine blocker prevents one item,
+  stop before committing and report the specific unmet item and blocker.
 - Every material change must include proportionate, reproducible evidence that
   the requested behavior was implemented: relevant tests, extracted-package
   validation, command output, artifact hash, remote receipt, or downloaded
