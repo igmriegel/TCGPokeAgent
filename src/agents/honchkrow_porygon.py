@@ -5893,6 +5893,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.end_reason = "veto_productive_line"
             self._turn_ledger.end_veto_reason = "productive_public_line"
             return True
+        if (
+            candidate.option_type is OptionType.END
+            and self._switch_commitment is not None
+            and self._switch_commitment.method == "ignition"
+            and self._pokemon_attack_choice(
+                state, self._scorer._own_active(state), giovanni_played=False
+            )
+            is not None
+        ):
+            self._turn_ledger.resource_guard = "execute_committed_ignition_attack"
+            self._turn_ledger.end_veto_reason = "ignition_attack_pending"
+            return True
         if candidate.option_type is OptionType.END and self._turn_ledger.unresolved_obligations:
             self._turn_ledger.resource_guard = "unresolved_turn_obligation"
             self._turn_ledger.end_reason = "veto_" + ",".join(
@@ -5997,7 +6009,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if (
             candidate.option_type is OptionType.ATTACK
             and self._scorer._attack_id(candidate) in {R_COMMAND, HAMMER_IN}
-            and not self._scorer._attack_has_committed_ko(state, candidate)
+            and not (
+                self._scorer._attack_has_committed_ko(state, candidate)
+                or (
+                    self._switch_commitment is not None
+                    and self._switch_commitment.method == "ignition"
+                    and self._switch_commitment.attack_id == self._scorer._attack_id(candidate)
+                )
+            )
         ):
             self._turn_ledger.resource_guard = "resource_attack_nonlethal_veto"
             return True

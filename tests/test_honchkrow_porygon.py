@@ -4513,4 +4513,33 @@ def test_porygon_ignition_is_vetoed_without_public_r_command_gain() -> None:
     assert agent.turn_ledger.energy_attachment_reason == "defer_without_same_turn_attack"
 
 
+def test_committed_ignition_r_command_is_not_rejected_as_nonlethal() -> None:
+    """A committed R Command line remains selectable after Ignition attachment."""
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent = HonchkrowPorygonAgent(_profile())
+    agent._switch_commitment = SwitchCommitment(
+        method="ignition",
+        turn=8,
+        target_card_id=PORYGON2,
+        target_serial=22,
+        attack_id=R_COMMAND,
+        planned_damage=360,
+    )
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}]),
+                discard=[{"id": ARIANA}] * 18,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+        ],
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=R_COMMAND)
+    end = _candidate(1, OptionType.END)
+    assert not agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, end, SelectContext.MAIN)
+
+
 assert HonchkrowPorygonAgent
