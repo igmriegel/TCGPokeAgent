@@ -5897,10 +5897,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             candidate.option_type is OptionType.END
             and self._switch_commitment is not None
             and self._switch_commitment.method == "ignition"
-            and self._pokemon_attack_choice(
-                state, self._scorer._own_active(state), giovanni_played=False
-            )
-            is not None
+            and self._active_matches_switch_commitment(state)
         ):
             self._turn_ledger.resource_guard = "execute_committed_ignition_attack"
             self._turn_ledger.end_veto_reason = "ignition_attack_pending"
@@ -6003,6 +6000,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             candidate.option_type is OptionType.ATTACK
             and self._scorer._attack_id(candidate) == ROCKET_FEATHERS
             and not self._rocket_feathers_is_immediate_ko(state, candidate)
+            and not (
+                self._switch_commitment is not None
+                and self._switch_commitment.method == "ignition"
+                and self._switch_commitment.attack_id == ROCKET_FEATHERS
+            )
         ):
             self._turn_ledger.resource_guard = "rocket_feathers_nonlethal_veto"
             return True
