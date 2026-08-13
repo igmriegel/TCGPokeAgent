@@ -557,6 +557,38 @@ def test_transceiver_rejects_ariana_after_supporter_was_played() -> None:
     assert agent.turn_ledger.resource_guard == "transceiver_ariana_after_supporter_veto"
 
 
+def test_transceiver_fetches_a_discardable_supporter_when_rocket_ko_requires_it() -> None:
+    """A Transceiver counted for Rocket Feathers must fetch a real discardable Supporter."""
+    agent = HonchkrowPorygonAgent(_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": TRANSCEIVER}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 60, 60)),
+        ]
+    )
+    candidates = [
+        Candidate(
+            index,
+            {"type": OptionType.CARD.value, "sourceCardId": TRANSCEIVER},
+            OptionType.CARD,
+            card={"cardType": 3},
+            features={"card_id": card_id},
+        )
+        for index, card_id in enumerate((ARIANA, PETREL))
+    ]
+    selections = [Selection((index,), (OptionType.CARD,)) for index in range(2)]
+
+    choices = agent._transceiver_selections(state, selections, candidates)
+
+    assert choices is not None
+    assert [selection.indices for selection in choices] == [(1,)]
+    assert agent.turn_ledger.transceiver_target == PETREL
+
+
 def test_headset_is_resolved_before_an_attack_that_depends_on_it() -> None:
     """A counted Miracle Headset must be played before the attack is chosen."""
     agent = HonchkrowPorygonAgent(_profile())
@@ -1016,8 +1048,8 @@ def test_opening_active_order_is_murkrow_then_porygon_then_articuno() -> None:
     assert scores[0] > scores[1] > scores[2]
 
 
-def test_petrel_factory_dominates_one_card_ariana_draw() -> None:
-    """Petrel creates the two-card Factory line when Ariana adds only one card."""
+def test_ariana_precedes_petrel_factory_when_it_safely_improves_the_hand() -> None:
+    """Ariana is preferred over Petrel when its public draw improves the hand."""
     agent = HonchkrowPorygonAgent(_profile())
     hand = [{"id": PETREL}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))]
     state = GameState(
@@ -1040,9 +1072,8 @@ def test_petrel_factory_dominates_one_card_ariana_draw() -> None:
 
     _, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
-    assert reason == "petrel_factory_over_low_draw_ariana"
-    assert [selection.indices for selection in choices] == [(1,)]
-    assert agent.turn_ledger.petrel_factory_opportunities == 1
+    assert reason == "canonical_ariana_resource_engine"
+    assert [selection.indices for selection in choices] == [(0,)]
 
 
 def test_petrel_target_scoring_accepts_non_ariana_supporter() -> None:
@@ -1984,6 +2015,28 @@ def test_tool_scrapper_target_prompt_requires_visible_heros_cape() -> None:
     assert [choice.indices for choice in choices] == [(0,)]
 
 
+def test_xerosic_discard_prompt_preserves_miracle_headset_before_factory() -> None:
+    """A public opposing Xerosic makes Factory the preferred discard over Headset."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        your_index=0,
+        players=[PlayerState(), PlayerState()],
+        raw={"logs": [{"cardId": 1197, "playerIndex": 1}]},
+    )
+    headset = _candidate(0, OptionType.CARD, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    factory = _candidate(1, OptionType.CARD, card_id=FACTORY, card={"cardType": 4})
+
+    choices = agent._filter_forbidden_selections(
+        state,
+        [Selection((0,), (OptionType.CARD,)), Selection((1,), (OptionType.CARD,))],
+        [headset, factory],
+        SelectContext.DISCARD,
+    )
+
+    assert [choice.indices for choice in choices] == [(1,)]
+    assert agent.turn_ledger.resource_guard == "discard_articuno_or_factory_before_headset"
+
+
 def test_tool_scrapper_prioritizes_cynthias_power_weight() -> None:
     """Tool Scrapper removes Cynthia's Power Weight when it is publicly attached."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
@@ -2341,8 +2394,8 @@ def test_expert_turn_loop_plays_factory_drawn_by_ariana_before_factory_effect() 
     assert [selection.indices for selection in effect_choices] == [(2,)]
 
 
-def test_expert_turn_loop_prefers_petrel_factory_over_low_draw_ariana() -> None:
-    """Petrel supersedes Ariana when it creates the legal Factory line."""
+def test_expert_turn_loop_prefers_ariana_before_petrel_factory() -> None:
+    """Ariana is not displaced by a lower-priority Petrel Factory line."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     hand = [{"id": PETREL}, {"id": ARIANA}, *({"id": ARCHER} for _ in range(6))]
     state = GameState(
@@ -2365,9 +2418,8 @@ def test_expert_turn_loop_prefers_petrel_factory_over_low_draw_ariana() -> None:
 
     _, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
-    assert reason == "petrel_factory_over_low_draw_ariana"
-    assert [selection.indices for selection in choices] == [(1,)]
-    assert agent.turn_ledger.petrel_factory_opportunities == 1
+    assert reason == "canonical_ariana_resource_engine"
+    assert [selection.indices for selection in choices] == [(0,)]
 
 
 def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monkeypatch) -> None:

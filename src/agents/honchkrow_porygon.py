@@ -3950,6 +3950,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == PETREL
                     and self._scorer._petrel_factory_is_superior(state)
+                    and not self._scorer._ariana_is_safe_and_useful(state)
+                    and not (
+                        self._scorer._card_in_hand(state, PROTON)
+                        and self._scorer._proton_setup_is_useful(state)
+                    )
                 )
             )
             if petrel_factory:
@@ -4054,6 +4059,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.stage = CanonicalTurnStage.HEADSET.value
 
         if self._turn_ledger.stage == CanonicalTurnStage.HEADSET.value:
+            porygon2 = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.EVOLVE
+                    and self._scorer._feature_int(candidate, "card_id") == PORYGON2
+                    and self._scorer._porygon2_terminal_promotion_available(state, candidate)
+                )
+            )
+            if porygon2:
+                return (
+                    DecisionPhase.EVOLVE.value,
+                    "canonical_evolve_porygon2_before_headset",
+                    porygon2,
+                )
             headset = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
@@ -4294,6 +4312,25 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 required = max(1, (max(0, int(pokemon.hp)) + 59) // 60)
                 if self._scorer._effective_supporters_in_hand(state) >= required:
                     self._turn_ledger.supporters_needed_for_ko = required
+                    return True
+            active = self._scorer._own_active(state)
+            if active is not None and active.card_id == HONCHKROW:
+                damage = self._scorer._attack_damage(
+                    state,
+                    Candidate(
+                        0,
+                        {"attackId": ROCKET_FEATHERS},
+                        OptionType.ATTACK,
+                        features={
+                            "target_card_id": pokemon.card_id,
+                            "target_serial": pokemon.serial,
+                        },
+                    ),
+                    self._scorer._effective_supporters_in_hand(state) * 60,
+                    pokemon,
+                )
+                if damage >= max(0, int(pokemon.hp)):
+                    self._turn_ledger.giovanni_pivot_reason = "giovanni_targets_public_ko"
                     return True
         return False
 
@@ -4631,6 +4668,20 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
         if context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
+            disposable = {
+                candidate.option_index
+                for candidate in candidates
+                if self._scorer._feature_int(candidate, "card_id") in {ARTICUNO, FACTORY}
+            }
+            if disposable:
+                preferred = [
+                    selection
+                    for selection in selections
+                    if any(index in disposable for index in selection.indices)
+                ]
+                if preferred:
+                    self._turn_ledger.resource_guard = "discard_articuno_or_factory_before_headset"
+                    selections = preferred
             cape_targets = {
                 candidate.option_index
                 for candidate in candidates
@@ -4979,7 +5030,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.objective or self._choose_turn_objective(state, candidates).value
         )
         target_order: list[int]
-        if self._scorer._giovanni_pivot_is_productive(state):
+        if self._transceiver_line_requires_resolution(state):
+            target_order = [PETREL, ARCHER, PROTON, GIOVANNI, ARIANA]
+            self._turn_ledger.transceiver_objective = "rocket_feathers_required_supporter"
+        elif self._scorer._giovanni_pivot_is_productive(state):
             target_order = [GIOVANNI, PROTON, ARIANA, PETREL]
             self._turn_ledger.giovanni_pivot_reason = "transceiver_fetches_giovanni_pivot"
         elif (
@@ -5303,7 +5357,6 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     self._scorer._proton_setup_is_useful(state)
                     and self._scorer._card_in_hand(state, PROTON)
                 )
-                or self._scorer._petrel_factory_is_superior(state)
             )
         factory_ability = self._is_factory_effect_candidate(candidate, state)
         if candidate.option_type is OptionType.ABILITY and factory_ability:
@@ -5431,6 +5484,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             if self._scorer._card_selected_from_night_stretcher(candidate):
                 return True
         if context in {SelectContext.DISCARD, SelectContext.DISCARD_CARD_OR_ATTACHED_CARD}:
+            if card_id == MIRACLE_HEADSET and self._opponent_played_xerosic(state):
+                self._turn_ledger.resource_guard = "preserve_headset_after_xerosic"
+                return True
             if card_id == ARIANA and not (
                 self._scorer._discard_is_required_for_ko(state, candidate)
                 or self._scorer._ultra_ball_completes_r_command(state)
@@ -5955,3 +6011,17 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 and self._scorer._metadata_int(event, "playerIndex") != state.your_index
             )
         return False
+
+    def _opponent_played_xerosic(self, state: GameState) -> bool:
+        """Return whether the latest public opposing Supporter play was Xerosic."""
+        logs = state.raw.get("_logs", state.raw.get("logs", ()))
+        if not isinstance(logs, list):
+            return False
+        return any(
+            isinstance(event, Mapping)
+            and bool(
+                self._scorer._metadata_int(event, "cardId") == 1197
+                and self._scorer._metadata_int(event, "playerIndex") != state.your_index
+            )
+            for event in logs
+        )
