@@ -65,7 +65,7 @@ DRAGAPULT_EX = 121
 ABRA = 741
 KADABRA = 742
 ALAKAZAM = 743
-ROTO_STICK_REVEAL_COUNT = 4
+ROTO_STICK_MAX_REVEAL_COUNT = 4
 CANONICAL_POLICY_VARIANT = "expert_turn_loop"
 
 
@@ -1131,7 +1131,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         player = self._own_player(state)
         if active is None or player is None or not self._card_in_hand(state, ROTO_STICK):
             return False
-        deck_room = min(4, self._roto_remaining_supporters(state))
+        deck_room = min(ROTO_STICK_MAX_REVEAL_COUNT, self._roto_remaining_supporters(state))
         if deck_room <= 0:
             return False
         target_hp = self._raw_opponent_hp(state)
@@ -1187,7 +1187,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
 
     def _roto_hit_probability(self, state: GameState, required: int) -> float:
         """Estimate the chance that Roto's four revealed cards close the deficit."""
-        return self._supporter_hit_probability(state, 4, required)
+        return self._supporter_hit_probability(state, ROTO_STICK_MAX_REVEAL_COUNT, required)
 
     def _roto_expected_value(self, state: GameState, required: int) -> tuple[float, float]:
         """Return expected Roto value and its probability of closing the deficit."""
@@ -1270,7 +1270,7 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             and not state.stadium_played
             and self._card_in_hand(state, PETREL)
             and self._ariana_marginal_draw(state) <= 2
-            and player.deck_count >= 2
+            and player.deck_count > 0
         )
 
     def _transceiver_is_better_than_petrel_for_ariana(self, state: GameState) -> bool:
@@ -1329,14 +1329,14 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if player is None or state.stadium_played:
             return False
         return bool(
-            int(player.deck_count) >= 2
+            int(player.deck_count) > 0
             and (state.supporter_played or self._has_playable_supporter(state))
         )
 
     def _factory_is_useful(self, state: GameState) -> bool:
-        """Return whether Factory can draw its two cards after a Supporter."""
+        """Return whether Factory can draw at least one card after a Supporter."""
         player = self._own_player(state)
-        return bool(player and state.supporter_played and player.deck_count >= 2)
+        return bool(player and state.supporter_played and player.deck_count > 0)
 
     def _night_stretcher_is_productive(self, state: GameState) -> bool:
         """Require a recovery target that can immediately leave the hand."""
@@ -4264,15 +4264,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         return 0, ""
 
     def _canonical_roto_is_productive(self, state: GameState) -> bool:
-        """Require a legal Roto before damage when it can reveal four cards."""
+        """Require a legal Roto before damage when it can reveal at least one card."""
         if not self._scorer._card_in_hand(state, ROTO_STICK):
             return False
         if self._opponent_budew_item_lock(state):
             self._turn_ledger.resource_guard = "budew_itchy_pollen_item_lock"
             return False
         player = self._scorer._own_player(state)
-        if player is not None and player.deck_count < ROTO_STICK_REVEAL_COUNT:
-            self._turn_ledger.resource_guard = "roto_requires_four_cards_to_reveal"
+        if player is not None and player.deck_count <= 0:
+            self._turn_ledger.resource_guard = "roto_requires_cards_to_reveal"
             return False
         self._turn_ledger.roto_preserved_reason = "play_roto_before_partial_damage"
         return True

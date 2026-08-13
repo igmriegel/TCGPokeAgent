@@ -2839,14 +2839,14 @@ def test_canonical_night_stretcher_scoring_uses_the_productive_recovery_line() -
     assert not scorer._night_stretcher_is_productive(blocked_state)
 
 
-def test_factory_is_only_useful_after_supporter_and_with_two_cards_to_draw() -> None:
+def test_factory_is_only_useful_after_supporter_and_with_a_card_to_draw() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(players=[PlayerState(deck_count=2), PlayerState()])
     assert not scorer._factory_is_useful(state)
     state.supporter_played = True
-    state.players[0].deck_count = 2
-    assert scorer._factory_is_useful(state)
     state.players[0].deck_count = 1
+    assert scorer._factory_is_useful(state)
+    state.players[0].deck_count = 0
     assert not scorer._factory_is_useful(state)
 
 
@@ -2856,19 +2856,22 @@ def test_ariana_can_use_the_last_card_in_the_deck() -> None:
     assert scorer._ariana_is_safe_and_useful(state)
 
 
-def test_expert_turn_loop_allows_roto_to_use_the_last_four_cards(
+def test_expert_turn_loop_allows_roto_to_reveal_up_to_four_remaining_cards(
     monkeypatch,
 ) -> None:
-    """Roto may empty the deck; only its four-card reveal requirement remains."""
+    """Roto may reveal one to four remaining cards and empty the deck."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=4), PlayerState()])
     monkeypatch.setattr(agent, "_roto_can_improve_rocket_line", lambda _state: True)
 
     assert agent._canonical_roto_is_productive(state)
 
-    state.players[0].deck_count = 3
+    state.players[0].deck_count = 1
+    assert agent._canonical_roto_is_productive(state)
+
+    state.players[0].deck_count = 0
     assert not agent._canonical_roto_is_productive(state)
-    assert agent.turn_ledger.resource_guard == "roto_requires_four_cards_to_reveal"
+    assert agent.turn_ledger.resource_guard == "roto_requires_cards_to_reveal"
 
 
 def test_expert_turn_loop_keeps_productive_night_stretcher_independent_of_draw_reserve(
@@ -3419,7 +3422,7 @@ def test_retreat_requires_ready_immediate_ko_replacement() -> None:
     assert reason == "retreat_enables_immediate_ko"
 
 
-def test_factory_can_use_the_last_two_cards_in_the_deck() -> None:
+def test_factory_can_use_the_last_card_in_the_deck() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(
         supporter_played=True,
@@ -3430,7 +3433,7 @@ def test_factory_can_use_the_last_two_cards_in_the_deck() -> None:
     )
     assert scorer._factory_is_useful(state)
     state.players[0].deck_count = 1
-    assert not scorer._factory_is_useful(state)
+    assert scorer._factory_is_useful(state)
 
 
 def test_main_phase_ends_instead_of_reintroducing_partial_mega_attack() -> None:
