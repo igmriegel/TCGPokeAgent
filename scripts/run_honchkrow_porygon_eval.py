@@ -438,12 +438,16 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
             "deck_reserve": ledger.deck_reserve,
             "deck_risk": ledger.deck_risk,
             "roto_sticks_played": ledger.roto_sticks_played,
+            "roto_mode": ledger.roto_mode,
+            "roto_cards_revealed": ledger.roto_cards_revealed,
             "roto_sticks_played_total": match_ledger.roto_sticks_played,
             "roto_supporters_revealed": ledger.roto_supporters_revealed,
             "roto_supporters_selected": ledger.roto_supporters_selected,
             "roto_supporters_revealed_total": match_ledger.roto_supporters_revealed,
             "roto_supporters_selected_total": match_ledger.roto_supporters_selected,
             "roto_damage_acquired": ledger.roto_damage_acquired,
+            "roto_ko_confirmed": ledger.roto_ko_confirmed,
+            "roto_repeat_reason": ledger.roto_repeat_reason,
             "roto_preserved_reason": ledger.roto_preserved_reason,
             "transceiver_proton_in_hand": ledger.transceiver_proton_in_hand,
             "transceiver_target": ledger.transceiver_target,
@@ -615,13 +619,39 @@ def _run_match(seed: int, side: int) -> dict[str, Any]:
     }
 
 
+def _run_match_with_retry(seed: int, side: int, max_attempts: int = 3) -> dict[str, Any]:
+    """Retry transient CABT runner failures without hiding persistent failures.
+
+    CABT can occasionally leave one player in ``ERROR`` while the same public
+    seed/side completes normally on a fresh environment.  Retries are limited,
+    recorded on the successful trace, and the final failed attempt is retained
+    when the condition persists.
+    """
+    attempts = max(1, int(max_attempts))
+    first_statuses: list[str] = []
+    for attempt in range(1, attempts + 1):
+        match = _run_match(seed, side)
+        if attempt == 1:
+            first_statuses = list(match.get("statuses", []))
+        if match.get("status") == "ok":
+            if attempt > 1:
+                match["runner_retry_count"] = attempt - 1
+                match["runner_initial_statuses"] = first_statuses
+            return match
+    match["runner_retry_count"] = attempts - 1
+    match["runner_initial_statuses"] = first_statuses
+    return match
+
+
 def run(
     matches_per_side: int,
     seed_base: int,
 ) -> dict[str, Any]:
     """Run both sides and aggregate all requested outcome and telemetry metrics."""
     matches = [
-        _run_match(seed_base + index, side) for index in range(matches_per_side) for side in (0, 1)
+        _run_match_with_retry(seed_base + index, side)
+        for index in range(matches_per_side)
+        for side in (0, 1)
     ]
     outcomes = Counter(match["result"] for match in matches)
     reasons = Counter(match["termination_reason"] for match in matches)
@@ -812,7 +842,7 @@ def run_stream(
         for ordinal in range(len(completed_matches), total):
             seed = seed_base + ordinal // 2
             side = ordinal % 2
-            match = _run_match(seed, side)
+            match = _run_match_with_retry(seed, side)
             trace.write(json.dumps(match, sort_keys=True) + "\n")
             trace.flush()
             _accumulate_stream_match(

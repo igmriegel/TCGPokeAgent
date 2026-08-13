@@ -10,6 +10,7 @@ import pytest
 from scripts.run_honchkrow_porygon_eval import (
     _is_partial_mega_abomasnow_attack,
     _load_stream_checkpoint,
+    _run_match_with_retry,
     _selected_card_ids,
     _terminal_reason,
     _terminal_snapshot,
@@ -89,3 +90,23 @@ def test_terminal_snapshot_prefers_visualizer_post_resolution_state() -> None:
     assert current == terminal
     assert source == "visualizer_terminal"
     assert _terminal_reason(environment, current, logs) == (3, "no_pokemon_in_play", True)
+
+
+def test_runner_retry_records_transient_error_and_returns_clean_attempt(monkeypatch) -> None:
+    """A transient CABT status is retried and remains visible in match metadata."""
+    attempts = iter(
+        [
+            {"status": "error", "statuses": ["ERROR", "DONE"]},
+            {"status": "ok", "statuses": ["DONE", "DONE"]},
+        ]
+    )
+    monkeypatch.setattr(
+        "scripts.run_honchkrow_porygon_eval._run_match",
+        lambda seed, side: next(attempts),
+    )
+
+    result = _run_match_with_retry(7, 0)
+
+    assert result["status"] == "ok"
+    assert result["runner_retry_count"] == 1
+    assert result["runner_initial_statuses"] == ["ERROR", "DONE"]
