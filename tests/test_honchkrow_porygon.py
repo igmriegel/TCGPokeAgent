@@ -2507,7 +2507,7 @@ def test_expert_turn_loop_prefers_ariana_before_petrel_factory() -> None:
     assert [selection.indices for selection in choices] == [(0,)]
 
 
-def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monkeypatch) -> None:
+def test_canonical_turn_loop_orders_factory_ariana_and_factory_effect() -> None:
     """The Owner-ratified normal draw sequence is preserved across replans."""
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
@@ -2530,8 +2530,6 @@ def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monk
         Selection((candidate.option_index,), (candidate.option_type,))
         for candidate in [factory_play, ariana, roto, factory_effect]
     ]
-    monkeypatch.setattr(agent, "_canonical_roto_is_productive", lambda _state: True)
-
     _, reason, choices = agent._main_phase_selections(
         state, selections, [factory_play, ariana, roto]
     )
@@ -2551,8 +2549,8 @@ def test_canonical_turn_loop_orders_factory_ariana_factory_effect_then_roto(monk
 
     agent.turn_ledger.stage = "roto"
     _, reason, choices = agent._main_phase_selections(state, selections, [roto])
-    assert reason == "canonical_roto_after_factory"
-    assert [choice.indices for choice in choices] == [(2,)]
+    assert reason == "end"
+    assert all((2,) != choice.indices for choice in choices)
 
 
 def test_canonical_turn_loop_places_factory_before_post_ko_supporter() -> None:
@@ -3602,6 +3600,155 @@ def test_rocket_feathers_allows_exact_and_overkill_immediate_kos() -> None:
         feathers = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
 
         assert not agent._candidate_is_forbidden(state, feathers, SelectContext.MAIN)
+
+
+def test_archer_precedes_nonlethal_rocket_feathers_after_public_ko() -> None:
+    """A legal post-KO redraw preserves Supporters when Rocket cannot KO."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent._scorer.set_own_ko_observed(True)
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ARCHER}, {"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 180, 180)),
+        ]
+    )
+    archer = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
+    end = _candidate(1, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [archer, end],
+    )
+
+    assert reason == "canonical_archer_preserves_nonlethal_rocket_supporters"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+
+def test_roto_after_supporter_requires_one_to_four_supporters_for_public_ko() -> None:
+    """Post-Supporter Roto is a bounded lethal attempt, never generic recovery."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        supporter_played=True,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}, {"id": ARIANA}],
+                deck_count=20,
+            ),
+            PlayerState(active=PokemonState(721, 180, 180)),
+        ],
+    )
+    roto = _candidate(0, OptionType.PLAY, card_id=ROTO_STICK)
+
+    assert not agent._candidate_is_forbidden(state, roto, SelectContext.MAIN)
+    assert agent.turn_ledger.roto_post_supporter_required == 2
+    assert agent.turn_ledger.roto_post_supporter_lethal_attempt
+
+
+def test_roto_reveal_below_post_supporter_lethal_deficit_preserves_supporters() -> None:
+    """A failed Roto reveal cannot turn revealed Supporters into partial damage."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent.turn_ledger.roto_post_supporter_lethal_attempt = True
+    agent.turn_ledger.roto_post_supporter_required = 2
+    state = GameState(supporter_played=True, players=[PlayerState(), PlayerState()])
+    revealed_supporter = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+        OptionType.CARD,
+        card={"cardType": 3},
+        features={"card_id": ARIANA},
+    )
+    revealed_other = Candidate(
+        1,
+        {"type": OptionType.CARD.value, "sourceCardId": ROTO_STICK},
+        OptionType.CARD,
+        features={"card_id": MURKROW},
+    )
+    result = agent._roto_recovery_selections(
+        state,
+        [Selection((), ()), Selection((0,), (OptionType.CARD,))],
+        [revealed_supporter, revealed_other],
+    )
+
+    assert result == (0, [Selection((), ())])
+    assert agent.turn_ledger.roto_post_supporter_outcome == "reveal_did_not_confirm_ko"
+
+
+def test_factory_rescue_prioritizes_proton_then_activates_factory() -> None:
+    """An active Factory converts a productive Supporter before END or draw."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent.turn_ledger.stage = "supporter"
+    state = GameState(
+        stadium=[{"id": FACTORY}],
+        players=[PlayerState(hand=[{"id": PROTON}], deck_count=12), PlayerState()],
+    )
+    proton = _candidate(0, OptionType.PLAY, card_id=PROTON, card={"cardType": 3})
+    factory_effect = _candidate(1, OptionType.ABILITY, card_id=FACTORY)
+    end = _candidate(2, OptionType.END)
+    selections = [
+        Selection((0,), (OptionType.PLAY,)),
+        Selection((1,), (OptionType.ABILITY,)),
+        Selection((2,), (OptionType.END,)),
+    ]
+
+    _, reason, choices = agent._main_phase_selections(
+        state, selections, [proton, factory_effect, end]
+    )
+    assert reason == "canonical_factory_rescue_proton"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+    state.supporter_played = True
+    agent.turn_ledger.stage = "factory"
+    _, reason, choices = agent._main_phase_selections(state, selections, [factory_effect, end])
+    assert reason == "canonical_factory_after_supporter"
+    assert [choice.indices for choice in choices] == [(1,)]
+
+
+def test_alakazam_line_places_articuno_before_nonwinning_evolution_or_end() -> None:
+    """Abra evidence uses the same public Articuno protection branch as Dragapult."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(MURKROW, 80, 80), hand=[{"id": ARTICUNO}]),
+            PlayerState(active=PokemonState(ABRA, 60, 60)),
+        ]
+    )
+    articuno = _candidate(0, OptionType.PLAY, card_id=ARTICUNO, card={"cardType": 0})
+    evolve = _candidate(1, OptionType.EVOLVE, card_id=HONCHKROW, card={"cardType": 0})
+    end = _candidate(2, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.EVOLVE,)),
+            Selection((2,), (OptionType.END,)),
+        ],
+        [articuno, evolve, end],
+    )
+    assert reason == "canonical_articuno_before_evolution"
+    assert [choice.indices for choice in choices] == [(0,)]
+
+
+def test_murkrow_promotion_scores_public_torment_knockout_above_other_promotions() -> None:
+    """An energized Murkrow with a public Torment KO is the forced promotion."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(bench=[PokemonState(MURKROW, 80, 80, serial=7, energies=[{}, {}])]),
+            PlayerState(active=PokemonState(999, 30, 30)),
+        ]
+    )
+    murkrow = _candidate(0, OptionType.CARD, card_id=MURKROW, target_serial=7)
+
+    score, reasons = scorer._card_selection_score(state, murkrow, SelectContext.TO_ACTIVE)
+    assert score == 5000.0
+    assert reasons == ["promote_murkrow_torment_public_ko"]
 
 
 def test_expert_turn_loop_ends_instead_of_partial_rocket_feathers() -> None:
