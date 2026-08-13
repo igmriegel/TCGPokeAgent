@@ -25,4 +25,5 @@ submit-kaggle:
 
 update-replays-reports:
 	scripts/download_all_replays.sh
+	scripts/download_all_decision_logs.sh
 	.venv/bin/python scripts/update_replays_reports.py
