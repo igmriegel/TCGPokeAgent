@@ -184,6 +184,11 @@ class TurnTacticalLedger:
     giovanni_pivot_reason: str = ""
     target_priority_reason: str = ""
     chosen_target_prize_value: int = 0
+    night_stretcher_priority_reason: str = ""
+    r_command_projected_supporters: int = 0
+    r_command_projected_damage: int = 0
+    headset_ariana_recovery: bool = False
+    development_obligations_pending: tuple[str, ...] = ()
 
     def reset(self, turn: int) -> None:
         """Clear evidence when the public turn changes."""
@@ -273,6 +278,11 @@ class TurnTacticalLedger:
         self.giovanni_pivot_reason = ""
         self.target_priority_reason = ""
         self.chosen_target_prize_value = 0
+        self.night_stretcher_priority_reason = ""
+        self.r_command_projected_supporters = 0
+        self.r_command_projected_damage = 0
+        self.headset_ariana_recovery = False
+        self.development_obligations_pending = ()
 
 
 @dataclass(slots=True)
@@ -2824,7 +2834,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 self._turn_ledger.miracle_headsets_played += 1
                 self._headset_turn = parsed.state.turn
                 if self._uses_expert_turn_loop:
-                    self._turn_ledger.stage = CanonicalTurnStage.ATTACK.value
+                    self._turn_ledger.stage = CanonicalTurnStage.DEVELOP.value
             elif candidate.option_type is OptionType.ATTACK:
                 if self._uses_expert_turn_loop:
                     self._turn_ledger.stage = CanonicalTurnStage.ATTACK.value
@@ -2973,6 +2983,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         discard = self._scorer._rocket_supporters_in_discard(state)
         self._turn_ledger.r_command_required_damage = max(0, self._scorer._raw_opponent_hp(state))
         self._turn_ledger.r_command_supporter_deficit = max(0, required - discard)
+        projected_supporters = self._projected_r_command_supporters(state)
+        self._turn_ledger.r_command_projected_supporters = projected_supporters
+        self._turn_ledger.r_command_projected_damage = projected_supporters * 20
         if self._scorer._ultra_ball_completes_r_command(state):
             self._turn_ledger.ultra_ball_supporter_discards = 2
             self._turn_ledger.ultra_ball_r_command_line = "confirmed_exact_two_supporters"
@@ -3871,11 +3884,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
                     and self._scorer._feature_int(candidate, "card_id") == MIRACLE_HEADSET
-                    and self._scorer._miracle_headset_emergency_is_useful(state)
+                    and (
+                        self._headset_ariana_recovery_is_useful(state)
+                        or self._scorer._miracle_headset_emergency_is_useful(state)
+                    )
                 )
             )
             if emergency_headset:
                 self._turn_ledger.canonical_exception = "headset_recover_ariana_from_reduced_hand"
+                self._turn_ledger.headset_ariana_recovery = self._headset_ariana_recovery_is_useful(
+                    state
+                )
+                self._turn_ledger.headset_recovery_reason = "ariana_plus_second_supporter"
                 return (
                     DecisionPhase.PLAY_ITEMS.value,
                     "canonical_emergency_headset_before_factory",
@@ -4074,15 +4094,69 @@ class HonchkrowPorygonAgent(HeuristicAgent):
 
     def _canonical_night_stretcher_is_productive(self, state: GameState) -> bool:
         """Keep Night Stretcher available when the deck is already on reserve."""
-        if not self._scorer._night_stretcher_is_productive(state):
-            return False
         player = self._scorer._own_player(state)
         if player is None:
             return False
         if int(player.deck_count) <= self._scorer._elective_draw_reserve(state):
             self._turn_ledger.resource_guard = "preserve_night_stretcher_for_deck_reserve"
             return False
-        return True
+        return any(
+            self._night_stretcher_target_priority(state, self._scorer._card_id_from_value(card))[0]
+            for card in player.discard
+        )
+
+    def _projected_r_command_supporters(self, state: GameState) -> int:
+        """Project public Supporters after a lethal Rocket Feathers and next-turn Supporter.
+
+        The extra Supporter is counted only when the current public hand can both
+        pay the exact Rocket Feathers requirement and preserve one Supporter for
+        the following turn.  This deliberately makes no claim about hidden draws.
+        """
+        discard = self._scorer._rocket_supporters_in_discard(state)
+        active = self._scorer._own_active(state)
+        if active is None or active.card_id != HONCHKROW:
+            return discard
+        required = self._scorer._supporters_needed_for_ko(state)
+        available = self._scorer._effective_supporters_in_hand(state)
+        if required <= 0 or available < required + 1:
+            return discard
+        return discard + required + 1
+
+    def _night_stretcher_target_priority(self, state: GameState, card_id: int) -> tuple[int, str]:
+        """Rank Night Stretcher targets from public immediate and projected lines."""
+        player = self._scorer._own_player(state)
+        if player is None or not self._scorer._night_stretcher_target_is_immediately_playable(
+            state, card_id
+        ):
+            return 0, ""
+        field = [pokemon for pokemon in [player.active, *player.bench] if pokemon is not None]
+        has_murkrow = any(pokemon.card_id == MURKROW for pokemon in field)
+        has_porygon = any(pokemon.card_id == PORYGON for pokemon in field)
+        projected_damage = self._projected_r_command_supporters(state) * 20
+        r_command_ko = projected_damage >= self._scorer._raw_opponent_hp(state) > 0
+        if card_id == MURKROW and not has_murkrow:
+            return 400, "recover_murkrow_for_incomplete_setup"
+        if card_id == PORYGON2 and has_porygon:
+            return (
+                350 if r_command_ko else 300,
+                "recover_porygon2_for_projected_r_command_ko"
+                if r_command_ko
+                else "recover_porygon2_for_r_command_line",
+            )
+        if card_id == PORYGON and not has_porygon:
+            return (
+                275 if r_command_ko else 250,
+                "recover_porygon_for_projected_r_command_ko"
+                if r_command_ko
+                else "recover_porygon_for_r_command_line",
+            )
+        if card_id == HONCHKROW and has_murkrow:
+            required = self._scorer._supporters_needed_for_ko(state)
+            if required > 0 and self._scorer._effective_supporters_in_hand(state) >= required:
+                return 200, "recover_honchkrow_for_rocket_feathers_ko"
+        if card_id == ARTICUNO and self._scorer._articuno_is_needed(state):
+            return 100, "recover_articuno_for_ratified_matchup_protection"
+        return 0, ""
 
     def _canonical_roto_is_productive(self, state: GameState) -> bool:
         """Require a legal Roto before damage unless its draw would risk deck-out."""
@@ -4165,6 +4239,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         self._turn_ledger.headset_reason = "two_supporters_close_immediate_ko"
         return True
 
+    def _headset_ariana_recovery_is_useful(self, state: GameState) -> bool:
+        """Return whether Headset restores Ariana and a second public useful Supporter."""
+        player = self._scorer._own_player(state)
+        if player is None or self._scorer._card_in_hand(state, ARIANA) or state.supporter_played:
+            return False
+        discard_ids = {self._scorer._card_id_from_value(card) for card in player.discard}
+        return bool(
+            ARIANA in discard_ids
+            and bool(discard_ids & {ARCHER, GIOVANNI, PETREL, PROTON})
+            and self._scorer._effective_supporters_in_hand(state) == 0
+            and self._scorer._ariana_is_safe_and_useful(state)
+        )
+
     def _transceiver_line_requires_resolution(self, state: GameState) -> bool:
         """Return whether Transceiver must resolve before a lethal attack."""
         if not self._scorer._card_in_hand(state, TRANSCEIVER):
@@ -4223,9 +4310,32 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 obligations.append("must_play_roto")
         if self._scorer._own_field_count(state) <= 1:
             obligations.append("must_develop_board")
+        player = self._scorer._own_player(state)
+        if player is not None:
+            if not self._scorer._own_bench_full(state) and any(
+                self._scorer._card_in_hand(state, card_id) for card_id in (MURKROW, PORYGON)
+            ):
+                obligations.append("must_play_basic_before_ariana")
+            if (
+                self._scorer._card_in_hand(state, HONCHKROW)
+                and self._scorer._has_murkrow_ready_to_evolve(state)
+            ) or (
+                self._scorer._card_in_hand(state, PORYGON2)
+                and self._scorer._has_porygon_ready_to_evolve(state)
+            ):
+                obligations.append("must_evolve_before_ariana")
+            if self._canonical_night_stretcher_is_productive(state):
+                obligations.append("must_recover_before_ariana")
+            if not state.energy_attached and self._turn_ledger.energy_cards_in_hand:
+                obligations.append("must_attach_energy_before_ariana")
         if obligations or self._scorer._productive_line_available(state):
             obligations.append("must_not_end")
         self._turn_ledger.unresolved_obligations = tuple(dict.fromkeys(obligations))
+        self._turn_ledger.development_obligations_pending = tuple(
+            obligation
+            for obligation in self._turn_ledger.unresolved_obligations
+            if obligation.endswith("before_ariana") or obligation == "must_develop_board"
+        )
 
     def _headset_line_requires_resolution(self, state: GameState) -> bool:
         """Return whether Miracle Headset must resolve before a lethal attack."""
@@ -4458,6 +4568,33 @@ class HonchkrowPorygonAgent(HeuristicAgent):
     ) -> list[Selection]:
         """Apply Honchkrow discard cardinality without changing shared policy."""
         by_index = {candidate.option_index: candidate for candidate in candidates}
+        if context is SelectContext.TO_HAND:
+            stretcher_targets = [
+                candidate
+                for candidate in candidates
+                if self._scorer._card_selected_from_night_stretcher(candidate)
+            ]
+            if stretcher_targets:
+                ranked_targets = [
+                    (
+                        self._night_stretcher_target_priority(
+                            state, self._scorer._feature_int(candidate, "card_id")
+                        ),
+                        candidate.option_index,
+                    )
+                    for candidate in stretcher_targets
+                ]
+                best_priority, reason = max((rank for rank, _ in ranked_targets), default=(0, ""))
+                if best_priority > 0:
+                    accepted = {index for rank, index in ranked_targets if rank[0] == best_priority}
+                    selected = [
+                        selection
+                        for selection in selections
+                        if any(index in accepted for index in selection.indices)
+                    ]
+                    if selected:
+                        self._turn_ledger.night_stretcher_priority_reason = reason
+                        selections = selected
         if (
             context in {SelectContext.TO_ACTIVE, SelectContext.SWITCH}
             and self._scorer._articuno_is_needed(state)
@@ -4608,7 +4745,11 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         if (candidate := by_index.get(index)) is not None
                     )
                 ]
-                if self._uses_expert_turn_loop and self._turn_ledger.headset_reason:
+                if self._uses_expert_turn_loop and (
+                    self._turn_ledger.headset_reason
+                    or self._turn_ledger.headset_ariana_recovery
+                    or self._headset_ariana_recovery_is_useful(state)
+                ):
                     preferred_id = (
                         GIOVANNI
                         if self._turn_ledger.headset_reason == "giovanni_prize_target"
@@ -4624,9 +4765,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         )
                     ]
                     if preferred:
-                        self._turn_ledger.resource_guard = (
-                            f"headset_prefers_{self._turn_ledger.headset_reason}"
+                        preference = (
+                            self._turn_ledger.headset_reason or "ariana_plus_second_supporter"
                         )
+                        self._turn_ledger.resource_guard = f"headset_prefers_{preference}"
                         return preferred
                 self._turn_ledger.resource_guard = f"headset_recovers_{recoverable}_supporter"
                 return without_duplicate_ariana or exact_two
@@ -5059,7 +5201,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             return True
         if candidate.option_type is OptionType.PLAY and card_id == MIRACLE_HEADSET:
             if self._uses_retreat_guard:
-                return not self._v3_miracle_headset_is_useful(state)
+                return not (
+                    self._v3_miracle_headset_is_useful(state)
+                    or self._headset_ariana_recovery_is_useful(state)
+                )
             return not self._scorer._miracle_headset_is_useful(state)
         if candidate.option_type is OptionType.PLAY and card_id == NIGHT_STRETCHER:
             return not self._canonical_night_stretcher_is_productive(state)
@@ -5073,6 +5218,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if candidate.option_type is OptionType.PLAY and card_id == ARIANA:
             return bool(
                 not self._scorer._ariana_is_safe_and_useful(state)
+                or bool(self._turn_ledger.development_obligations_pending)
                 or (
                     self._scorer._proton_setup_is_useful(state)
                     and self._scorer._card_in_hand(state, PROTON)

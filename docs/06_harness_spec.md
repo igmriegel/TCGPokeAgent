@@ -132,6 +132,17 @@ from that replay and writes logs to the decision-log path. `scripts/run_replay.p
 writes local visualizer payloads to `data/derived/local_replays/`. Consumers
 must read these canonical paths and must not create flat replay copies.
 
+### Identifier isolation
+
+Submission and replay identifiers are provenance keys for locating evidence,
+downloading artifacts, and reproducing an audited public prompt. The harness
+must not pass an identifier into agent policy as a strategic feature, and
+runtime tests must not assert behavior that is enabled only by an identifier.
+Every replay-derived correction requires a state-based fixture that expresses
+the observed legal options and public state without relying on its submission
+or replay ID. IDs may appear in reports, manifests, paths, and audit fixtures
+to preserve provenance; they must never alter selected simulator indices.
+
 SDK upgrades require an explicit compatibility experiment, a regenerated
 lockfile, and a harness contract update; the dependency is never updated
 silently.

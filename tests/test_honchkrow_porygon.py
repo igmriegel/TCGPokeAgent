@@ -1889,6 +1889,15 @@ def test_replay_metadata_does_not_change_opening_roto_selection() -> None:
     assert [selection.indices for selection in replay_result[1]] == [(0, 1)]
 
 
+def test_agent_runtime_has_no_replay_or_submission_identifier_hook() -> None:
+    """Replay provenance must never become an input to an agent decision."""
+    runtime_source = (ROOT / "src/agents/honchkrow_porygon.py").read_text(encoding="utf-8")
+
+    assert "_contains_replay_id" not in runtime_source
+    assert "episodeId" not in runtime_source
+    assert "submissionId" not in runtime_source
+
+
 def test_transceiver_selects_proton_even_when_ariana_is_in_hand() -> None:
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     state = GameState(turn=1, players=[PlayerState(hand=[{"id": ARIANA}]), PlayerState()])
@@ -3454,6 +3463,129 @@ def test_headset_recovers_ariana_after_unfair_stamp_reduces_hand() -> None:
         ]
     )
     assert scorer._miracle_headset_emergency_is_useful(state)
+
+
+def test_night_stretcher_ranks_murkrow_before_a_projected_porygon_line() -> None:
+    """Incomplete Murkrow setup is the first state-based Night Stretcher target."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                discard=[{"id": MURKROW}, {"id": PORYGON}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    assert (
+        agent._night_stretcher_target_priority(state, MURKROW)[0]
+        > (agent._night_stretcher_target_priority(state, PORYGON)[0])
+    )
+
+
+def test_night_stretcher_ranks_porygon2_over_porygon_when_evolution_is_legal() -> None:
+    """An evolvable Porygon makes Porygon2 the preferred recovery target."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 80, 80),
+                discard=[{"id": PORYGON}, {"id": PORYGON2}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    assert (
+        agent._night_stretcher_target_priority(state, PORYGON2)[0]
+        > (agent._night_stretcher_target_priority(state, PORYGON)[0])
+    )
+
+
+def test_headset_ariana_recovery_requires_a_second_discarded_supporter() -> None:
+    """Headset's Ariana line always recovers two useful public Supporters."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[],
+                hand_count=0,
+                discard=[{"id": ARIANA}, {"id": PROTON}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    assert agent._headset_ariana_recovery_is_useful(state)
+
+
+def test_canonical_headset_recovery_precedes_ariana_and_replans_development() -> None:
+    """The state-based Ariana recovery Headset is selected before the supporter phase."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130),
+                hand=[{"id": MIRACLE_HEADSET}],
+                hand_count=1,
+                discard=[{"id": ARIANA}, {"id": PROTON}],
+                deck_count=10,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    agent.turn_ledger.stage = "supporter"
+    headset = _candidate(0, OptionType.PLAY, card_id=MIRACLE_HEADSET, card={"cardType": 1})
+    end = _candidate(1, OptionType.END)
+
+    _, reason, choices = agent._main_phase_selections(
+        state,
+        [Selection((0,), (OptionType.PLAY,)), Selection((1,), (OptionType.END,))],
+        [headset, end],
+    )
+
+    assert reason == "canonical_emergency_headset_before_factory"
+    assert [choice.indices for choice in choices] == [(0,)]
+    assert agent.turn_ledger.headset_ariana_recovery
+
+
+def test_headset_ariana_recovery_selects_ariana_and_a_second_supporter() -> None:
+    """The Headset prompt preserves Ariana plus one other recovered Supporter."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent._headset_turn = 1
+    agent.turn_ledger.headset_ariana_recovery = True
+    state = GameState(
+        turn=1,
+        players=[
+            PlayerState(
+                hand=[], hand_count=0, discard=[{"id": ARIANA}, {"id": PROTON}], deck_count=10
+            ),
+            PlayerState(),
+        ],
+    )
+    ariana = Candidate(
+        0,
+        {"type": OptionType.CARD.value, "sourceCardId": MIRACLE_HEADSET, "cardId": ARIANA},
+        OptionType.CARD,
+        features={"card_id": ARIANA},
+    )
+    proton = Candidate(
+        1,
+        {"type": OptionType.CARD.value, "sourceCardId": MIRACLE_HEADSET, "cardId": PROTON},
+        OptionType.CARD,
+        features={"card_id": PROTON},
+    )
+    selected = agent._filter_forbidden_selections(
+        state,
+        [Selection((0, 1), (OptionType.CARD, OptionType.CARD))],
+        [ariana, proton],
+        SelectContext.TO_HAND,
+    )
+
+    assert [selection.indices for selection in selected] == [(0, 1)]
+    assert agent.turn_ledger.resource_guard == "headset_prefers_ariana_plus_second_supporter"
 
 
 def test_munkidori_is_lethal_with_one_rocket_feathers_supporter() -> None:

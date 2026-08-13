@@ -28,6 +28,17 @@ or aggregate win rates prove strategic compliance. Preserve the distinction
 between the Owner's verified observation and technical root causes, which are
 still unknown and require end-to-end investigation.
 
+### Replay and submission identifiers
+
+The Owner may provide Kaggle submission and replay identifiers solely to locate
+the relevant public game state, reproduce a decision, and audit an observed
+error. Never introduce, retain, or modify runtime policy conditions, scores,
+filters, fallback paths, or behavior tests that depend only on a submission or
+replay identifier. Treat the identified prompt as evidence: derive the most
+general rule supported by its public state and validate that rule with
+state-based fixtures. Identifiers may remain in provenance, download, audit,
+or fixture-path metadata, but must not change an agent decision.
+
 ---
 
 ## Architecture (vertical slices)

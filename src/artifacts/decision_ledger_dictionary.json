@@ -104,7 +104,12 @@
     "r_command_required_damage": "Visible damage required for the current R Command Knock Out.", "r_command_supporter_deficit": "Rocket Supporters still required in discard for R Command.",
     "ultra_ball_supporter_discards": "Rocket Supporters intentionally discarded through Ultra Ball for R Command.", "ultra_ball_r_command_line": "Confirmation or refusal reason for the Ultra Ball R Command line.",
     "froslass_count": "Visible opposing Froslass count.", "froslass_ping": "Cumulative post-attack Froslass HP reduction for the target.",
-    "archer_veto_reason": "Reason Archer was rejected despite being legal.", "headset_recovery_reason": "Reason Miracle Headset recovery is productive."
+    "archer_veto_reason": "Reason Archer was rejected despite being legal.", "headset_recovery_reason": "Reason Miracle Headset recovery is productive.",
+    "setup_guard_reason": "Reason a setup-preserving guard rejected a legal option.", "giovanni_pivot_reason": "Reason Giovanni is productive as a public pivot.",
+    "target_priority_reason": "Reason for the selected public target priority.", "chosen_target_prize_value": "Prize value of the selected public target.",
+    "night_stretcher_priority_reason": "State-based reason for the selected Night Stretcher recovery target.", "r_command_projected_supporters": "Public Supporter count projected after a preserved next-turn Supporter.",
+    "r_command_projected_damage": "Projected R Command damage from the public two-turn Supporter projection.", "headset_ariana_recovery": "Whether Headset explicitly restores Ariana plus another useful Supporter.",
+    "development_obligations_pending": "Productive development actions that must resolve before Ariana."
   },
   "match_ledger_fields": {
     "target_serial": "Public serial of the tracked opponent target.", "target_card_id": "Card ID of the tracked opponent target.",

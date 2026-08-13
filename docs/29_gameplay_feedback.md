@@ -683,6 +683,22 @@ source, affected decision, accepted scope, exceptions, rule link, task IDs, and
 gate. Post-hoc agent replay review and live human demonstration must remain
 different evidence types.
 
+```yaml
+observed_at: "2026-08-12"
+evidence_replays: [92138166, 92107425]
+finding: "Night Stretcher and Headset/Ariana sequencing diverged from the documented development-first turn plan."
+observed_facts:
+  - "A productive Night Stretcher was not given an explicit public-state target priority before Ariana."
+  - "A Headset recovery line could advance directly toward attack instead of returning to development and item resolution."
+general_rule:
+  - "Rank Night Stretcher targets by incomplete Murkrow setup, evolvable Porygon2/Porygon R Command line, public Rocket Feathers Honchkrow KO, then ratified Articuno protection."
+  - "When Headset restores Ariana plus another useful Supporter, resolve Ariana, replan, then complete productive development and items before Roto or attack."
+limitations:
+  - "Replay identifiers are provenance and fixture metadata only; they never participate in runtime policy."
+  - "This single-decision evidence does not infer an alternate game result."
+status: "implemented locally; replay and controlled CABT evidence pending"
+```
+
 ## Production replay audit: submissions 55320796 and 55322957
 
 ```yaml
