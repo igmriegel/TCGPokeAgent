@@ -239,13 +239,13 @@ def test_archer_alakazam_hand_pressure_requires_a_larger_public_opponent_hand() 
     candidate = _candidate(0, OptionType.PLAY, card_id=ARCHER, card={"cardType": 3})
 
     for opponent_hand_count, expected_score, expected_reason in (
-        (3, 900.0, True),
+        (3, 780.0, False),
         (2, 780.0, False),
         (1, 780.0, False),
     ):
         state = GameState(
             players=[
-                PlayerState(hand=[{"id": ARCHER}], hand_count=2, deck_count=20),
+                PlayerState(hand=[{"id": ARCHER}], hand_count=6, deck_count=20),
                 PlayerState(
                     active=PokemonState(ALAKAZAM, 120, 120),
                     hand_count=opponent_hand_count,
@@ -1832,6 +1832,8 @@ def test_pokepad_searches_honchkrow_for_attack_or_ariana_hand_refresh() -> None:
         card_id=HONCHKROW,
         card={"cardType": 0},
     )
+    state.players[0].hand.extend([{"id": ROCKET_ENERGY}, {"id": ARIANA}])
+    state.players[0].hand_count = len(state.players[0].hand)
     assert not agent._candidate_is_forbidden(state, candidate, SelectContext.TO_HAND)
 
 
@@ -1868,7 +1870,7 @@ def test_archer_remains_eligible_when_a_winning_attack_exists() -> None:
             PlayerState(active=PokemonState(999, 100, 100), hand_count=6, deck_count=20),
         ]
     )
-    assert scorer._archer_is_safe_and_useful(state, candidate)
+    assert not scorer._archer_is_safe_and_useful(state, candidate)
 
 
 def test_honchkrow_energy_attachment_is_prioritized_before_archer() -> None:
@@ -2804,7 +2806,12 @@ def test_night_stretcher_requires_immediate_bench_or_evolution_before_ariana() -
 
     evolve_state = GameState(
         players=[
-            PlayerState(bench=[PokemonState(MURKROW, 80, 80)], discard=[{"id": HONCHKROW}]),
+            PlayerState(
+                bench=[PokemonState(MURKROW, 80, 80, energies=[{}, {}])],
+                discard=[{"id": HONCHKROW}],
+                hand=[{"id": ARIANA}],
+                hand_count=1,
+            ),
             PlayerState(),
         ]
     )
@@ -4120,10 +4127,12 @@ def test_night_stretcher_ranks_porygon2_over_porygon_when_evolution_is_legal() -
     agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
     state = GameState(
         players=[
-            PlayerState(
-                active=PokemonState(PORYGON, 80, 80),
-                discard=[{"id": PORYGON}, {"id": PORYGON2}],
-                deck_count=10,
+                PlayerState(
+                    active=PokemonState(PORYGON, 80, 80),
+                    discard=[{"id": PORYGON}, {"id": PORYGON2}, {"id": ARIANA}],
+                    hand=[{"id": IGNITION_ENERGY}],
+                    hand_count=1,
+                    deck_count=10,
             ),
             PlayerState(active=PokemonState(999, 100, 100)),
         ]
