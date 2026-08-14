@@ -65,3 +65,6 @@ episode-*-agent-*-logs.json
 
 # Performance reports
 perf_reports/
+
+# Local generated analyses; keep curated reports elsewhere in reports/.
+reports/generated/

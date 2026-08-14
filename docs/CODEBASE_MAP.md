@@ -50,6 +50,10 @@ Honchkrow/Porygon deck without changing the default package.
 | `src/eval/runner.py`, `src/eval/telemetry.py` | Match execution, full decision snapshots, transitions, and terminal telemetry | runner and telemetry tests; full CABT trace |
 | `src/eval/runner.py`, `src/eval/metrics.py`, `src/eval/gameplay.py` | Match records, aggregates, and gameplay observability | runner, metrics, gameplay tests |
 | `src/eval/reporting.py`, `src/eval/comparison.py` | Stable reports and paired/composite comparisons | runner and metrics tests |
+| `src/eval/archer_analysis.py` | State-based Archer decision audit, resource opportunities, and opponent-hand summaries | `tests/test_archer_analysis.py`; `scripts/analyze_archer_decisions.py` |
+| `src/eval/petrel_analysis.py` | Petrel decisions versus Ariana/Proton already visible in hand | `tests/test_petrel_analysis.py`; `scripts/analyze_petrel_decisions.py` |
+| `src/eval/tool_scrapper_analysis.py` | Tool Scrapper use versus publicly visible opposing tools in recent replays | `tests/test_tool_scrapper_analysis.py`; `scripts/analyze_recent_tool_scrapper.py` |
+| `src/eval/giovanni_analysis.py` | Giovanni promotion, hand resources, and same-turn evolution/attachment audit | `scripts/analyze_recent_giovanni.py` |
 | `src/experiments/__init__.py`, `src/experiments/orchestrator.py` | Immutable run directories and manifests | exercised by full-run scripts; end-to-end gate remains open |
 | `src/config/__init__.py`, `src/config/loader.py` | YAML includes, deep merge, and supported invariants | `tests/test_config_loader.py` |
 

@@ -64,12 +64,16 @@
 | `uv run --frozen python scripts/export_decision_traces.py` | Export decision traces from evaluation reports for replay and audit analysis |
 | `uv run --frozen python scripts/audit_owner_feedback_replays.py <replay-dir> --output <report.json>` | Validate and hash the 14 owner-provided Honchkrow replays and emit reconciled diagnostics |
 | `uv run --frozen python scripts/run_honchkrow_porygon_eval.py --matches-per-side 100 --output REPORT.json` | Run the 200-match dedicated CABT evaluation for the canonical policy with prize, deck, board, Supporter, action, and terminal telemetry |
+| `uv run --frozen python scripts/analyze_archer_decisions.py REPORT.json --output ARCHER_AUDIT.json` | Audit observed Archer uses, available energy/items, better ranked alternatives, and opponent hand size |
 | `uv run --frozen python scripts/compare_honchkrow_reports.py BASELINE.json VARIANT.json` | Compare independent Honchkrow reports with Wilson intervals, side splits, deck-outs, and a two-proportion test; nominal CABT seeds are not treated as paired episodes |
 | `uv run --frozen python scripts/analyze_replays.py REPLAY_DIR --output REPORT.json` | Rebuild per-replay damage, KO, resource, and loss diagnostics recursively |
+| `uv run --frozen python scripts/analyze_petrel_decisions.py REPORT.json --output PETREL_AUDIT.json` | Audit Petrel choices when Ariana or Proton were already in hand, with outcome and board evidence |
 | `uv run --frozen python scripts/audit_submission_55333874.py` | Reproduce the immutable submitted policy over its 26-replay isolated corpus, emit the decision ledger and review bundle, and incorporate completed CABT candidate gates |
 | `uv run --frozen python scripts/build_t034_root_cause_report.py` | Build the conservative replay-linked root-cause evidence report; it preserves unknown internal causes when the immutable package lacks candidate traces |
 | `uv run --frozen python scripts/restore_t034_replay_corpus.py` | Restore submission `55333874` replays into a staging directory, verify every frozen SHA-256, then publish the exact immutable replay corpus |
 | `uv run --frozen python scripts/audit_recent_submission_prompts.py --output REPORT.json` | Reproduce the current policy on curated isolated prompts from the two latest submissions without alternate-outcome inference |
+| `uv run --frozen python scripts/analyze_recent_tool_scrapper.py` | Audit Tool Scrapper plays and opposing tools seen on the public board in the three latest downloaded completed submissions |
+| `uv run --frozen python scripts/analyze_recent_giovanni.py` | Audit Giovanni Active promotions and whether evolution or Energy attachment followed in the same turn |
 | `uv run --frozen python scripts/create_honchkrow_turn_loop_v2_manifest.py` | Freeze the HLV2 baseline/candidate identities, deck/profile/lock hashes, CABT SDK pin, source state, and 26-replay corpus |
 | `uv run --frozen python scripts/build_honchkrow_turn_loop_v2_report.py BASELINE CANDIDATE OUTPUT_DIR` | Build the complete independent HLV2 comparison bundle and emit `HOLD` until every final gate is evidenced |
 | `uv run --frozen python scripts/summarize_honchkrow_turn_loop_v2_replays.py BASELINE CANDIDATE OUTPUT_DIR` | Reduce the two 1,434-decision reproductions to a safe single-decision divergence ledger without alternate-outcome claims |
