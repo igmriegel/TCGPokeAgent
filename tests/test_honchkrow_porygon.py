@@ -1534,6 +1534,85 @@ def test_v3_giovanni_can_complete_r_command_from_discard() -> None:
     assert plan.planned_damage == 260
 
 
+def test_giovanni_prize_race_requires_exact_remaining_prizes() -> None:
+    """The Giovanni prize-race plan must target exactly the remaining prizes."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                prize=[None, None],
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}])],
+                hand=[{"id": GIOVANNI}],
+                discard=[{"id": ARIANA}] * 13,
+            ),
+            PlayerState(
+                active=PokemonState(721, 60, 60, serial=30),
+                bench=[PokemonState(GRIMMSNARL_EX, 260, 260, serial=31)],
+            ),
+        ]
+    )
+
+    plan = agent._giovanni_prize_race_plan(state)
+
+    assert plan is not None
+    assert plan.opponent_target_serial == 31
+    assert plan.planned_damage >= 260
+
+
+def test_giovanni_prize_race_can_evolve_porygon_from_hand() -> None:
+    """A benched Porygon may enter the prize race when Porygon2 is in hand."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                prize=[None, None],
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON, 60, 60, serial=22, energies=[{}, {}, {}])],
+                hand=[{"id": GIOVANNI}, {"id": PORYGON2}],
+                discard=[{"id": ARIANA}] * 13,
+            ),
+            PlayerState(
+                active=PokemonState(721, 60, 60, serial=30),
+                bench=[PokemonState(GRIMMSNARL_EX, 260, 260, serial=31)],
+            ),
+        ]
+    )
+
+    plan = agent._giovanni_prize_race_plan(state)
+
+    assert plan is not None
+    assert plan.requires_evolution
+    assert plan.recovery_item_id is None
+    assert plan.target_serial == 22
+
+
+def test_giovanni_prize_race_can_recover_porygon2_with_pokepad() -> None:
+    """Poké Pad recovery is accepted only as part of the committed KO line."""
+    agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")
+    state = GameState(
+        players=[
+            PlayerState(
+                prize=[None, None],
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON, 60, 60, serial=22, energies=[{}, {}, {}])],
+                hand=[{"id": GIOVANNI}, {"id": POKE_PAD}],
+                discard=[{"id": ARIANA}] * 13,
+            ),
+            PlayerState(
+                active=PokemonState(721, 60, 60, serial=30),
+                bench=[PokemonState(GRIMMSNARL_EX, 260, 260, serial=31)],
+            ),
+        ]
+    )
+
+    plan = agent._giovanni_prize_race_plan(state)
+
+    assert plan is not None
+    assert plan.requires_evolution
+    assert plan.recovery_item_id == POKE_PAD
+
+
 def test_v3_giovanni_does_not_enable_insufficient_porygon2_switch() -> None:
     """Giovanni's projected discard only permits Porygon2 for an immediate KO."""
     agent = HonchkrowPorygonAgent(_profile(), "ko_priority_v3_retreat_guard")

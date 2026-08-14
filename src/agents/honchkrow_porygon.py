@@ -561,6 +561,8 @@ class SwitchCommitment:
     planned_damage: int
     requires_ignition: bool = False
     requires_attack: bool = True
+    requires_evolution: bool = False
+    recovery_item_id: int | None = None
     opponent_target_card_id: int | None = None
     opponent_target_serial: int | None = None
 
@@ -4360,6 +4362,22 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                         best,
                     )
 
+        giovanni_plan = self._switch_commitment
+        if (
+            giovanni_plan is not None
+            and giovanni_plan.method == "giovanni"
+            and giovanni_plan.recovery_item_id is not None
+        ):
+            recovery_item = matching(
+                lambda candidate: (
+                    candidate.option_type is OptionType.PLAY
+                    and self._scorer._feature_int(candidate, "card_id")
+                    == giovanni_plan.recovery_item_id
+                )
+            )
+            if recovery_item:
+                return DecisionPhase.PLAY_ITEMS.value, "giovanni_prize_race_recovery", recovery_item
+
         porygon2_terminal = matching(
             lambda candidate: (
                 candidate.option_type in {OptionType.PLAY, OptionType.EVOLVE}
@@ -4423,6 +4441,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     "canonical_develop_empty_bench",
                     development,
                 )
+
+        if (
+            self._switch_commitment is not None
+            and self._active_matches_switch_commitment(state)
+            and self._switch_commitment.requires_evolution
+        ):
+            evolution = matching(self._candidate_matches_giovanni_evolution)
+            if evolution:
+                return DecisionPhase.EVOLVE.value, "evolve_giovanni_prize_race_porygon", evolution
 
         if self._switch_commitment is not None and self._active_matches_switch_commitment(state):
             committed_attack = matching(
@@ -5937,6 +5964,26 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     self._turn_ledger.resource_guard = "select_committed_honchkrow"
                     return honchkrow
         if (
+            context is SelectContext.TO_HAND
+            and self._switch_commitment is not None
+            and self._switch_commitment.method == "giovanni"
+            and self._switch_commitment.recovery_item_id is not None
+        ):
+            recovered_porygon2 = [
+                selection
+                for selection in selections
+                if any(
+                    (candidate := by_index.get(index)) is not None
+                    and self._scorer._feature_int(candidate, "card_id") == PORYGON2
+                    and candidate.option.get("sourceCardId")
+                    == self._switch_commitment.recovery_item_id
+                    for index in selection.indices
+                )
+            ]
+            if recovered_porygon2:
+                self._turn_ledger.resource_guard = "select_giovanni_prize_race_porygon2"
+                return recovered_porygon2
+        if (
             self._uses_supporter_lethal_commitment
             and context
             in {
@@ -6998,6 +7045,24 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             or target_serial == commitment.murkrow_serial
         )
 
+    def _candidate_matches_giovanni_evolution(self, candidate: Candidate | None) -> bool:
+        """Return whether an evolution completes a Giovanni prize-race plan."""
+        commitment = self._switch_commitment
+        if (
+            candidate is None
+            or commitment is None
+            or not commitment.requires_evolution
+            or candidate.option_type not in {OptionType.PLAY, OptionType.EVOLVE}
+            or self._scorer._feature_int(candidate, "card_id") != PORYGON2
+        ):
+            return False
+        target_serial = self._scorer._feature_int(candidate, "target_serial")
+        return bool(
+            commitment.target_serial is None
+            or not target_serial
+            or target_serial == commitment.target_serial
+        )
+
     def _active_matches_switch_commitment(self, state: GameState) -> bool:
         """Return whether the committed attacker is now the Active Pokémon."""
         commitment = self._switch_commitment
@@ -7029,6 +7094,132 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             or target_serial == commitment.target_serial
         )
 
+    def _giovanni_prize_race_plan(self, state: GameState) -> SwitchCommitment | None:
+        """Plan a Giovanni line that takes the exact remaining prizes.
+
+        The plan only considers a public opposing Bench target and R Command.
+        A basic Porygon is accepted only when Porygon2 is in hand or an
+        explicit Poké Pad/Night Stretcher recovery is available, with enough
+        attached or one-turn Energy to pay the evolved attack.
+        """
+        player = self._scorer._own_player(state)
+        opponent = self._scorer._opponent_player(state)
+        if (
+            player is None
+            or opponent is None
+            or not 1 <= len(player.prize) <= 3
+            or not any(
+                self._scorer._card_id_from_value(card) == GIOVANNI
+                for card in player.hand or ()
+            )
+        ):
+            return None
+        supporters = self._scorer._rocket_supporters_in_discard(state) + 1
+        if supporters <= 0:
+            return None
+        target_options = [pokemon for pokemon in opponent.bench if pokemon is not None]
+        target_options = [
+            target
+            for target in target_options
+            if int(
+                getattr(
+                    target,
+                    "effective_prize_value",
+                    self._scorer.catalog.get_traits(str(target.card_id)).base_prize_value,
+                )
+            )
+            == len(player.prize)
+        ]
+        if not target_options:
+            return None
+
+        def damage_for(target: Any) -> int:
+            candidate = Candidate(
+                0,
+                {"attackId": R_COMMAND},
+                OptionType.ATTACK,
+                features={
+                    "target_card_id": int(target.card_id),
+                    "target_serial": target.serial,
+                },
+            )
+            return self._scorer._attack_damage(state, candidate, supporters * 20, target)
+
+        target = max(target_options, key=lambda pokemon: damage_for(pokemon))
+        if damage_for(target) < max(0, int(target.hp)):
+            return None
+        target_card_id = int(target.card_id)
+        recovery_item_id: int | None = None
+        evolution_required = False
+        attacker = next(
+            (
+                pokemon
+                for pokemon in player.bench
+                if pokemon is not None and pokemon.card_id == PORYGON2
+            ),
+            None,
+        )
+        if attacker is None:
+            attacker = next(
+                (
+                    pokemon
+                    for pokemon in player.bench
+                    if pokemon is not None and pokemon.card_id == PORYGON
+                ),
+                None,
+            )
+            if attacker is None or attacker.appear_this_turn:
+                return None
+            evolution_required = True
+            if self._scorer._card_in_hand(state, PORYGON2):
+                pass
+            elif (
+                self._scorer._card_in_hand(state, POKE_PAD)
+                and self._scorer._card_copies_remaining(state, PORYGON2) > 0
+            ):
+                recovery_item_id = POKE_PAD
+            elif self._scorer._card_in_hand(state, NIGHT_STRETCHER) and any(
+                self._scorer._card_id_from_value(card) == PORYGON2 for card in player.discard
+            ):
+                recovery_item_id = NIGHT_STRETCHER
+            else:
+                return None
+        attached_energy = self._scorer._energy_units_for_pokemon(attacker)
+        requires_ignition = False
+        if attached_energy < self._scorer._attack_energy_target(PORYGON2):
+            if state.energy_attached:
+                return None
+            hand_energy = [
+                self._scorer._card_id_from_value(card) for card in player.hand or ()
+                if self._scorer._is_energy_card(
+                    self._scorer._card_id_from_value(card),
+                    self._scorer.catalog.get_card(
+                        str(self._scorer._card_id_from_value(card))
+                    ),
+                )
+            ]
+            if not hand_energy:
+                return None
+            if attached_energy + max(
+                3 if card_id == IGNITION_ENERGY else 2 if card_id == ROCKET_ENERGY else 1
+                for card_id in hand_energy
+            ) < self._scorer._attack_energy_target(PORYGON2):
+                return None
+            requires_ignition = IGNITION_ENERGY in hand_energy
+        return SwitchCommitment(
+            method="giovanni",
+            turn=state.turn,
+            target_card_id=PORYGON2,
+            target_serial=attacker.serial,
+            attack_id=R_COMMAND,
+            planned_damage=damage_for(target),
+            requires_ignition=requires_ignition,
+            requires_evolution=evolution_required,
+            recovery_item_id=recovery_item_id,
+            opponent_target_card_id=target_card_id,
+            opponent_target_serial=target.serial,
+        )
+
     def _giovanni_switch_plan(self, state: GameState) -> SwitchCommitment | None:
         """Plan Giovanni only for a committed KO or a safe useless-active pivot.
 
@@ -7049,6 +7240,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             )
         ):
             return None
+        prize_race_plan = self._giovanni_prize_race_plan(state)
+        if prize_race_plan is not None:
+            return prize_race_plan
         # Giovanni may select an opposing Bench target.  Bind both public
         # serials so the later promotion and target prompts cannot drift.
         for attacker in player.bench:
