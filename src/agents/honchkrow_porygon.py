@@ -560,6 +560,7 @@ class SwitchCommitment:
     attack_id: int
     planned_damage: int
     requires_ignition: bool = False
+    requires_attack: bool = True
     opponent_target_card_id: int | None = None
     opponent_target_serial: int | None = None
 
@@ -3933,11 +3934,15 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     and self._scorer._attack_id(candidate) == self._switch_commitment.attack_id
                 )
             )
-            if not committed_attack and self._switch_commitment.method == "ignition":
+            if (
+                not committed_attack
+                and self._switch_commitment.method == "ignition"
+                and self._switch_commitment.requires_attack
+            ):
                 committed_attack = matching(
                     lambda candidate: candidate.option_type is OptionType.ATTACK
                 )
-            if committed_attack:
+            if committed_attack and self._switch_commitment.requires_attack:
                 return (
                     DecisionPhase.ATTACK_PRIORITY.value,
                     (
@@ -5148,55 +5153,24 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
 
     def _canonical_giovanni_is_productive(self, state: GameState) -> bool:
-        """Require a public two/three-Prize or final-Prize bench target."""
+        """Return whether Giovanni has one executable public plan.
+
+        Giovanni is deliberately gated by the same commitment that drives the
+        later promotion and attack prompts.  Keeping this gate centralized
+        prevents generic scorer heuristics from authorizing a switch that has
+        no executable attack behind it.
+        """
         plan = self._giovanni_switch_plan(state)
-        if plan is not None and plan.opponent_target_serial is not None:
+        if plan is not None:
             self._switch_commitment = plan
             self._turn_ledger.next_attacker_serial = plan.target_serial
-            self._turn_ledger.giovanni_pivot_reason = "giovanni_porygon2_bench_ko"
+            if plan.opponent_target_serial is not None:
+                self._turn_ledger.giovanni_pivot_reason = "giovanni_public_ko_line"
+            elif self._scorer._own_active_card_id(state) == PORYGON:
+                self._turn_ledger.giovanni_pivot_reason = "free_porygon_for_ready_honchkrow"
+            else:
+                self._turn_ledger.giovanni_pivot_reason = "free_useless_active_for_ready_attacker"
             return True
-        if self._scorer._giovanni_pivot_is_productive(state):
-            self._turn_ledger.giovanni_pivot_reason = "free_porygon_for_ready_honchkrow"
-            return True
-        if self._scorer._giovanni_switch_line_is_productive(state):
-            return True
-        player = self._scorer._own_player(state)
-        opponent = self._scorer._opponent_player(state)
-        if player is None or opponent is None or not opponent.bench:
-            return False
-        prizes_left = len(player.prize)
-        for pokemon in opponent.bench:
-            prize_value = int(
-                getattr(
-                    pokemon,
-                    "effective_prize_value",
-                    self._scorer.catalog.get_traits(str(pokemon.card_id)).base_prize_value,
-                )
-            )
-            if prize_value >= 2 or prize_value >= prizes_left:
-                required = max(1, (max(0, int(pokemon.hp)) + 59) // 60)
-                if self._scorer._effective_supporters_in_hand(state) >= required:
-                    self._turn_ledger.supporters_needed_for_ko = required
-                    return True
-            active = self._scorer._own_active(state)
-            if active is not None and active.card_id == HONCHKROW:
-                damage = self._scorer._attack_damage(
-                    state,
-                    Candidate(
-                        0,
-                        {"attackId": ROCKET_FEATHERS},
-                        OptionType.ATTACK,
-                        features={
-                            "target_card_id": pokemon.card_id,
-                            "target_serial": pokemon.serial,
-                        },
-                    ),
-                    self._scorer._effective_supporters_in_hand(state) * 60,
-                    pokemon,
-                )
-                if damage >= max(0, int(pokemon.hp)):
-                    self._turn_ledger.giovanni_pivot_reason = "giovanni_targets_public_ko"
-                    return True
         return False
 
     def _canonical_headset_is_useful(self, state: GameState) -> bool:
@@ -6795,16 +6769,8 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                 or self._scorer._factory_play_is_useful(state)
             )
         if candidate.option_type is OptionType.PLAY and card_id == GIOVANNI:
-            if self._uses_expert_turn_loop and self._canonical_giovanni_is_productive(state):
-                return False
-            if self._uses_expert_turn_loop and self._scorer._giovanni_pivot_is_productive(state):
-                return False
-            if self._uses_retreat_guard:
-                opponent = self._scorer._opponent_player(state)
-                if opponent is not None and not any(
-                    pokemon is not None for pokemon in opponent.bench
-                ):
-                    return self._giovanni_switch_plan(state) is None
+            if self._uses_expert_turn_loop or self._uses_retreat_guard:
+                return not self._canonical_giovanni_is_productive(state)
             return not self._giovanni_is_productive(state, candidate)
         if candidate.option_type is OptionType.PLAY and card_id == ARTICUNO:
             return not self._scorer._articuno_is_needed(state)
@@ -7064,7 +7030,13 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
 
     def _giovanni_switch_plan(self, state: GameState) -> SwitchCommitment | None:
-        """Plan a free Giovanni switch only when it converts into an immediate attack."""
+        """Plan Giovanni only for a committed KO or a safe useless-active pivot.
+
+        The pivot branch is intentionally narrow: Articuno and an early/basic
+        Porygon may be removed for a ready bench attacker.  Every other use
+        must bind an attacker, attack, and public target that can be knocked
+        out after Giovanni is spent.
+        """
         player = self._scorer._own_player(state)
         opponent = self._scorer._opponent_player(state)
         if (
@@ -7100,6 +7072,14 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     opponent_target_card_id=int(target.card_id),
                     opponent_target_serial=target.serial,
                 )
+        if (
+            player.active is not None
+            and player.active.card_id in {ARTICUNO, PORYGON}
+            and state.turn > 0
+        ):
+            simple_plan = self._simple_giovanni_pivot_plan(state)
+            if simple_plan is not None:
+                return simple_plan
         bench_plan = self._best_switch_plan(state, method="giovanni", giovanni_played=True)
         if bench_plan is None:
             return None
@@ -7111,6 +7091,35 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if active_damage > 0 and not (active_damage < target_hp <= bench_plan.planned_damage):
             return None
         return bench_plan
+
+    def _simple_giovanni_pivot_plan(self, state: GameState) -> SwitchCommitment | None:
+        """Return a non-KO pivot for a useless Active with a ready attacker."""
+        player = self._scorer._own_player(state)
+        if (
+            player is None
+            or player.active is None
+            or player.active.card_id not in {ARTICUNO, PORYGON}
+        ):
+            return None
+        for pokemon in player.bench:
+            if pokemon is None or pokemon.card_id != HONCHKROW:
+                continue
+            if self._attack_cost_satisfied(pokemon, ROCKET_FEATHERS):
+                attack_id = ROCKET_FEATHERS
+            elif self._attack_cost_satisfied(pokemon, HAMMER_IN):
+                attack_id = HAMMER_IN
+            else:
+                continue
+            return SwitchCommitment(
+                method="giovanni",
+                turn=state.turn,
+                target_card_id=int(pokemon.card_id),
+                target_serial=pokemon.serial,
+                attack_id=attack_id,
+                planned_damage=0,
+                requires_attack=False,
+            )
+        return None
 
     def _paid_retreat_plan(self, state: GameState) -> SwitchCommitment | None:
         """Allow paid retreat only when it creates an immediate productive attack."""
