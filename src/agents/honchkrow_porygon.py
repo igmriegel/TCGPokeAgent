@@ -708,6 +708,8 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
                 return -1800.0, ["factory_without_post_supporter_draw"]
             return 1250.0, ["factory_after_ariana_draw_engine"]
         if card_id == PETREL:
+            if self._petrel_honchkrow_ko_is_useful(state):
+                return 2300.0, ["petrel_poke_pad_honchkrow_ko"]
             if self._petrel_factory_is_superior(state):
                 return 1700.0, ["petrel_factory_two_card_draw"]
             if self._petrel_is_emergency(state):
@@ -928,6 +930,10 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
         if context is SelectContext.SETUP_BENCH_POKEMON and card_id == MURKROW:
             return 2600.0, ["opening_bench_maximize_murkrow"]
         if context is SelectContext.TO_HAND and candidate.option.get("sourceCardId") == PETREL:
+            if card_id == POKE_PAD and self._petrel_honchkrow_ko_is_useful(
+                state, petrel_already_played=True
+            ):
+                return 2600.0, ["petrel_select_poke_pad_for_honchkrow_ko"]
             if card_id == ULTRA_BALL:
                 if self._ultra_ball_completes_r_command(state):
                     return 2200.0, ["petrel_ultra_ball_terminal_r_command"]
@@ -2141,6 +2147,45 @@ class HonchkrowPorygonScorer(SimpleHeuristicScorer):
             )
         return self._articuno_hand_reduction_needed(state, candidate)
 
+    def _petrel_honchkrow_ko_is_useful(
+        self, state: GameState, *, petrel_already_played: bool = False
+    ) -> bool:
+        """Return whether Petrel can start a same-turn Honchkrow Rocket Feathers KO."""
+        player = self._own_player(state)
+        opponent = self._opponent_player(state)
+        murkrow = player.active if player is not None else None
+        target = opponent.active if opponent is not None else None
+        if (
+            player is None
+            or opponent is None
+            or (state.supporter_played and not petrel_already_played)
+            or (not petrel_already_played and not self._card_in_hand(state, PETREL))
+            or self._card_copies_remaining(state, POKE_PAD) <= 0
+            or self._card_copies_remaining(state, HONCHKROW) <= 0
+            or murkrow is None
+            or murkrow.card_id != MURKROW
+            or murkrow.appear_this_turn
+            or target is None
+            or self._energy_units_for_pokemon(murkrow) < self._attack_energy_target(HONCHKROW)
+        ):
+            return False
+        damage_per_supporter = self._attack_damage(
+            state,
+            Candidate(0, {"attackId": ROCKET_FEATHERS}, OptionType.ATTACK),
+            60,
+            target,
+        )
+        supporters_after_petrel = self._effective_supporters_in_hand(state) - int(
+            not petrel_already_played
+        )
+        supporters_after_petrel = max(0, supporters_after_petrel)
+        required = (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
+        return bool(
+            damage_per_supporter > 0
+            and required > 0
+            and supporters_after_petrel >= required
+        )
+
     def _porygon2_search_is_valid(self, state: GameState) -> bool:
         """Return whether a Porygon2 search has a visible Porygon to evolve."""
         return self._has_porygon_ready_to_evolve(state)
@@ -3209,7 +3254,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             ):
                 self._turn_ledger.miracle_supporters_recovered += 1
             if self._evolution_ko_commitment is not None:
-                if candidate.option_type is OptionType.PLAY and card_id == POKE_PAD:
+                if candidate.option_type is OptionType.PLAY and card_id == PETREL:
+                    if self._evolution_ko_commitment.stage == "play_petrel":
+                        self._evolution_ko_commitment.stage = "select_poke_pad"
+                elif candidate.option_type is OptionType.PLAY and card_id == POKE_PAD:
                     self._evolution_ko_commitment.stage = "select_honchkrow"
                 elif candidate.option_type is OptionType.CARD and card_id == HONCHKROW:
                     self._evolution_ko_commitment.stage = "evolve_murkrow"
@@ -3735,11 +3783,18 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         """Create one commitment only after every public KO precondition is proven."""
         if self._evolution_ko_commitment is not None:
             return
-        if not any(
+        has_poke_pad = any(
             candidate.option_type is OptionType.PLAY
             and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
             for candidate in candidates
-        ):
+        )
+        has_petrel_line = any(
+            candidate.option_type is OptionType.PLAY
+            and self._scorer._feature_int(candidate, "card_id") == PETREL
+            and self._scorer._petrel_honchkrow_ko_is_useful(state)
+            for candidate in candidates
+        )
+        if not has_poke_pad and not has_petrel_line:
             return
         player = self._scorer._own_player(state)
         opponent = self._scorer._opponent_player(state)
@@ -3762,7 +3817,10 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         )
         if damage_per_supporter <= 0:
             return
-        supporters = self._scorer._effective_supporters_in_hand(state)
+        supporters = self._scorer._effective_supporters_in_hand(state) - int(
+            has_petrel_line and not has_poke_pad
+        )
+        supporters = max(0, supporters)
         required = (max(0, int(target.hp)) + damage_per_supporter - 1) // damage_per_supporter
         if required <= 0 or supporters < required:
             return
@@ -3773,6 +3831,7 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             target_prize_value=self._scorer._active_target_prize_value(state),
             planned_damage=supporters * damage_per_supporter,
             supporters_required=required,
+            stage="play_petrel" if has_petrel_line and not has_poke_pad else "play_poke_pad",
         )
         self._turn_ledger.poke_pad_ko_opportunities += 1
         self._match_ledger.poke_pad_ko_opportunities += 1
@@ -4503,6 +4562,31 @@ class HonchkrowPorygonAgent(HeuristicAgent):
             self._turn_ledger.stage = CanonicalTurnStage.SEARCH.value
 
         if self._turn_ledger.stage == CanonicalTurnStage.SEARCH.value:
+            commitment = self._evolution_ko_commitment
+            if commitment is not None and commitment.stage in {"play_petrel", "play_poke_pad"}:
+                committed_search = matching(
+                    lambda candidate: (
+                        candidate.option_type is OptionType.PLAY
+                        and (
+                            commitment.stage == "play_petrel"
+                            and self._scorer._feature_int(candidate, "card_id") == PETREL
+                            or commitment.stage == "play_poke_pad"
+                            and self._scorer._feature_int(candidate, "card_id") == POKE_PAD
+                        )
+                    )
+                )
+                if committed_search:
+                    reason = (
+                        "canonical_petrel_for_poke_pad_honchkrow_ko"
+                        if commitment.stage == "play_petrel"
+                        else "canonical_poke_pad_honchkrow_ko"
+                    )
+                    phase = (
+                        DecisionPhase.PLAY_SUPPORTER.value
+                        if commitment.stage == "play_petrel"
+                        else DecisionPhase.PLAY_ITEMS.value
+                    )
+                    return phase, reason, committed_search
             proton = matching(
                 lambda candidate: (
                     candidate.option_type is OptionType.PLAY
@@ -5852,6 +5936,19 @@ class HonchkrowPorygonAgent(HeuristicAgent):
                     )
                     selections = protected
         if context is SelectContext.TO_HAND and self._evolution_ko_commitment is not None:
+            if self._evolution_ko_commitment.stage == "select_poke_pad":
+                poke_pad = [
+                    selection
+                    for selection in selections
+                    if any(
+                        self._scorer._feature_int(candidate, "card_id") == POKE_PAD
+                        for index in selection.indices
+                        if (candidate := by_index.get(index)) is not None
+                    )
+                ]
+                if poke_pad:
+                    self._turn_ledger.resource_guard = "select_committed_poke_pad"
+                    return poke_pad
             if self._evolution_ko_commitment.stage == "select_honchkrow":
                 honchkrow = [
                     selection
@@ -7406,7 +7503,9 @@ class HonchkrowPorygonAgent(HeuristicAgent):
         if card_id == MIRACLE_HEADSET:
             return self._scorer._miracle_headset_is_useful(state)
         if card_id == POKE_PAD:
-            return self._scorer._has_murkrow_ready_to_evolve(state)
+            return self._scorer._petrel_honchkrow_ko_is_useful(
+                state, petrel_already_played=True
+            )
         if card_id == ULTRA_BALL:
             if self._scorer._card_in_hand(state, ROTO_STICK) and self._scorer._roto_stick_is_needed(
                 state

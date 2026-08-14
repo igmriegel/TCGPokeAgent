@@ -42,6 +42,7 @@ from src.agents.honchkrow_porygon import (
     TRANSCEIVER,
     ULTRA_BALL,
     AttackSequence,
+    EvolutionKoCommitment,
     HonchkrowPorygonAgent,
     HonchkrowPorygonScorer,
 )
@@ -1019,6 +1020,132 @@ def test_petrel_prefers_ariana_over_ultra_ball(monkeypatch) -> None:
     assert ariana_score > ultra_ball_score
     assert ariana_reasons == ["petrel_take_ariana_for_hand_refresh"]
     assert ultra_ball_reasons == ["petrel_prefers_ariana_over_ultra_ball"]
+
+
+def test_petrel_prefers_poke_pad_when_it_completes_honchkrow_ko(monkeypatch) -> None:
+    """Petrel should search Poké Pad when the complete evolution KO is public."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, energies=[{}, {}]),
+                hand=[{"id": PETREL}, {"id": ARIANA}, {"id": ARCHER}, {"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(999, 120, 120)),
+        ]
+    )
+    monkeypatch.setattr(scorer, "_card_copies_remaining", lambda _state, _card_id: 1)
+
+    petrel = _candidate(0, OptionType.PLAY, card_id=PETREL, card={"cardType": 3})
+    poke_pad = _candidate(1, OptionType.CARD, card_id=POKE_PAD, card={"cardType": 1})
+    poke_pad.option["sourceCardId"] = PETREL
+
+    play_score, play_reasons = scorer._play_score(state, petrel)
+    search_score, search_reasons = scorer._card_selection_score(
+        state, poke_pad, SelectContext.TO_HAND
+    )
+
+    assert scorer._petrel_honchkrow_ko_is_useful(state)
+    assert play_score > 2000
+    assert play_reasons == ["petrel_poke_pad_honchkrow_ko"]
+    assert search_score > 2000
+    assert search_reasons == ["petrel_select_poke_pad_for_honchkrow_ko"]
+
+    state_after_petrel = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, energies=[{}, {}]),
+                hand=[{"id": ARIANA}, {"id": ARCHER}, {"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(999, 120, 120)),
+        ],
+        supporter_played=True,
+    )
+    nested_score, nested_reasons = scorer._card_selection_score(
+        state_after_petrel, poke_pad, SelectContext.TO_HAND
+    )
+
+    assert nested_score > 2000
+    assert nested_reasons == ["petrel_select_poke_pad_for_honchkrow_ko"]
+
+
+def test_petrel_honchkrow_ko_commitment_starts_before_poke_pad_is_in_hand(monkeypatch) -> None:
+    """The turn loop must commit to Petrel before its nested Poké Pad prompt."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        turn=4,
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, serial=17, energies=[{}, {}]),
+                hand=[{"id": PETREL}, {"id": ARIANA}, {"id": ARCHER}, {"id": GIOVANNI}],
+            ),
+            PlayerState(active=PokemonState(999, 120, 120, serial=31)),
+        ],
+    )
+    monkeypatch.setattr(
+        agent._scorer,
+        "_card_copies_remaining",
+        lambda _state, _card_id: 1,
+    )
+    petrel = _candidate(0, OptionType.PLAY, card_id=PETREL, card={"cardType": 3})
+    end = _candidate(1, OptionType.END)
+    candidates = [petrel, end]
+    selections = [
+        Selection((0,), (OptionType.PLAY,)),
+        Selection((1,), (OptionType.END,)),
+    ]
+
+    agent._refresh_evolution_ko_commitment(state, candidates)
+    phase, reason, choices = agent._canonical_main_phase_selections(state, selections, candidates)
+
+    assert agent._evolution_ko_commitment is not None
+    assert agent._evolution_ko_commitment.stage == "play_petrel"
+    assert phase == DecisionPhase.PLAY_SUPPORTER.value
+    assert reason == "canonical_petrel_for_poke_pad_honchkrow_ko"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_petrel_honchkrow_ko_commitment_selects_poke_pad_nested_prompt() -> None:
+    """After Petrel resolves, the nested target prompt must keep Poké Pad selected."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    agent._evolution_ko_commitment = EvolutionKoCommitment(
+        turn=4,
+        murkrow_serial=17,
+        target_card_id=999,
+        target_prize_value=1,
+        planned_damage=120,
+        supporters_required=2,
+        stage="select_poke_pad",
+    )
+    poke_pad = _candidate(0, OptionType.CARD, card_id=POKE_PAD)
+    ariana = _candidate(1, OptionType.CARD, card_id=ARIANA)
+    selections = [
+        Selection((0,), (OptionType.CARD,)),
+        Selection((1,), (OptionType.CARD,)),
+    ]
+
+    filtered = agent._filter_forbidden_selections(
+        GameState(), selections, [poke_pad, ariana], SelectContext.TO_HAND
+    )
+
+    assert [selection.indices for selection in filtered] == [(0,)]
+    assert agent.turn_ledger.resource_guard == "select_committed_poke_pad"
+
+
+def test_petrel_does_not_start_honchkrow_ko_line_without_enough_damage() -> None:
+    """Petrel must remain available for normal resource decisions when KO is unproven."""
+    scorer = HonchkrowPorygonScorer(deck_profile=_profile())
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(MURKROW, 80, 80, energies=[{}, {}]),
+                hand=[{"id": PETREL}, {"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(999, 330, 330)),
+        ]
+    )
+
+    assert not scorer._petrel_honchkrow_ko_is_useful(state)
 
 
 def test_end_telemetry_marks_visible_productive_line() -> None:

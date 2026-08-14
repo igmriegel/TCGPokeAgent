@@ -26,6 +26,7 @@ from src.agents.honchkrow_porygon import (  # noqa: E402
 )
 from src.core import DeckDefinition, DeckProfile  # noqa: E402
 from src.data.honchkrow_audit import audit_opportunities, classify_deck_out_trace  # noqa: E402
+from src.eval.archer_analysis import analyze_matches  # noqa: E402
 from src.eval.telemetry import public_snapshot, transition  # noqa: E402
 
 PROFILE_PATH = ROOT / "src" / "artifacts" / "deck_profile_honchkrow_porygon.json"
@@ -713,6 +714,32 @@ def run(
         ),
         "partial_attack_events": telemetry["partial_mega_abomasnow_attacks"],
     }
+    archer_audit = analyze_matches(matches)
+    archer_telemetry = {
+        key: archer_audit[key]
+        for key in (
+            "archer_plays",
+            "archer_with_better_option",
+            "archer_with_attachable_energy",
+            "archer_with_playable_item",
+        )
+    }
+    archer_telemetry.update(
+        {
+            "omitted_archer_opportunities": archer_audit["omitted_archer"]["all_opportunities"],
+            "omitted_archer_large_hand_no_energy": archer_audit["omitted_archer"][
+                "with_large_hand_no_energy"
+            ],
+            "omitted_archer_large_hand_no_energy_losses": archer_audit["omitted_archer"][
+                "large_hand_no_energy_outcomes"
+            ]["loss"],
+            "archer_play_losses": archer_audit["played_outcomes"]["all"]["loss"],
+            "archer_play_losses_with_attachable_energy": archer_audit["played_outcomes"][
+                "losses_with_attachable_energy"
+            ],
+        }
+    )
+    telemetry.update(archer_telemetry)
     return {
         "report_type": "honchkrow_porygon_cabt_200_with_telemetry",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -730,6 +757,14 @@ def run(
         "execution_status": dict(failures),
         "termination_reasons": dict(reasons),
         "telemetry_totals": dict(telemetry),
+        "archer_audit_totals": {
+            **archer_telemetry,
+            "played_outcomes": archer_audit["played_outcomes"],
+            "omitted_archer": archer_audit["omitted_archer"],
+            "cross_correlation": archer_audit["cross_correlation"],
+            "opponent_hand": archer_audit["opponent_hand"],
+            "item_counts_in_hand": archer_audit["item_counts_in_hand"],
+        },
         "resource_guard_totals": dict(guards),
         "opportunity_audit": {
             "category_totals": dict(opportunities),
@@ -866,6 +901,33 @@ def run_stream(
     ):
         shutil.copyfileobj(source, target)
     trace_path.unlink()
+    with gzip.open(compressed_trace_path, "rt", encoding="utf-8") as stream:
+        archer_audit = analyze_matches(json.loads(line) for line in stream if line.strip())
+    archer_telemetry = {
+        key: archer_audit[key]
+        for key in (
+            "archer_plays",
+            "archer_with_better_option",
+            "archer_with_attachable_energy",
+            "archer_with_playable_item",
+        )
+    }
+    archer_telemetry.update(
+        {
+            "omitted_archer_opportunities": archer_audit["omitted_archer"]["all_opportunities"],
+            "omitted_archer_large_hand_no_energy": archer_audit["omitted_archer"][
+                "with_large_hand_no_energy"
+            ],
+            "omitted_archer_large_hand_no_energy_losses": archer_audit["omitted_archer"][
+                "large_hand_no_energy_outcomes"
+            ]["loss"],
+            "archer_play_losses": archer_audit["played_outcomes"]["all"]["loss"],
+            "archer_play_losses_with_attachable_energy": archer_audit["played_outcomes"][
+                "losses_with_attachable_energy"
+            ],
+        }
+    )
+    telemetry.update(archer_telemetry)
     losses = [match for match in summaries if match["result"] == "loss"]
     return {
         "report_type": "honchkrow_porygon_cabt_1000_fulltrace",
@@ -888,6 +950,14 @@ def run_stream(
         "execution_status": dict(statuses),
         "termination_reasons": dict(reasons),
         "telemetry_totals": dict(telemetry),
+        "archer_audit_totals": {
+            **archer_telemetry,
+            "played_outcomes": archer_audit["played_outcomes"],
+            "omitted_archer": archer_audit["omitted_archer"],
+            "cross_correlation": archer_audit["cross_correlation"],
+            "opponent_hand": archer_audit["opponent_hand"],
+            "item_counts_in_hand": archer_audit["item_counts_in_hand"],
+        },
         "resource_guard_totals": dict(guards),
         "opportunity_audit": {
             "category_totals": dict(opportunities),
