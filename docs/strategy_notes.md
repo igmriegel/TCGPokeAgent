@@ -911,3 +911,79 @@ ten-iteration-per-side blocks because the execution host terminates longer
 single processes before they persist their report. This is an isolated
 operational result, not a paired before/after comparison and not replay
 evidence of strategic compliance or competitive improvement.
+
+## 2026-08-16 — Critical-deck Roto state-based candidate
+
+The 55513604 decision ledgers repeatedly show Roto-Stick selected with one to
+three cards remaining while the conversion depended on hidden Supporters. The
+records establish a repeated low-reserve pattern, but do not prove that any
+single Roto decision caused a loss. Candidate `critical_roto_v1` therefore
+narrowly vetoes Roto at a reserve of two or fewer unless the public state shows
+immediate survival or every remaining deck card is a known Supporter and the
+visible KO line is complete. It does not restore a fixed elective-draw reserve
+and leaves normal-reserve probabilistic Roto lines unchanged.
+
+State-based regression fixtures and the extracted package gate passed. The
+candidate passed 482 tests, Ruff, mypy, documentation audit, and zero-failure
+CABT smoke. An independent 200-match CABT sample produced 173W/27L (86.5%),
+zero execution failures, and 3 audited deck-out losses, versus the 300-match
+local baseline's 249W/51L (83.0%) and 12 deck-out losses. The independent
+win-rate difference is +3.5 percentage points with 95% interval [-2.86,
++9.86], so this is promising diagnostic evidence, not promotion evidence.
+
+Candidate package SHA-256 is
+`9d71a88650c0460dbc87a47a905a415cd117f80703a243d96fa88b76903383cb`, source
+commit `8a18a19ab5cc5cbe31fe30e7cb623b867a624a23`. The candidate is not
+submitted remotely; compare it first against production baseline submission
+`55549911` when sufficient replays and decision logs are available.
+
+## 2026-08-16 — Production baseline audit and Basic-survival candidate
+
+Submission `55549911` completed; its public score was observed as `393.9` at
+the first audit and later as `352.1` in the dynamic leaderboard. Its package source
+commit is `8a18a19ab5cc5cbe31fe30e7cb623b867a624a23`, and its payload SHA-256 is
+`8ec9c1ddc3475ce091571a494ec5984506da95306e282ca6875c478c13e5f51b`. The
+download contains seven completed episodes and 384 decoded decisions. The
+replays identify the same agent on both sides, so this is a self-play sample,
+not a distinct-opponent variance estimate. Historical submission `55513604`
+has the same package provenance and is also self-play; its score difference
+(`460.4`) must not be interpreted as a package or generalization improvement.
+
+The independent CABT trace for `critical_roto_v1` exposed repeated
+`no_pokemon_in_play` losses where a playable Basic remained available before
+`END`, including Articuno in non-tech matchups. The isolated survival candidate
+now permits any legal Basic card when the visible board has at most one
+Pokémon, while preserving terminal-attack priority and Articuno matchup
+protection. Focused regressions and the full 483-test suite pass after the
+change. CABT smoke, independent comparison, package validation, and remote
+submission evidence are still required before promotion.
+
+The candidate passed the local gates and was submitted as Kaggle submission
+`55550659`, which completed with an initial public score of `487.2` (later
+dynamic readings varied). The official package archive SHA-256 is
+`31d8d288be58f165ecec42cb9f0b84caf39f63aeafe209a4175b1761cee6698e`, the
+payload SHA-256 is
+`3eea765a5a47513be5a30b56e27ab86228cd50c5b0e7f2af4188b8f3e798154a`, and the
+package records source commit `8a18a19ab5cc5cbe31fe30e7cb623b867a624a23`.
+The remote sample is only one self-play episode; local and remote evidence do
+not establish a production strategic improvement by themselves.
+
+The first candidate submission later completed as score `487.2`, and the
+immutable replicate `55550735` completed as `600.0`. Each remote run exposed
+one self-play episode, with 144 and 136 decoded decisions respectively; both
+replay files use `mudkip_mini_chicken` on both sides. Both runs recorded the
+expected source commit and payload hash on every decoded decision and zero
+fallbacks. This confirms package execution and demonstrates large score
+variation for the same immutable package, but it is not yet a generalization
+or opponent-variance estimate.
+
+The replay window later expanded. The refreshed baseline sample contains 11
+episodes (`3W/8L` for `mudkip_mini_chicken`), including external opponents;
+its losses include two deck-outs, one no-Pokémon loss, and five Prize-race
+losses. Candidate `55550659` contains three episodes (`0W/3L`), all Prize-race
+losses, while replicate `55550735` contains two episodes (`1W/1L`) with one
+self-play win and one Prize-race loss against `keibrown`. The candidate logs
+contain 263 and 176 decoded decisions respectively, with the expected commit
+and payload hashes and zero fallbacks. This is enough to identify Prize-race
+losses as the current remote symptom, but not enough to attribute them to the
+Basic-survival change because opponent composition and sample sizes differ.
