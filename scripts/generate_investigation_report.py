@@ -105,6 +105,23 @@ def _parse_submission_date(value: str) -> datetime:
         return datetime.min
 
 
+def _submission_report_link(submission_id: str) -> str:
+    """Render a link to the standalone report for a submission.
+
+    Args:
+        submission_id: Kaggle submission identifier used in the report filename.
+
+    Returns:
+        An HTML link pointing to the submission-specific report.
+    """
+    escaped_submission_id = html_module.escape(submission_id, quote=True)
+    return (
+        f'<a class="submission-link" '
+        f'href="INVESTIGATION_REPORT_{escaped_submission_id}.html">'
+        f"{escaped_submission_id}</a>"
+    )
+
+
 def _episode_id_from_path(replay_path: Path) -> str:
     """Return the episode ID encoded in a replay filename."""
     return replay_path.stem.removeprefix("episode-").removesuffix("-replay")
@@ -961,7 +978,7 @@ def generate_report(
             else ("var(--orange)" if (_s["kaggle"] or 0) >= 480 else "var(--green)")
         )
         sub_rows += (
-            f"<tr><td>{html_module.escape(str(_s['id']))} {_badge or '&mdash;'}</td>"
+            f"<tr><td>{_submission_report_link(str(_s['id']))} {_badge or '&mdash;'}</td>"
             f"<td>{html_module.escape(str(_s['id']))}</td>"
             f"<td>{html_module.escape(str(_s['desc']))}</td>"
             f'<td style="font-weight:700;color:{_kcls}">'
@@ -1084,6 +1101,7 @@ def generate_report(
   }}
   .badge-w {{ background:rgba(74,222,128,0.2); color:var(--green); }}
   .badge-l {{ background:rgba(248,113,113,0.2); color:var(--red); }}
+  .submission-link {{ color:var(--accent); font-weight:600; }}
   code {{
     background:var(--surface2); padding:0.15rem 0.4rem; border-radius:4px;
     font-size:0.85rem;

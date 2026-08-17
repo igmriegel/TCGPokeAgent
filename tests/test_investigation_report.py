@@ -166,6 +166,15 @@ def test_filter_replay_paths_handles_kaggle_replay_names(
     assert selected == [tmp_path / "episode-91667826-replay.json"]
 
 
+def test_submission_history_links_to_submission_report() -> None:
+    """Link each submission-history ID to its standalone report."""
+    assert (
+        report._submission_report_link("55392121")
+        == '<a class="submission-link" href="INVESTIGATION_REPORT_55392121.html">'
+        "55392121</a>"
+    )
+
+
 def test_generate_report_recurses_into_submission_directories(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
