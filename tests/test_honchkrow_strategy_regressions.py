@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.agents.honchkrow_porygon import (
     ARCHER,
+    ARIANA,
     FACTORY,
     GIOVANNI,
     HONCHKROW,
@@ -194,6 +195,46 @@ def test_repeated_roto_without_expected_gain_is_blocked() -> None:
 
     assert not agent._canonical_roto_is_productive(state)
     assert agent.turn_ledger.roto_last_outcome == "repeat_blocked_without_gain"
+
+
+def test_critical_deck_roto_blocks_probabilistic_supporter_line(monkeypatch) -> None:
+    """Critical-deck Roto must not spend the last two cards on a hidden hit."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                bench=[PokemonState(PORYGON, 90, 90)],
+                hand=[{"id": ROTO_STICK}],
+                prize=[{"id": ARIANA}],
+                deck_count=2,
+            ),
+            PlayerState(active=PokemonState(999, 100, 100)),
+        ]
+    )
+    monkeypatch.setattr(agent._scorer, "_roto_remaining_supporters", lambda _: 1)
+
+    assert not agent._canonical_roto_is_productive(state)
+    assert agent.turn_ledger.resource_guard == "critical_deck_roto_veto_without_guaranteed_line"
+
+
+def test_critical_deck_roto_remains_for_guaranteed_public_ko() -> None:
+    """Critical-deck Roto remains legal when every remaining card is a Supporter."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, energies=[{}, {}]),
+                hand=[{"id": ROTO_STICK}],
+                discard=[{"id": ARIANA}] * 19,
+                deck_count=1,
+            ),
+            PlayerState(active=PokemonState(999, 50, 50)),
+        ]
+    )
+
+    assert agent._canonical_roto_is_productive(state)
+    assert agent.turn_ledger.roto_mode == "attack_mode"
 
 
 def test_roto_attack_mode_is_explicit_for_a_ready_honchkrow_line() -> None:

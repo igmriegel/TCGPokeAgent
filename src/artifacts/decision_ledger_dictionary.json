@@ -162,7 +162,11 @@
     "transceiver_critical_required_supporter": "Supporter required by a critical-deck Transceiver line.",
     "transceiver_critical_terminal_ko": "Whether critical-deck Transceiver serves a terminal KO.",
     "transceiver_critical_survival_line": "Whether critical-deck Transceiver serves immediate survival.",
-    "deckout_veto_reason": "Reason a critical-deck search was vetoed."
+    "deckout_veto_reason": "Reason a critical-deck search was vetoed.",
+    "terminal_route_available": "Whether a public terminal Prize route is executable now.",
+    "terminal_route_reason": "Public reason for the current terminal route assessment.",
+    "partial_attack_vetoed": "Whether a nonlethal resource attack was vetoed this turn.",
+    "partial_attack_reason": "Reason a nonlethal resource attack was vetoed."
   },
   "match_ledger_fields": {
     "target_serial": "Public serial of the tracked opponent target.", "target_card_id": "Card ID of the tracked opponent target.",
@@ -171,7 +175,9 @@
     "roto_sticks_played": "Roto-Sticks played in the match.", "roto_supporters_revealed": "Supporters revealed by Roto-Stick in the match.",
     "roto_supporters_selected": "Supporters selected by Roto-Stick in the match.", "r_command_terminal_opportunities": "Visible game-ending R Command opportunities.",
     "porygon_terminal_opportunities": "Visible terminal Porygon lines.", "porygon_terminal_conversions": "Terminal Porygon lines converted.",
-    "porygon_terminal_misses": "Terminal Porygon lines missed.", "ignition_attachments": "Ignition Energy attachments committed.",
+    "porygon_terminal_misses": "Terminal Porygon lines missed.", "terminal_opportunities_apparent": "Public terminal opportunities before checking action executability.",
+    "terminal_opportunities_executable": "Public terminal opportunities with a legal action route.", "terminal_route_misses": "Apparent terminal opportunities without a legal current route.",
+    "partial_attack_attempts": "Nonlethal resource attacks actually selected.", "partial_attack_vetoes": "Nonlethal resource attacks rejected by policy.", "ignition_attachments": "Ignition Energy attachments committed.",
     "ignition_attacks": "Same-turn attacks after Ignition attachment.", "ignition_without_attack": "Ignition attachments not followed by same-turn attack.",
     "late_proton_without_gain": "Late Proton selections without proven gain.", "petrel_factory_opportunities": "Petrel-to-Factory opportunities in the match.",
     "petrel_factory_conversions": "Petrel-to-Factory conversions in the match.", "poke_pad_ko_opportunities": "Verified Poké Pad KO opportunities in the match.",

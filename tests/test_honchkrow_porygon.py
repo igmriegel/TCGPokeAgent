@@ -338,8 +338,8 @@ def test_rocket_feathers_requires_supporter_in_hand() -> None:
     assert scorer._supporters_in_hand(state) == 0
 
 
-def test_transceiver_counts_as_one_supporter_only_when_deck_can_supply_one() -> None:
-    """Transceiver should count as a supporter-equivalent only when the deck can still search."""
+def test_transceiver_must_resolve_before_rocket_feathers_damage_is_scored() -> None:
+    """A Transceiver cannot be counted as a Supporter until its search resolves."""
     scorer = HonchkrowPorygonScorer(deck_profile=_profile())
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(
@@ -354,7 +354,7 @@ def test_transceiver_counts_as_one_supporter_only_when_deck_can_supply_one() -> 
     )
     candidate = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
     assert scorer._effective_supporters_in_hand(state) == 1
-    assert not agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
+    assert agent._candidate_is_forbidden(state, candidate, SelectContext.MAIN)
 
     state.players[0].deck_count = 0
     assert scorer._effective_supporters_in_hand(state) == 0
@@ -536,7 +536,7 @@ def test_transceiver_is_resolved_before_an_attack_that_depends_on_it() -> None:
     phase, reason, choices = agent._main_phase_selections(state, selections, candidates)
 
     assert phase == DecisionPhase.PLAY_SUPPORTER.value
-    assert reason == "canonical_transceiver_for_proton"
+    assert reason == "canonical_transceiver_for_rocket_feathers"
     assert [selection.indices for selection in choices] == [(1,)]
 
 
@@ -885,6 +885,32 @@ def test_backup_basic_precedes_resource_actions_when_only_one_pokemon_remains() 
             Selection((2,), (OptionType.END,)),
         ],
         [backup, ariana, end],
+    )
+
+    assert phase == DecisionPhase.PLAY_POKEMON.value
+    assert reason == "canonical_play_backup_basic"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_any_playable_basic_precedes_end_when_only_one_pokemon_remains() -> None:
+    """A non-attacker Basic still prevents a state-based no-Pokémon loss."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(active=PokemonState(PORYGON2, 120, 120)),
+            PlayerState(active=PokemonState(723, 220, 220)),
+        ]
+    )
+    articuno = _candidate(0, OptionType.PLAY, card_id=ARTICUNO, card={"cardType": 0})
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.PLAY,)),
+            Selection((1,), (OptionType.END,)),
+        ],
+        [articuno, end],
     )
 
     assert phase == DecisionPhase.PLAY_POKEMON.value
@@ -3103,10 +3129,10 @@ def test_ariana_can_use_the_last_card_in_the_deck() -> None:
     assert scorer._ariana_is_safe_and_useful(state)
 
 
-def test_expert_turn_loop_allows_roto_to_reveal_up_to_four_remaining_cards(
+def test_expert_turn_loop_blocks_critical_roto_without_guaranteed_conversion(
     monkeypatch,
 ) -> None:
-    """Roto may reveal one to four remaining cards and empty the deck."""
+    """Critical-deck Roto is blocked when its hidden reveal has no public conversion."""
     agent = HonchkrowPorygonAgent(_profile())
     state = GameState(players=[PlayerState(hand=[{"id": ROTO_STICK}], deck_count=4), PlayerState()])
     monkeypatch.setattr(agent, "_roto_can_improve_rocket_line", lambda _state: True)
@@ -3114,7 +3140,7 @@ def test_expert_turn_loop_allows_roto_to_reveal_up_to_four_remaining_cards(
     assert agent._canonical_roto_is_productive(state)
 
     state.players[0].deck_count = 1
-    assert agent._canonical_roto_is_productive(state)
+    assert not agent._canonical_roto_is_productive(state)
 
     state.players[0].deck_count = 0
     assert not agent._canonical_roto_is_productive(state)
@@ -4728,7 +4754,7 @@ def test_porygon_ignition_is_vetoed_without_public_r_command_gain() -> None:
     assert agent.turn_ledger.energy_attachment_reason == "defer_without_same_turn_attack"
 
 
-def test_committed_ignition_r_command_is_not_rejected_as_nonlethal() -> None:
+def test_committed_ignition_r_command_preserves_existing_commitment_behavior() -> None:
     """A committed R Command line remains selectable after Ignition attachment."""
     from src.agents.honchkrow_porygon import SwitchCommitment
 
@@ -4748,13 +4774,153 @@ def test_committed_ignition_r_command_is_not_rejected_as_nonlethal() -> None:
                 active=PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}]),
                 discard=[{"id": ARIANA}] * 18,
             ),
-            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 350, 350)),
+            PlayerState(active=PokemonState(999, 400, 400)),
         ],
     )
     attack = _candidate(0, OptionType.ATTACK, attack_id=R_COMMAND)
     end = _candidate(1, OptionType.END)
     assert not agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
     assert agent._candidate_is_forbidden(state, end, SelectContext.MAIN)
+
+
+def test_committed_ignition_resource_attack_rejects_partial_mega_damage() -> None:
+    """Ignition commitment must not authorize partial damage into Mega Abomasnow."""
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent = HonchkrowPorygonAgent(_profile())
+    agent._switch_commitment = SwitchCommitment(
+        method="ignition",
+        turn=8,
+        target_card_id=PORYGON2,
+        target_serial=22,
+        attack_id=R_COMMAND,
+        planned_damage=360,
+    )
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON2, 90, 90, serial=22, energies=[{}, {}, {}]),
+                discard=[{"id": ARIANA}] * 18,
+            ),
+            PlayerState(active=PokemonState(MEGA_ABOMASNOW_EX, 400, 400)),
+        ],
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=R_COMMAND)
+
+    assert agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
+    assert agent.turn_ledger.resource_guard == "resource_attack_nonlethal_veto"
+
+
+def test_committed_ignition_rocket_feathers_preserves_existing_commitment_behavior() -> None:
+    """Telemetry must not change the existing committed Rocket Feathers behavior."""
+    from src.agents.honchkrow_porygon import SwitchCommitment
+
+    agent = HonchkrowPorygonAgent(_profile())
+    agent._switch_commitment = SwitchCommitment(
+        method="ignition",
+        turn=8,
+        target_card_id=HONCHKROW,
+        target_serial=22,
+        attack_id=ROCKET_FEATHERS,
+        planned_damage=120,
+    )
+    state = GameState(
+        turn=8,
+        players=[
+            PlayerState(
+                active=PokemonState(HONCHKROW, 130, 130, serial=22, energies=[{}, {}, {}]),
+                hand=[{"id": ARIANA}, {"id": ARIANA}],
+            ),
+            PlayerState(active=PokemonState(999, 440, 440)),
+        ],
+    )
+    attack = _candidate(0, OptionType.ATTACK, attack_id=ROCKET_FEATHERS)
+
+    assert not agent._candidate_is_forbidden(state, attack, SelectContext.MAIN)
+    assert not agent.turn_ledger.partial_attack_vetoed
+
+
+def test_terminal_porygon2_promotion_remains_a_canonical_exception() -> None:
+    """A feasible terminal Porygon2 promotion remains selectable in a simple state."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+    state = GameState(
+        players=[
+            PlayerState(
+                active=PokemonState(PORYGON, 60, 60, serial=10),
+                bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                hand=[{"id": IGNITION_ENERGY}],
+                discard=[{"id": ARIANA}] * 18,
+                prize=[None],
+            ),
+            PlayerState(active=PokemonState(721, 40, 40, serial=30)),
+        ]
+    )
+    porygon2 = _candidate(0, OptionType.EVOLVE, card_id=PORYGON2, card={"cardType": 0})
+    porygon2.features.update({"target_card_id": PORYGON2, "target_serial": 22})
+    end = _candidate(1, OptionType.END)
+
+    phase, reason, choices = agent._main_phase_selections(
+        state,
+        [
+            Selection((0,), (OptionType.EVOLVE,)),
+            Selection((1,), (OptionType.END,)),
+        ],
+        [porygon2, end],
+    )
+
+    assert phase == DecisionPhase.EVOLVE.value
+    assert reason == "canonical_porygon2_terminal_promotion"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+
+def test_terminal_route_is_recomputed_when_target_state_changes() -> None:
+    """A terminal route from one observation must not persist after the target changes."""
+    agent = HonchkrowPorygonAgent(_profile(), "expert_turn_loop")
+
+    def state_for_target(hp: int) -> GameState:
+        return GameState(
+            players=[
+                PlayerState(
+                    active=PokemonState(PORYGON, 60, 60, serial=10),
+                    bench=[PokemonState(PORYGON2, 90, 90, serial=22)],
+                    hand=[{"id": IGNITION_ENERGY}, {"id": ARIANA}],
+                    discard=[{"id": ARIANA}] * 18,
+                    prize=[None],
+                ),
+                PlayerState(active=PokemonState(721, hp, hp, serial=30)),
+            ]
+        )
+
+    def candidates() -> tuple[list[Selection], list[Candidate]]:
+        porygon2 = _candidate(0, OptionType.EVOLVE, card_id=PORYGON2, card={"cardType": 0})
+        porygon2.features.update({"target_card_id": PORYGON2, "target_serial": 22})
+        ariana = _candidate(1, OptionType.PLAY, card_id=ARIANA, card={"cardType": 3})
+        end = _candidate(2, OptionType.END)
+        return (
+            [
+                Selection((0,), (OptionType.EVOLVE,)),
+                Selection((1,), (OptionType.PLAY,)),
+                Selection((2,), (OptionType.END,)),
+            ],
+            [porygon2, ariana, end],
+        )
+
+    selections, candidates_for_first = candidates()
+    phase, reason, choices = agent._main_phase_selections(
+        state_for_target(40), selections, candidates_for_first
+    )
+    assert phase == DecisionPhase.EVOLVE.value
+    assert reason == "canonical_porygon2_terminal_promotion"
+    assert [selection.indices for selection in choices] == [(0,)]
+
+    selections, candidates_for_second = candidates()
+    phase, reason, choices = agent._main_phase_selections(
+        state_for_target(400), selections, candidates_for_second
+    )
+    assert reason != "canonical_porygon2_terminal_promotion"
+    assert agent.turn_ledger.resource_guard != "terminal_route_precedes_resources"
+    assert choices
 
 
 assert HonchkrowPorygonAgent
