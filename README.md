@@ -3,6 +3,10 @@
 Python agent, evaluation harness, replay-learning foundation, and submission
 tooling for the **PTCG AI Battle Challenge**.
 
+> **Competition status:** The PTCG AI Battle Challenge has ended. This
+> repository is now maintained as an archival and research record; evaluation,
+> replay, packaging, and submission tooling is retained for reproducibility.
+
 ## Objective
 
 The project has three tracks:
