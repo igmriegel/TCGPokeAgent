@@ -214,8 +214,11 @@ def _analyze_replay(path: Path) -> list[GiovanniEvent]:
                 player = players[own_index] if len(players) > own_index else {}
                 active = (player.get("active") or [None])[0] or {}
                 hand = player.get("hand") or []
-                active_id = active.get("id")
-                evolution_card_id = EVOLUTION_TARGETS.get(active_id)
+                active_id_value = active.get("id")
+                active_id = active_id_value if isinstance(active_id_value, int) else None
+                evolution_card_id = (
+                    EVOLUTION_TARGETS.get(active_id) if active_id is not None else None
+                )
                 same_turn_evolve = False
                 same_turn_attach = False
                 turn = current.get("turn")
